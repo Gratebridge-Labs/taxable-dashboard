@@ -37,9 +37,11 @@ const LoadingItem = ({ text, status }: { text: string; status: 'pending' | 'load
 
 interface LoadingScreenProps {
     onComplete?: () => void;
+    title?: string;
+    subtitle?: string;
 }
 
-export default function LoadingScreen({ onComplete }: LoadingScreenProps) {
+export default function LoadingScreen({ onComplete, title, subtitle }: LoadingScreenProps) {
     const [step, setStep] = useState(0);
 
     useEffect(() => {
@@ -65,41 +67,51 @@ export default function LoadingScreen({ onComplete }: LoadingScreenProps) {
         }
     }, [step, onComplete]);
 
+    const isCustomMode = !!title;
+
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden">
             {/* Blurred Background Mockup */}
-            <div className="absolute inset-0 bg-[#0D1B2A80] backdrop-blur-[28px]" />
+            <div className="absolute inset-0 bg-taxable-dark/40 backdrop-blur-[28px]" />
 
-            <div className="relative z-10 flex flex-col items-center">
+            <div className="relative z-10 flex flex-col items-center text-center">
                 {/* Logo Container */}
-                <div className="mb-12 flex flex-col items-center">
+                <div className="mb-8 flex flex-col items-center">
                     <div className="relative w-24 h-24">
                         <Image
                             src="/logo.svg"
                             alt="Taxable"
                             fill
-                            className="object-contain brightness-0 invert opacity-80"
+                            className="object-contain"
                         />
                     </div>
                 </div>
 
                 <div className="w-full max-w-sm px-8">
-                    <h2 className="text-2xl font-semibold text-white mb-6">Building your tax profile...</h2>
+                    <h2 className="text-2xl font-semibold text-white mb-4">
+                        {title || "Building your tax profile..."}
+                    </h2>
 
-                    <div className="space-y-1">
-                        <LoadingItem
-                            text="Persona categorized"
-                            status={step > 0 ? 'completed' : step === 0 ? 'loading' : 'pending'}
-                        />
-                        <LoadingItem
-                            text="Exemption logic applied"
-                            status={step > 1 ? 'completed' : step === 1 ? 'loading' : 'pending'}
-                        />
-                        <LoadingItem
-                            text="Deductions schedule"
-                            status={step > 2 ? 'completed' : step === 2 ? 'loading' : 'pending'}
-                        />
-                    </div>
+                    {isCustomMode ? (
+                        <p className="text-white/80 font-medium">
+                            {subtitle || "This will only take a moment."}
+                        </p>
+                    ) : (
+                        <div className="space-y-1 text-left">
+                            <LoadingItem
+                                text="Persona categorized"
+                                status={step > 0 ? 'completed' : step === 0 ? 'loading' : 'pending'}
+                            />
+                            <LoadingItem
+                                text="Exemption logic applied"
+                                status={step > 1 ? 'completed' : step === 1 ? 'loading' : 'pending'}
+                            />
+                            <LoadingItem
+                                text="Deductions schedule"
+                                status={step > 2 ? 'completed' : step === 2 ? 'loading' : 'pending'}
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

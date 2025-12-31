@@ -4,8 +4,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import SetupSidebar from '@/components/SetupSidebar/SetupSidebar';
 
-const NavItem = ({ iconSrc, label }: { iconSrc: string; label: string }) => (
-    <Link href="#" className="flex items-center gap-2.5 px-4 py-2 text-sm font-medium text-taxable-gray hover:text-taxable-blue hover:bg-gray-50 rounded-xl transition-all group whitespace-nowrap">
+const NavItem = ({ iconSrc, label, href = "#" }: { iconSrc: string; label: string; href?: string }) => (
+    <Link href={href} className="flex items-center gap-2 px-2 py-2 text-base font-medium text-taxable-gray hover:text-taxable-blue hover:bg-gray-50 rounded-xl transition-all group whitespace-nowrap">
         <Image src={iconSrc} alt={label} width={20} height={20} className="opacity-50 group-hover:opacity-100 transition-opacity" />
         <span className="tracking-tight">{label}</span>
     </Link>
@@ -30,7 +30,7 @@ const VideoCard = ({ thumbnail, title, duration }: { thumbnail: string; title: s
         </div>
         <div className="w-[410px] text-left">
             <h3 className="text-xl font-semibold text-taxable-dark mb-1.5 leading-tight">{title}</h3>
-            <p className="text-sm text-taxable-gray font-medium">{duration}</p>
+            <p className="text-base text-taxable-gray font-medium">{duration}</p>
         </div>
     </div>
 );
@@ -41,7 +41,7 @@ export default function Home() {
     return (
         <div className="min-h-screen bg-[#FAFAFA] font-sans flex flex-col items-center">
             {/* Header */}
-            <header className="w-full h-24 flex items-center px-12">
+            <header className="w-full h-24 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center px-12 sticky top-0 z-50 transition-all">
                 <div className="flex-1 flex items-center">
                     <Link href="/">
                         <Image
@@ -54,9 +54,9 @@ export default function Home() {
                     </Link>
                 </div>
 
-                <nav className="hidden md:flex items-center justify-center gap-6 lg:gap-8">
-                    <NavItem iconSrc="/icons/people.svg" label="Tax folders" />
-                    <NavItem iconSrc="/icons/transaction.svg" label="Transactions" />
+                <nav className="hidden md:flex items-center justify-center gap-3 lg:gap-4">
+                    <NavItem iconSrc="/icons/people.svg" label="Tax folders" href="/tax-folders" />
+                    <NavItem iconSrc="/icons/transaction.svg" label="Educational resources" />
                     <NavItem iconSrc="/icons/fees.svg" label="Fees" />
                     <NavItem iconSrc="/icons/notification.svg" label="Push Notifications" />
                 </nav>
@@ -69,17 +69,17 @@ export default function Home() {
             </header>
 
             {/* Main Content */}
-            <main className="w-full max-w-[1440px] flex flex-col items-center px-12 py-20 text-center">
-                <div className="mb-14 max-w-3xl">
-                    <h1 className="text-4xl lg:text-5xl font-bold text-taxable-dark mb-5 tracking-tightest leading-tight">
+            <main className="w-full max-w-[850px] flex flex-col items-start py-14">
+                <div className="mb-10 w-full">
+                    <h1 className="text-xl lg:text-2xl font-medium text-taxable-dark mb-1.5 tracking-tightest leading-tight">
                         Hello, Gideon. Welcome to Taxable
                     </h1>
-                    <p className="text-xl text-taxable-gray font-medium leading-relaxed max-w-2xl mx-auto">
+                    <p className="text-base text-taxable-gray font-medium leading-tight max-w-2xl">
                         The 2026 tax cycle is currently active. Let's make sure you're compliant.
                     </p>
                 </div>
 
-                <div className="flex flex-wrap justify-center gap-10 mb-16">
+                <div className="flex flex-wrap items-start gap-6 mb-8">
                     <VideoCard
                         thumbnail="/thumbnails/tour.png"
                         title="The Taxable Tour"

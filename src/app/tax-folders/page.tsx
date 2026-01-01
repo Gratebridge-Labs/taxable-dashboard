@@ -1,5 +1,5 @@
-import TaxRequirements from "@/screens/TaxFolders/TaxRequirements";
+import TaxFolders from "@/screens/TaxFolders/TaxFolders";
 
 export default function Page() {
-    return <TaxRequirements />;
+    return <TaxFolders />;
 }

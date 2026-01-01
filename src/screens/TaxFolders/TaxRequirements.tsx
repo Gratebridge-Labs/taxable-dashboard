@@ -2,10 +2,11 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
-const NavItem = ({ iconSrc, label, active = false }: { iconSrc: string; label: string; active?: boolean }) => (
+const NavItem = ({ iconSrc, label, active = false, href = "#" }: { iconSrc: string; label: string; active?: boolean; href?: string }) => (
     <Link
-        href={label === "Tax folders" ? "/tax-folders" : (label === "Dashboard" ? "/home" : "#")}
+        href={href}
         className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl transition-all whitespace-nowrap ${active
             ? 'text-taxable-blue bg-taxable-blue/5'
             : 'text-taxable-gray hover:text-taxable-dark hover:bg-gray-50'
@@ -48,6 +49,7 @@ const TaxCard = ({ title, description, badge = "Not started", buttonLabel = "Sta
 );
 
 export default function TaxRequirements() {
+    const router = useRouter();
     return (
         <div className="min-h-screen bg-[#FAFAFA] font-sans pb-20">
             {/* Header */}
@@ -58,10 +60,9 @@ export default function TaxRequirements() {
                     </Link>
                 </div>
 
-                <nav className="hidden md:flex items-center justify-center gap-2">
-                    <NavItem iconSrc="/icons/people.svg" label="Tax folders" active />
-                    <NavItem iconSrc="/icons/transaction.svg" label="Transactions" />
-                    <NavItem iconSrc="/icons/fees.svg" label="Fees" />
+                <nav className="hidden md:flex items-center justify-center gap-6">
+                    <NavItem iconSrc="/icons/people.svg" label="Tax folders" active href="/tax-folders" />
+                    <NavItem iconSrc="/icons/transaction.svg" label="Educational resources" href="/home" />
                     <NavItem iconSrc="/icons/notification.svg" label="Push Notifications" />
                 </nav>
 
@@ -73,13 +74,15 @@ export default function TaxRequirements() {
             </header>
 
             <main className="max-w-[1280px] mx-auto px-12 py-8">
-                {/* Back Link */}
-                <Link href="/home" className="flex items-center gap-2 text-sm font-medium text-taxable-dark hover:text-taxable-blue transition-colors mb-4">
+                <button
+                    onClick={() => router.back()}
+                    className="flex items-center gap-2 text-sm font-medium text-taxable-dark hover:text-taxable-blue transition-colors mb-4"
+                >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
                     </svg>
-                    Back to Home
-                </Link>
+                    Back
+                </button>
 
                 {/* Breadcrumbs */}
                 <div className="flex items-center gap-2 text-[13px] text-[#94A3B8] font-medium mb-12">

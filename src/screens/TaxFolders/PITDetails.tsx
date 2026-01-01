@@ -2,6 +2,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const NavItem = ({ iconSrc, label, active = false }: { iconSrc: string; label: string; active?: boolean }) => (
     <Link
@@ -74,6 +75,7 @@ const FormField = ({ label, placeholder, hint, prefix, type = "text" }: { label:
 );
 
 export default function PITDetails() {
+    const router = useRouter();
     const [activeSection, setActiveSection] = React.useState('Personal Information');
     const [progressIndex, setProgressIndex] = React.useState(0);
     const [isEmployed, setIsEmployed] = React.useState<boolean | null>(true);
@@ -100,8 +102,10 @@ export default function PITDetails() {
     };
 
     const addEmployer = () => {
-        const newId = employers.length > 0 ? Math.max(...employers.map(e => e.id)) + 1 : 1;
-        setEmployers([...employers, { id: newId, name: '', title: '', startDate: '', endDate: '', stillWorks: true, withheldTax: 'Yes', salary: '' }]);
+        if (employers.length < 6) {
+            const newId = employers.length > 0 ? Math.max(...employers.map(e => e.id)) + 1 : 1;
+            setEmployers([...employers, { id: newId, name: '', title: '', startDate: '', endDate: '', stillWorks: true, withheldTax: 'Yes', salary: '' }]);
+        }
     };
 
     const removeEmployer = (id: number) => {
@@ -137,13 +141,15 @@ export default function PITDetails() {
             </header>
 
             <main className="max-w-[1280px] mx-auto px-12 py-8">
-                {/* Back Link */}
-                <Link href="/tax-folders" className="flex items-center gap-2 text-sm font-medium text-taxable-dark hover:text-taxable-blue transition-colors mb-4">
+                <button
+                    onClick={() => router.back()}
+                    className="flex items-center gap-2 text-sm font-medium text-taxable-dark hover:text-taxable-blue transition-colors mb-4"
+                >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
                     </svg>
                     Back
-                </Link>
+                </button>
 
                 {/* Breadcrumbs */}
                 <div className="flex items-center gap-2 text-[13px] text-[#94A3B8] font-medium mb-6">
@@ -339,9 +345,10 @@ export default function PITDetails() {
 
                                         <button
                                             onClick={addEmployer}
-                                            className="h-14 px-8 border border-gray-100 bg-white text-taxable-dark font-bold rounded-2xl hover:bg-gray-50 transition-colors"
+                                            disabled={employers.length >= 6}
+                                            className={`h-14 px-8 border border-gray-100 bg-white text-taxable-dark font-bold rounded-2xl transition-all ${employers.length >= 6 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
                                         >
-                                            Add Another Employer
+                                            {employers.length >= 6 ? 'Employer limit reached' : 'Add Another Employer'}
                                         </button>
                                     </div>
                                 )}
@@ -357,60 +364,66 @@ export default function PITDetails() {
                     </div>
 
                     {/* Right Help Sidebar */}
-                    <div className="w-[300px] flex-shrink-0">
-                        <div className="bg-taxable-lightgray2 rounded-3xl p-8 sticky top-32 border border-gray-100/50">
-                            <div className="mb-8">
-                                <div className="flex items-center gap-2.5 mb-3">
+                    <div className="w-[302px] flex-shrink-0">
+                        <div className="bg-taxable-lightgray2 rounded-[24px] p-7 min-h-[367px] sticky top-32 border border-gray-100/50">
+                            <div className="mb-4">
+                                <div className="flex items-center gap-2.5 mb-2.5">
                                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-taxable-dark">
                                         <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
                                     </svg>
-                                    <h4 className="text-[17px] font-semibold text-taxable-dark">Why we need this</h4>
+                                    <h4 className="text-base font-semibold text-taxable-dark">Why we need this</h4>
                                 </div>
-                                <p className="text-[15px] text-[#64748B] leading-[1.6] font-medium">
+                                <p className="text-sm text-[#64748B] leading-[1.5] font-medium">
                                     Your personal details help us identify you with FIRS and ensure your tax return is filed correctly. All information is encrypted and stored securely. We only share data with FIRS when you choose to file.
                                 </p>
                             </div>
 
                             <div className="space-y-0">
-                                <div className="border-t border-gray-200/60 py-5 space-y-5">
-                                    {activeSection === 'Employer Information' && isEmployed === true && employers.length >= 1 ? (
-                                        <>
-                                            <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
-                                                <span>I'm self-employed - do I need this section?</span>
-                                            </button>
-                                            <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
-                                                <span>What if my salary changed during the year?</span>
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
-                                                <span>How to find your TIN</span>
-                                            </button>
-                                            <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
-                                                <span>Understanding tax filing</span>
-                                            </button>
-                                        </>
-                                    )}
+                                <div className="py-2.5">
+                                    <div className="w-[270px] h-[3px] bg-white rounded-[10px] mb-4 -mx-1" />
+                                    <div className="space-y-3.5">
+                                        {activeSection === 'Employer Information' && isEmployed === true && employers.length >= 1 ? (
+                                            <>
+                                                <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
+                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+                                                    <span>I'm self-employed - do I need this section?</span>
+                                                </button>
+                                                <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
+                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+                                                    <span>What if my salary changed during the year?</span>
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
+                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+                                                    <span>How to find your TIN</span>
+                                                </button>
+                                                <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
+                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+                                                    <span>Understanding tax filing</span>
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
 
-                                <div className="border-t border-gray-200/60 py-5 space-y-5">
-                                    <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors">
-                                            <path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
-                                        </svg>
-                                        <span>Chat with support</span>
-                                    </button>
-                                    <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors">
-                                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
-                                        </svg>
-                                        <span>Email us</span>
-                                    </button>
+                                <div className="py-2.5">
+                                    <div className="w-[270px] h-[3px] bg-white rounded-[10px] mb-4 -mx-1" />
+                                    <div className="space-y-3.5">
+                                        <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors">
+                                                <path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+                                            </svg>
+                                            <span>Chat with support</span>
+                                        </button>
+                                        <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors">
+                                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
+                                            </svg>
+                                            <span>Email us</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

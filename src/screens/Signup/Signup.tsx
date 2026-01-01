@@ -24,7 +24,7 @@ export default function Signup() {
                         <h2 className="text-2xl font-medium text-taxable-dark mb-1">Welcome to Taxable</h2>
                         <p className="text-taxable-gray text-base">Let's get your tax compliance sorted in minutes</p>
                     </div>
-                    <Link href="/login" className="px-5 py-2 rounded-lg border border-gray-200 text-taxable-dark font-medium hover:bg-gray-50 transition-colors bg-white text-sm whitespace-nowrap">
+                    <Link href="/signin" className="px-5 py-2 rounded-lg border border-gray-200 text-taxable-dark font-medium hover:bg-gray-50 transition-colors bg-white text-sm whitespace-nowrap">
                         Log in
                     </Link>
                 </div>

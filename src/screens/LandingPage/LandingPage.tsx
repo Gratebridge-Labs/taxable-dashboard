@@ -69,7 +69,7 @@ export default function LandingPage() {
             <Link href="#" className="hover:text-taxable-gray transition-colors">About</Link>
             <Link href="#" className="hover:text-taxable-gray transition-colors">Blog</Link>
           </div>
-          <Link href="/signup" className="bg-taxable-beige hover:bg-gray-200 text-taxable-blue font-medium px-5 py-2 rounded-2xl text-lg transition-colors">
+          <Link href="/signin" className="bg-taxable-beige hover:bg-gray-200 text-taxable-blue font-medium px-5 py-2 rounded-2xl text-lg transition-colors">
             Sign In
           </Link>
         </nav>
@@ -88,46 +88,46 @@ export default function LandingPage() {
           </button>
         </section>
 
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
-          <div className="flex flex-col items-start gap-3">
-            <div className="p-2 bg-taxable-light rounded-lg">
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-12 gap-y-10 mb-20 bg-white">
+          <div className="flex flex-row items-start gap-4">
+            <div className="p-2.5 bg-taxable-light rounded-xl flex-shrink-0">
               <FileLockIcon />
             </div>
             <div>
-              <h3 className="font-bold text-taxable-dark mb-1">Bank-Level Security</h3>
+              <h3 className="font-bold text-taxable-dark mb-1 whitespace-nowrap">Bank-Level Security</h3>
               <p className="text-sm text-taxable-gray leading-relaxed">
                 End-to-end encryption for every file.
               </p>
             </div>
           </div>
-          <div className="flex flex-col items-start gap-3">
-            <div className="p-2 bg-taxable-light rounded-lg">
+          <div className="flex flex-row items-start gap-4">
+            <div className="p-2.5 bg-taxable-light rounded-xl flex-shrink-0">
               <GlobeIcon />
             </div>
             <div>
-              <h3 className="font-bold text-taxable-dark mb-1">Universal Support</h3>
+              <h3 className="font-bold text-taxable-dark mb-1 whitespace-nowrap">Universal Support</h3>
               <p className="text-sm text-taxable-gray leading-relaxed">
                 Compatible with all Nigerian bank exports.
               </p>
             </div>
           </div>
-          <div className="flex flex-col items-start gap-3">
-            <div className="p-2 bg-taxable-light rounded-lg">
+          <div className="flex flex-row items-start gap-4">
+            <div className="p-2.5 bg-taxable-light rounded-xl flex-shrink-0">
               <CheckCircleIcon />
             </div>
             <div>
-              <h3 className="font-bold text-taxable-dark mb-1">FIRS-Aligned</h3>
+              <h3 className="font-bold text-taxable-dark mb-1 whitespace-nowrap">FIRS-Aligned</h3>
               <p className="text-sm text-taxable-gray leading-relaxed">
                 Built on current Nigerian tax regulations.
               </p>
             </div>
           </div>
-          <div className="flex flex-col items-start gap-3">
-            <div className="p-2 bg-taxable-light rounded-lg">
+          <div className="flex flex-row items-start gap-4">
+            <div className="p-2.5 bg-taxable-light rounded-xl flex-shrink-0">
               <FileCheckIcon />
             </div>
             <div>
-              <h3 className="font-bold text-taxable-dark mb-1">Audit-Ready</h3>
+              <h3 className="font-bold text-taxable-dark mb-1 whitespace-nowrap">Audit-Ready</h3>
               <p className="text-sm text-taxable-gray leading-relaxed">
                 Professional reports with full audit trails.
               </p>

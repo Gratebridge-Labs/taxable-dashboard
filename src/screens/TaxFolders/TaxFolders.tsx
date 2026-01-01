@@ -57,7 +57,7 @@ const TaxFolderCard = ({
             <div className="flex-1 flex flex-col items-start text-left">
                 <h3 className="text-[19px] font-bold text-taxable-dark mb-1.5">{title}</h3>
                 <p className="text-sm font-semibold text-taxable-dark mb-1">{valueText}</p>
-                <p className="text-[13px] text-taxable-gray font-medium leading-relaxed mb-4 line-clamp-2">
+                <p className="text-[13px] text-taxable-gray font-medium leading-relaxed mb-4 truncate w-full">
                     {description}
                 </p>
 

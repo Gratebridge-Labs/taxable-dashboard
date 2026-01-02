@@ -35,19 +35,31 @@ const LoadingItem = ({ text, status }: { text: string; status: 'pending' | 'load
     );
 };
 
+interface LoadingStep {
+    text: string;
+}
+
 interface LoadingScreenProps {
     onComplete?: () => void;
     title?: string;
     subtitle?: string;
+    steps?: LoadingStep[];
 }
 
-export default function LoadingScreen({ onComplete, title, subtitle }: LoadingScreenProps) {
+export default function LoadingScreen({ onComplete, title, subtitle, steps }: LoadingScreenProps) {
+    const defaultSteps = [
+        { text: "Persona categorized" },
+        { text: "Exemption logic applied" },
+        { text: "Deductions schedule" }
+    ];
+
+    const activeSteps = steps || defaultSteps;
     const [step, setStep] = useState(0);
 
     useEffect(() => {
         const timer = setInterval(() => {
             setStep((prev) => {
-                if (prev >= 3) {
+                if (prev >= activeSteps.length) {
                     clearInterval(timer);
                     return prev;
                 }
@@ -56,16 +68,16 @@ export default function LoadingScreen({ onComplete, title, subtitle }: LoadingSc
         }, 3000);
 
         return () => clearInterval(timer);
-    }, []);
+    }, [activeSteps.length]);
 
     useEffect(() => {
-        if (step === 3 && onComplete) {
+        if (step === activeSteps.length && onComplete) {
             const finalRedirect = setTimeout(() => {
                 onComplete();
             }, 1000);
             return () => clearTimeout(finalRedirect);
         }
-    }, [step, onComplete]);
+    }, [step, onComplete, activeSteps.length]);
 
     const isCustomMode = !!title;
 
@@ -92,24 +104,21 @@ export default function LoadingScreen({ onComplete, title, subtitle }: LoadingSc
                         {title || "Building your tax profile..."}
                     </h2>
 
-                    {isCustomMode ? (
-                        <p className="text-white/80 font-medium">
-                            {subtitle || "This will only take a moment."}
-                        </p>
+                    {isCustomMode && !steps ? (
+                        subtitle ? (
+                            <p className="text-white/80 font-medium">
+                                {subtitle}
+                            </p>
+                        ) : null
                     ) : (
                         <div className="space-y-1 text-left">
-                            <LoadingItem
-                                text="Persona categorized"
-                                status={step > 0 ? 'completed' : step === 0 ? 'loading' : 'pending'}
-                            />
-                            <LoadingItem
-                                text="Exemption logic applied"
-                                status={step > 1 ? 'completed' : step === 1 ? 'loading' : 'pending'}
-                            />
-                            <LoadingItem
-                                text="Deductions schedule"
-                                status={step > 2 ? 'completed' : step === 2 ? 'loading' : 'pending'}
-                            />
+                            {activeSteps.map((s, i) => (
+                                <LoadingItem
+                                    key={i}
+                                    text={s.text}
+                                    status={step > i ? 'completed' : step === i ? 'loading' : 'pending'}
+                                />
+                            ))}
                         </div>
                     )}
                 </div>

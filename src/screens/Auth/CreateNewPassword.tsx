@@ -2,7 +2,9 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import OnboardingLayout from '@/components/OnboardingLayout/OnboardingLayout';
+import LoadingScreen from '@/screens/Onboarding/LoadingScreen';
 
 const InputField = ({ label, placeholder, type = "password", value, onChange }: { label: string; placeholder: string; type?: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
     <div className="flex flex-col gap-1 w-full">
@@ -25,50 +27,71 @@ const InputField = ({ label, placeholder, type = "password", value, onChange }: 
 );
 
 export default function CreateNewPassword() {
+    const router = useRouter();
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+    };
 
     return (
-        <OnboardingLayout>
-            <div className="max-w-[480px] mx-auto w-full">
-                <div className="mb-8">
-                    <h2 className="text-2xl font-semibold text-taxable-dark mb-2">Create a new password</h2>
-                    <p className="text-taxable-gray text-base font-medium">Choose a strong password for your account.</p>
-                </div>
-
-                <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
-                    <div className="space-y-1">
-                        <InputField
-                            label="Password"
-                            placeholder="••••••••••••"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                        />
-                        <div className="flex items-center gap-2 text-[13px] text-taxable-gray font-medium">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400">
-                                <circle cx="12" cy="12" r="10" />
-                                <line x1="12" y1="8" x2="12" y2="12" />
-                                <line x1="12" y1="16" x2="12.01" y2="16" />
-                            </svg>
-                            <span>At least 8 characters. Make it strong!</span>
-                        </div>
+        <>
+            <OnboardingLayout>
+                <div className="max-w-[480px] mx-auto w-full">
+                    <div className="mb-8">
+                        <h2 className="text-2xl font-semibold text-taxable-dark mb-2">Create a new password</h2>
+                        <p className="text-taxable-gray text-base font-medium">Choose a strong password for your account.</p>
                     </div>
 
-                    <InputField
-                        label="Confirm new password"
-                        placeholder="••••••••••••"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                    />
+                    <form className="space-y-6" onSubmit={handleSubmit}>
+                        <div className="space-y-1">
+                            <InputField
+                                label="Password"
+                                placeholder="••••••••••••"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                            />
+                            <div className="flex items-center gap-2 text-[13px] text-taxable-gray font-medium">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" y1="8" x2="12" y2="12" />
+                                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                                </svg>
+                                <span>At least 8 characters. Make it strong!</span>
+                            </div>
+                        </div>
 
-                    <button
-                        type="submit"
-                        className="w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl shadow-lg shadow-taxable-blue/20 hover:opacity-95 transition-all mt-4"
-                    >
-                        Reset Password
-                    </button>
-                </form>
-            </div>
-        </OnboardingLayout>
+                        <InputField
+                            label="Confirm new password"
+                            placeholder="••••••••••••"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                        />
+
+                        <button
+                            type="submit"
+                            className="w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl shadow-lg shadow-taxable-blue/20 hover:opacity-95 transition-all mt-4"
+                        >
+                            Reset Password
+                        </button>
+                    </form>
+                </div>
+            </OnboardingLayout>
+
+            {isLoading && (
+                <LoadingScreen
+                    onComplete={() => router.push('/home')}
+                    title="Resetting your password..."
+                    steps={[
+                        { text: "Updating your security credentials" },
+                        { text: "Securing your account" },
+                        { text: "Redirecting to your workspace" }
+                    ]}
+                />
+            )}
+        </>
     );
 }

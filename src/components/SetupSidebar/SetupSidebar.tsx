@@ -6,6 +6,7 @@ import LoadingScreen from '@/screens/Onboarding/LoadingScreen';
 interface SetupSidebarProps {
     isOpen: boolean;
     onClose: () => void;
+    onComplete?: () => void;
 }
 
 const SidebarRadio = ({ label, description, isSelected, onClick }: { label: string; description?: string; isSelected: boolean; onClick: () => void }) => (
@@ -42,7 +43,7 @@ const SidebarCheckbox = ({ label, description, isSelected, onClick }: { label: s
     </div>
 );
 
-export default function SetupSidebar({ isOpen, onClose }: SetupSidebarProps) {
+export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSidebarProps) {
     const [step, setStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selections, setSelections] = useState({
@@ -77,7 +78,11 @@ export default function SetupSidebar({ isOpen, onClose }: SetupSidebarProps) {
 
     const handleLoadingFinished = () => {
         setIsSubmitting(false);
-        onClose();
+        if (onComplete) {
+            onComplete();
+        } else {
+            onClose();
+        }
     };
 
     const renderStep = () => {

@@ -3,7 +3,9 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import OnboardingLayout from '@/components/OnboardingLayout/OnboardingLayout';
+import LoadingScreen from '@/screens/Onboarding/LoadingScreen';
 
 const InputField = ({ label, placeholder, type = "text", value, onChange }: { label: string; placeholder: string; type?: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
     <div className="flex flex-col gap-1 w-full">
@@ -63,52 +65,66 @@ const ResetPasswordModal = ({ email, onClose, onResend }: { email: string; onClo
 );
 
 export default function SignIn() {
+    const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showResetModal, setShowResetModal] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     return (
-        <OnboardingLayout>
-            <div className="max-w-[480px] mx-auto w-full">
-                <div className="mb-8">
-                    <h2 className="text-2xl font-semibold text-taxable-dark mb-2">Sign in to Taxable</h2>
-                    <p className="text-taxable-gray text-base font-medium">Let's get your tax compliance sorted in minutes</p>
+        <>
+            <OnboardingLayout>
+                <div className="max-w-[480px] mx-auto w-full">
+                    <div className="mb-8">
+                        <h2 className="text-2xl font-semibold text-taxable-dark mb-2">Sign in to Taxable</h2>
+                        <p className="text-taxable-gray text-base font-medium">Let's get your tax compliance sorted in minutes</p>
+                    </div>
+
+                    <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+                        <InputField
+                            label="Email Address"
+                            placeholder="hello@alignui.com"
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
+
+                        <div className="space-y-1">
+                            <InputField
+                                label="Password"
+                                placeholder="••••••••••••"
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                            />
+                            <div className="text-[13px] text-taxable-gray font-medium">
+                                Forgot your password? <button type="button" onClick={() => setShowResetModal(true)} className="text-taxable-blue font-semibold hover:underline">Reset it here</button>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() => setIsLoading(true)}
+                            className="w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl shadow-lg shadow-taxable-blue/20 hover:opacity-95 transition-all mt-4"
+                        >
+                            Sign In
+                        </button>
+
+                        <div className="text-center text-[14px] text-taxable-gray font-medium mt-6">
+                            Don't have an account? <Link href="/signup" className="text-taxable-blue font-semibold hover:underline">Create one</Link>
+                        </div>
+                    </form>
                 </div>
 
-                <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
-                    <InputField
-                        label="Email Address"
-                        placeholder="hello@alignui.com"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                    />
+            </OnboardingLayout>
 
-                    <div className="space-y-1">
-                        <InputField
-                            label="Password"
-                            placeholder="••••••••••••"
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                        />
-                        <div className="text-[13px] text-taxable-gray font-medium">
-                            Forgot your password? <button type="button" onClick={() => setShowResetModal(true)} className="text-taxable-blue font-semibold hover:underline">Reset it here</button>
-                        </div>
-                    </div>
-
-                    <button
-                        type="submit"
-                        className="w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl shadow-lg shadow-taxable-blue/20 hover:opacity-95 transition-all mt-4"
-                    >
-                        Sign In
-                    </button>
-
-                    <div className="text-center text-[14px] text-taxable-gray font-medium mt-6">
-                        Don't have an account? <Link href="/signup" className="text-taxable-blue font-semibold hover:underline">Create one</Link>
-                    </div>
-                </form>
-            </div>
+            {isLoading && (
+                <LoadingScreen
+                    onComplete={() => router.push('/home')}
+                    title="Signing you in..."
+                    subtitle=""
+                />
+            )}
 
             {showResetModal && (
                 <ResetPasswordModal
@@ -117,6 +133,6 @@ export default function SignIn() {
                     onResend={() => console.log('Resending email...')}
                 />
             )}
-        </OnboardingLayout>
+        </>
     );
 }

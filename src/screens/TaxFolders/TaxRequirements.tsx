@@ -4,18 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-const NavItem = ({ iconSrc, label, active = false, href = "#" }: { iconSrc: string; label: string; active?: boolean; href?: string }) => (
-    <Link
-        href={href}
-        className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl transition-all whitespace-nowrap ${active
-            ? 'text-taxable-blue bg-taxable-blue/5'
-            : 'text-taxable-gray hover:text-taxable-dark hover:bg-gray-50'
-            }`}
-    >
-        <Image src={iconSrc} alt={label} width={18} height={18} className={active ? '' : 'opacity-60'} />
-        <span>{label}</span>
-    </Link>
-);
+import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
 
 const TaxCard = ({ title, description, badge = "Not started", buttonLabel = "Start filing", href = "#" }: { title: string; description: string; badge?: string; buttonLabel?: string; href?: string }) => (
     <div className="flex flex-col w-[303px] min-h-[398px] h-full">
@@ -52,26 +41,7 @@ export default function TaxRequirements() {
     const router = useRouter();
     return (
         <div className="min-h-screen bg-[#FAFAFA] font-sans pb-20">
-            {/* Header */}
-            <header className="w-full h-24 bg-white border-b border-gray-100 flex items-center px-12 sticky top-0 z-50">
-                <div className="flex-1 flex items-center">
-                    <Link href="/home">
-                        <Image src="/logo_blue.svg" alt="Taxable" width={100} height={61} priority />
-                    </Link>
-                </div>
-
-                <nav className="hidden md:flex items-center justify-center gap-6">
-                    <NavItem iconSrc="/icons/people.svg" label="Tax folders" active href="/tax-folders" />
-                    <NavItem iconSrc="/icons/transaction.svg" label="Educational resources" href="/home" />
-                    <NavItem iconSrc="/icons/notification.svg" label="Push Notifications" />
-                </nav>
-
-                <div className="flex-1 flex justify-end items-center">
-                    <div className="w-11 h-11 rounded-2xl bg-gray-50 border border-gray-100 overflow-hidden shadow-sm flex items-center justify-center cursor-pointer hover:border-taxable-blue/30 transition-colors">
-                        <Image src="/icons/profile.svg" alt="Profile" width={28} height={28} className="opacity-80" />
-                    </div>
-                </div>
-            </header>
+            <DashboardHeader />
 
             <main className="max-w-[1280px] mx-auto px-12 py-8">
                 <button

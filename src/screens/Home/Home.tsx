@@ -90,6 +90,67 @@ const VideoCard = ({ thumbnail, title, duration }: { thumbnail: string; title: s
     </div>
 );
 
+const FAQItem = ({ question, answer }: { question: string; answer: string }) => (
+    <div className="w-full bg-taxable-lightgray2 rounded-[18px] p-6 mb-3 cursor-pointer">
+        <h4 className="text-[15px] font-medium text-taxable-dark mb-1.5">{question}</h4>
+        <p className="text-[14px] text-taxable-gray font-medium leading-relaxed">{answer}</p>
+    </div>
+);
+
+const FAQSection = () => {
+    const [activeTab, setActiveTab] = useState('FAQs');
+    const tabs = ['FAQs', 'Guides', '2026 Reforms'];
+
+    const faqs = [
+        {
+            question: "Do I need to file taxes if I'm self-employed?",
+            answer: "Yes. If you earn income from freelancing, online business, or any self-employment"
+        },
+        {
+            question: "What's my Tax Identification Number (TIN) and how do I get one?",
+            answer: "Your TIN is a unique number issued by FIRS. Here's how to register..."
+        },
+        {
+            question: "When is the tax filing deadline for 2026?",
+            answer: "Individual tax returns must be filed by March 31, 2026. Here's what you need to know.."
+        }
+    ];
+
+    return (
+        <div className="mt-24 pb-20">
+            <h2 className="text-2xl font-medium text-taxable-dark mb-8">Common Tax Questions</h2>
+
+            <div className="flex gap-10 border-b border-gray-100 mb-8 overflow-x-auto no-scrollbar">
+                {tabs.map((tab) => (
+                    <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`pb-4 text-[15px] font-bold transition-all relative whitespace-nowrap ${activeTab === tab ? 'text-[#003787]' : 'text-taxable-gray'
+                            }`}
+                    >
+                        {tab}
+                        {activeTab === tab && (
+                            <div className="absolute bottom-0 left-0 w-full h-[3px] bg-[#003787] rounded-full" />
+                        )}
+                    </button>
+                ))}
+            </div>
+
+            <div className="max-w-[760px] flex flex-col gap-3 text-[17px] font-medium text-taxable-gray">
+                {activeTab === 'FAQs' ? (
+                    faqs.map((faq, index) => (
+                        <FAQItem key={index} {...faq} />
+                    ))
+                ) : activeTab === 'Guides' ? (
+                    <div className="py-8">GUIDES</div>
+                ) : (
+                    <div className="py-8">TAX REFORM</div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 export default function Home() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [hasTaxFolders, setHasTaxFolders] = useState(false);
@@ -117,15 +178,15 @@ export default function Home() {
             <DashboardHeader />
 
             {/* Main Content */}
-            <main className="max-w-[1280px] mx-auto px-12 py-12">
+            <main className="max-w-[1280px] mx-auto px-12 py-16">
                 {!hasTaxFolders ? (
                     <>
-                        <div className="flex justify-between items-start mb-12">
+                        <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-12">
                             <div>
-                                <h1 className="text-[28px] font-semibold text-taxable-dark mb-2 tracking-tight">
+                                <h1 className="text-[32px] font-bold text-taxable-dark mb-2 tracking-tight">
                                     Hello, Gideon. Welcome to Taxable
                                 </h1>
-                                <p className="text-base text-taxable-gray font-medium leading-relaxed max-w-xl">
+                                <p className="text-[17px] text-taxable-gray font-medium leading-relaxed max-w-xl">
                                     The 2026 tax cycle is currently active. Let's make sure you're compliant.
                                 </p>
                             </div>
@@ -133,24 +194,26 @@ export default function Home() {
                             <div className="flex items-center gap-4">
                                 <button
                                     onClick={() => setIsSidebarOpen(true)}
-                                    className="h-12 px-6 bg-[#003787] hover:opacity-90 text-white font-semibold rounded-xl transition-all shadow-sm"
+                                    className="h-12 px-6 bg-[#003787] hover:opacity-90 text-white font-bold rounded-xl transition-all shadow-sm whitespace-nowrap"
                                 >
                                     Get started with 2026 taxes
                                 </button>
                                 <Link
                                     href="/tax-folders/requirements"
-                                    className="h-12 px-6 bg-white border border-gray-200 hover:bg-gray-50 text-taxable-dark font-semibold rounded-xl transition-all shadow-sm flex items-center justify-center"
+                                    className="h-12 px-6 bg-white border border-gray-100 hover:bg-gray-50 text-taxable-dark font-bold rounded-xl transition-all shadow-sm flex items-center justify-center whitespace-nowrap"
                                 >
                                     Watch more guides
                                 </Link>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
                             {videos.map((video, index) => (
                                 <VideoCard key={index} {...video} />
                             ))}
                         </div>
+
+                        <FAQSection />
                     </>
                 ) : (
                     <div className="animate-in fade-in duration-700">

@@ -1,5 +1,5 @@
-import TaxFolders from "@/screens/TaxFolders/TaxFolders";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-    return <TaxFolders />;
+    redirect("/home");
 }

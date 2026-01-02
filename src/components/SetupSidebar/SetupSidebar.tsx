@@ -46,6 +46,7 @@ const SidebarCheckbox = ({ label, description, isSelected, onClick }: { label: s
 export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSidebarProps) {
     const [step, setStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [selections, setSelections] = useState({
         taxYear: '2026',
         category: 'Individual',
@@ -64,6 +65,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSideb
         if (isOpen) {
             setStep(0);
             setIsSubmitting(false);
+            setShowSuccessModal(false);
         }
     }, [isOpen]);
 
@@ -91,15 +93,11 @@ export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSideb
                 return (
                     <div className="flex flex-col gap-6">
                         <section>
-                            <h3 className="text-[15px] font-medium text-taxable-dark mb-3">Which tax year are you filing for?</h3>
+                            <h3 className="text-[15px] font-medium text-taxable-dark mb-3 uppercase tracking-wider text-[11px]">Which tax year are you filing for?</h3>
                             <div className="flex flex-col gap-2">
                                 <SidebarRadio
                                     label="2026 (Current year)" description="Most people start here"
                                     isSelected={selections.taxYear === '2026'} onClick={() => setSelections({ ...selections, taxYear: '2026' })}
-                                />
-                                <SidebarRadio
-                                    label="2025 (Arrears)" description="Catching up on last year"
-                                    isSelected={selections.taxYear === '2025'} onClick={() => setSelections({ ...selections, taxYear: '2025' })}
                                 />
                                 <SidebarRadio
                                     label="2027 (Planning)" description="Planning ahead"
@@ -109,7 +107,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSideb
                         </section>
 
                         <section>
-                            <h3 className="text-[15px] font-medium text-taxable-dark mb-3">Select Filing Category</h3>
+                            <h3 className="text-[15px] font-medium text-taxable-dark mb-3 uppercase tracking-wider text-[11px]">Select Filing Category</h3>
                             <div className="flex flex-col gap-2">
                                 <SidebarRadio
                                     label="Individual" description="For salary earners, freelancers, sole proprietors, and self-employed individuals"
@@ -119,15 +117,22 @@ export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSideb
                                     label="Businesses & Organizations" description="For registered companies (LTD, NGOs, Partnerships) subject to Corporate Income Tax"
                                     isSelected={selections.category === 'Business'} onClick={() => setSelections({ ...selections, category: 'Business' })}
                                 />
+                                <SidebarRadio
+                                    label="Joint Filing (Spousal)" description="Combined filing for married couples seeking to optimize consolidated reliefs and allowances."
+                                    isSelected={selections.category === 'Joint'} onClick={() => setSelections({ ...selections, category: 'Joint' })}
+                                />
                             </div>
                         </section>
 
-                        <button
-                            onClick={nextStep}
-                            className="w-full h-12 bg-taxable-blue text-white font-bold rounded-xl mt-4 hover:opacity-90 transition-opacity"
-                        >
-                            Next 1/4
-                        </button>
+                        <div className="flex gap-3 mt-4">
+                            <button onClick={onClose} className="flex-1 h-12 border border-gray-100 font-bold rounded-xl hover:bg-gray-50">Back</button>
+                            <button
+                                onClick={() => setShowSuccessModal(true)}
+                                className="flex-[2] h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity"
+                            >
+                                Create Tax Folder
+                            </button>
+                        </div>
                     </div>
                 );
             case 1:
@@ -258,7 +263,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSideb
                             </svg>
                         </button>
                         <h2 className="text-[17px] font-bold text-gray-900">
-                            Let's get you set up
+                            {step === 0 ? "Create a new tax filing" : "Let's get you set up"}
                         </h2>
                         <div className="w-8" /> {/* Placeholder for symmetry */}
                     </div>
@@ -269,11 +274,62 @@ export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSideb
                     </div>
                 </div>
             </div>
+
+            {/* Success Modal */}
+            {showSuccessModal && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-taxable-dark/40 backdrop-blur-sm" onClick={() => setShowSuccessModal(false)} />
+                    <div className="relative bg-white rounded-[24px] w-[440px] h-[324px] p-8 shadow-2xl animate-in fade-in zoom-in duration-300 flex flex-col justify-between">
+                        <div className="flex gap-4">
+                            {/* Logo Icon Container */}
+                            <div className="w-12 h-12 rounded-xl bg-[#F5F5F3] flex items-center justify-center flex-shrink-0">
+                                <Image src="/logo_black.svg" alt="Taxable" width={24} height={24} />
+                            </div>
+
+                            {/* Text Content */}
+                            <div className="text-left">
+                                <h2 className="text-xl font-semibold text-taxable-dark mb-2.5">Tax folder created</h2>
+                                <p className="text-sm text-taxable-dark font-medium leading-[1.5] mb-3">
+                                    We've created a dedicated space for your 2026 Individual Tax filing. Think of this as your personal tax workspace - everything you need will be organized here.
+                                </p>
+                                <p className="text-sm text-taxable-gray font-medium leading-[1.5]">
+                                    To get started, answer some setup questions (2 minutes) so we can personalize your workspace. We'll only show fields relevant to your situation
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 mt-4">
+                            <button
+                                onClick={() => {
+                                    setShowSuccessModal(false);
+                                    handleComplete();
+                                }}
+                                className="flex-1 h-12 text-sm font-semibold text-taxable-dark hover:bg-gray-50 rounded-xl transition-all border border-gray-100 text-center"
+                            >
+                                I'll do this later
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setShowSuccessModal(false);
+                                    setStep(1);
+                                }}
+                                className="flex-1 h-12 bg-[#003787] text-white text-sm font-semibold rounded-xl hover:opacity-90 shadow-lg shadow-[#003787]/10 transition-all px-4 text-center"
+                            >
+                                Answer Setup Questions
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             {isSubmitting && (
                 <LoadingScreen
                     onComplete={handleLoadingFinished}
-                    title="Determining your tax requirements..."
-                    subtitle="This will only take a moment."
+                    title="Creating your 2026 Individual Tax workspace..."
+                    steps={[
+                        { text: "Analyzing your setup" },
+                        { text: "Generating form sections" },
+                        { text: "Preparing your workspace" }
+                    ]}
                 />
             )}
         </>

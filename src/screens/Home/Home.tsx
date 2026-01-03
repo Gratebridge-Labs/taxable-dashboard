@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import SetupSidebar from '@/components/SetupSidebar/SetupSidebar';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
 
@@ -153,7 +154,7 @@ const FAQSection = () => {
 
 export default function Home() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [hasTaxFolders, setHasTaxFolders] = useState(false);
+    const [hasTaxFolders, setHasTaxFolders] = useState(true);
 
     const videos = [
         {
@@ -172,6 +173,8 @@ export default function Home() {
             duration: "8:37 mins"
         }
     ];
+
+    const router = useRouter();
 
     return (
         <div className="min-h-screen bg-[#FAFAFA] font-sans">
@@ -217,13 +220,32 @@ export default function Home() {
                     </>
                 ) : (
                     <div className="animate-in fade-in duration-700">
-                        <div className="mb-14">
-                            <h1 className="text-[28px] font-semibold text-taxable-dark mb-2 tracking-tight">
-                                Hello, Gideon, Welcome back
-                            </h1>
-                            <p className="text-base text-taxable-gray font-medium">
-                                You have 3 tax filings ready for 2026. Click any card to begin.
-                            </p>
+                        <div className="mb-14 flex flex-col md:flex-row justify-between items-start gap-6">
+                            <div>
+                                <h1 className="text-[28px] font-semibold text-taxable-dark mb-2 tracking-tight">
+                                    Hello, Gideon, Welcome back
+                                </h1>
+                                <p className="text-base text-taxable-gray font-medium">
+                                    You have 3 tax filings ready for 2026. Click any card to begin.
+                                </p>
+                            </div>
+
+                            <Link href="/educational-resources" className="flex items-center gap-4 text-left group">
+                                <Image
+                                    src="/icons/docs.svg"
+                                    alt="educational resources"
+                                    width={42}
+                                    height={33}
+                                />
+                                <span className="text-[17px] font-bold text-taxable-dark group-hover:text-taxable-blue transition-colors">Educational resources</span>
+                                <svg
+                                    width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                    stroke="#737373" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"
+                                    className="group-hover:translate-x-1 transition-transform group-hover:stroke-taxable-blue"
+                                >
+                                    <polyline points="9 18 15 12 9 6" />
+                                </svg>
+                            </Link>
                         </div>
 
                         {/* 2026 Filings */}
@@ -303,9 +325,12 @@ export default function Home() {
             <SetupSidebar
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
-                onComplete={() => {
+                onComplete={(shouldRedirect) => {
                     setIsSidebarOpen(false);
                     setHasTaxFolders(true);
+                    if (shouldRedirect) {
+                        router.push('/tax-folders/pit?new=workspace');
+                    }
                 }}
             />
         </div>

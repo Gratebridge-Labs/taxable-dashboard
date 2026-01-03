@@ -6,7 +6,7 @@ import LoadingScreen from '@/screens/Onboarding/LoadingScreen';
 interface SetupSidebarProps {
     isOpen: boolean;
     onClose: () => void;
-    onComplete?: () => void;
+    onComplete?: (shouldRedirect: boolean) => void;
 }
 
 const SidebarRadio = ({ label, description, isSelected, onClick }: { label: string; description?: string; isSelected: boolean; onClick: () => void }) => (
@@ -46,6 +46,7 @@ const SidebarCheckbox = ({ label, description, isSelected, onClick }: { label: s
 export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSidebarProps) {
     const [step, setStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [shouldRedirectAfterLoading, setShouldRedirectAfterLoading] = useState(true);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [selections, setSelections] = useState({
         taxYear: '2026',
@@ -74,14 +75,15 @@ export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSideb
     const nextStep = () => setStep(prev => prev + 1);
     const prevStep = () => setStep(prev => Math.max(0, prev - 1));
 
-    const handleComplete = () => {
+    const handleComplete = (shouldRedirect: boolean = true) => {
+        setShouldRedirectAfterLoading(shouldRedirect);
         setIsSubmitting(true);
     };
 
     const handleLoadingFinished = () => {
         setIsSubmitting(false);
         if (onComplete) {
-            onComplete();
+            onComplete(shouldRedirectAfterLoading);
         } else {
             onClose();
         }
@@ -237,7 +239,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSideb
                         </section>
                         <div className="flex gap-3 mt-4">
                             <button onClick={prevStep} className="flex-1 h-12 border border-gray-100 font-bold rounded-xl hover:bg-gray-50">Back</button>
-                            <button onClick={handleComplete} className="flex-[2] h-12 bg-taxable-blue text-white font-bold rounded-xl">Complete Setup</button>
+                            <button onClick={() => handleComplete(true)} className="flex-[2] h-12 bg-taxable-blue text-white font-bold rounded-xl">Complete Setup</button>
                         </div>
                     </div>
                 );
@@ -302,7 +304,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSideb
                             <button
                                 onClick={() => {
                                     setShowSuccessModal(false);
-                                    handleComplete();
+                                    handleComplete(false);
                                 }}
                                 className="flex-1 h-12 text-sm font-semibold text-taxable-dark hover:bg-gray-50 rounded-xl transition-all border border-gray-100 text-center"
                             >

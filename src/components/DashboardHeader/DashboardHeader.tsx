@@ -25,11 +25,11 @@ export default function DashboardHeader() {
                 </div>
 
                 {/* Profile Icon */}
-                <div className="w-11 h-11 rounded-2xl bg-gray-100 overflow-hidden cursor-pointer hover:ring-2 hover:ring-taxable-blue/20 transition-all">
+                <Link href="/profile" className="w-11 h-11 rounded-2xl bg-gray-100 overflow-hidden cursor-pointer hover:ring-2 hover:ring-taxable-blue/20 transition-all">
                     <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                         <Image src="/icons/profile.svg" alt="Profile" width={28} height={28} className="opacity-40" />
                     </div>
-                </div>
+                </Link>
             </div>
         </header>
     );

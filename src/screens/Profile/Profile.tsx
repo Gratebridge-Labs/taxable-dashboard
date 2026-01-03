@@ -49,11 +49,22 @@ const AvatarSVG = ({ initials = "JB" }: { initials?: string }) => (
 
 export default function Profile() {
     const [activeSection, setActiveSection] = useState('Personal Information');
+    const [profileImage, setProfileImage] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         fullName: 'Sophia Williams',
         phone: '+234',
         email: ''
     });
+
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const imageUrl = URL.createObjectURL(file);
+            setProfileImage(imageUrl);
+        }
+    };
 
     const categories = [
         'Personal Information',
@@ -107,11 +118,32 @@ export default function Profile() {
                             <div className="animate-in fade-in duration-500">
                                 {/* Profile Image Upload */}
                                 <div className="flex items-center gap-6 mb-8 pb-8 border-b border-gray-100">
-                                    <AvatarSVG initials="OB" />
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handleImageUpload}
+                                        className="hidden"
+                                        accept="image/*"
+                                    />
+                                    {profileImage ? (
+                                        <div className="w-20 h-20 rounded-full overflow-hidden relative border border-gray-100 shrink-0">
+                                            <Image
+                                                src={profileImage}
+                                                alt="Profile"
+                                                fill
+                                                className="object-cover"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <AvatarSVG initials="OB" />
+                                    )}
                                     <div>
                                         <h3 className="text-base font-semibold text-taxable-dark mb-0.5">Upload Image</h3>
                                         <p className="text-sm text-taxable-gray font-medium mb-3">Min 400x400px, PNG or JPEG</p>
-                                        <button className="h-9 px-4 border border-gray-100 rounded-lg text-sm font-bold text-taxable-dark hover:bg-gray-50 transition-colors">
+                                        <button
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="h-9 px-4 border border-gray-100 rounded-lg text-sm font-bold text-taxable-dark hover:bg-gray-50 transition-colors"
+                                        >
                                             Upload
                                         </button>
                                     </div>

@@ -154,7 +154,7 @@ const FAQSection = () => {
 
 export default function Home() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [hasTaxFolders, setHasTaxFolders] = useState(true);
+    const [hasTaxFolders, setHasTaxFolders] = useState(false);
 
     const videos = [
         {

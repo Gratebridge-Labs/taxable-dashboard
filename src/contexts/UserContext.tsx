@@ -29,18 +29,32 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         const storedToken = localStorage.getItem('taxable_token');
         const storedUser = localStorage.getItem('taxable_user');
 
-        if (storedToken && storedUser) {
-            setToken(storedToken);
-            setUser(JSON.parse(storedUser));
+        if (storedToken && storedUser && storedUser !== 'undefined') {
+            try {
+                setToken(storedToken);
+                setUser(JSON.parse(storedUser));
+            } catch (err) {
+                console.error('Failed to parse stored user:', err);
+                localStorage.removeItem('taxable_user');
+                localStorage.removeItem('taxable_token');
+            }
         }
         setLoading(false);
     }, []);
+
+    useEffect(() => {
+        if (token) {
+            console.log('🔑 Auth Token:', token);
+        }
+    }, [token]);
 
     const login = (newToken: string, userData: User) => {
         setToken(newToken);
         setUser(userData);
         localStorage.setItem('taxable_token', newToken);
-        localStorage.setItem('taxable_user', JSON.stringify(userData));
+        if (userData) {
+            localStorage.setItem('taxable_user', JSON.stringify(userData));
+        }
     };
 
     const logout = () => {

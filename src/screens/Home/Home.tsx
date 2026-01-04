@@ -1,10 +1,12 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import SetupSidebar from '@/components/SetupSidebar/SetupSidebar';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
+import { useApi } from '@/hooks/useApi';
+import { useUser } from '@/contexts/UserContext';
 
 const StatusBadge = ({ type, text }: { type: 'complete' | 'progress' | 'none' | 'filed', text: string }) => {
     const styles = {
@@ -74,6 +76,7 @@ const VideoCard = ({ thumbnail, title, duration }: { thumbnail: string; title: s
                 src={thumbnail}
                 alt={title}
                 fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 className="object-cover group-hover:scale-105 transition-transform duration-500"
             />
             <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors flex items-center justify-center">
@@ -152,9 +155,38 @@ const FAQSection = () => {
     );
 };
 
+
 export default function Home() {
+    const { user, isAuthenticated, loading: authLoading } = useUser();
+    const { get } = useApi();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [hasTaxFolders, setHasTaxFolders] = useState(false);
+    const [profiles, setProfiles] = useState<any[]>([]);
+    const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+    const fetchProfiles = useCallback(async () => {
+        if (!isAuthenticated || authLoading) return;
+
+        try {
+            const response = await get('/taxableprofile/list');
+
+            if (response?.success) {
+                const profileList = response.data?.profiles || [];
+                const count = response.data?.count ?? profileList.length;
+
+                setProfiles(profileList);
+                setHasTaxFolders(count > 0);
+            }
+        } catch (err) {
+            console.error("❌ Failed to fetch tax profiles:", err);
+        } finally {
+            setIsInitialLoading(false);
+        }
+    }, [get, isAuthenticated, authLoading]);
+
+    useEffect(() => {
+        fetchProfiles();
+    }, [fetchProfiles]);
 
     const videos = [
         {
@@ -175,19 +207,30 @@ export default function Home() {
     ];
 
     const router = useRouter();
-
     return (
         <div className="min-h-screen bg-[#FAFAFA] font-sans">
             <DashboardHeader />
 
             {/* Main Content */}
             <main className="max-w-[1280px] mx-auto px-12 py-16">
-                {!hasTaxFolders ? (
+                {isInitialLoading || authLoading ? (
+                    <div className="flex flex-col gap-8 animate-pulse text-left">
+                        <div className="space-y-4">
+                            <div className="h-10 bg-gray-200 rounded-lg w-1/3"></div>
+                            <div className="h-6 bg-gray-200 rounded-lg w-1/2"></div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="aspect-[16/10] bg-gray-200 rounded-[24px]"></div>
+                            ))}
+                        </div>
+                    </div>
+                ) : !hasTaxFolders ? (
                     <>
                         <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-12">
                             <div>
                                 <h1 className="text-[32px] font-bold text-taxable-dark mb-2 tracking-tight">
-                                    Hello, Gideon. Welcome to Taxable
+                                    Hello, {user?.firstName || 'Gideon'}. Welcome to Taxable
                                 </h1>
                                 <p className="text-[17px] text-taxable-gray font-medium leading-relaxed max-w-xl">
                                     The 2026 tax cycle is currently active. Let's make sure you're compliant.
@@ -223,10 +266,10 @@ export default function Home() {
                         <div className="mb-14 flex flex-col md:flex-row justify-between items-start gap-6">
                             <div>
                                 <h1 className="text-[28px] font-semibold text-taxable-dark mb-2 tracking-tight">
-                                    Hello, Gideon, Welcome back
+                                    Hello, {user?.firstName || 'Gideon'}, Welcome back
                                 </h1>
                                 <p className="text-base text-taxable-gray font-medium">
-                                    You have 3 tax filings ready for 2026. Click any card to begin.
+                                    You have {profiles.length} tax filing{profiles.length !== 1 ? 's' : ''} ready for 2026. Click any card to begin.
                                 </p>
                             </div>
 
@@ -258,27 +301,16 @@ export default function Home() {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                <TaxFolderCard
-                                    title="2026 Individual Tax"
-                                    valueText="Tax Due - ₦145,000"
-                                    description="For your personal income from employment, dividends, and other investments."
-                                    status="progress"
-                                    statusText="3 of 7 sections complete"
-                                />
-                                <TaxFolderCard
-                                    title="2026 Business Tax"
-                                    valueText="Tax Due - ₦420,000"
-                                    description="For income from your registered business operations and activities."
-                                    status="complete"
-                                    statusText="All sections complete"
-                                />
-                                <TaxFolderCard
-                                    title="2026 Joint Spouse Tax"
-                                    valueText="Tax Due - ₦420,000"
-                                    description="File jointly with your spouse to combine income and potentially reduce tax."
-                                    status="none"
-                                    statusText="Not started"
-                                />
+                                {profiles.map((profile, index) => (
+                                    <TaxFolderCard
+                                        key={profile._id || profile.profileId || index}
+                                        title={profile.title || `${profile.year || '2026'} ${profile.profileType || 'Tax'}`}
+                                        valueText={profile.taxDue ? `Tax Due - ₦${profile.taxDue.toLocaleString()}` : "Calculation in progress"}
+                                        description={profile.description || `Your ${profile.profileType?.toLowerCase() || 'tax'} filing for the ${profile.year || '2026'} tax year.`}
+                                        status={profile.status === 'draft' ? 'progress' : (profile.status || "none")}
+                                        statusText={profile.statusText || (profile.status === 'draft' ? 'In progress' : 'Not started')}
+                                    />
+                                ))}
                             </div>
                         </section>
 
@@ -327,7 +359,7 @@ export default function Home() {
                 onClose={() => setIsSidebarOpen(false)}
                 onComplete={(shouldRedirect) => {
                     setIsSidebarOpen(false);
-                    setHasTaxFolders(true);
+                    fetchProfiles();
                     if (shouldRedirect) {
                         router.push('/tax-folders/pit?new=workspace');
                     }

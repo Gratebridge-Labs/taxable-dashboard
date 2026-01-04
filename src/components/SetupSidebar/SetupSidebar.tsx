@@ -43,14 +43,19 @@ const SidebarCheckbox = ({ label, description, isSelected, onClick }: { label: s
     </div>
 );
 
+import { useApi } from '@/hooks/useApi';
+
 export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSidebarProps) {
+    const { post } = useApi();
     const [step, setStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isCreatingFolder, setIsCreatingFolder] = useState(false);
     const [shouldRedirectAfterLoading, setShouldRedirectAfterLoading] = useState(true);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [selections, setSelections] = useState({
         taxYear: '2026',
         category: 'Individual',
+        // ... rest of state
         incomeSources: ['Salary / Employment', 'Business/Self-employment'],
         pension: 'Yes',
         health: 'Yes, NHIS',
@@ -60,6 +65,24 @@ export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSideb
         mortgage: 'Yes',
         gratuity: 'Yes'
     });
+    const [createError, setCreateError] = useState<string | null>(null);
+
+    const handleCreateTaxFolder = async () => {
+        setIsCreatingFolder(true);
+        setCreateError(null);
+        try {
+            await post('/taxableprofile/create', {
+                year: selections.taxYear,
+                profileType: selections.category
+            });
+            setShowSuccessModal(true);
+        } catch (err: any) {
+            console.error("Failed to create tax folder:", err);
+            setCreateError(err.message || "Failed to create tax folder. Please try again.");
+        } finally {
+            setIsCreatingFolder(false);
+        }
+    };
 
     // Reset step and status when opening
     useEffect(() => {
@@ -126,13 +149,30 @@ export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSideb
                             </div>
                         </section>
 
+                        {createError && (
+                            <div className="text-sm text-red-500 font-medium bg-red-50 p-3 rounded-lg">
+                                {createError}
+                            </div>
+                        )}
+
                         <div className="flex gap-3 mt-4">
                             <button onClick={onClose} className="flex-1 h-12 border border-gray-100 font-bold rounded-xl hover:bg-gray-50">Back</button>
                             <button
-                                onClick={() => setShowSuccessModal(true)}
-                                className="flex-[2] h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity"
+                                onClick={handleCreateTaxFolder}
+                                disabled={isCreatingFolder}
+                                className="flex-[2] h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-70"
                             >
-                                Create Tax Folder
+                                {isCreatingFolder ? (
+                                    <>
+                                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span>Creating...</span>
+                                    </>
+                                ) : (
+                                    "Create Tax Folder"
+                                )}
                             </button>
                         </div>
                     </div>

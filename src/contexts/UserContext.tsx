@@ -29,14 +29,15 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         const storedToken = localStorage.getItem('taxable_token');
         const storedUser = localStorage.getItem('taxable_user');
 
-        if (storedToken && storedUser && storedUser !== 'undefined') {
-            try {
-                setToken(storedToken);
-                setUser(JSON.parse(storedUser));
-            } catch (err) {
-                console.error('Failed to parse stored user:', err);
-                localStorage.removeItem('taxable_user');
-                localStorage.removeItem('taxable_token');
+        if (storedToken) {
+            setToken(storedToken);
+
+            if (storedUser && storedUser !== 'undefined' && storedUser !== 'null') {
+                try {
+                    setUser(JSON.parse(storedUser));
+                } catch (err) {
+                    console.error('Failed to parse stored user:', err);
+                }
             }
         }
         setLoading(false);

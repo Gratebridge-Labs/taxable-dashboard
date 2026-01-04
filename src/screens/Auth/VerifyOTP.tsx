@@ -1,0 +1,165 @@
+'use client';
+import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import OnboardingLayout from '@/components/OnboardingLayout/OnboardingLayout';
+import LoadingScreen from '@/screens/Onboarding/LoadingScreen';
+import { useApi } from '@/hooks/useApi';
+import { useUser } from '@/contexts/UserContext';
+
+export default function VerifyOTP() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const { login } = useUser();
+    const { post, error: apiError } = useApi();
+
+    const email = searchParams.get('email') || '';
+    const [otp, setOtp] = useState(['', '', '', '', '', '']);
+    const [timer, setTimer] = useState(60);
+    const [canResend, setCanResend] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (timer > 0) {
+            interval = setInterval(() => {
+                setTimer((prev) => prev - 1);
+            }, 1000);
+        } else {
+            setCanResend(true);
+        }
+        return () => clearInterval(interval);
+    }, [timer]);
+
+    const handleOtpChange = (index: number, value: string) => {
+        if (value.length > 1) value = value[value.length - 1];
+
+        const newOtp = [...otp];
+        newOtp[index] = value;
+        setOtp(newOtp);
+
+        // Move to next input if value is entered
+        if (value && index < 5) {
+            inputRefs.current[index + 1]?.focus();
+        }
+    };
+
+    const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
+        if (e.key === 'Backspace' && !otp[index] && index > 0) {
+            inputRefs.current[index - 1]?.focus();
+        }
+    };
+
+    const handleVerify = async (e?: React.FormEvent) => {
+        e?.preventDefault();
+        const code = otp.join('');
+        if (code.length < 6) return;
+
+        setIsLoading(true);
+        try {
+            const response = await post('/auth/verify-otp', { email, code }, { useToken: false });
+
+            if (response?.data?.token) {
+                login(response.data.token, response.data.user);
+            }
+
+            // The LoadingScreen handles the final redirect to home
+        } catch (err) {
+            console.error("Verification failed:", err);
+            setIsLoading(false);
+        }
+    };
+
+    const handleResend = async () => {
+        if (!canResend) return;
+
+        try {
+            await post('/auth/resend-otp', { email }, { useToken: false });
+            setTimer(60);
+            setCanResend(false);
+        } catch (err) {
+            console.error("Resend failed:", err);
+        }
+    };
+
+    return (
+        <>
+            <OnboardingLayout>
+                <div className="flex-1 flex flex-col justify-center relative">
+                    <div className="absolute top-0 right-0">
+                        <Link href="/signin" className="px-5 py-2.5 rounded-xl border border-gray-200 text-taxable-dark font-bold hover:bg-gray-50 transition-colors bg-white text-[13px] whitespace-nowrap shadow-xs">
+                            Log in
+                        </Link>
+                    </div>
+
+                    <div className="max-w-[480px] w-full mx-auto">
+                        <div className="mb-10">
+                            <h2 className="text-[26px] font-bold text-taxable-dark mb-2.5">Enter Verification Code</h2>
+                            <p className="text-taxable-gray text-[15px] leading-relaxed font-medium">
+                                We've sent a verification code to your mail<br />
+                                <span className="text-taxable-dark font-bold">{email}</span>
+                            </p>
+                        </div>
+
+                        <form onSubmit={handleVerify} className="flex flex-col gap-10">
+                            <div className="flex gap-3 justify-between">
+                                {otp.map((digit, index) => (
+                                    <input
+                                        key={index}
+                                        ref={(el) => { inputRefs.current[index] = el; }}
+                                        type="text"
+                                        inputMode="numeric"
+                                        pattern="\d*"
+                                        maxLength={1}
+                                        value={digit}
+                                        onChange={(e) => handleOtpChange(index, e.target.value)}
+                                        onKeyDown={(e) => handleKeyDown(index, e)}
+                                        className="w-14 h-14 md:w-16 md:h-16 text-center text-2xl font-bold bg-[#F9FBFC] border border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-taxable-blue/10 focus:border-taxable-blue transition-all"
+                                    />
+                                ))}
+                            </div>
+
+                            {apiError && (
+                                <div className="text-sm text-red-500 font-medium -mt-6">
+                                    {apiError}
+                                </div>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={otp.some(d => !d)}
+                                className="w-full h-[54px] bg-taxable-blue text-white font-bold rounded-2xl shadow-lg shadow-taxable-blue/10 hover:opacity-95 disabled:opacity-50 transition-all text-[15px]"
+                            >
+                                Verify
+                            </button>
+
+                            <div className="text-center text-[15px]">
+                                <span className="text-taxable-gray font-medium">Did not receive mail? </span>
+                                <button
+                                    type="button"
+                                    onClick={handleResend}
+                                    className={`font-bold transition-colors ${canResend ? 'text-taxable-blue hover:underline' : 'text-taxable-gray opacity-50 cursor-not-allowed'}`}
+                                >
+                                    Resend {!canResend && `(${timer}s)`}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </OnboardingLayout>
+
+            {isLoading && (
+                <LoadingScreen
+                    onComplete={() => router.push('/home')}
+                    title="Verifying your account..."
+                    steps={[
+                        { text: "Validating security code" },
+                        { text: "Securing your workspace" },
+                        { text: "Preparing your dashboard" }
+                    ]}
+                />
+            )}
+        </>
+    );
+}

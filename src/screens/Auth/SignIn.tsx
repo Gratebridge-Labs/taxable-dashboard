@@ -79,6 +79,7 @@ export default function SignIn() {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsLoading(true);
 
         try {
             // Login user via API using the established pattern
@@ -88,11 +89,9 @@ export default function SignIn() {
                 // Initialize session
                 login(response.data.token, response.data.user);
             }
-
-            // Show loading screen before redirecting
-            setIsLoading(true);
         } catch (err) {
             console.error("Login failed:", err);
+            setIsLoading(false);
         }
     };
 

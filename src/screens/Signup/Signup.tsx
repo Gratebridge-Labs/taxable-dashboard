@@ -38,6 +38,7 @@ export default function Signup() {
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsLoading(true);
 
         try {
             // Register user via API using the YodoPay pattern
@@ -47,11 +48,9 @@ export default function Signup() {
                 // Initialize session if the API returns a token immediately
                 login(response.data.token, response.data.user);
             }
-
-            // Show loading screen before redirecting as per requirements
-            setIsLoading(true);
         } catch (err) {
             console.error("Signup failed:", err);
+            setIsLoading(false);
         }
     };
 
@@ -143,7 +142,7 @@ export default function Signup() {
 
             {isLoading && (
                 <LoadingScreen
-                    onComplete={() => router.push('/home')}
+                    onComplete={() => router.push(`/verify-otp?email=${encodeURIComponent(formData.email)}`)}
                     title="Setting up your account..."
                     steps={[
                         { text: "Creating your account" },

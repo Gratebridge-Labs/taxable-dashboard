@@ -2,52 +2,88 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import OnboardingLayout from '@/components/OnboardingLayout/OnboardingLayout';
 import LoadingScreen from '@/screens/Onboarding/LoadingScreen';
+import { useApi } from '@/hooks/useApi';
 
-const InputField = ({ label, placeholder, type = "password", value, onChange }: { label: string; placeholder: string; type?: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
-    <div className="flex flex-col gap-1 w-full">
-        <label className="text-sm font-medium text-taxable-dark">
-            {label}
-        </label>
-        <div className="relative">
-            <input
-                type={type}
-                value={value}
-                onChange={onChange}
-                placeholder={placeholder}
-                className="w-full h-12 px-4 pr-10 rounded-2xl border border-gray-200 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-taxable-blue/20 focus:border-taxable-blue transition-all"
-            />
-            <button type="button" className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-            </button>
+const InputField = ({ label, placeholder, type = "password", value, onChange }: { label: string; placeholder: string; type?: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => {
+    const [showPassword, setShowPassword] = useState(false);
+
+    return (
+        <div className="flex flex-col gap-3 w-full">
+            <label className="text-[15px] font-bold text-taxable-dark">
+                {label}
+            </label>
+            <div className="relative">
+                <input
+                    type={showPassword ? "text" : "password"}
+                    value={value}
+                    onChange={onChange}
+                    placeholder={placeholder}
+                    className="w-full h-14 px-4 pr-12 rounded-[12px] border border-gray-100 bg-white placeholder:text-gray-300 focus:outline-none focus:ring-1 focus:ring-taxable-blue/20 focus:border-taxable-blue/20 transition-all font-medium"
+                />
+                <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A3A3A3] hover:text-gray-600 transition-colors"
+                >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        {showPassword ? (
+                            <>
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                                <line x1="1" y1="1" x2="23" y2="23" />
+                            </>
+                        ) : (
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        )}
+                        {!showPassword && <circle cx="12" cy="12" r="3" />}
+                    </svg>
+                </button>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 export default function CreateNewPassword() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const { post, error: apiError } = useApi();
+
+    const email = searchParams.get('email') || '';
+    const resetToken = searchParams.get('token') || '';
+
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!password || password !== confirmPassword) return;
+
         setIsLoading(true);
+        const response = await post('/auth/reset-password', {
+            newPassword: password,
+            resetToken,
+            email
+        }, { useToken: false });
+
+        if (!response) {
+            setIsLoading(false);
+        }
     };
 
     return (
         <>
             <OnboardingLayout>
-                <div className="max-w-[480px] mx-auto w-full">
-                    <div className="mb-8">
-                        <h2 className="text-2xl font-semibold text-taxable-dark mb-2">Create a new password</h2>
-                        <p className="text-taxable-gray text-base font-medium">Choose a strong password for your account.</p>
+                <div className="max-w-[440px] mx-auto w-full px-4">
+                    <div className="mb-10 text-left">
+                        <h2 className="text-2xl font-medium text-taxable-dark mb-3">Create a new password</h2>
+                        <p className="text-taxable-gray text-[15px] font-medium">Choose a strong password for your account.</p>
                     </div>
 
-                    <form className="space-y-6" onSubmit={handleSubmit}>
-                        <div className="space-y-1">
+                    <form className="space-y-8" onSubmit={handleSubmit}>
+                        <div className="space-y-3">
                             <InputField
                                 label="Password"
                                 placeholder="••••••••••••"
@@ -55,11 +91,9 @@ export default function CreateNewPassword() {
                                 onChange={(e) => setPassword(e.target.value)}
                             />
                             <div className="flex items-center gap-2 text-[13px] text-taxable-gray font-medium">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400">
-                                    <circle cx="12" cy="12" r="10" />
-                                    <line x1="12" y1="8" x2="12" y2="12" />
-                                    <line x1="12" y1="16" x2="12.01" y2="16" />
-                                </svg>
+                                <div className="w-4 h-4 rounded-full bg-[#A3A3A3] flex items-center justify-center">
+                                    <span className="text-[10px] text-white font-bold italic">i</span>
+                                </div>
                                 <span>At least 8 characters. Make it strong!</span>
                             </div>
                         </div>
@@ -71,9 +105,14 @@ export default function CreateNewPassword() {
                             onChange={(e) => setConfirmPassword(e.target.value)}
                         />
 
+                        {apiError && (
+                            <p className="text-sm text-red-500 font-medium -mt-4">{apiError}</p>
+                        )}
+
                         <button
                             type="submit"
-                            className="w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl shadow-lg shadow-taxable-blue/20 hover:opacity-95 transition-all mt-4"
+                            disabled={!password || password !== confirmPassword || isLoading}
+                            className="w-full h-14 bg-[#003787] text-white font-bold rounded-[14px] shadow-lg shadow-[#003787]/10 hover:opacity-95 disabled:opacity-50 transition-all mt-6"
                         >
                             Reset Password
                         </button>
@@ -83,12 +122,12 @@ export default function CreateNewPassword() {
 
             {isLoading && (
                 <LoadingScreen
-                    onComplete={() => router.push('/home')}
+                    onComplete={() => router.push('/signin')}
                     title="Resetting your password..."
                     steps={[
                         { text: "Updating your security credentials" },
                         { text: "Securing your account" },
-                        { text: "Redirecting to your workspace" }
+                        { text: "Redirecting to login" }
                     ]}
                 />
             )}

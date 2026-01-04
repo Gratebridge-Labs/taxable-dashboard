@@ -249,6 +249,28 @@ export default function PITDetails() {
                                 );
                             })}
                         </div>
+
+                        {/* Expert Help Card */}
+                        <div className="bg-white rounded-[24px] p-6 border border-gray-100 flex flex-col gap-4">
+                            <div className="flex flex-col gap-3">
+                                <div className="flex items-center gap-3">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-taxable-dark">
+                                        <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+                                        <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+                                    </svg>
+                                    <h3 className="text-[17px] font-bold text-taxable-dark leading-snug">
+                                        Need expert eyes on your return?
+                                    </h3>
+                                </div>
+                                <p className="text-[14px] text-[#64748B] font-medium leading-[1.6]">
+                                    Option 1: Get your return reviewed by a certified tax accountant. They'll ensure accuracy, compliance, and file for you.
+                                </p>
+                            </div>
+
+                            <button className="w-full h-14 border border-gray-100 rounded-2xl text-[15px] font-bold text-taxable-dark hover:bg-gray-50 transition-colors mt-2">
+                                Book Accountant (₦15,000)
+                            </button>
+                        </div>
                     </div>
 
                     {/* Main Content Area */}

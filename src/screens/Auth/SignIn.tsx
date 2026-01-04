@@ -49,40 +49,6 @@ const InputField = ({ label, placeholder, type = "text", value, onChange }: { la
     );
 };
 
-const ResetPasswordModal = ({ email, onClose, onResend }: { email: string; onClose: () => void; onResend: () => void }) => (
-    <div className="fixed inset-0 z-[60] flex items-end justify-end p-8 pointer-events-none">
-        <div className="fixed inset-0 bg-taxable-dark/20 backdrop-blur-sm pointer-events-auto" onClick={onClose} />
-        <div
-            className="relative w-[440px] h-[237px] bg-white rounded-[24px] shadow-2xl p-8 flex flex-col justify-between pointer-events-auto animate-in slide-in-from-bottom-4 duration-300"
-        >
-            <div className="flex gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-[#FFF1EB] flex items-center justify-center flex-shrink-0">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                        <line x1="12" y1="9" x2="12" y2="13" />
-                        <line x1="12" y1="17" x2="12.01" y2="17" />
-                    </svg>
-                </div>
-                <div className="flex flex-col gap-1">
-                    <h3 className="text-lg font-semibold text-taxable-dark">Check your email</h3>
-                    <p className="text-sm text-taxable-gray leading-relaxed">
-                        We've sent a password reset link to <span className="text-taxable-dark font-medium underline">[{email || 'email@example.com'}]</span>
-                    </p>
-                    <p className="text-sm text-taxable-gray mt-1">
-                        Didn't receive it? <button onClick={onResend} className="text-taxable-blue font-semibold hover:underline">Resend</button>
-                    </p>
-                </div>
-            </div>
-
-            <button
-                onClick={onClose}
-                className="w-full h-12 border border-gray-200 rounded-xl font-semibold text-taxable-dark hover:bg-gray-50 transition-colors"
-            >
-                Close
-            </button>
-        </div>
-    </div>
-);
 
 import { useApi } from '@/hooks/useApi';
 import { useUser } from '@/contexts/UserContext';
@@ -94,7 +60,6 @@ export default function SignIn() {
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [showResetModal, setShowResetModal] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -142,7 +107,7 @@ export default function SignIn() {
                                 onChange={(e) => setPassword(e.target.value)}
                             />
                             <div className="text-[13px] text-taxable-gray font-medium">
-                                Forgot your password? <button type="button" onClick={() => setShowResetModal(true)} className="text-taxable-blue font-semibold hover:underline">Reset it here</button>
+                                Forgot your password? <Link href="/forgot-password" size-text="[13px]" className="text-taxable-blue font-semibold hover:underline">Reset it here</Link>
                             </div>
                         </div>
 
@@ -172,14 +137,6 @@ export default function SignIn() {
                     onComplete={() => router.push('/home')}
                     title="Signing you in..."
                     subtitle=""
-                />
-            )}
-
-            {showResetModal && (
-                <ResetPasswordModal
-                    email={email}
-                    onClose={() => setShowResetModal(false)}
-                    onResend={() => console.log('Resending email...')}
                 />
             )}
         </>

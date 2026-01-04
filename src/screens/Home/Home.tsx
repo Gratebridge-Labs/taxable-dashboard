@@ -295,7 +295,10 @@ export default function Home() {
                         <section className="mb-16">
                             <div className="flex justify-between items-center mb-10">
                                 <h2 className="text-2xl font-bold text-taxable-dark">2026 Tax Filings</h2>
-                                <button className="h-12 px-6 bg-[#003787] hover:opacity-90 text-white font-semibold rounded-xl transition-all">
+                                <button
+                                    onClick={() => setIsSidebarOpen(true)}
+                                    className="h-12 px-6 bg-[#003787] hover:opacity-90 text-white font-semibold rounded-xl transition-all"
+                                >
                                     Create another tax filing
                                 </button>
                             </div>

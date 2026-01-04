@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { useUser } from '@/contexts/UserContext';
 
-const BASE_URL = 'https://api.gettaxable.com/api'; 
+const BASE_URL = 'https://api.gettaxable.com/api';
 
 interface ApiConfig extends RequestInit {
     useToken?: boolean;

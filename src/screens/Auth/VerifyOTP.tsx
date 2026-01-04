@@ -14,6 +14,7 @@ export default function VerifyOTP() {
     const { post, error: apiError } = useApi();
 
     const email = searchParams.get('email') || '';
+    const type = searchParams.get('type') || 'signup';
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [timer, setTimer] = useState(60);
     const [canResend, setCanResend] = useState(false);
@@ -58,13 +59,21 @@ export default function VerifyOTP() {
 
         setIsLoading(true);
         try {
-            const response = await post('/auth/verify-otp', { email, code }, { useToken: false });
-
-            if (response?.data?.token) {
-                login(response.data.token, response.data.user);
+            if (type === 'reset') {
+                const response = await post('/auth/verify-reset-otp', { email, code }, { useToken: false });
+                if (response?.data?.resetToken) {
+                    router.push(`/create-new-password?email=${encodeURIComponent(email)}&token=${response.data.resetToken}`);
+                } else {
+                    setIsLoading(false);
+                }
+            } else {
+                const response = await post('/auth/verify-otp', { email, code }, { useToken: false });
+                if (response?.data?.token) {
+                    login(response.data.token, response.data.user);
+                } else {
+                    setIsLoading(false);
+                }
             }
-
-            // The LoadingScreen handles the final redirect to home
         } catch (err) {
             console.error("Verification failed:", err);
             setIsLoading(false);
@@ -161,9 +170,12 @@ export default function VerifyOTP() {
 
             {isLoading && (
                 <LoadingScreen
-                    onComplete={() => router.push('/home')}
-                    title="Verifying your account..."
-                    steps={[
+                    onComplete={() => type === 'signup' ? router.push('/home') : null}
+                    title={type === 'reset' ? "Verifying code..." : "Verifying your account..."}
+                    steps={type === 'reset' ? [
+                        { text: "Validating reset code" },
+                        { text: "Preparing password reset" }
+                    ] : [
                         { text: "Validating security code" },
                         { text: "Securing your workspace" },
                         { text: "Preparing your dashboard" }

@@ -117,19 +117,6 @@ export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSideb
             case 0:
                 return (
                     <div className="flex flex-col gap-6">
-                        <section>
-                            <h3 className="text-[15px] font-medium text-taxable-dark mb-3 uppercase tracking-wider text-[11px]">Which tax year are you filing for?</h3>
-                            <div className="flex flex-col gap-2">
-                                <SidebarRadio
-                                    label="2026 (Current year)" description="Most people start here"
-                                    isSelected={selections.taxYear === '2026'} onClick={() => setSelections({ ...selections, taxYear: '2026' })}
-                                />
-                                <SidebarRadio
-                                    label="2027 (Planning)" description="Planning ahead"
-                                    isSelected={selections.taxYear === '2027'} onClick={() => setSelections({ ...selections, taxYear: '2027' })}
-                                />
-                            </div>
-                        </section>
 
                         <section>
                             <h3 className="text-[15px] font-medium text-taxable-dark mb-3 uppercase tracking-wider text-[11px]">Select Filing Category</h3>
@@ -171,7 +158,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSideb
                                         <span>Creating...</span>
                                     </>
                                 ) : (
-                                    "Create Tax Folder"
+                                    "Next 1/4"
                                 )}
                             </button>
                         </div>
@@ -332,7 +319,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSideb
                             <div className="text-left">
                                 <h2 className="text-xl font-semibold text-taxable-dark mb-2.5">Tax folder created</h2>
                                 <p className="text-sm text-taxable-dark font-medium leading-[1.5] mb-3">
-                                    We've created a dedicated space for your 2026 Individual Tax filing. Think of this as your personal tax workspace - everything you need will be organized here.
+                                    We've created a dedicated space for your 2026 {selections.category} Tax filing. Think of this as your personal tax workspace - everything you need will be organized here.
                                 </p>
                                 <p className="text-sm text-taxable-gray font-medium leading-[1.5]">
                                     To get started, answer some setup questions (2 minutes) so we can personalize your workspace. We'll only show fields relevant to your situation

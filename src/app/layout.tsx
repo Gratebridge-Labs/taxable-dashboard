@@ -20,6 +20,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { UserProvider } from "@/contexts/UserContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -30,7 +32,9 @@ export default function RootLayout({
       <body
         className={`${archivo.variable} antialiased`}
       >
-        {children}
+        <UserProvider>
+          {children}
+        </UserProvider>
       </body>
     </html>
   );

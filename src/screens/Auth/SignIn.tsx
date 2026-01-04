@@ -64,12 +64,37 @@ const ResetPasswordModal = ({ email, onClose, onResend }: { email: string; onClo
     </div>
 );
 
+import { useApi } from '@/hooks/useApi';
+import { useUser } from '@/contexts/UserContext';
+
 export default function SignIn() {
     const router = useRouter();
+    const { login } = useUser();
+    const { post, error: apiError } = useApi();
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showResetModal, setShowResetModal] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        try {
+            // Login user via API using the established pattern
+            const response = await post('/auth/login', { email, password }, { useToken: false });
+
+            if (response?.data?.token) {
+                // Initialize session
+                login(response.data.token, response.data.user);
+            }
+
+            // Show loading screen before redirecting
+            setIsLoading(true);
+        } catch (err) {
+            console.error("Login failed:", err);
+        }
+    };
 
     return (
         <>
@@ -80,7 +105,7 @@ export default function SignIn() {
                         <p className="text-taxable-gray text-base font-medium">Let's get your tax compliance sorted in minutes</p>
                     </div>
 
-                    <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+                    <form className="space-y-6" onSubmit={handleLogin}>
                         <InputField
                             label="Email Address"
                             placeholder="hello@alignui.com"
@@ -102,9 +127,14 @@ export default function SignIn() {
                             </div>
                         </div>
 
+                        {apiError && (
+                            <div className="text-sm text-red-500 font-medium">
+                                {apiError}
+                            </div>
+                        )}
+
                         <button
-                            type="button"
-                            onClick={() => setIsLoading(true)}
+                            type="submit"
                             className="w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl shadow-lg shadow-taxable-blue/20 hover:opacity-95 transition-all mt-4"
                         >
                             Sign In

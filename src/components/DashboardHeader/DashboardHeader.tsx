@@ -78,7 +78,7 @@ export default function DashboardHeader() {
 
             {/* Right Section: Button */}
             <div className="flex-1 flex justify-end">
-                <button className="px-5 h-[46px] border border-gray-100 rounded-xl text-[14px] font-bold text-taxable-dark hover:shadow-xs hover:bg-gray-50 transition-all cursor-pointer">
+                <button className="px-5 h-[46px] border border-gray-100 rounded-[12] text-[14px] font-bold text-taxable-dark hover:shadow-xs hover:bg-gray-50 transition-all cursor-pointer">
                     Talk to an Accountant
                 </button>
             </div>

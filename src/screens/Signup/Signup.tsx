@@ -4,14 +4,18 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import OnboardingLayout from '@/components/OnboardingLayout/OnboardingLayout';
 import LoadingScreen from '@/screens/Onboarding/LoadingScreen';
+import { useApi } from '@/hooks/useApi';
+import { useUser } from '@/contexts/UserContext';
 
-const InputField = ({ label, placeholder, type = "text" }: { label: string; placeholder: string; type?: string }) => (
+const InputField = ({ label, placeholder, value, onChange, type = "text" }: { label: string; placeholder: string; value: string; onChange: (val: string) => void; type?: string }) => (
     <div className="flex flex-col gap-1 w-full">
         <label className="text-sm font-medium text-taxable-dark">
             {label}
         </label>
         <input
             type={type}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
             className="w-full h-10 px-4 rounded-2xl border border-gray-200 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-taxable-blue/20 focus:border-taxable-blue transition-all"
         />
@@ -20,7 +24,36 @@ const InputField = ({ label, placeholder, type = "text" }: { label: string; plac
 
 export default function Signup() {
     const router = useRouter();
+    const { login } = useUser();
+    const { post, error: apiError } = useApi();
+
     const [isLoading, setIsLoading] = useState(false);
+    const [formData, setFormData] = useState({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        password: ''
+    });
+
+    const handleSignup = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        try {
+            // Register user via API using the YodoPay pattern
+            const response = await post('/auth/register', formData, { useToken: false });
+
+            if (response?.data?.token) {
+                // Initialize session if the API returns a token immediately
+                login(response.data.token, response.data.user);
+            }
+
+            // Show loading screen before redirecting as per requirements
+            setIsLoading(true);
+        } catch (err) {
+            console.error("Signup failed:", err);
+        }
+    };
 
     return (
         <>
@@ -36,10 +69,29 @@ export default function Signup() {
                         </Link>
                     </div>
 
-                    <form className="flex flex-col gap-3">
-                        <InputField label="First name" placeholder="hello@alignui.com" />
-                        <InputField label="Last name" placeholder="hello@alignui.com" />
-                        <InputField label="Email Address" placeholder="hello@alignui.com" type="email" />
+                    <form onSubmit={handleSignup} className="flex flex-col gap-3">
+                        <div className="flex gap-3">
+                            <InputField
+                                label="First name"
+                                placeholder="Enter first name"
+                                value={formData.firstName}
+                                onChange={(val) => setFormData({ ...formData, firstName: val })}
+                            />
+                            <InputField
+                                label="Last name"
+                                placeholder="Enter last name"
+                                value={formData.lastName}
+                                onChange={(val) => setFormData({ ...formData, lastName: val })}
+                            />
+                        </div>
+
+                        <InputField
+                            label="Email Address"
+                            placeholder="hello@example.com"
+                            type="email"
+                            value={formData.email}
+                            onChange={(val) => setFormData({ ...formData, email: val })}
+                        />
 
                         <div className="flex flex-col gap-1 w-full">
                             <label className="text-sm font-medium text-taxable-dark">
@@ -48,19 +100,10 @@ export default function Signup() {
                             <input
                                 type="tel"
                                 placeholder="+234"
+                                value={formData.phone}
+                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                 className="w-full h-10 px-4 rounded-lg border border-gray-200 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-taxable-blue/20 focus:border-taxable-blue transition-all"
                             />
-                        </div>
-
-                        <div className="flex items-start gap-3">
-                            <input
-                                type="checkbox"
-                                id="whatsapp"
-                                className="w-4 h-4 rounded border-gray-300 text-taxable-blue focus:ring-taxable-blue"
-                            />
-                            <label htmlFor="whatsapp" className="text-sm text-taxable-gray">
-                                Receive tax deadline reminders via WhatsApp
-                            </label>
                         </div>
 
                         <div className="flex flex-col gap-1 w-full">
@@ -71,26 +114,21 @@ export default function Signup() {
                                 <input
                                     type="password"
                                     placeholder="••••••••••••"
+                                    value={formData.password}
+                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                     className="w-full h-10 px-4 pr-10 rounded-2xl border border-gray-200 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-taxable-blue/20 focus:border-taxable-blue transition-all"
                                 />
-                                <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-                                </button>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2 text-sm text-taxable-gray">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400">
-                                <circle cx="12" cy="12" r="10" />
-                                <line x1="12" y1="8" x2="12" y2="12" />
-                                <line x1="12" y1="16" x2="12.01" y2="16" />
-                            </svg>
-                            <span>At least 8 characters. Make it strong!</span>
-                        </div>
+                        {apiError && (
+                            <div className="text-sm text-red-500 font-medium">
+                                {apiError}
+                            </div>
+                        )}
 
                         <button
-                            type="button"
-                            onClick={() => setIsLoading(true)}
+                            type="submit"
                             className="flex items-center justify-center w-full h-11 bg-taxable-blue hover:opacity-90 text-taxable-light font-medium rounded-2xl shadow-lg shadow-taxable-blue/10 transition-transform active:scale-[0.99] mt-1"
                         >
                             Create Account

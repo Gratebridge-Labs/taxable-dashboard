@@ -71,8 +71,18 @@ export default function SignIn() {
             const response = await post('/auth/login', { email, password }, { useToken: false });
 
             if (response?.data?.token) {
-                // Initialize session
-                login(response.data.token, response.data.user);
+                const user = response.data.user;
+                if (user?.twoFactorEnabled) {
+                    setIsLoading(false);
+                    // Store credentials temporarily for the 2FA verification step
+                    sessionStorage.setItem('taxable_temp_email', email);
+                    sessionStorage.setItem('taxable_temp_password', password);
+                    router.push(`/verify-2fa?email=${encodeURIComponent(email)}`);
+                } else {
+                    login(response.data.token, user);
+                }
+            } else {
+                setIsLoading(false);
             }
         } catch (err) {
             console.error("Login failed:", err);

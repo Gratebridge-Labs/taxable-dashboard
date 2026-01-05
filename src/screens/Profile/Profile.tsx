@@ -34,35 +34,6 @@ const Toggle = ({ enabled, onChange }: { enabled: boolean; onChange: () => void 
     </button>
 );
 
-const AvatarSVG = ({ initials = "JB" }: { initials?: string }) => (
-    <svg width="80" height="80" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
-        <defs>
-            <filter id="filter0_i_661_683" x="0" y="-8" width="64" height="72" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-                <feFlood flood-opacity="0" result="BackgroundImageFix" />
-                <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-                <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
-                <feOffset dy="-8" />
-                <feGaussianBlur stdDeviation="8" />
-                <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
-                <feColorMatrix type="matrix" values="0 0 0 0 0.7712 0 0 0 0 0.78 0 0 0 0 0.7888 0 0 0 0.48 0" />
-                <feBlend mode="normal" in2="shape" result="effect1_innerShadow_661_683" />
-            </filter>
-        </defs>
-        <circle cx="32" cy="32" r="32" fill="#F6F8FA" filter="url(#filter0_i_661_683)" />
-        <text
-            x="32"
-            y="39"
-            textAnchor="middle"
-            fontSize="18"
-            fontWeight="700"
-            fill="#0A0D14"
-            fontFamily="Inter, system-ui, sans-serif"
-            className="select-none"
-        >
-            {initials}
-        </text>
-    </svg>
-);
 
 export default function Profile() {
     const { user, setUser } = useUser();
@@ -235,12 +206,13 @@ export default function Profile() {
                                         className="hidden"
                                         accept="image/*"
                                     />
-                                    <div className="w-20 h-20 rounded-[24px] bg-[#F5F5F3] flex items-center justify-center shrink-0 overflow-hidden border border-gray-50">
-                                        {profileImage ? (
-                                            <Image src={profileImage} alt="Profile" fill className="object-cover" />
-                                        ) : (
-                                            <AvatarSVG initials={`${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}` || 'JB'} />
-                                        )}
+                                    <div className="w-20 h-20 rounded-[24px] bg-[#F5F5F3] flex items-center justify-center shrink-0 overflow-hidden border border-gray-50 relative">
+                                        <Image
+                                            src={profileImage || "/icons/profile.svg"}
+                                            alt="Profile"
+                                            fill
+                                            className={profileImage ? "object-cover" : "p-4 opacity-40"}
+                                        />
                                     </div>
                                     <div>
                                         <h3 className="text-[17px] font-bold text-taxable-dark mb-1">Upload Image</h3>
@@ -286,7 +258,6 @@ export default function Profile() {
                                         placeholder="Enter"
                                         value={formData.phone}
                                         onChange={(val) => setFormData({ ...formData, phone: val })}
-                                        prefix="+234"
                                     />
                                 </div>
 

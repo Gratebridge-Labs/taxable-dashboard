@@ -14,7 +14,7 @@ const InputField = ({ label, placeholder, type = "text", value, onChange }: { la
 
     return (
         <div className="flex flex-col gap-1 w-full">
-            <label className="text-sm font-medium text-taxable-dark">
+            <label className="text-sm font-semibold text-taxable-dark">
                 {label}
             </label>
             <div className="relative">
@@ -23,7 +23,7 @@ const InputField = ({ label, placeholder, type = "text", value, onChange }: { la
                     value={value}
                     onChange={onChange}
                     placeholder={placeholder}
-                    className="w-full h-12 px-4 rounded-2xl border border-gray-200 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-taxable-blue/20 focus:border-taxable-blue transition-all"
+                    className="w-full h-12 px-4 rounded-2xl border border-[#f5f5f5] bg-white placeholder:text-gray-300 focus:outline-none focus:ring-1 focus:ring-taxable-blue/10 focus:border-taxable-blue transition-all font-medium text-taxable-dark"
                 />
                 {isPassword && (
                     <button

@@ -23,7 +23,7 @@ const InputField = ({ label, placeholder, value, onChange, type = "text", hint }
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
                     placeholder={placeholder}
-                    className="w-full h-12 px-4 rounded-2xl border border-gray-100 bg-white placeholder:text-gray-200 focus:outline-none focus:ring-1 focus:ring-taxable-blue/10 focus:border-taxable-blue transition-all font-medium text-taxable-dark"
+                    className="w-full h-12 px-4 rounded-2xl border border-[#f5f5f5] bg-white placeholder:text-gray-200 focus:outline-none focus:ring-1 focus:ring-taxable-blue/10 focus:border-taxable-blue transition-all font-medium text-taxable-dark"
                 />
                 {isPassword && (
                     <button
@@ -93,7 +93,7 @@ export default function Signup() {
             <OnboardingLayout>
                 <div className="max-w-[480px] mx-auto w-full relative">
                     <div className="absolute top-0 right-0 md:-right-4">
-                        <Link href="/signin" className="h-[44px] px-6 flex items-center justify-center rounded-xl border border-gray-100 text-taxable-dark font-bold hover:bg-gray-50 transition-colors bg-white text-[13px] whitespace-nowrap shadow-sm">
+                        <Link href="/signin" className="h-[44px] px-6 flex items-center justify-center rounded-xl border border-[#f5f5f5] text-taxable-dark font-bold hover:bg-gray-50 transition-colors bg-white text-[13px] whitespace-nowrap shadow-sm">
                             Log in
                         </Link>
                     </div>
@@ -135,7 +135,7 @@ export default function Signup() {
                                     placeholder="+234"
                                     value={formData.phone}
                                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                    className="w-full h-12 px-4 rounded-2xl border border-gray-100 bg-white placeholder:text-gray-200 focus:outline-none focus:ring-1 focus:ring-taxable-blue/10 focus:border-taxable-blue transition-all font-medium text-taxable-dark"
+                                    className="w-full h-12 px-4 rounded-2xl border border-[#f5f5f5] bg-white placeholder:text-gray-200 focus:outline-none focus:ring-1 focus:ring-taxable-blue/10 focus:border-taxable-blue transition-all font-medium text-taxable-dark"
                                 />
                                 <div className="flex items-center gap-3 mt-1 cursor-pointer" onClick={() => setFormData({ ...formData, whatsappReminders: !formData.whatsappReminders })}>
                                     <div className={`w-[18px] h-[18px] rounded border flex items-center justify-center transition-colors ${formData.whatsappReminders ? 'bg-[#00388D] border-[#00388D]' : 'border-gray-200'}`}>

@@ -56,7 +56,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         if (!tokenToUse) return;
 
         try {
-            const response = await fetch('https://api.gettaxable.com/api/auth/me', {
+            const response = await fetch('/api/proxy/auth/me', {
                 headers: {
                     'Authorization': `Bearer ${tokenToUse}`,
                     'Accept': 'application/json',

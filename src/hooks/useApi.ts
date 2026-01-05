@@ -1,15 +1,17 @@
 'use client';
 import { useState, useCallback } from 'react';
 import { useUser } from '@/contexts/UserContext';
+import { useRouter } from 'next/navigation';
 
-const BASE_URL = 'https://api.gettaxable.com/api';
+const BASE_URL = '/api/proxy';
 
 interface ApiConfig extends RequestInit {
     useToken?: boolean;
 }
 
 export const useApi = () => {
-    const { token } = useUser();
+    const { token, logout } = useUser();
+    const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [data, setData] = useState<any>(null);
@@ -22,10 +24,19 @@ export const useApi = () => {
 
         const headers: Record<string, string> = {
             'Accept': 'application/json',
-            'Content-Type': 'application/json',
         };
 
-        if (useToken && token) {
+        if (customConfig.method && ['POST', 'PUT', 'PATCH'].includes(customConfig.method)) {
+            headers['Content-Type'] = 'application/json';
+        }
+
+        if (useToken) {
+            if (!token) {
+                console.warn('No token found for authenticated request, redirecting to login');
+                router.push('/signin');
+                setLoading(false);
+                throw new Error('Authentication required');
+            }
             headers['Authorization'] = `Bearer ${token}`;
         }
 
@@ -47,6 +58,11 @@ export const useApi = () => {
             }
 
             if (!response.ok) {
+                if (response.status === 401) {
+                    console.log('Session expired, logging out');
+                    logout();
+                    router.push('/signin');
+                }
                 // Centralized error parsing: prioritizing backend message
                 const errorMessage = responseData?.message || responseData?.error || `Error: ${response.status} ${response.statusText}`;
                 throw new Error(errorMessage);
@@ -61,7 +77,7 @@ export const useApi = () => {
         } finally {
             setLoading(false);
         }
-    }, [token]);
+    }, [token, logout, router]);
 
     const get = useCallback((endpoint: string, config?: ApiConfig) =>
         request(endpoint, { ...config, method: 'GET' }), [request]);
@@ -87,7 +103,12 @@ export const useApi = () => {
             'Accept': 'application/json',
         };
 
-        if (useToken && token) {
+        if (useToken) {
+            if (!token) {
+                router.push('/signin');
+                setLoading(false);
+                throw new Error('Authentication required');
+            }
             headers['Authorization'] = `Bearer ${token}`;
         }
 
@@ -105,6 +126,10 @@ export const useApi = () => {
             const responseData = await response.json();
 
             if (!response.ok) {
+                if (response.status === 401) {
+                    logout();
+                    router.push('/signin');
+                }
                 const errorMessage = responseData?.message || responseData?.error || `Error: ${response.status}`;
                 throw new Error(errorMessage);
             }
@@ -117,7 +142,7 @@ export const useApi = () => {
         } finally {
             setLoading(false);
         }
-    }, [token]);
+    }, [token, logout, router]);
 
     return { get, post, put, patch, del, upload, loading, error, data };
 };

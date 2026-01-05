@@ -139,6 +139,81 @@ export default function PITDetails() {
         }
     };
 
+    const PITSkeleton = () => (
+        <div className="animate-pulse">
+            {/* Breadcrumbs Skeleton */}
+            <div className="flex items-center gap-2 mb-6">
+                <div className="h-4 bg-gray-200 rounded w-24"></div>
+                <span className="text-gray-200">/</span>
+                <div className="h-4 bg-gray-200 rounded w-32"></div>
+            </div>
+
+            {/* Title Skeleton */}
+            <div className="flex justify-between items-start mb-10">
+                <div>
+                    <div className="h-8 bg-gray-200 rounded-lg w-48 mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-24"></div>
+                </div>
+            </div>
+
+            <div className="flex items-start gap-8">
+                {/* Sidebar Skeleton */}
+                <div className="w-[320px] flex-shrink-0">
+                    <div className="bg-white rounded-[24px] p-6 border border-gray-100">
+                        <div className="h-6 bg-gray-200 rounded w-24 mb-6"></div>
+                        <div className="space-y-4">
+                            {[1, 2, 3, 4, 5].map(i => (
+                                <div key={i} className="flex items-center gap-4">
+                                    <div className="w-10 h-10 bg-gray-100 rounded-xl flex-shrink-0"></div>
+                                    <div className="h-4 bg-gray-100 rounded w-full"></div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Main Content Skeleton */}
+                <div className="flex-1 min-w-0 max-w-[840px]">
+                    <div className="bg-white rounded-[24px] p-8 border border-gray-100">
+                        <div className="h-7 bg-gray-200 rounded-lg w-1/3 mb-8"></div>
+                        <div className="space-y-10">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="space-y-4">
+                                    <div className="h-5 bg-gray-200 rounded w-1/4"></div>
+                                    <div className="h-14 bg-gray-50 rounded-2xl w-full"></div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="h-14 bg-gray-200 rounded-2xl w-40 mt-10"></div>
+                    </div>
+                </div>
+
+                {/* Right Sidebar Skeleton */}
+                <div className="w-[280px] flex-shrink-0">
+                    <div className="bg-gray-50 rounded-[24px] p-7 h-[367px]">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-5 h-5 bg-gray-200 rounded-full"></div>
+                            <div className="h-4 bg-gray-200 rounded w-24"></div>
+                        </div>
+                        <div className="space-y-3 mb-8">
+                            <div className="h-3 bg-gray-200 rounded w-full"></div>
+                            <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                            <div className="h-3 bg-gray-200 rounded w-4/6"></div>
+                        </div>
+                        <div className="space-y-4">
+                            {[1, 2, 3, 4].map(i => (
+                                <div key={i} className="flex items-center gap-3">
+                                    <div className="w-4 h-4 bg-gray-200 rounded"></div>
+                                    <div className="h-4 bg-gray-200 rounded w-full"></div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
     const formatAmount = (val: any) => {
         if (!val && val !== 0) return '';
         const parts = val.toString().split('.');
@@ -504,136 +579,142 @@ export default function PITDetails() {
             )}
 
             <main className="max-w-[1440px] mx-auto px-8 py-8">
-                <button
-                    onClick={() => router.back()}
-                    className="flex items-center gap-2 text-sm font-medium text-taxable-dark hover:text-taxable-blue transition-colors mb-4"
-                >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
-                    </svg>
-                    Back
-                </button>
+                {loading ? (
+                    <PITSkeleton />
+                ) : (
+                    <>
+                        <button
+                            onClick={() => router.back()}
+                            className="flex items-center gap-2 text-sm font-medium text-taxable-dark hover:text-taxable-blue transition-colors mb-4"
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
+                            </svg>
+                            Back
+                        </button>
 
-                {/* Breadcrumbs */}
-                <div className="flex items-center gap-2 text-[13px] text-[#94A3B8] font-medium mb-6">
-                    <span>{profileInfo?.year} {profileInfo?.type} Tax</span>
-                    <span>/</span>
-                    <span className="text-[#64748B]">{activeCategory?.categoryName}</span>
-                </div>
-
-                {/* Page Content */}
-                <div className="flex justify-between items-start mb-10">
-                    <div>
-                        <h1 className="text-2xl font-medium text-taxable-dark mb-1.5">{profileInfo?.year} {profileInfo?.type} Tax</h1>
-                        <p className="text-base text-taxable-gray font-medium">{currentIndex + 1} of {categories.length} sections</p>
-                    </div>
-                </div>
-
-                <div className="flex items-start gap-8">
-                    {/* Sidebar */}
-                    <div className="w-[320px] flex-shrink-0 flex flex-col gap-6 sticky top-32">
-                        <div className="bg-white rounded-[24px] p-4 border border-gray-100">
-                            <h3 className="text-[20px] font-bold text-[#A3A3A3] mb-5 px-3">Sections</h3>
-                            {categories.map((cat, idx) => (
-                                <SidebarItem
-                                    key={cat.categoryKey}
-                                    label={cat.categoryName}
-                                    active={activeSectionKey === cat.categoryKey}
-                                    completed={isCategoryComplete(cat)}
-                                    onClick={() => setActiveSectionKey(cat.categoryKey)}
-                                />
-                            ))}
+                        {/* Breadcrumbs */}
+                        <div className="flex items-center gap-2 text-[13px] text-[#94A3B8] font-medium mb-6">
+                            <span>{profileInfo?.year} {profileInfo?.type} Tax</span>
+                            <span>/</span>
+                            <span className="text-[#64748B]">{activeCategory?.categoryName}</span>
                         </div>
-                    </div>
 
-                    {/* Main Content Area */}
-                    <div className="flex-1 min-w-0 max-w-[840px]">
-                        {loading ? (
-                            <div className="flex items-center justify-center py-20">
-                                <span className="text-taxable-gray font-medium">Loading questions...</span>
+                        {/* Page Content */}
+                        <div className="flex justify-between items-start mb-10">
+                            <div>
+                                <h1 className="text-2xl font-medium text-taxable-dark mb-1.5">{profileInfo?.year} {profileInfo?.type} Tax</h1>
+                                <p className="text-base text-taxable-gray font-medium">{currentIndex + 1} of {categories.length} sections</p>
                             </div>
-                        ) : activeCategory ? (
-                            <div className="animate-in fade-in duration-500">
-                                <h2 className="text-lg font-bold text-taxable-dark mb-6">{activeCategory.categoryName}</h2>
+                        </div>
 
-                                {supportsPeriodToggle && (
-                                    <div className="flex items-center gap-6 mb-10">
-                                        <span className={`text-[15px] font-bold transition-colors ${isMonthly ? 'text-taxable-dark' : 'text-[#A3A3A3]'}`}>Monthly</span>
+                        <div className="flex items-start gap-8">
+                            {/* Sidebar */}
+                            <div className="w-[320px] flex-shrink-0 flex flex-col gap-6 sticky top-32">
+                                <div className="bg-white rounded-[24px] p-4 border border-gray-100">
+                                    <h3 className="text-[20px] font-bold text-[#A3A3A3] mb-5 px-3">Sections</h3>
+                                    {categories.map((cat, idx) => (
+                                        <SidebarItem
+                                            key={cat.categoryKey}
+                                            label={cat.categoryName}
+                                            active={activeSectionKey === cat.categoryKey}
+                                            completed={isCategoryComplete(cat)}
+                                            onClick={() => setActiveSectionKey(cat.categoryKey)}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Main Content Area */}
+                            <div className="flex-1 min-w-0 max-w-[840px]">
+                                {activeCategory ? (
+                                    <div className="animate-in fade-in duration-500">
+                                        <h2 className="text-lg font-bold text-taxable-dark mb-6">{activeCategory.categoryName}</h2>
+
+                                        {supportsPeriodToggle && (
+                                            <div className="flex items-center gap-6 mb-10">
+                                                <span className={`text-[15px] font-bold transition-colors ${isMonthly ? 'text-taxable-dark' : 'text-[#A3A3A3]'}`}>Monthly</span>
+                                                <button
+                                                    onClick={() => setIsMonthly(!isMonthly)}
+                                                    className="w-[52px] h-[26px] bg-[#00388D] rounded-full relative transition-all"
+                                                >
+                                                    <div className={`absolute top-1 w-[18px] h-[18px] bg-white rounded-full transition-all ${isMonthly ? 'left-1' : 'left-[32px]'}`} />
+                                                </button>
+                                                <span className={`text-[15px] font-bold transition-colors ${!isMonthly ? 'text-taxable-dark' : 'text-[#A3A3A3]'}`}>Annually</span>
+                                            </div>
+                                        )}
+
+                                        {activeCategory.questions.map((q) => renderQuestion(q))}
+
+
                                         <button
-                                            onClick={() => setIsMonthly(!isMonthly)}
-                                            className="w-[52px] h-[26px] bg-[#00388D] rounded-full relative transition-all"
+                                            onClick={handleNext}
+                                            disabled={submitting}
+                                            className="h-14 px-10 bg-[#00388D] text-white font-bold rounded-2xl hover:bg-[#002b6d] transition-colors mt-8 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                         >
-                                            <div className={`absolute top-1 w-[18px] h-[18px] bg-white rounded-full transition-all ${isMonthly ? 'left-1' : 'left-[32px]'}`} />
+                                            {submitting ? 'Saving...' : (currentIndex === categories.length - 1 ? 'Finish' : 'Save & Continue')}
                                         </button>
-                                        <span className={`text-[15px] font-bold transition-colors ${!isMonthly ? 'text-taxable-dark' : 'text-[#A3A3A3]'}`}>Annually</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center justify-center py-20">
+                                        <span className="text-taxable-gray font-medium">No questions found.</span>
                                     </div>
                                 )}
-
-                                {activeCategory.questions.map((q) => renderQuestion(q))}
-
-
-                                <button
-                                    onClick={handleNext}
-                                    disabled={submitting}
-                                    className="h-14 px-10 bg-[#00388D] text-white font-bold rounded-2xl hover:bg-[#002b6d] transition-colors mt-8 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                >
-                                    {submitting ? 'Saving...' : (currentIndex === categories.length - 1 ? 'Finish' : 'Save & Continue')}
-                                </button>
                             </div>
-                        ) : null}
-                    </div>
 
-                    {/* Right Help Sidebar */}
-                    <div className="w-[280px] flex-shrink-0 sticky top-32 bg-taxable-lightgray2 rounded-[24px] p-7 min-h-[367px] border border-gray-100/50">
-                        <div className="mb-4">
-                            <div className="flex items-center gap-2.5 mb-2.5">
-                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-taxable-dark">
-                                    <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
-                                </svg>
-                                <h4 className="text-base font-semibold text-taxable-dark">Why we need this</h4>
+                            {/* Right Help Sidebar */}
+                            <div className="w-[280px] flex-shrink-0 sticky top-32 bg-taxable-lightgray2 rounded-[24px] p-7 min-h-[367px] border border-gray-100/50">
+                                <div className="mb-4">
+                                    <div className="flex items-center gap-2.5 mb-2.5">
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-taxable-dark">
+                                            <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+                                        </svg>
+                                        <h4 className="text-base font-semibold text-taxable-dark">Why we need this</h4>
+                                    </div>
+                                    <p className="text-sm text-[#64748B] leading-[1.5] font-medium">
+                                        Your details help us identify you with relevant tax authorities and ensure your tax return is filed correctly. All information is encrypted and stored securely.
+                                    </p>
+                                </div>
+
+                                <div className="space-y-0">
+                                    <div className="py-2.5">
+                                        <div className="w-[270px] h-[3px] bg-white rounded-[10px] mb-4 -mx-1" />
+                                        <div className="space-y-3.5">
+                                            <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors">
+                                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+                                                </svg>
+                                                <span>Tax filing guide</span>
+                                            </button>
+                                            <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+                                                <span>Understanding taxes</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="py-2.5">
+                                        <div className="w-[270px] h-[3px] bg-white rounded-[10px] mb-4 -mx-1" />
+                                        <div className="space-y-3.5">
+                                            <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors">
+                                                    <path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+                                                </svg>
+                                                <span>Chat with support</span>
+                                            </button>
+                                            <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors">
+                                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
+                                                </svg>
+                                                <span>Email us</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <p className="text-sm text-[#64748B] leading-[1.5] font-medium">
-                                Your details help us identify you with relevant tax authorities and ensure your tax return is filed correctly. All information is encrypted and stored securely.
-                            </p>
                         </div>
-
-                            <div className="space-y-0">
-                                <div className="py-2.5">
-                                    <div className="w-[270px] h-[3px] bg-white rounded-[10px] mb-4 -mx-1" />
-                                    <div className="space-y-3.5">
-                                        <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors">
-                                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
-                                            </svg>
-                                            <span>Tax filing guide</span>
-                                        </button>
-                                        <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
-                                            <span>Understanding taxes</span>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="py-2.5">
-                                    <div className="w-[270px] h-[3px] bg-white rounded-[10px] mb-4 -mx-1" />
-                                    <div className="space-y-3.5">
-                                        <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors">
-                                                <path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
-                                            </svg>
-                                            <span>Chat with support</span>
-                                        </button>
-                                        <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors">
-                                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
-                                            </svg>
-                                            <span>Email us</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                    </div>
-                </div>
+                    </>
+                )}
             </main>
         </div>
     );

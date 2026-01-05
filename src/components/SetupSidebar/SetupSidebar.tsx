@@ -24,7 +24,7 @@ interface Question {
 interface SetupSidebarProps {
     isOpen: boolean;
     onClose: () => void;
-    onComplete?: (shouldRedirect: boolean) => void;
+    onComplete?: (shouldRedirect: boolean, profileId?: string) => void;
     resumeProfileId?: string | null;
     initialData?: {
         year?: string;
@@ -225,7 +225,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
     const handleLoadingFinished = () => {
         setIsSubmitting(false);
         if (onComplete) {
-            onComplete(shouldRedirectAfterLoading);
+            onComplete(shouldRedirectAfterLoading, activeProfileId || undefined);
         } else {
             onClose();
         }

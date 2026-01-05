@@ -4,7 +4,11 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 interface User {
     id: string;
     email: string;
-    fullName?: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    emailVerified?: boolean;
+    twoFactorEnabled?: boolean;
     [key: string]: any;
 }
 
@@ -13,6 +17,8 @@ interface UserContextType {
     token: string | null;
     login: (token: string, userData: User) => void;
     logout: () => void;
+    setUser: (userData: User) => void;
+    refreshUser: () => Promise<void>;
     isAuthenticated: boolean;
     loading: boolean;
 }
@@ -39,9 +45,35 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                     console.error('Failed to parse stored user:', err);
                 }
             }
+            // Fetch fresh user data if we have a token
+            refreshUser(storedToken);
         }
         setLoading(false);
     }, []);
+
+    const refreshUser = async (currentToken?: string) => {
+        const tokenToUse = currentToken || token;
+        if (!tokenToUse) return;
+
+        try {
+            const response = await fetch('https://api.gettaxable.com/api/auth/me', {
+                headers: {
+                    'Authorization': `Bearer ${tokenToUse}`,
+                    'Accept': 'application/json',
+                },
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && result.data.user) {
+                    setUser(result.data.user);
+                    localStorage.setItem('taxable_user', JSON.stringify(result.data.user));
+                }
+            }
+        } catch (err) {
+            console.error('Failed to refresh user data:', err);
+        }
+    };
 
     useEffect(() => {
         if (token) {
@@ -72,6 +104,8 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                 token,
                 login,
                 logout,
+                setUser,
+                refreshUser,
                 isAuthenticated: !!token,
                 loading,
             }}

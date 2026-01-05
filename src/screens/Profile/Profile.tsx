@@ -4,6 +4,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
 import { useApi } from '@/hooks/useApi';
+import { useUser } from '@/contexts/UserContext';
+import { useEffect } from 'react';
 
 const ProfileField = ({ label, placeholder, value, onChange, type = "text", prefix }: { label: string; placeholder: string; value: string; onChange: (val: string) => void; type?: string; prefix?: string }) => (
     <div className="mb-6">
@@ -63,19 +65,33 @@ const AvatarSVG = ({ initials = "JB" }: { initials?: string }) => (
 );
 
 export default function Profile() {
+    const { user, setUser } = useUser();
     const [activeSection, setActiveSection] = useState('Personal Information');
     const [profileImage, setProfileImage] = useState<string | null>(null);
-    const { post, loading: apiLoading, error: apiError } = useApi();
+    const { post, patch, loading: apiLoading, error: apiError } = useApi();
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
-        firstName: 'Sophia',
-        lastName: 'Williams',
+        firstName: '',
+        lastName: '',
         tin: '',
         phone: '',
-        email: 'hello@alignui.com',
+        email: '',
         whatsappReminders: false
     });
+
+    useEffect(() => {
+        if (user) {
+            setFormData({
+                firstName: user.firstName || '',
+                lastName: user.lastName || '',
+                tin: user.tin || '',
+                phone: user.phone || '',
+                email: user.email || '',
+                whatsappReminders: user.whatsappReminders || false
+            });
+        }
+    }, [user]);
 
     const [securityData, setSecurityData] = useState({
         currentPassword: '',
@@ -137,6 +153,26 @@ export default function Profile() {
                 tfaCode: '',
                 isEnabling: false
             });
+        }
+    };
+
+    const handleSaveProfile = async () => {
+        setSuccessMessage(null);
+        try {
+            const response = await patch('/auth/update-profile', {
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                phone: formData.phone,
+                tin: formData.tin,
+                whatsappReminders: formData.whatsappReminders
+            });
+
+            if (response?.success && response?.data?.user) {
+                setUser(response.data.user);
+                setSuccessMessage("Profile successfully updated.");
+            }
+        } catch (err) {
+            console.error("Failed to update profile:", err);
         }
     };
 
@@ -203,9 +239,7 @@ export default function Profile() {
                                         {profileImage ? (
                                             <Image src={profileImage} alt="Profile" fill className="object-cover" />
                                         ) : (
-                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="#D1D5DB" />
-                                            </svg>
+                                            <AvatarSVG initials={`${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}` || 'JB'} />
                                         )}
                                     </div>
                                     <div>
@@ -272,11 +306,25 @@ export default function Profile() {
 
                                 {/* Action Buttons */}
                                 <div className="flex items-center gap-3 mt-10">
-                                    <button className="h-[52px] px-8 border border-gray-100 text-taxable-dark font-bold rounded-xl hover:bg-gray-50 transition-colors">
+                                    <button
+                                        onClick={() => user && setFormData({
+                                            firstName: user.firstName || '',
+                                            lastName: user.lastName || '',
+                                            tin: user.tin || '',
+                                            phone: user.phone || '',
+                                            email: user.email || '',
+                                            whatsappReminders: user.whatsappReminders || false
+                                        })}
+                                        className="h-[52px] px-8 border border-gray-100 text-taxable-dark font-bold rounded-xl hover:bg-gray-50 transition-colors"
+                                    >
                                         Reset
                                     </button>
-                                    <button className="h-[52px] px-10 bg-[#00388D] text-white font-bold rounded-xl hover:opacity-95 transition-opacity shadow-sm">
-                                        Save
+                                    <button
+                                        onClick={handleSaveProfile}
+                                        disabled={apiLoading}
+                                        className="h-[52px] px-10 bg-[#00388D] text-white font-bold rounded-xl hover:opacity-95 transition-opacity shadow-sm disabled:opacity-50"
+                                    >
+                                        {apiLoading ? 'Saving...' : 'Save'}
                                     </button>
                                 </div>
                             </div>

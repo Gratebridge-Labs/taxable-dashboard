@@ -224,7 +224,7 @@ export default function Home() {
             });
             setIsSidebarOpen(true);
         } else {
-            router.push('/tax-folders/pit');
+            router.push(`/tax-folders/pit?id=${profile.profileId}`);
         }
     };
 
@@ -251,7 +251,7 @@ export default function Home() {
                         <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-12">
                             <div>
                                 <h1 className="text-[32px] font-bold text-taxable-dark mb-2 tracking-tight">
-                                    Hello, {user?.firstName || 'Gideon'}. Welcome to Taxable
+                                    Hello, {user?.firstName}. Welcome to Taxable
                                 </h1>
                                 <p className="text-[17px] text-taxable-gray font-medium leading-relaxed max-w-xl">
                                     The 2026 tax cycle is currently active. Let's make sure you're compliant.
@@ -287,7 +287,7 @@ export default function Home() {
                         <div className="mb-14 flex flex-col md:flex-row justify-between items-start gap-6">
                             <div>
                                 <h1 className="text-[28px] font-semibold text-taxable-dark mb-2 tracking-tight">
-                                    Hello, {user?.firstName || 'Gideon'}, Welcome back
+                                    Hello, {user?.firstName}, Welcome back
                                 </h1>
                                 <p className="text-base text-taxable-gray font-medium">
                                     You have {profiles.length} tax filing{profiles.length !== 1 ? 's' : ''} ready for 2026. Click any card to begin.
@@ -312,69 +312,41 @@ export default function Home() {
                             </Link>
                         </div>
 
-                        {/* 2026 Filings */}
-                        <section className="mb-16">
-                            <div className="flex justify-between items-center mb-10">
-                                <h2 className="text-2xl font-bold text-taxable-dark">2026 Tax Filings</h2>
-                                <button
-                                    onClick={() => setIsSidebarOpen(true)}
-                                    className="h-12 px-6 bg-[#003787] hover:opacity-90 text-white font-semibold rounded-xl transition-all"
-                                >
-                                    Create another tax filing
-                                </button>
-                            </div>
+                        {/* Dynamic Tax Filings Sections */}
+                        {Object.entries(
+                            profiles.reduce((acc: Record<string, any[]>, profile) => {
+                                const year = profile.year || '2026';
+                                if (!acc[year]) acc[year] = [];
+                                acc[year].push(profile);
+                                return acc;
+                            }, {})
+                        ).sort(([yearA], [yearB]) => Number(yearB) - Number(yearA)).map(([year, yearProfiles]) => (
+                            <section key={year} className="mb-16 last:mb-0">
+                                <div className="flex justify-between items-center mb-10">
+                                    <h2 className="text-2xl font-bold text-taxable-dark">{year} Tax Filings</h2>
+                                    <button
+                                        onClick={() => setIsSidebarOpen(true)}
+                                        className="h-12 px-6 bg-[#003787] hover:opacity-90 text-white font-semibold rounded-xl transition-all"
+                                    >
+                                        Create another tax filing
+                                    </button>
+                                </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {profiles.map((profile, index) => (
-                                    <TaxFolderCard
-                                        key={profile._id || profile.profileId || index}
-                                        title={profile.title || `${profile.year || '2026'} ${profile.profileType || 'Tax'}`}
-                                        valueText={profile.taxDue ? `Tax Due - ₦${profile.taxDue.toLocaleString()}` : "Calculation in progress"}
-                                        description={profile.description || `Your ${profile.profileType?.toLowerCase() || 'tax'} filing for the ${profile.year || '2026'} tax year.`}
-                                        status={profile.status === 'draft' ? 'progress' : (profile.status || "none")}
-                                        statusText={profile.statusText || (profile.status === 'draft' ? 'In progress' : 'Not started')}
-                                        onClick={() => handleFolderClick(profile)}
-                                    />
-                                ))}
-                            </div>
-                        </section>
-
-                        {/* 2025 Filings */}
-                        <section>
-                            <div className="flex justify-between items-center mb-10">
-                                <h2 className="text-2xl font-bold text-taxable-dark">2025 Tax Filings</h2>
-                                <button className="h-12 px-6 bg-white border border-gray-200 hover:bg-gray-50 text-taxable-dark font-semibold rounded-xl transition-all">
-                                    Add another tax type
-                                </button>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                <TaxFolderCard
-                                    title="2026 Individual Tax"
-                                    valueText="Tax Paid - ₦320,000"
-                                    description="Your individual tax filing for the 2025 tax year."
-                                    status="filed"
-                                    statusText="Tax Filed- March 15, 2026"
-                                    isInactive
-                                />
-                                <TaxFolderCard
-                                    title="2026 Individual Tax"
-                                    valueText="Tax Paid - ₦320,000"
-                                    description="Your individual tax filing for the 2025 tax year."
-                                    status="filed"
-                                    statusText="Tax Filed- March 15, 2026"
-                                    isInactive
-                                />
-                                <TaxFolderCard
-                                    title="2026 Joint Spouse Tax"
-                                    valueText="Applies to your individual income from salaries, bonuses, and side hustles."
-                                    description="Your joint tax filing for the 2025 tax year."
-                                    status="none"
-                                    statusText="Not started"
-                                    isInactive
-                                />
-                            </div>
-                        </section>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                    {yearProfiles.map((profile, index) => (
+                                        <TaxFolderCard
+                                            key={profile._id || profile.profileId || index}
+                                            title={profile.title || `${profile.year || year} ${profile.profileType || 'Tax'}`}
+                                            valueText={profile.taxDue ? `Tax Due - ₦${profile.taxDue.toLocaleString()}` : "Calculation in progress"}
+                                            description={profile.description || `Your ${profile.profileType?.toLowerCase() || 'tax'} filing for the ${profile.year || year} tax year.`}
+                                            status={profile.status === 'draft' ? 'progress' : (profile.status || "none")}
+                                            statusText={profile.statusText || (profile.status === 'draft' ? 'In progress' : 'Not started')}
+                                            onClick={() => handleFolderClick(profile)}
+                                        />
+                                    ))}
+                                </div>
+                            </section>
+                        ))}
                     </div>
                 )}
             </main>
@@ -388,13 +360,13 @@ export default function Home() {
                     setResumeProfileId(null);
                     setResumeData(undefined);
                 }}
-                onComplete={(shouldRedirect) => {
+                onComplete={(shouldRedirect, profileId) => {
                     setIsSidebarOpen(false);
                     setResumeProfileId(null);
                     setResumeData(undefined);
                     fetchProfiles();
-                    if (shouldRedirect) {
-                        router.push('/tax-folders/pit?new=workspace');
+                    if (shouldRedirect && profileId) {
+                        router.push(`/tax-folders/pit?id=${profileId}&new=workspace`);
                     }
                 }}
             />

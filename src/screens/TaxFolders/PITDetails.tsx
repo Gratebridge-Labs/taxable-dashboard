@@ -178,45 +178,46 @@ export default function PITDetails() {
     const handleNext = async () => {
         if (!activeCategory || !profileId) return;
 
+        if (!isCategoryComplete(activeCategory)) {
+            alert("Please fill in all required questions before proceeding.");
+            return;
+        }
+
         setSubmitting(true);
         try {
-            const isIncomeCategory = 
-                activeCategory.categoryKey.includes('EMPLOYMENT') || 
-                activeCategory.categoryKey.includes('BUSINESS') || 
+            const isIncomeCategory =
+                activeCategory.categoryKey.includes('EMPLOYMENT') ||
+                activeCategory.categoryKey.includes('BUSINESS') ||
                 activeCategory.categoryKey.includes('DEDUCTION') ||
                 activeCategory.categoryName.toLowerCase().includes('income') ||
                 activeCategory.categoryName.toLowerCase().includes('deduction');
 
             const visibleQuestions = activeCategory.questions.filter(q => isQuestionVisible(q));
+
+            const answeredQuestions = visibleQuestions.filter(q => responses[q.questionId] !== undefined);
             
-            const submissionTasks = visibleQuestions
-                .filter(q => responses[q.questionId] !== undefined)
-                .map(async (q) => {
-                    let responseValue = responses[q.questionId];
-                    
-                    if (q.questionType === 'number' && typeof responseValue === 'string') {
-                        responseValue = Number(parseAmount(responseValue)) || 0;
-                    }
+            for (const q of answeredQuestions) {
+                let responseValue = responses[q.questionId];
+                
+                if (q.questionType === 'number' && typeof responseValue === 'string') {
+                    responseValue = Number(parseAmount(responseValue)) || 0;
+                }
 
-                    if (isIncomeCategory) {
-                        return post(`/questions/${profileId}/income`, {
-                            questionId: q.questionId,
-                            response: responseValue,
-                            period: isMonthly ? 'monthly' : 'annually',
-                            month: 1, // Defaulting to 1 as per snippet
-                            year: Number(profileInfo?.year) || 2025,
-                            autoSave: true
-                        });
-                    } else {
-                        return post(`/questions/${profileId}/answer`, {
-                            questionId: q.questionId,
-                            response: responseValue
-                        });
-                    }
-                });
-
-            if (submissionTasks.length > 0) {
-                await Promise.all(submissionTasks);
+                if (isIncomeCategory) {
+                    await post(`/questions/${profileId}/income`, {
+                        questionId: q.questionId,
+                        response: responseValue,
+                        period: isMonthly ? 'monthly' : 'annually',
+                        month: 1, // Defaulting to 1 as per snippet
+                        year: Number(profileInfo?.year) || 2025,
+                        autoSave: true
+                    });
+                } else {
+                    await post(`/questions/${profileId}/answer`, {
+                        questionId: q.questionId,
+                        response: responseValue
+                    });
+                }
             }
 
             if (currentIndex < categories.length - 1) {
@@ -253,6 +254,19 @@ export default function PITDetails() {
         }
 
         return true;
+    };
+
+    const isCategoryComplete = (category: Category) => {
+        return category.questions.every(q => {
+            if (!isQuestionVisible(q)) return true;
+            if (!q.required) return true;
+            
+            const response = responses[q.questionId];
+            if (response === undefined || response === null || response === '') return false;
+            if (Array.isArray(response) && response.length === 0) return false;
+            
+            return true;
+        });
     };
 
     const renderQuestion = (q: Question) => {
@@ -489,7 +503,7 @@ export default function PITDetails() {
                 </div>
             )}
 
-            <main className="max-w-[1280px] mx-auto px-12 py-8">
+            <main className="max-w-[1440px] mx-auto px-8 py-8">
                 <button
                     onClick={() => router.back()}
                     className="flex items-center gap-2 text-sm font-medium text-taxable-dark hover:text-taxable-blue transition-colors mb-4"
@@ -515,9 +529,9 @@ export default function PITDetails() {
                     </div>
                 </div>
 
-                <div className="flex gap-12">
+                <div className="flex items-start gap-8">
                     {/* Sidebar */}
-                    <div className="w-[340px] flex-shrink-0 flex flex-col gap-6 sticky top-32">
+                    <div className="w-[320px] flex-shrink-0 flex flex-col gap-6 sticky top-32">
                         <div className="bg-white rounded-[24px] p-4 border border-gray-100">
                             <h3 className="text-[20px] font-bold text-[#A3A3A3] mb-5 px-3">Sections</h3>
                             {categories.map((cat, idx) => (
@@ -525,7 +539,7 @@ export default function PITDetails() {
                                     key={cat.categoryKey}
                                     label={cat.categoryName}
                                     active={activeSectionKey === cat.categoryKey}
-                                    completed={idx < currentIndex}
+                                    completed={isCategoryComplete(cat)}
                                     onClick={() => setActiveSectionKey(cat.categoryKey)}
                                 />
                             ))}
@@ -533,7 +547,7 @@ export default function PITDetails() {
                     </div>
 
                     {/* Main Content Area */}
-                    <div className="flex-1 max-w-[720px]">
+                    <div className="flex-1 min-w-0 max-w-[840px]">
                         {loading ? (
                             <div className="flex items-center justify-center py-20">
                                 <span className="text-taxable-gray font-medium">Loading questions...</span>
@@ -570,19 +584,18 @@ export default function PITDetails() {
                     </div>
 
                     {/* Right Help Sidebar */}
-                    <div className="w-[302px] flex-shrink-0">
-                        <div className="bg-taxable-lightgray2 rounded-[24px] p-7 min-h-[367px] sticky top-32 border border-gray-100/50">
-                            <div className="mb-4">
-                                <div className="flex items-center gap-2.5 mb-2.5">
-                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-taxable-dark">
-                                        <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
-                                    </svg>
-                                    <h4 className="text-base font-semibold text-taxable-dark">Why we need this</h4>
-                                </div>
-                                <p className="text-sm text-[#64748B] leading-[1.5] font-medium">
-                                    Your details help us identify you with relevant tax authorities and ensure your tax return is filed correctly. All information is encrypted and stored securely.
-                                </p>
+                    <div className="w-[280px] flex-shrink-0 sticky top-32 bg-taxable-lightgray2 rounded-[24px] p-7 min-h-[367px] border border-gray-100/50">
+                        <div className="mb-4">
+                            <div className="flex items-center gap-2.5 mb-2.5">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-taxable-dark">
+                                    <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+                                </svg>
+                                <h4 className="text-base font-semibold text-taxable-dark">Why we need this</h4>
                             </div>
+                            <p className="text-sm text-[#64748B] leading-[1.5] font-medium">
+                                Your details help us identify you with relevant tax authorities and ensure your tax return is filed correctly. All information is encrypted and stored securely.
+                            </p>
+                        </div>
 
                             <div className="space-y-0">
                                 <div className="py-2.5">
@@ -619,10 +632,9 @@ export default function PITDetails() {
                                     </div>
                                 </div>
                             </div>
-                        </div>
                     </div>
                 </div>
-            </main >
-        </div >
+            </main>
+        </div>
     );
 }

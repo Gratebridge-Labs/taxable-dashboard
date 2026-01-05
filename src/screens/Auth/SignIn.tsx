@@ -74,7 +74,7 @@ export default function SignIn() {
                 const user = response.data.user;
                 if (user?.twoFactorEnabled) {
                     setIsLoading(false);
-                    // Store credentials temporarily for the 2FA verification step
+                    // Store credentials for the 2FA screen to call login again
                     sessionStorage.setItem('taxable_temp_email', email);
                     sessionStorage.setItem('taxable_temp_password', password);
                     router.push(`/verify-2fa?email=${encodeURIComponent(email)}`);
@@ -84,8 +84,17 @@ export default function SignIn() {
             } else {
                 setIsLoading(false);
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error("Login failed:", err);
+
+            // If the backend says 2FA is required via error
+            if (err.message === "Two-factor authentication code is required") {
+                sessionStorage.setItem('taxable_temp_email', email);
+                sessionStorage.setItem('taxable_temp_password', password);
+                router.push(`/verify-2fa?email=${encodeURIComponent(email)}`);
+                return;
+            }
+
             setIsLoading(false);
         }
     };

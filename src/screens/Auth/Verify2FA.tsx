@@ -60,6 +60,7 @@ export default function Verify2FA() {
                 // Cleanup temporary storage
                 sessionStorage.removeItem('taxable_temp_email');
                 sessionStorage.removeItem('taxable_temp_password');
+                sessionStorage.removeItem('taxable_temp_token');
             } else {
                 setIsLoading(false);
             }

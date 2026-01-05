@@ -7,14 +7,14 @@ import LoadingScreen from '@/screens/Onboarding/LoadingScreen';
 import { useApi } from '@/hooks/useApi';
 import { useUser } from '@/contexts/UserContext';
 
-const InputField = ({ label, placeholder, value, onChange, type = "text" }: { label: string; placeholder: string; value: string; onChange: (val: string) => void; type?: string }) => {
+const InputField = ({ label, placeholder, value, onChange, type = "text", hint }: { label: string; placeholder: string; value: string; onChange: (val: string) => void; type?: string; hint?: string }) => {
     const [showPassword, setShowPassword] = useState(false);
     const isPassword = type === "password";
     const inputType = isPassword ? (showPassword ? "text" : "password") : type;
 
     return (
-        <div className="flex flex-col gap-1 w-full">
-            <label className="text-sm font-medium text-taxable-dark">
+        <div className="flex flex-col gap-2 w-full">
+            <label className="text-sm font-bold text-taxable-dark">
                 {label}
             </label>
             <div className="relative">
@@ -23,21 +23,21 @@ const InputField = ({ label, placeholder, value, onChange, type = "text" }: { la
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
                     placeholder={placeholder}
-                    className="w-full h-10 px-4 rounded-2xl border border-gray-200 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-taxable-blue/20 focus:border-taxable-blue transition-all"
+                    className="w-full h-12 px-4 rounded-2xl border border-gray-100 bg-white placeholder:text-gray-200 focus:outline-none focus:ring-1 focus:ring-taxable-blue/10 focus:border-taxable-blue transition-all font-medium text-taxable-dark"
                 />
                 {isPassword && (
                     <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 focus:outline-none"
                     >
                         {showPassword ? (
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
                                 <line x1="1" y1="1" x2="23" y2="23"></line>
                             </svg>
                         ) : (
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                                 <circle cx="12" cy="12" r="3" />
                             </svg>
@@ -45,6 +45,14 @@ const InputField = ({ label, placeholder, value, onChange, type = "text" }: { la
                     </button>
                 )}
             </div>
+            {hint && (
+                <div className="flex items-center gap-1.5 mt-0.5">
+                    <div className="w-3.5 h-3.5 rounded-full bg-gray-400 flex items-center justify-center">
+                        <span className="text-[10px] text-white font-bold">!</span>
+                    </div>
+                    <p className="text-[12px] text-taxable-gray font-medium">{hint}</p>
+                </div>
+            )}
         </div>
     );
 };
@@ -60,7 +68,8 @@ export default function Signup() {
         lastName: '',
         email: '',
         phone: '',
-        password: ''
+        password: '',
+        whatsappReminders: false
     });
 
     const handleSignup = async (e: React.FormEvent) => {
@@ -68,11 +77,9 @@ export default function Signup() {
         setIsLoading(true);
 
         try {
-            // Register user via API using the YodoPay pattern
             const response = await post('/auth/register', formData, { useToken: false });
 
             if (response?.data?.token) {
-                // Initialize session if the API returns a token immediately
                 login(response.data.token, response.data.user);
             }
         } catch (err) {
@@ -84,78 +91,92 @@ export default function Signup() {
     return (
         <>
             <OnboardingLayout>
-                <div className="max-w-lg mx-auto w-full mt-12 md:mt-0">
-                    <div className="mb-6 flex justify-between items-start">
-                        <div>
-                            <h2 className="text-2xl font-medium text-taxable-dark mb-1">Welcome to Taxable</h2>
-                            <p className="text-taxable-gray text-base">Let's get your tax compliance sorted in minutes</p>
-                        </div>
-                        <Link href="/signin" className="px-5 py-2 rounded-lg border border-gray-200 text-taxable-dark font-medium hover:bg-gray-50 transition-colors bg-white text-sm whitespace-nowrap">
+                <div className="max-w-[480px] mx-auto w-full relative">
+                    <div className="absolute top-0 right-0 md:-right-4">
+                        <Link href="/signin" className="h-[44px] px-6 flex items-center justify-center rounded-xl border border-gray-100 text-taxable-dark font-bold hover:bg-gray-50 transition-colors bg-white text-[13px] whitespace-nowrap shadow-sm">
                             Log in
                         </Link>
                     </div>
 
-                    <form onSubmit={handleSignup} className="flex flex-col gap-3">
-                        <div className="flex gap-3">
+                    <div className="mb-10 pt-4">
+                        <h2 className="text-[26px] font-bold text-taxable-dark mb-2">Welcome to Taxable</h2>
+                        <p className="text-taxable-gray text-[15px] font-medium leading-relaxed">Let's get your tax compliance sorted in minutes</p>
+                    </div>
+
+                    <form onSubmit={handleSignup} className="flex flex-col gap-6">
+                        <div className="space-y-6">
                             <InputField
                                 label="First name"
-                                placeholder="Enter first name"
+                                placeholder="hello@alignui.com"
                                 value={formData.firstName}
                                 onChange={(val) => setFormData({ ...formData, firstName: val })}
                             />
                             <InputField
                                 label="Last name"
-                                placeholder="Enter last name"
+                                placeholder="hello@alignui.com"
                                 value={formData.lastName}
                                 onChange={(val) => setFormData({ ...formData, lastName: val })}
                             />
-                        </div>
 
-                        <InputField
-                            label="Email Address"
-                            placeholder="hello@example.com"
-                            type="email"
-                            value={formData.email}
-                            onChange={(val) => setFormData({ ...formData, email: val })}
-                        />
+                            <InputField
+                                label="Email Address"
+                                placeholder="hello@alignui.com"
+                                type="email"
+                                value={formData.email}
+                                onChange={(val) => setFormData({ ...formData, email: val })}
+                            />
 
-                        <div className="flex flex-col gap-1 w-full">
-                            <label className="text-sm font-medium text-taxable-dark">
-                                Phone number
-                            </label>
-                            <input
-                                type="tel"
-                                placeholder="+234"
-                                value={formData.phone}
-                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                className="w-full h-10 px-4 rounded-lg border border-gray-200 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-taxable-blue/20 focus:border-taxable-blue transition-all"
+                            <div className="flex flex-col gap-2 w-full">
+                                <label className="text-sm font-bold text-taxable-dark">
+                                    Phone number
+                                </label>
+                                <input
+                                    type="tel"
+                                    placeholder="+234"
+                                    value={formData.phone}
+                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                    className="w-full h-12 px-4 rounded-2xl border border-gray-100 bg-white placeholder:text-gray-200 focus:outline-none focus:ring-1 focus:ring-taxable-blue/10 focus:border-taxable-blue transition-all font-medium text-taxable-dark"
+                                />
+                                <div className="flex items-center gap-3 mt-1 cursor-pointer" onClick={() => setFormData({ ...formData, whatsappReminders: !formData.whatsappReminders })}>
+                                    <div className={`w-[18px] h-[18px] rounded border flex items-center justify-center transition-colors ${formData.whatsappReminders ? 'bg-[#00388D] border-[#00388D]' : 'border-gray-200'}`}>
+                                        {formData.whatsappReminders && (
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                                                <polyline points="20 6 9 17 4 12" />
+                                            </svg>
+                                        )}
+                                    </div>
+                                    <span className="text-[13px] font-medium text-taxable-gray">Receive tax deadline reminders via WhatsApp</span>
+                                </div>
+                            </div>
+
+                            <InputField
+                                label="Password"
+                                placeholder="••••••••••••"
+                                type="password"
+                                value={formData.password}
+                                onChange={(val) => setFormData({ ...formData, password: val })}
+                                hint="At least 8 characters. Make it strong!"
                             />
                         </div>
 
-                        <InputField
-                            label="Password"
-                            placeholder="••••••••••••"
-                            type="password"
-                            value={formData.password}
-                            onChange={(val) => setFormData({ ...formData, password: val })}
-                        />
-
                         {apiError && (
-                            <div className="text-sm text-red-500 font-medium">
+                            <div className="text-sm text-red-500 font-medium -mt-2">
                                 {apiError}
                             </div>
                         )}
 
-                        <button
-                            type="submit"
-                            className="flex items-center justify-center w-full h-11 bg-taxable-blue hover:opacity-90 text-taxable-light font-medium rounded-2xl shadow-lg shadow-taxable-blue/10 transition-transform active:scale-[0.99] mt-1"
-                        >
-                            Create Account
-                        </button>
+                        <div className="mt-2 space-y-5">
+                            <button
+                                type="submit"
+                                className="w-full h-[52px] bg-[#00388D] hover:bg-[#002d70] text-white font-bold rounded-2xl shadow-lg shadow-blue-900/10 transition-all active:scale-[0.98] text-[15px]"
+                            >
+                                Create Account
+                            </button>
 
-                        <p className="text-[14px] text-center text-taxable-gray mt-2">
-                            By continuing, you agree to our <Link href="#" className="font-medium text-taxable-blue">Terms of Service</Link> and <Link href="#" className="font-medium text-taxable-blue">Privacy Policy</Link>.
-                        </p>
+                            <p className="text-[13px] text-center text-taxable-gray font-medium px-4">
+                                By continuing, you agree to our <Link href="#" className="font-bold text-taxable-dark hover:underline">Terms of Service</Link> and <Link href="#" className="font-bold text-taxable-dark hover:underline">Privacy Policy</Link>.
+                            </p>
+                        </div>
                     </form>
                 </div>
             </OnboardingLayout>

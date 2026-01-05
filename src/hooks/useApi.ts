@@ -65,7 +65,9 @@ export const useApi = () => {
                 }
                 // Centralized error parsing: prioritizing backend message
                 const errorMessage = responseData?.message || responseData?.error || `Error: ${response.status} ${response.statusText}`;
-                throw new Error(errorMessage);
+                const error: any = new Error(errorMessage);
+                error.data = responseData;
+                throw error;
             }
 
             setData(responseData);

@@ -38,8 +38,10 @@ const OnboardingLayout = ({ children }: OnboardingLayoutProps) => {
             </div>
 
             {/* Right Panel - Dynamic Content */}
-            <div className="w-full md:w-[55%] lg:w-[60%] p-6 md:p-8 lg:p-12 h-full flex flex-col justify-center">
-                {children}
+            <div className="w-full md:w-[55%] lg:w-[60%] h-full overflow-y-auto">
+                <div className="min-h-full p-6 md:p-8 lg:p-12 flex flex-col justify-start md:justify-center py-12">
+                    {children}
+                </div>
             </div>
         </div>
     );

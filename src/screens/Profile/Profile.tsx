@@ -36,10 +36,10 @@ const Toggle = ({ enabled, onChange }: { enabled: boolean; onChange: () => void 
 
 
 export default function Profile() {
-    const { user, setUser } = useUser();
+    const { user, setUser, refreshUser } = useUser();
     const [activeSection, setActiveSection] = useState('Personal Information');
     const [profileImage, setProfileImage] = useState<string | null>(null);
-    const { post, patch, loading: apiLoading, error: apiError } = useApi();
+    const { get, post, patch, loading: apiLoading, error: apiError } = useApi();
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
@@ -71,6 +71,12 @@ export default function Profile() {
         tfaCode: '',
         isEnabling: false
     });
+
+    const [tfaSetupData, setTfaSetupData] = useState<{
+        secret: string;
+        qrCode: string;
+        manualEntryKey: string;
+    } | null>(null);
 
     const [preferences, setPreferences] = useState({
         filingReminders: false,
@@ -109,21 +115,40 @@ export default function Profile() {
         }
     };
 
-    const handleEnable2FA = async () => {
+    const handleInitiate2FA = async () => {
+        setSuccessMessage(null);
+        try {
+            const response = await get('/auth/setup-2fa');
+            if (response?.success && response?.data) {
+                setTfaSetupData(response.data);
+                setSecurityData({ ...securityData, isEnabling: true });
+            }
+        } catch (err) {
+            console.error("Failed to initiate 2FA setup:", err);
+        }
+    };
+
+    const handleVerify2FA = async () => {
         setSuccessMessage(null);
         if (!securityData.tfaCode) return;
 
-        const response = await post('/auth/enable-2fa', {
-            code: securityData.tfaCode
-        });
-
-        if (response) {
-            setSuccessMessage("Two-factor authentication has been successfully enabled for your account.");
-            setSecurityData({
-                ...securityData,
-                tfaCode: '',
-                isEnabling: false
+        try {
+            const response = await post('/auth/enable-2fa', {
+                code: securityData.tfaCode
             });
+
+            if (response?.success) {
+                setSuccessMessage("Two-factor authentication has been successfully enabled for your account.");
+                setSecurityData({
+                    ...securityData,
+                    tfaCode: '',
+                    isEnabling: false
+                });
+                setTfaSetupData(null);
+                refreshUser();
+            }
+        } catch (err) {
+            console.error("Failed to verify 2FA:", err);
         }
     };
 
@@ -410,7 +435,28 @@ export default function Profile() {
                                     </div>
 
                                     {securityData.isEnabling ? (
-                                        <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
+                                        <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
+                                            {tfaSetupData && (
+                                                <div className="bg-white border border-gray-100 rounded-[24px] p-6 flex flex-col items-center">
+                                                    <p className="text-[14px] text-taxable-gray font-medium mb-4 text-center">
+                                                        Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)
+                                                    </p>
+                                                    <div className="relative w-48 h-48 mb-4 border border-gray-50 rounded-xl overflow-hidden bg-white p-2">
+                                                        <img
+                                                            src={tfaSetupData.qrCode}
+                                                            alt="2FA QR Code"
+                                                            className="w-full h-full object-contain"
+                                                        />
+                                                    </div>
+                                                    <div className="w-full">
+                                                        <p className="text-[12px] text-taxable-gray font-bold mb-1 uppercase tracking-wider">Manual Entry Key</p>
+                                                        <div className="bg-gray-50 rounded-lg p-3 break-all font-mono text-[13px] text-taxable-dark border border-gray-100">
+                                                            {tfaSetupData.manualEntryKey}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             <div className="max-w-[200px]">
                                                 <ProfileField
                                                     label="Enter Verification Code"
@@ -421,13 +467,16 @@ export default function Profile() {
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <button
-                                                    onClick={() => setSecurityData({ ...securityData, isEnabling: false, tfaCode: '' })}
+                                                    onClick={() => {
+                                                        setSecurityData({ ...securityData, isEnabling: false, tfaCode: '' });
+                                                        setTfaSetupData(null);
+                                                    }}
                                                     className="h-[52px] px-8 border border-gray-100 text-taxable-dark font-bold rounded-xl hover:bg-gray-50 transition-colors"
                                                 >
                                                     Cancel
                                                 </button>
                                                 <button
-                                                    onClick={handleEnable2FA}
+                                                    onClick={handleVerify2FA}
                                                     disabled={apiLoading || (securityData.tfaCode?.length || 0) < 6}
                                                     className="h-[52px] px-10 bg-[#00388D] text-white font-bold rounded-xl hover:opacity-95 transition-opacity disabled:opacity-50 flex items-center gap-2"
                                                 >
@@ -437,7 +486,7 @@ export default function Profile() {
                                         </div>
                                     ) : (
                                         <button
-                                            onClick={() => setSecurityData({ ...securityData, isEnabling: true })}
+                                            onClick={handleInitiate2FA}
                                             className="h-[52px] px-8 bg-white border border-gray-100 text-taxable-dark font-bold rounded-xl hover:bg-gray-50 transition-colors shadow-sm"
                                         >
                                             Enable 2FA

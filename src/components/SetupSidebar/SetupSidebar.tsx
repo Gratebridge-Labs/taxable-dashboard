@@ -3,10 +3,33 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import LoadingScreen from '@/screens/Onboarding/LoadingScreen';
 
+import { useApi } from '@/hooks/useApi';
+
+interface Question {
+    questionId: string;
+    order: number;
+    category: string;
+    questionText: string;
+    questionType: 'multiple_choice' | 'yes_no';
+    required: boolean;
+    options?: string[];
+    explanation: string;
+    helpText: string;
+    dependsOn: string[];
+    allowMultiple?: boolean;
+    answered: boolean;
+    existingResponse: any;
+}
+
 interface SetupSidebarProps {
     isOpen: boolean;
     onClose: () => void;
     onComplete?: (shouldRedirect: boolean) => void;
+    resumeProfileId?: string | null;
+    initialData?: {
+        year?: string;
+        category?: string;
+    };
 }
 
 const SidebarRadio = ({ label, description, isSelected, onClick }: { label: string; description?: string; isSelected: boolean; onClick: () => void }) => (
@@ -43,27 +66,24 @@ const SidebarCheckbox = ({ label, description, isSelected, onClick }: { label: s
     </div>
 );
 
-import { useApi } from '@/hooks/useApi';
-
-export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSidebarProps) {
-    const { post } = useApi();
+export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfileId, initialData }: SetupSidebarProps) {
+    const { post, get } = useApi();
     const [step, setStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isCreatingFolder, setIsCreatingFolder] = useState(false);
     const [shouldRedirectAfterLoading, setShouldRedirectAfterLoading] = useState(true);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+    // Dynamic Question State
+    const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
+    const [questions, setQuestions] = useState<Question[]>([]);
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    const [responses, setResponses] = useState<Record<string, any>>({});
+    const [loadingQuestions, setLoadingQuestions] = useState(false);
+
     const [selections, setSelections] = useState({
         taxYear: '2026',
-        category: 'Individual',
-        // ... rest of state
-        incomeSources: ['Salary / Employment', 'Business/Self-employment'],
-        pension: 'Yes',
-        health: 'Yes, NHIS',
-        life: 'Yes',
-        dependents: 'Yes',
-        rent: 'Yes, I rent',
-        mortgage: 'Yes',
-        gratuity: 'Yes'
+        category: 'Individual'
     });
     const [createError, setCreateError] = useState<string | null>(null);
 
@@ -71,11 +91,17 @@ export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSideb
         setIsCreatingFolder(true);
         setCreateError(null);
         try {
-            await post('/taxableprofile/create', {
+            const response = await post('/taxableprofile/create', {
                 year: selections.taxYear,
                 profileType: selections.category
             });
-            setShowSuccessModal(true);
+
+            if (response?.success && response?.data?.profileId) {
+                setActiveProfileId(response.data.profileId);
+                setShowSuccessModal(true);
+            } else {
+                throw new Error("Failed to get profile ID from response");
+            }
         } catch (err: any) {
             console.error("Failed to create tax folder:", err);
             setCreateError(err.message || "Failed to create tax folder. Please try again.");
@@ -84,19 +110,112 @@ export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSideb
         }
     };
 
+    const fetchBaseQuestions = async () => {
+        if (!activeProfileId) return;
+
+        setLoadingQuestions(true);
+        try {
+            const response = await get(`/questions/${activeProfileId}/base-questions`);
+            if (response?.success && response?.data?.questions) {
+                setQuestions(response.data.questions);
+                setStep(1); // Move to dynamic questions step
+                setCurrentQuestionIndex(0);
+            }
+        } catch (err) {
+            console.error("Failed to fetch base questions:", err);
+        } finally {
+            setLoadingQuestions(false);
+        }
+    };
+
     // Reset step and status when opening
     useEffect(() => {
         if (isOpen) {
-            setStep(0);
-            setIsSubmitting(false);
-            setShowSuccessModal(false);
+            if (resumeProfileId) {
+                setStep(1);
+                setActiveProfileId(resumeProfileId);
+                setShowSuccessModal(false);
+                setQuestions([]);
+                setCurrentQuestionIndex(0);
+                setResponses({});
+
+                // If initialData is provided, sync it to selections
+                if (initialData?.year || initialData?.category) {
+                    setSelections(prev => ({
+                        ...prev,
+                        taxYear: initialData.year || prev.taxYear,
+                        category: initialData.category || prev.category
+                    }));
+                }
+
+                // Automatically fetch questions for resume
+                const fetchOnOpen = async () => {
+                    setLoadingQuestions(true);
+                    try {
+                        const response = await get(`/questions/${resumeProfileId}/base-questions`);
+                        if (response?.success && response?.data?.questions) {
+                            setQuestions(response.data.questions);
+                            setCurrentQuestionIndex(0);
+                        }
+                    } catch (err) {
+                        console.error("Failed to fetch base questions:", err);
+                    } finally {
+                        setLoadingQuestions(false);
+                    }
+                };
+                fetchOnOpen();
+            } else {
+                setStep(0);
+                setIsSubmitting(false);
+                setShowSuccessModal(false);
+                setActiveProfileId(null);
+                setQuestions([]);
+                setCurrentQuestionIndex(0);
+                setResponses({});
+            }
         }
-    }, [isOpen]);
+    }, [isOpen, resumeProfileId, get]);
 
     if (!isOpen) return null;
 
-    const nextStep = () => setStep(prev => prev + 1);
-    const prevStep = () => setStep(prev => Math.max(0, prev - 1));
+    const handleAnswer = (questionId: string, answer: any) => {
+        setResponses(prev => ({
+            ...prev,
+            [questionId]: answer
+        }));
+    };
+
+    const handleNext = async () => {
+        if (currentQuestionIndex < questions.length - 1) {
+            setCurrentQuestionIndex(prev => prev + 1);
+        } else {
+            // Final submission
+            setIsSubmitting(true);
+            try {
+                // Formatting responses as an array of { questionId, response }
+                const formattedAnswers = Object.entries(responses).map(([questionId, response]) => ({
+                    questionId,
+                    response
+                }));
+
+                await post(`/questions/${activeProfileId}/answer-base-questions`, {
+                    answers: formattedAnswers
+                });
+                handleComplete(true);
+            } catch (err) {
+                console.error("Failed to submit answers:", err);
+                setIsSubmitting(false);
+            }
+        }
+    };
+
+    const prevStep = () => {
+        if (step === 1 && currentQuestionIndex > 0) {
+            setCurrentQuestionIndex(prev => prev - 1);
+        } else {
+            setStep(prev => Math.max(0, prev - 1));
+        }
+    };
 
     const handleComplete = (shouldRedirect: boolean = true) => {
         setShouldRedirectAfterLoading(shouldRedirect);
@@ -158,115 +277,100 @@ export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSideb
                                         <span>Creating...</span>
                                     </>
                                 ) : (
-                                    "Next 1/4"
+                                    "Next"
                                 )}
                             </button>
                         </div>
                     </div>
                 );
             case 1:
+                const question = questions[currentQuestionIndex];
+                if (!question) return null;
+
+                const currentResponse = responses[question.questionId];
+
                 return (
-                    <div className="flex flex-col gap-6">
+                    <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-right-4 duration-300">
                         <section>
-                            <h3 className="text-[15px] font-medium text-taxable-dark mb-3">What's your primary income source?</h3>
-                            <div className="flex flex-col gap-2">
-                                {['Salary / Employment', 'Business/Self-employment', 'Freelance/Consulting', 'Investment income', 'Rental income', 'Other Income'].map(source => (
-                                    <SidebarCheckbox
-                                        key={source}
-                                        label={source}
-                                        description={
-                                            source === 'Salary / Employment' ? 'Income from an employer' :
-                                                source === 'Business/Self-employment' ? 'Income from your own business' :
-                                                    source === 'Freelance/Consulting' ? 'Project-based or contract work' :
-                                                        source === 'Investment income' ? 'Dividends, interest, capital gains' :
-                                                            source === 'Rental income' ? 'Income from property rentals' :
-                                                                source === 'Other Income' ? 'Royalties, gifts, or other sources' :
-                                                                    undefined
-                                        }
-                                        isSelected={selections.incomeSources.includes(source)}
-                                        onClick={() => {
-                                            const newSources = selections.incomeSources.includes(source)
-                                                ? selections.incomeSources.filter(s => s !== source)
-                                                : [...selections.incomeSources, source];
-                                            setSelections({ ...selections, incomeSources: newSources });
-                                        }}
-                                    />
-                                ))}
+                            <div className="flex justify-between items-center mb-6">
+                                <span className="text-[12px] font-bold text-taxable-blue/60 uppercase tracking-widest bg-taxable-blue/5 px-3 py-1 rounded-full">
+                                    Step {currentQuestionIndex + 1} of {questions.length}
+                                </span>
                             </div>
+
+                            <h3 className="text-[17px] font-bold text-taxable-dark mb-2 leading-snug">
+                                {question.questionText}
+                            </h3>
+                            {question.helpText && (
+                                <p className="text-[13px] text-taxable-gray font-medium mb-6 leading-relaxed">
+                                    {question.helpText}
+                                </p>
+                            )}
+
+                            <div className="flex flex-col gap-3">
+                                {question.questionType === 'yes_no' ? (
+                                    <>
+                                        <SidebarRadio
+                                            label="Yes"
+                                            isSelected={currentResponse === 'yes'}
+                                            onClick={() => handleAnswer(question.questionId, 'yes')}
+                                        />
+                                        <SidebarRadio
+                                            label="No"
+                                            isSelected={currentResponse === 'no'}
+                                            onClick={() => handleAnswer(question.questionId, 'no')}
+                                        />
+                                    </>
+                                ) : question.questionType === 'multiple_choice' ? (
+                                    question.options?.map(option => (
+                                        question.allowMultiple ? (
+                                            <SidebarCheckbox
+                                                key={option}
+                                                label={option}
+                                                isSelected={(currentResponse as string[] || []).includes(option)}
+                                                onClick={() => {
+                                                    const current = (currentResponse as string[] || []);
+                                                    const next = current.includes(option)
+                                                        ? current.filter(o => o !== option)
+                                                        : [...current, option];
+                                                    handleAnswer(question.questionId, next);
+                                                }}
+                                            />
+                                        ) : (
+                                            <SidebarRadio
+                                                key={option}
+                                                label={option}
+                                                isSelected={currentResponse === option}
+                                                onClick={() => handleAnswer(question.questionId, option)}
+                                            />
+                                        )
+                                    ))
+                                ) : null}
+                            </div>
+
+                            {question.explanation && (
+                                <div className="mt-8 p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+                                    <div className="flex gap-3">
+                                        <div className="w-5 h-5 rounded-full bg-taxable-blue flex items-center justify-center flex-shrink-0 mt-0.5">
+                                            <span className="text-[10px] text-white font-bold italic">i</span>
+                                        </div>
+                                        <p className="text-[12px] text-taxable-gray font-medium leading-relaxed">
+                                            {question.explanation}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                         </section>
+
                         <div className="flex gap-3 mt-4">
                             <button onClick={prevStep} className="flex-1 h-12 border border-gray-100 font-bold rounded-xl hover:bg-gray-50">Back</button>
-                            <button onClick={nextStep} className="flex-[2] h-12 bg-taxable-blue text-white font-bold rounded-xl">Next 2/4</button>
-                        </div>
-                    </div>
-                );
-            case 2:
-                return (
-                    <div className="flex flex-col gap-6">
-                        <section>
-                            <h3 className="text-[15px] font-medium text-taxable-dark mb-3">Do you contribute to a pension plan?</h3>
-                            <div className="flex flex-col gap-2">
-                                <SidebarRadio label="Yes, I contribute to pension" isSelected={selections.pension === 'Yes'} onClick={() => setSelections({ ...selections, pension: 'Yes' })} />
-                                <SidebarRadio label="No, I don't have a pension plan" isSelected={selections.pension === 'No'} onClick={() => setSelections({ ...selections, pension: 'No' })} />
-                                <SidebarRadio label="Not sure / I'll check later" isSelected={selections.pension === 'Later'} onClick={() => setSelections({ ...selections, pension: 'Later' })} />
-                            </div>
-                        </section>
-                        <section>
-                            <h3 className="text-[15px] font-medium text-taxable-dark mb-3">Do you pay for health insurance?</h3>
-                            <div className="flex flex-col gap-2">
-                                <SidebarRadio label="Yes, NHIS (National Health Insurance)" isSelected={selections.health === 'Yes, NHIS'} onClick={() => setSelections({ ...selections, health: 'Yes, NHIS' })} />
-                                <SidebarRadio label="Yes, private health insurance" isSelected={selections.health === 'Private'} onClick={() => setSelections({ ...selections, health: 'Private' })} />
-                                <SidebarRadio label="Yes, both NHIS and private" isSelected={selections.health === 'Both'} onClick={() => setSelections({ ...selections, health: 'Both' })} />
-                                <SidebarRadio label="No health insurance" isSelected={selections.health === 'None'} onClick={() => setSelections({ ...selections, health: 'None' })} />
-                            </div>
-                        </section>
-                        <section>
-                            <h3 className="text-[15px] font-medium text-taxable-dark mb-3">Do you have life insurance?</h3>
-                            <div className="flex flex-col gap-2">
-                                <SidebarRadio label="Yes, I pay life insurance premiums" isSelected={selections.life === 'Yes'} onClick={() => setSelections({ ...selections, life: 'Yes' })} />
-                                <SidebarRadio label="No, I don't have life insurance" isSelected={selections.life === 'No'} onClick={() => setSelections({ ...selections, life: 'No' })} />
-                            </div>
-                        </section>
-                        <div className="flex gap-3 mt-4">
-                            <button onClick={prevStep} className="flex-1 h-12 border border-gray-100 font-bold rounded-xl hover:bg-gray-50">Back</button>
-                            <button onClick={nextStep} className="flex-[2] h-12 bg-taxable-blue text-white font-bold rounded-xl">Next 3/4</button>
-                        </div>
-                    </div>
-                );
-            case 3:
-                return (
-                    <div className="flex flex-col gap-6">
-                        <section>
-                            <h3 className="text-[15px] font-medium text-taxable-dark mb-3">Do you have dependents?</h3>
-                            <div className="flex flex-col gap-2">
-                                <SidebarRadio label="Yes" isSelected={selections.dependents === 'Yes'} onClick={() => setSelections({ ...selections, dependents: 'Yes' })} />
-                                <SidebarRadio label="No dependents" isSelected={selections.dependents === 'No'} onClick={() => setSelections({ ...selections, dependents: 'No' })} />
-                            </div>
-                        </section>
-                        <section>
-                            <h3 className="text-[15px] font-medium text-taxable-dark mb-3">Do you pay rent?</h3>
-                            <div className="flex flex-col gap-2">
-                                <SidebarRadio label="Yes, I rent my home" isSelected={selections.rent === 'Yes, I rent'} onClick={() => setSelections({ ...selections, rent: 'Yes, I rent' })} />
-                                <SidebarRadio label="No, I own my home or live rent-free" isSelected={selections.rent === 'No'} onClick={() => setSelections({ ...selections, rent: 'No' })} />
-                            </div>
-                        </section>
-                        <section>
-                            <h3 className="text-[15px] font-medium text-taxable-dark mb-3">Do you pay a mortgage?</h3>
-                            <div className="flex flex-col gap-2">
-                                <SidebarRadio label="Yes, I have a mortgage" isSelected={selections.mortgage === 'Yes'} onClick={() => setSelections({ ...selections, mortgage: 'Yes' })} />
-                                <SidebarRadio label="No" isSelected={selections.mortgage === 'No'} onClick={() => setSelections({ ...selections, mortgage: 'No' })} />
-                            </div>
-                        </section>
-                        <section>
-                            <h3 className="text-[15px] font-medium text-taxable-dark mb-3">Did you receive gratuity or severance pay this year?</h3>
-                            <div className="flex flex-col gap-2">
-                                <SidebarRadio label="Yes" isSelected={selections.gratuity === 'Yes'} onClick={() => setSelections({ ...selections, gratuity: 'Yes' })} />
-                                <SidebarRadio label="No" isSelected={selections.gratuity === 'No'} onClick={() => setSelections({ ...selections, gratuity: 'No' })} />
-                            </div>
-                        </section>
-                        <div className="flex gap-3 mt-4">
-                            <button onClick={prevStep} className="flex-1 h-12 border border-gray-100 font-bold rounded-xl hover:bg-gray-50">Back</button>
-                            <button onClick={() => handleComplete(true)} className="flex-[2] h-12 bg-taxable-blue text-white font-bold rounded-xl">Complete Setup</button>
+                            <button
+                                onClick={handleNext}
+                                disabled={!currentResponse || (Array.isArray(currentResponse) && currentResponse.length === 0)}
+                                className="flex-[2] h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40"
+                            >
+                                {currentQuestionIndex === questions.length - 1 ? "Complete Setup" : "Next"}
+                            </button>
                         </div>
                     </div>
                 );
@@ -319,7 +423,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSideb
                             <div className="text-left">
                                 <h2 className="text-xl font-semibold text-taxable-dark mb-2.5">Tax folder created</h2>
                                 <p className="text-sm text-taxable-dark font-medium leading-[1.5] mb-3">
-                                    We've created a dedicated space for your 2026 {selections.category} Tax filing. Think of this as your personal tax workspace - everything you need will be organized here.
+                                    We've created a dedicated space for your {selections.taxYear} {selections.category} Tax filing. Think of this as your personal tax workspace - everything you need will be organized here.
                                 </p>
                                 <p className="text-sm text-taxable-gray font-medium leading-[1.5]">
                                     To get started, answer some setup questions (2 minutes) so we can personalize your workspace. We'll only show fields relevant to your situation
@@ -340,11 +444,12 @@ export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSideb
                             <button
                                 onClick={() => {
                                     setShowSuccessModal(false);
-                                    setStep(1);
+                                    fetchBaseQuestions();
                                 }}
-                                className="flex-1 h-12 bg-[#003787] text-white text-sm font-semibold rounded-xl hover:opacity-90 shadow-lg shadow-[#003787]/10 transition-all px-4 text-center"
+                                disabled={loadingQuestions}
+                                className="flex-1 h-12 bg-[#003787] text-white text-sm font-semibold rounded-xl hover:opacity-90 shadow-lg shadow-[#003787]/10 transition-all px-4 text-center disabled:opacity-50"
                             >
-                                Answer Setup Questions
+                                {loadingQuestions ? "Loading..." : "Answer Setup Questions"}
                             </button>
                         </div>
                     </div>
@@ -353,7 +458,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete }: SetupSideb
             {isSubmitting && (
                 <LoadingScreen
                     onComplete={handleLoadingFinished}
-                    title="Creating your 2026 Individual Tax workspace..."
+                    title={`Creating your ${selections.taxYear} ${selections.category} Tax workspace...`}
                     steps={[
                         { text: "Analyzing your setup" },
                         { text: "Generating form sections" },

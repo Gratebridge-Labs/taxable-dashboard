@@ -29,16 +29,21 @@ const TaxFolderCard = ({
     description,
     status,
     statusText,
-    isInactive = false
+    isInactive = false,
+    onClick
 }: {
     title: string,
     valueText: string,
     description: string,
     status: 'complete' | 'progress' | 'none' | 'filed',
     statusText: string,
-    isInactive?: boolean
+    isInactive?: boolean,
+    onClick?: () => void
 }) => (
-    <Link href="/tax-folders/pit" className="group">
+    <div
+        onClick={onClick}
+        className={`group cursor-pointer ${isInactive ? 'pointer-events-none opacity-80' : ''}`}
+    >
         <div className="w-full h-[323px] bg-white rounded-[34px] border border-gray-100 p-6 shadow-xs hover:shadow-md transition-all flex flex-col">
             {/* Icon Container */}
             <div className={`w-full h-[145px] rounded-[24px] flex items-center justify-center mb-5 ${isInactive ? 'bg-[#F5F5F5]' : 'bg-[#FAFAFA]'}`}>
@@ -66,7 +71,7 @@ const TaxFolderCard = ({
                 </div>
             </div>
         </div>
-    </Link>
+    </div>
 );
 
 const VideoCard = ({ thumbnail, title, duration }: { thumbnail: string; title: string; duration: string }) => (
@@ -207,6 +212,22 @@ export default function Home() {
     ];
 
     const router = useRouter();
+    const [resumeProfileId, setResumeProfileId] = useState<string | null>(null);
+    const [resumeData, setResumeData] = useState<{ year?: string; category?: string } | undefined>(undefined);
+
+    const handleFolderClick = (profile: any) => {
+        if (!profile.baseQuestionsAnswered) {
+            setResumeProfileId(profile.profileId);
+            setResumeData({
+                year: profile.year,
+                category: profile.profileType
+            });
+            setIsSidebarOpen(true);
+        } else {
+            router.push('/tax-folders/pit');
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[#FAFAFA] font-sans">
             <DashboardHeader />
@@ -312,6 +333,7 @@ export default function Home() {
                                         description={profile.description || `Your ${profile.profileType?.toLowerCase() || 'tax'} filing for the ${profile.year || '2026'} tax year.`}
                                         status={profile.status === 'draft' ? 'progress' : (profile.status || "none")}
                                         statusText={profile.statusText || (profile.status === 'draft' ? 'In progress' : 'Not started')}
+                                        onClick={() => handleFolderClick(profile)}
                                     />
                                 ))}
                             </div>
@@ -359,9 +381,17 @@ export default function Home() {
 
             <SetupSidebar
                 isOpen={isSidebarOpen}
-                onClose={() => setIsSidebarOpen(false)}
+                resumeProfileId={resumeProfileId}
+                initialData={resumeData}
+                onClose={() => {
+                    setIsSidebarOpen(false);
+                    setResumeProfileId(null);
+                    setResumeData(undefined);
+                }}
                 onComplete={(shouldRedirect) => {
                     setIsSidebarOpen(false);
+                    setResumeProfileId(null);
+                    setResumeData(undefined);
                     fetchProfiles();
                     if (shouldRedirect) {
                         router.push('/tax-folders/pit?new=workspace');

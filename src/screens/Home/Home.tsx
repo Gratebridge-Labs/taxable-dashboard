@@ -233,7 +233,7 @@ export default function Home() {
             <DashboardHeader />
 
             {/* Main Content */}
-            <main className="max-w-[1280px] mx-auto px-12 py-16">
+            <main className="max-w-[1280px] mx-auto px-6 md:px-12 py-8 md:py-16">
                 {isInitialLoading || authLoading ? (
                     <div className="flex flex-col gap-8 animate-pulse text-left">
                         <div className="space-y-4">
@@ -250,15 +250,15 @@ export default function Home() {
                     <>
                         <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-12">
                             <div>
-                                <h1 className="text-[32px] font-bold text-taxable-dark mb-2 tracking-tight">
+                                <h1 className="text-[24px] md:text-[32px] font-bold text-taxable-dark mb-2 tracking-tight">
                                     Hello, {user?.firstName}. Welcome to Taxable
                                 </h1>
-                                <p className="text-[17px] text-taxable-gray font-medium leading-relaxed max-w-xl">
+                                <p className="text-[15px] md:text-[17px] text-taxable-gray font-medium leading-relaxed max-w-xl">
                                     The 2026 tax cycle is currently active. Let's make sure you're compliant.
                                 </p>
                             </div>
 
-                            <div className="flex items-center gap-4">
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
                                 <button
                                     onClick={() => setIsSidebarOpen(true)}
                                     className="h-12 px-6 bg-[#003787] hover:opacity-90 text-white font-bold rounded-xl transition-all shadow-sm whitespace-nowrap"
@@ -266,7 +266,7 @@ export default function Home() {
                                     Get started with 2026 taxes
                                 </button>
                                 <Link
-                                    href="/tax-folders/requirements"
+                                    href="/educational-resources"
                                     className="h-12 px-6 bg-white border border-gray-100 hover:bg-gray-50 text-taxable-dark font-bold rounded-xl transition-all shadow-sm flex items-center justify-center whitespace-nowrap"
                                 >
                                     Watch more guides
@@ -286,10 +286,10 @@ export default function Home() {
                     <div className="animate-in fade-in duration-700">
                         <div className="mb-14 flex flex-col md:flex-row justify-between items-start gap-6">
                             <div>
-                                <h1 className="text-[28px] font-semibold text-taxable-dark mb-2 tracking-tight">
+                                <h1 className="text-[22px] md:text-[28px] font-semibold text-taxable-dark mb-2 tracking-tight">
                                     Hello, {user?.firstName}, Welcome back
                                 </h1>
-                                <p className="text-base text-taxable-gray font-medium">
+                                <p className="text-sm md:text-base text-taxable-gray font-medium">
                                     You have {profiles.length} tax filing{profiles.length !== 1 ? 's' : ''} ready for 2026. Click any card to begin.
                                 </p>
                             </div>
@@ -322,11 +322,11 @@ export default function Home() {
                             }, {})
                         ).sort(([yearA], [yearB]) => Number(yearB) - Number(yearA)).map(([year, yearProfiles]) => (
                             <section key={year} className="mb-16 last:mb-0">
-                                <div className="flex justify-between items-center mb-10">
-                                    <h2 className="text-2xl font-bold text-taxable-dark">{year} Tax Filings</h2>
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
+                                    <h2 className="text-xl md:text-2xl font-bold text-taxable-dark">{year} Tax Filings</h2>
                                     <button
                                         onClick={() => setIsSidebarOpen(true)}
-                                        className="h-12 px-6 bg-[#003787] hover:opacity-90 text-white font-semibold rounded-xl transition-all"
+                                        className="h-12 px-6 bg-[#003787] hover:opacity-90 text-white font-semibold rounded-xl transition-all w-full sm:w-auto text-center"
                                     >
                                         Create another tax filing
                                     </button>

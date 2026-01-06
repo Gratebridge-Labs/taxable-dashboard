@@ -614,8 +614,8 @@ export default function PITDetails() {
             {showWelcomeModal && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-[#001D48]/40 backdrop-blur-[4px]" onClick={() => setShowWelcomeModal(false)} />
-                    <div className="relative bg-white rounded-[24px] w-[440px] p-8 shadow-2xl animate-in fade-in zoom-in duration-300 flex flex-col">
-                        <div className="flex gap-4 mb-6">
+                    <div className="relative bg-white rounded-[24px] w-full max-w-[440px] p-6 md:p-8 shadow-2xl animate-in fade-in zoom-in duration-300 flex flex-col">
+                        <div className="flex flex-col sm:flex-row gap-4 mb-6">
                             {/* Logo Icon Container */}
                             <div className="w-12 h-12 rounded-xl bg-[#F5F5F3] flex items-center justify-center flex-shrink-0">
                                 <Image src="/logo_black.svg" alt="Taxable" width={24} height={24} />
@@ -643,7 +643,7 @@ export default function PITDetails() {
                 </div>
             )}
 
-            <main className="max-w-[1440px] mx-auto px-8 py-8">
+            <main className="max-w-[1440px] mx-auto px-4 md:px-8 py-6 md:py-8">
                 {loading ? (
                     <PITSkeleton />
                 ) : (
@@ -652,38 +652,38 @@ export default function PITDetails() {
                             <div className="flex items-center gap-4">
                                 <button
                                     onClick={() => router.back()}
-                                    className="flex items-center gap-2 text-sm font-semibold text-taxable-dark hover:text-taxable-blue transition-colors"
+                                    className="flex items-center gap-2 text-[13px] md:text-sm font-bold text-taxable-dark hover:text-taxable-blue transition-colors shrink-0"
                                 >
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                         <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
                                     </svg>
                                     Back
                                 </button>
-                                <div className="flex items-center gap-2 text-[13px] text-[#94A3B8] font-medium">
-                                    <span>{profileInfo?.year} {profileInfo?.type} Tax</span>
+                                <div className="flex items-center gap-2 text-[11px] md:text-[13px] text-[#94A3B8] font-bold overflow-hidden">
+                                    <span className="whitespace-nowrap">{profileInfo?.year} {profileInfo?.type} Tax</span>
                                     <span>/</span>
-                                    <span className="text-[#64748B]">{activeCategory?.categoryName}</span>
+                                    <span className="text-[#64748B] truncate">{activeCategory?.categoryName}</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Summary Header */}
-                        <div className="flex justify-between items-end mb-10">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-10">
                             <div>
-                                <h1 className="text-2xl font-bold text-taxable-dark mb-1">{profileInfo?.year} {profileInfo?.type} Tax</h1>
-                                <p className="text-[14px] text-taxable-gray font-semibold">
+                                <h1 className="text-xl md:text-2xl font-bold text-taxable-dark mb-1">{profileInfo?.year} {profileInfo?.type} Tax</h1>
+                                <p className="text-[13px] md:text-[14px] text-taxable-gray font-semibold">
                                     {categories.filter(c => isCategoryComplete(c)).length} of {categories.length} sections complete
                                 </p>
                             </div>
-                            <div className="text-right">
-                                <h2 className="text-xl font-bold text-taxable-dark mb-1">₦0 (no data yet)</h2>
-                                <p className="text-[13px] text-taxable-gray font-semibold">Current Tax Due</p>
+                            <div className="text-left md:text-right">
+                                <h2 className="text-lg md:text-xl font-bold text-taxable-dark mb-1">₦0 (no data yet)</h2>
+                                <p className="text-[12px] md:text-[13px] text-taxable-gray font-semibold">Current Tax Due</p>
                             </div>
                         </div>
 
-                        <div className="flex items-start gap-8">
+                        <div className="flex flex-col lg:flex-row items-start gap-8">
                             {/* Sidebar */}
-                            <div className="w-[260px] flex-shrink-0 flex flex-col gap-6">
+                            <div className="w-full lg:w-[260px] flex-shrink-0 flex flex-col gap-6">
                                 <div className="bg-white rounded-[24px] p-5 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)] border border-gray-100">
                                     <h3 className="text-[12px] font-bold text-[#A3A3A3] mb-4 uppercase tracking-wider">Select</h3>
                                     <div className="space-y-1">
@@ -723,7 +723,7 @@ export default function PITDetails() {
 
                             {/* Middle Column: Selection (Month or Sub-section) */}
                             {checkIfIncomeCategory(activeCategory) ? (
-                                <div className="w-[220px] flex-shrink-0 flex flex-col gap-6">
+                                <div className="w-full lg:w-[220px] flex-shrink-0 flex flex-col gap-6">
                                     <div className="flex items-center gap-3">
                                         <span className={`text-[13px] font-bold transition-colors ${isMonthly ? 'text-taxable-dark' : 'text-[#A3A3A3]'}`}>Monthly</span>
                                         <button

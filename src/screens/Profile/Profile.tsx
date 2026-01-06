@@ -198,19 +198,19 @@ export default function Profile() {
         <div className="min-h-screen bg-[#FBFBFB]">
             <DashboardHeader />
 
-            <main className="max-w-[1240px] mx-auto pt-12 pb-20 px-8">
+            <main className="max-w-[1240px] mx-auto pt-8 md:pt-12 pb-20 px-4 md:px-8">
                 {/* Header Section */}
                 <div className="flex items-start justify-between mb-12">
                     <div>
-                        <h1 className="text-2xl font-medium text-taxable-dark mb-3">Profile & Settings</h1>
-                        <p className="text-lg text-taxable-gray font-medium max-w-[500px] leading-relaxed">
+                        <h1 className="text-xl md:text-2xl font-bold text-taxable-dark mb-2 tracking-tight">Profile & Settings</h1>
+                        <p className="text-[15px] md:text-lg text-taxable-gray font-medium max-w-[500px] leading-relaxed">
                             Everything you need to understand Nigerian taxes and make the most of Taxable
                         </p>
                     </div>
                     <div className="relative">
                         <button
                             onClick={() => setShowSupport(!showSupport)}
-                            className="h-[52px] px-7 bg-white border border-gray-100 rounded-[18px] text-[15px] font-bold text-taxable-dark shadow-xs hover:shadow-md transition-all flex items-center gap-2"
+                            className="h-[48px] md:h-[52px] px-5 md:px-7 bg-white border border-gray-100 rounded-[18px] text-[14px] md:text-[15px] font-bold text-taxable-dark shadow-xs hover:shadow-md transition-all flex items-center gap-2"
                         >
                             Contact support
                         </button>
@@ -243,16 +243,16 @@ export default function Profile() {
                     </div>
                 </div>
 
-                <div className="flex gap-16">
+                <div className="flex flex-col lg:flex-row gap-10 lg:gap-16">
                     {/* Sidebar */}
-                    <div className="w-[303px] h-[218px] bg-white rounded-[20px] border border-gray-100 p-3 shadow-sm flex flex-col shrink-0">
+                    <div className="w-full lg:w-[303px] h-auto lg:h-[218px] bg-white rounded-[20px] border border-gray-100 p-3 shadow-sm flex flex-col shrink-0">
                         <h4 className="text-base font-medium text-taxable-dark mb-3 px-2">Select</h4>
                         <div className="flex flex-col gap-1 items-center">
                             {categories.map((category) => (
                                 <button
                                     key={category}
                                     onClick={() => setActiveSection(category)}
-                                    className={`w-[279px] h-[37px] flex items-center justify-between px-3 transition-all rounded-[8px] ${activeSection === category ? 'bg-[#F1F5F9] text-taxable-dark' : 'hover:bg-gray-50 text-taxable-gray'
+                                    className={`w-full lg:w-[279px] h-[44px] lg:h-[37px] flex items-center justify-between px-3 transition-all rounded-[8px] ${activeSection === category ? 'bg-[#F1F5F9] text-taxable-dark font-bold' : 'hover:bg-gray-50 text-taxable-gray'
                                         }`}
                                 >
                                     <span className={`text-sm ${activeSection === category ? 'font-semibold' : 'font-medium'}`}>{category}</span>
@@ -265,7 +265,7 @@ export default function Profile() {
                     </div>
 
                     {/* Main Settings Content */}
-                    <div className="flex-1 max-w-[480px]">
+                    <div className="flex-1 w-full max-w-full lg:max-w-[480px]">
                         {activeSection === 'Personal Information' && (
                             <div className="animate-in fade-in duration-500">
                                 {/* Profile Image Upload */}

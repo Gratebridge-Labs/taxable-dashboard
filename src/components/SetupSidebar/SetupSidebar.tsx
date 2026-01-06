@@ -387,9 +387,9 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                     onClick={onClose}
                 />
 
-                <div className="relative w-full max-w-[480px] h-full bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+                <div className="relative w-full md:max-w-[480px] h-full bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
                     {/* Sidebar Header */}
-                    <div className="h-20 px-8 flex items-center justify-between border-b border-gray-50">
+                    <div className="h-20 px-6 md:px-8 flex items-center justify-between border-b border-gray-50">
                         <button onClick={step === 0 ? onClose : prevStep} className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 rounded-lg transition-colors">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4B5563" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
@@ -398,11 +398,13 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                         <h2 className="text-[17px] font-bold text-gray-900">
                             {step === 0 ? "Create a new tax filing" : "Let's get you set up"}
                         </h2>
-                        <div className="w-8" /> {/* Placeholder for symmetry */}
+                        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 rounded-lg transition-colors md:invisible">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
                     </div>
 
                     {/* Sidebar Content */}
-                    <div className="flex-1 overflow-y-auto px-8 py-8 custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto px-6 md:px-8 py-8 custom-scrollbar">
                         {renderStep()}
                     </div>
                 </div>
@@ -412,8 +414,8 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
             {showSuccessModal && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-taxable-dark/40 backdrop-blur-sm" onClick={() => setShowSuccessModal(false)} />
-                    <div className="relative bg-white rounded-[24px] w-[440px] h-[324px] p-8 shadow-2xl animate-in fade-in zoom-in duration-300 flex flex-col justify-between">
-                        <div className="flex gap-4">
+                    <div className="relative bg-white rounded-[24px] w-full max-w-[440px] h-auto min-h-[324px] p-6 md:p-8 shadow-2xl animate-in fade-in zoom-in duration-300 flex flex-col justify-between">
+                        <div className="flex flex-col sm:flex-row gap-4 mb-4">
                             {/* Logo Icon Container */}
                             <div className="w-12 h-12 rounded-xl bg-[#F5F5F3] flex items-center justify-center flex-shrink-0">
                                 <Image src="/logo_black.svg" alt="Taxable" width={24} height={24} />

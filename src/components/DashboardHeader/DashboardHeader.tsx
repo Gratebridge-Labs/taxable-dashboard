@@ -43,15 +43,16 @@ export default function DashboardHeader() {
     ];
 
     return (
-        <header className="w-full h-20 bg-white border-b border-gray-100 flex items-center px-8 sticky top-0 z-50">
+        <header className="w-full h-20 bg-white border-b border-gray-100 flex items-center px-4 md:px-8 sticky top-0 z-50">
             {/* Left Section: Logo */}
             <div className="flex-1">
                 <Link href="/home" className="flex items-center w-fit">
                     <Image
                         src="/logo_blue.svg"
                         alt="Taxable"
-                        width={100}
-                        height={61}
+                        width={90}
+                        height={55}
+                        className="md:w-[100px] md:h-[61px]"
                         priority
                     />
                 </Link>
@@ -69,9 +70,10 @@ export default function DashboardHeader() {
                                 ? 'text-taxable-blue font-bold'
                                 : 'text-taxable-gray font-medium hover:text-taxable-dark hover:bg-gray-50'
                                 }`}
+                            title={link.name}
                         >
                             {link.icon}
-                            <span className="text-[15px]">{link.name}</span>
+                            <span className="text-[15px] hidden md:inline">{link.name}</span>
                         </Link>
                     );
                 })}
@@ -81,9 +83,12 @@ export default function DashboardHeader() {
             <div className="flex-1 flex justify-end relative">
                 <button
                     onClick={() => setShowSupport(!showSupport)}
-                    className="px-5 h-[46px] border border-gray-100 rounded-[12px] text-[14px] font-bold text-taxable-dark hover:shadow-xs hover:bg-gray-50 transition-all cursor-pointer flex items-center gap-2"
+                    className="px-3 md:px-5 h-[46px] border border-gray-100 rounded-[12px] text-[14px] font-bold text-taxable-dark hover:shadow-xs hover:bg-gray-50 transition-all cursor-pointer flex items-center gap-2"
                 >
-                    Talk to an Accountant
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="md:hidden">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                    <span className="hidden md:inline">Talk to an Accountant</span>
                 </button>
 
                 {showSupport && (

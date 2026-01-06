@@ -1,8 +1,23 @@
 'use client';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
+import { useApi } from '@/hooks/useApi';
+
+interface Blog {
+    _id: string;
+    title: string;
+    slug: string;
+    excerpt?: string;
+    summary?: string;
+    content?: string;
+    featuredImage?: string;
+    coverImage?: string;
+    category?: string;
+    buttonType?: 'consultation' | 'create_account';
+    updatedAt: string;
+}
 
 const VideoCard = ({ thumbnail, title, duration }: { thumbnail: string; title: string; duration: string }) => (
     <div className="group cursor-pointer">
@@ -28,6 +43,39 @@ const VideoCard = ({ thumbnail, title, duration }: { thumbnail: string; title: s
             <p className="text-[15px] text-taxable-gray font-medium">{duration}</p>
         </div>
     </div>
+);
+
+const BlogCard = ({ blog }: { blog: Blog }) => (
+    <Link href={`/blog/${blog.slug}`} className="group cursor-pointer block">
+        <div className="relative aspect-[16/10] w-full rounded-[24px] overflow-hidden mb-5 bg-[#F8FAFC] border border-gray-100/50">
+            {(blog.featuredImage || blog.coverImage) ? (
+                <Image
+                    src={blog.featuredImage || blog.coverImage || ''}
+                    alt={blog.title}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+            ) : (
+                <div className="w-full h-full flex items-center justify-center opacity-20">
+                    <Image src="/icons/docs.svg" alt="placeholder" width={60} height={60} style={{ width: 'auto', height: 'auto' }} />
+                </div>
+            )}
+        </div>
+        <div>
+            <div className="flex items-center gap-3 mb-2.5">
+                <span className="px-2.5 py-1 bg-blue-50 text-taxable-blue text-[11px] font-bold rounded-md uppercase tracking-wider">
+                    {blog.category || 'Tax Guide'}
+                </span>
+                <span className="text-[13px] font-semibold text-gray-400">
+                    {new Date(blog.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+            </div>
+            <h3 className="text-[20px] font-bold text-taxable-dark mb-2 leading-tight group-hover:text-taxable-blue transition-colors">{blog.title}</h3>
+            <p className="text-[15px] text-taxable-gray font-medium line-clamp-2 leading-relaxed">
+                {blog.excerpt || blog.summary || blog.content?.replace(/<[^>]*>/g, '').slice(0, 120) + '...'}
+            </p>
+        </div>
+    </Link>
 );
 
 const FAQAccordion = ({ question, answer }: { question: string; answer: string }) => {
@@ -74,10 +122,55 @@ const FAQAccordion = ({ question, answer }: { question: string; answer: string }
 };
 
 export default function EducationalResources() {
-    const [activeTab, setActiveTab] = useState('Frequently Asked Questions');
+    const [activeTab, setActiveTab] = useState('Blog/Articles');
     const [activeFAQCategory, setActiveFAQCategory] = useState('General Tax Questions');
     const [isSupportDropdownOpen, setIsSupportDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+
+    const { get } = useApi();
+    const [blogs, setBlogs] = useState<Blog[]>([]);
+    const [blogsLoading, setBlogsLoading] = useState(true);
+
+    const fetchBlogs = useCallback(async () => {
+        try {
+            setBlogsLoading(true);
+            console.log("Fetching blogs from /blogs...");
+            const response = await get('/blogs', { useToken: false });
+            console.log("Full Blogs Response received:", JSON.stringify(response, null, 2));
+
+            if (response && (response.success === true || response.status === 'success' || response.blogs)) {
+                // Highly resilient data extraction
+                let blogData = [];
+
+                if (response.data?.blogs && Array.isArray(response.data.blogs)) {
+                    blogData = response.data.blogs;
+                } else if (response.data?.articles && Array.isArray(response.data.articles)) {
+                    blogData = response.data.articles;
+                } else if (response.data?.blogPosts && Array.isArray(response.data.blogPosts)) {
+                    blogData = response.data.blogPosts;
+                } else if (Array.isArray(response.data)) {
+                    blogData = response.data;
+                } else if (response.blogs && Array.isArray(response.blogs)) {
+                    blogData = response.blogs;
+                } else if (response.data?.data?.blogs && Array.isArray(response.data.data.blogs)) {
+                    blogData = response.data.data.blogs;
+                }
+
+                console.log("SUCCESS: Final Extracted Blogs count:", blogData.length);
+                setBlogs(blogData);
+            } else {
+                console.warn("API returned invalid success state or missing data. Response keys:", response ? Object.keys(response) : "null/undefined");
+            }
+        } catch (err) {
+            console.error("Critical error in fetchBlogs flow:", err);
+        } finally {
+            setBlogsLoading(false);
+        }
+    }, [get]);
+
+    useEffect(() => {
+        fetchBlogs();
+    }, [fetchBlogs]);
 
     const tabs = ['Video Tutorials', 'Blog/Articles', 'Frequently Asked Questions'];
 
@@ -134,7 +227,7 @@ export default function EducationalResources() {
         <div className="min-h-screen bg-[#FBFBFB]">
             <DashboardHeader />
 
-            <main className="max-w-[1240px] mx-auto pt-8 pb-20 px-6">
+            <main className="max-w-[1240px] mx-auto pt-6 md:pt-8 pb-20 px-4 md:px-6">
                 {/* Back Button & Breadcrumbs */}
                 <div className="mb-10">
                     <Link href="/home" className="flex items-center gap-2 group mb-4">
@@ -154,18 +247,19 @@ export default function EducationalResources() {
 
                 {/* Header Section */}
                 <div className="flex items-start justify-between mb-12">
-                    <div>
-                        <h1 className="text-[28px] font-bold text-taxable-dark mb-3">Help Center & Resources</h1>
-                        <p className="text-[17px] text-taxable-gray font-medium max-w-[500px] leading-relaxed">
+                    <div className="flex-1">
+                        <h1 className="text-[22px] md:text-[28px] font-bold text-taxable-dark mb-2 md:mb-3">Help Center & Resources</h1>
+                        <p className="text-[15px] md:text-[17px] text-taxable-gray font-medium max-w-[500px] leading-relaxed">
                             Everything you need to understand Nigerian taxes and make the most of Taxable
                         </p>
                     </div>
-                    <div className="relative" ref={dropdownRef}>
+                    <div className="relative shrink-0 ml-4" ref={dropdownRef}>
                         <button
                             onClick={() => setIsSupportDropdownOpen(!isSupportDropdownOpen)}
-                            className="h-[52px] px-8 bg-white border border-gray-100 rounded-[18px] text-[15px] font-bold text-taxable-dark shadow-xs hover:shadow-md transition-all flex items-center"
+                            className="h-[46px] md:h-[52px] px-4 md:px-8 bg-white border border-gray-100 rounded-[18px] text-[14px] md:text-[15px] font-bold text-taxable-dark shadow-xs hover:shadow-md transition-all flex items-center whitespace-nowrap"
                         >
-                            Contact support
+                            <span className="hidden sm:inline">Contact support</span>
+                            <span className="sm:hidden">Support</span>
                         </button>
 
                         {isSupportDropdownOpen && (
@@ -196,13 +290,18 @@ export default function EducationalResources() {
                     </div>
                 </div>
 
+                {/* Debug Info (Visible only in development) */}
+                <div className="hidden">
+                    Tab: {activeTab}, Blogs: {blogs.length}, Loading: {blogsLoading ? 'YES' : 'NO'}
+                </div>
+
                 {/* Navigation Tabs */}
-                <div className="flex gap-12 border-b border-gray-100 mb-12">
+                <div className="flex gap-8 md:gap-12 border-b border-gray-100 mb-8 md:mb-12 overflow-x-auto no-scrollbar scroll-smooth">
                     {tabs.map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`pb-5 text-[17px] font-bold transition-all relative ${activeTab === tab ? 'text-taxable-blue' : 'text-taxable-gray'
+                            className={`pb-4 md:pb-5 text-[15px] md:text-[17px] font-bold transition-all relative whitespace-nowrap ${activeTab === tab ? 'text-taxable-blue' : 'text-taxable-gray'
                                 }`}
                         >
                             {tab}
@@ -223,9 +322,9 @@ export default function EducationalResources() {
                 )}
 
                 {activeTab === 'Frequently Asked Questions' && (
-                    <div className="flex gap-14 items-start">
+                    <div className="flex flex-col lg:flex-row gap-8 lg:gap-14 items-start">
                         {/* FAQ Sidebar */}
-                        <div className="w-[303px] bg-white rounded-[24px] border border-gray-100 p-4 shadow-xs shrink-0 sticky top-28">
+                        <div className="w-full lg:w-[303px] bg-white rounded-[24px] border border-gray-100 p-4 shadow-xs shrink-0 lg:sticky lg:top-28">
                             <h4 className="text-[15px] font-bold text-taxable-dark mb-4 px-3">Select</h4>
                             <div className="flex flex-col gap-1.5">
                                 {faqCategories.map((category) => (
@@ -256,15 +355,36 @@ export default function EducationalResources() {
                 )}
 
                 {activeTab === 'Blog/Articles' && (
-                    <div className="py-24 text-center bg-white rounded-[32px] border border-gray-100">
-                        <div className="flex items-center justify-center mx-auto mb-6">
-                            <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center">
-                                <Image src="/icons/docs.svg" alt="empty" width={40} height={40} className="opacity-40" />
+                    <>
+                        {blogsLoading ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-14 animate-pulse">
+                                {[1, 2, 3].map(i => (
+                                    <div key={i}>
+                                        <div className="aspect-[16/10] bg-gray-100 rounded-[24px] mb-5" />
+                                        <div className="h-4 bg-gray-100 rounded w-1/4 mb-3" />
+                                        <div className="h-6 bg-gray-100 rounded w-3/4 mb-2" />
+                                        <div className="h-4 bg-gray-100 rounded w-full" />
+                                    </div>
+                                ))}
                             </div>
-                        </div>
-                        <h3 className="text-xl font-bold text-taxable-dark mb-2">No articles yet</h3>
-                        <p className="text-taxable-gray font-medium">We're currently preparing some insightful tax guides for you.</p>
-                    </div>
+                        ) : blogs.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-14">
+                                {blogs.map((blog) => (
+                                    <BlogCard key={blog._id} blog={blog} />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-24 text-center bg-white rounded-[32px] border border-gray-100">
+                                <div className="flex items-center justify-center mx-auto mb-6">
+                                    <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center">
+                                        <Image src="/icons/docs.svg" alt="empty" width={40} height={40} className="opacity-40" style={{ width: 'auto', height: 'auto' }} />
+                                    </div>
+                                </div>
+                                <h3 className="text-xl font-bold text-taxable-dark mb-2">No articles yet</h3>
+                                <p className="text-taxable-gray font-medium">We're currently preparing some insightful tax guides for you.</p>
+                            </div>
+                        )}
+                    </>
                 )}
             </main>
         </div>

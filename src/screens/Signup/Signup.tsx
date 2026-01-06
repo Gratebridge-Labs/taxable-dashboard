@@ -92,15 +92,15 @@ export default function Signup() {
         <>
             <OnboardingLayout>
                 <div className="max-w-[480px] mx-auto w-full relative">
-                    <div className="absolute top-0 right-0 md:-right-4">
+                    <div className="flex justify-end mb-6 md:absolute md:top-0 md:right-0 md:-right-4 md:mb-0">
                         <Link href="/signin" className="h-[44px] px-6 flex items-center justify-center rounded-xl border border-[#f5f5f5] text-taxable-dark font-bold hover:bg-gray-50 transition-colors bg-white text-[13px] whitespace-nowrap shadow-sm">
                             Log in
                         </Link>
                     </div>
 
                     <div className="mb-10 pt-4">
-                        <h2 className="text-[26px] font-bold text-taxable-dark mb-2">Welcome to Taxable</h2>
-                        <p className="text-taxable-gray text-[15px] font-medium leading-relaxed">Let's get your tax compliance sorted in minutes</p>
+                        <h2 className="text-[22px] md:text-[26px] font-bold text-taxable-dark mb-2">Welcome to Taxable</h2>
+                        <p className="text-taxable-gray text-sm md:text-[15px] font-medium leading-relaxed">Let's get your tax compliance sorted in minutes</p>
                     </div>
 
                     <form onSubmit={handleSignup} className="flex flex-col gap-6">

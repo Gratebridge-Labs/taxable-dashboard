@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
 import { useApi } from '@/hooks/useApi';
+import { useUser } from '@/contexts/UserContext';
 
 interface QuestionValidation {
     pattern?: string;
@@ -41,38 +42,46 @@ interface Category {
     questions: Question[];
 }
 
-const SidebarItem = ({ label, active = false, completed = false, isOrange = false, disabled = false, onClick }: { label: string; active?: boolean; completed?: boolean; isOrange?: boolean; disabled?: boolean; onClick: () => void }) => (
+const MONTHS = [
+    { id: 1, name: 'January' }, { id: 2, name: 'February' }, { id: 3, name: 'March' },
+    { id: 4, name: 'April' }, { id: 5, name: 'May' }, { id: 6, name: 'June' },
+    { id: 7, name: 'July' }, { id: 8, name: 'August' }, { id: 9, name: 'September' },
+    { id: 10, name: 'October' }, { id: 11, name: 'November' }, { id: 12, name: 'December' }
+];
+
+const SidebarItem = ({ label, active = false, completed = false, onClick }: { label: string; active?: boolean; completed?: boolean; onClick: () => void }) => (
     <button
         onClick={onClick}
-        disabled={disabled}
-        className={`w-full flex items-center justify-between px-3 py-3.5 rounded-xl transition-all mb-1 ${active ? 'bg-[#F1F5F9]' : 'hover:bg-gray-50'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all mb-1 ${active ? 'bg-[#F1F5F9]' : 'hover:bg-gray-50'}`}
     >
-        <div className="flex items-center gap-4 text-left">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isOrange ? 'bg-[#FFF7ED]' : 'bg-[#F5F5F3]'}`}>
+        <div className="flex items-center gap-3 text-left">
+            <div className="w-8 h-8 rounded-lg bg-[#F5F5F3] flex items-center justify-center flex-shrink-0">
                 <Image
-                    src={isOrange ? "/icons/folder.svg" : "/icons/inactive_folder.svg"}
+                    src="/icons/inactive_folder.svg"
                     alt="section"
-                    width={22}
-                    height={22}
+                    width={18}
+                    height={18}
                 />
             </div>
 
             <div className="flex items-center gap-2">
-                <span className={`text-base font-medium ${active ? 'text-taxable-dark' : 'text-[#64748B]'}`}>{label}</span>
+                <span className={`text-[14px] font-semibold ${active ? 'text-taxable-dark' : 'text-[#64748B]'}`}>{label}</span>
                 {completed && (
-                    <div className="w-5 h-5 bg-[#10B981] rounded-[4px] flex items-center justify-center">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                    <div className="w-4 h-4 bg-[#10B981] rounded-[3px] flex items-center justify-center">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="20 6 9 17 4 12" />
                         </svg>
                     </div>
                 )}
             </div>
         </div>
-        <svg className={`w-4 h-4 flex-shrink-0 ${active ? 'text-taxable-dark' : 'text-gray-300'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+        <svg className={`w-3.5 h-3.5 flex-shrink-0 ${active ? 'text-taxable-dark' : 'text-gray-300'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
     </button>
 );
+
+
 
 
 
@@ -81,6 +90,7 @@ export default function PITDetails() {
     const router = useRouter();
     const pathname = usePathname();
     const { get, post } = useApi();
+    const { loading: authLoading } = useUser();
 
     const profileId = searchParams.get('id');
     const [categories, setCategories] = React.useState<Category[]>([]);
@@ -90,9 +100,13 @@ export default function PITDetails() {
     const [showWelcomeModal, setShowWelcomeModal] = React.useState(false);
     const [profileInfo, setProfileInfo] = React.useState<any>(null);
     const [isMonthly, setIsMonthly] = React.useState(false);
+    const [activeMonth, setActiveMonth] = React.useState(1);
     const [submitting, setSubmitting] = React.useState(false);
+    const [annualSubSection, setAnnualSubSection] = React.useState<'income' | 'deduction'>('income');
 
     React.useEffect(() => {
+        if (authLoading) return;
+
         const isNew = searchParams.get('new');
         if (isNew === 'workspace') {
             setShowWelcomeModal(true);
@@ -102,7 +116,7 @@ export default function PITDetails() {
         if (profileId) {
             fetchDetailedQuestions();
         }
-    }, [profileId]);
+    }, [profileId, authLoading]);
 
     const fetchDetailedQuestions = async () => {
         setLoading(true);
@@ -121,14 +135,27 @@ export default function PITDetails() {
 
                 // Initialize responses with existing ones
                 const initialResponses: any = {};
-                const processQuestion = (q: Question) => {
-                    if (q.existingResponse !== undefined && q.existingResponse !== null) {
-                        initialResponses[q.questionId] = q.existingResponse;
-                    }
-                };
 
                 response.data.categories.forEach((cat: Category) => {
-                    cat.questions.forEach(processQuestion);
+                    const isIncome = checkIfIncomeCategory(cat);
+
+                    cat.questions.forEach((q: Question) => {
+                        if (q.existingResponse !== undefined && q.existingResponse !== null) {
+                            if (isIncome && typeof q.existingResponse === 'object' && !Array.isArray(q.existingResponse) && q.questionType !== 'table') {
+                                // If it's already an object of monthly data, use it
+                                initialResponses[q.questionId] = q.existingResponse;
+                            } else if (isIncome && Array.isArray(q.existingResponse) && q.questionType !== 'table') {
+                                // If it's an array, map it to our 1-12 object
+                                const monthlyData: any = {};
+                                q.existingResponse.forEach((res: any) => {
+                                    if (res.month) monthlyData[res.month] = res.response;
+                                });
+                                initialResponses[q.questionId] = monthlyData;
+                            } else {
+                                initialResponses[q.questionId] = q.existingResponse;
+                            }
+                        }
+                    });
                 });
                 setResponses(initialResponses);
             }
@@ -137,6 +164,17 @@ export default function PITDetails() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const checkIfIncomeCategory = (category: Category | undefined) => {
+        if (!category) return false;
+        return (
+            category.categoryKey.includes('EMPLOYMENT') ||
+            category.categoryKey.includes('BUSINESS') ||
+            category.categoryKey.includes('DEDUCTION') ||
+            category.categoryName.toLowerCase().includes('income') ||
+            category.categoryName.toLowerCase().includes('deduction')
+        );
     };
 
     const PITSkeleton = () => (
@@ -226,24 +264,46 @@ export default function PITDetails() {
     };
 
     const handleAnswerChange = (questionId: string, value: any) => {
-        setResponses(prev => ({ ...prev, [questionId]: value }));
+        if (isMonthly && checkIfIncomeCategory(activeCategory)) {
+            setResponses(prev => ({
+                ...prev,
+                [questionId]: {
+                    ...(typeof prev[questionId] === 'object' ? prev[questionId] : {}),
+                    [activeMonth]: value
+                }
+            }));
+        } else {
+            setResponses(prev => ({ ...prev, [questionId]: value }));
+        }
     };
 
     const handleAddRow = (questionId: string, columns: any[]) => {
-        const current = responses[questionId] || [];
+        const currentRes = responses[questionId];
+        const currentData = (isMonthly && checkIfIncomeCategory(activeCategory))
+            ? (currentRes?.[activeMonth] || [])
+            : (currentRes || []);
+
         const newRow = columns.reduce((acc, col) => ({ ...acc, [col.field || col.key]: '' }), {});
-        handleAnswerChange(questionId, [...current, newRow]);
+        handleAnswerChange(questionId, [...currentData, newRow]);
     };
 
     const handleTableRowChange = (questionId: string, rowIndex: number, field: string, value: any) => {
-        const current = [...(responses[questionId] || [])];
-        current[rowIndex] = { ...current[rowIndex], [field]: value };
-        handleAnswerChange(questionId, current);
+        const currentRes = responses[questionId];
+        const currentData = (isMonthly && checkIfIncomeCategory(activeCategory))
+            ? [...(currentRes?.[activeMonth] || [])]
+            : [...(currentRes || [])];
+
+        currentData[rowIndex] = { ...currentData[rowIndex], [field]: value };
+        handleAnswerChange(questionId, currentData);
     };
 
     const handleRemoveRow = (questionId: string, rowIndex: number) => {
-        const current = responses[questionId] || [];
-        handleAnswerChange(questionId, current.filter((_: any, idx: number) => idx !== rowIndex));
+        const currentRes = responses[questionId];
+        const currentData = (isMonthly && checkIfIncomeCategory(activeCategory))
+            ? (currentRes?.[activeMonth] || [])
+            : (currentRes || []);
+
+        handleAnswerChange(questionId, currentData.filter((_: any, idx: number) => idx !== rowIndex));
     };
 
     const activeCategory = categories.find(c => c.categoryKey === activeSectionKey);
@@ -260,37 +320,53 @@ export default function PITDetails() {
 
         setSubmitting(true);
         try {
-            const isIncomeCategory =
-                activeCategory.categoryKey.includes('EMPLOYMENT') ||
-                activeCategory.categoryKey.includes('BUSINESS') ||
-                activeCategory.categoryKey.includes('DEDUCTION') ||
-                activeCategory.categoryName.toLowerCase().includes('income') ||
-                activeCategory.categoryName.toLowerCase().includes('deduction');
-
+            const isIncomeCategory = checkIfIncomeCategory(activeCategory);
             const visibleQuestions = activeCategory.questions.filter(q => isQuestionVisible(q));
 
-            const answeredQuestions = visibleQuestions.filter(q => responses[q.questionId] !== undefined);
-            
-            for (const q of answeredQuestions) {
-                let responseValue = responses[q.questionId];
-                
-                if (q.questionType === 'number' && typeof responseValue === 'string') {
-                    responseValue = Number(parseAmount(responseValue)) || 0;
-                }
+            for (const q of visibleQuestions) {
+                const responseData = responses[q.questionId];
+                if (responseData === undefined) continue;
 
                 if (isIncomeCategory) {
-                    await post(`/questions/${profileId}/income`, {
-                        questionId: q.questionId,
-                        response: responseValue,
-                        period: isMonthly ? 'monthly' : 'annually',
-                        month: 1, // Defaulting to 1 as per snippet
-                        year: Number(profileInfo?.year) || 2025,
-                        autoSave: true
-                    });
+                    if (isMonthly) {
+                        // Save each month's data
+                        for (let m = 1; m <= 12; m++) {
+                            let val = responseData?.[m];
+                            if (val === undefined) val = (q.questionType === 'number' ? 0 : (q.questionType === 'table' ? [] : ''));
+
+                            if (q.questionType === 'number' && typeof val === 'string') {
+                                val = Number(parseAmount(val)) || 0;
+                            }
+
+                            await post(`/questions/${profileId}/income`, {
+                                questionId: q.questionId,
+                                response: val,
+                                period: 'monthly',
+                                month: m,
+                                year: Number(profileInfo?.year) || 2025,
+                                autoSave: true
+                            });
+                        }
+                    } else {
+                        // Save annual data
+                        let val = responseData;
+                        if (q.questionType === 'number' && typeof val === 'string') {
+                            val = Number(parseAmount(val)) || 0;
+                        }
+
+                        await post(`/questions/${profileId}/income`, {
+                            questionId: q.questionId,
+                            response: val,
+                            period: 'annually',
+                            month: 1,
+                            year: Number(profileInfo?.year) || 2025,
+                            autoSave: true
+                        });
+                    }
                 } else {
                     await post(`/questions/${profileId}/answer`, {
                         questionId: q.questionId,
-                        response: responseValue
+                        response: responseData
                     });
                 }
             }
@@ -298,6 +374,7 @@ export default function PITDetails() {
             if (currentIndex < categories.length - 1) {
                 setActiveSectionKey(categories[currentIndex + 1].categoryKey);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+                setActiveMonth(1); // Reset month for next category
             } else {
                 router.push('/home');
             }
@@ -321,7 +398,11 @@ export default function PITDetails() {
         }
 
         if (typeof q.dependsOn === 'object' && q.dependsOn !== null) {
-            const parentResponse = responses[q.dependsOn.questionId];
+            const res = responses[q.dependsOn.questionId];
+            const parentResponse = (isMonthly && checkIfIncomeCategory(activeCategory))
+                ? res?.[activeMonth]
+                : res;
+
             if (Array.isArray(parentResponse)) {
                 return parentResponse.includes(q.dependsOn.value);
             }
@@ -335,17 +416,25 @@ export default function PITDetails() {
         return category.questions.every(q => {
             if (!isQuestionVisible(q)) return true;
             if (!q.required) return true;
-            
-            const response = responses[q.questionId];
+
+            const res = responses[q.questionId];
+            const response = (isMonthly && checkIfIncomeCategory(category))
+                ? res?.[activeMonth]
+                : res;
+
             if (response === undefined || response === null || response === '') return false;
             if (Array.isArray(response) && response.length === 0) return false;
-            
+
             return true;
         });
     };
 
     const renderQuestion = (q: Question) => {
         if (!isQuestionVisible(q)) return null;
+        const res = responses[q.questionId];
+        const value = (isMonthly && checkIfIncomeCategory(activeCategory))
+            ? (res?.[activeMonth] ?? '')
+            : (res ?? '');
 
         return (
             <div key={q.questionId} className="mb-8">
@@ -354,27 +443,28 @@ export default function PITDetails() {
                 </label>
 
                 {q.questionType === 'yes_no' ? (
-                    <div className="flex gap-6">
+                    <div className="flex gap-6 mb-8">
                         {['yes', 'no'].map(opt => (
                             <label key={opt} className="flex items-center gap-2 cursor-pointer group">
-                                <div className="w-5 h-5 rounded-full border-2 border-gray-200 flex items-center justify-center group-hover:border-taxable-blue transition-colors">
+                                <div className="w-5 h-5 rounded-full border-2 border-gray-100 flex items-center justify-center group-hover:border-taxable-blue/40 transition-colors">
                                     <input
                                         type="radio"
-                                        name={q.questionId}
+                                        name={`${activeMonth}-${q.questionId}`}
                                         className="hidden"
-                                        checked={responses[q.questionId] === opt}
+                                        checked={value === opt}
                                         onChange={() => handleAnswerChange(q.questionId, opt)}
                                     />
-                                    {responses[q.questionId] === opt && <div className="w-2.5 h-2.5 rounded-full bg-taxable-blue" />}
+                                    {value === opt && <div className="w-2.5 h-2.5 rounded-full bg-taxable-blue" />}
                                 </div>
-                                <span className="text-sm font-medium text-taxable-gray group-hover:text-taxable-dark capitalize">{opt}</span>
+                                <span className="text-sm font-semibold text-taxable-gray group-hover:text-taxable-dark capitalize">{opt}</span>
                             </label>
                         ))}
                     </div>
                 ) : q.questionType === 'select' ? (
+                <div className="mb-8 relative group">
                     <select
-                        className="w-full h-14 bg-white border border-gray-100 rounded-2xl px-4 focus:outline-none focus:ring-1 focus:ring-taxable-blue/20 appearance-none cursor-pointer"
-                        value={responses[q.questionId] || ''}
+                        className="w-full h-12 bg-[#F9FBFC] border border-gray-100 rounded-xl px-4 text-sm font-medium text-taxable-dark focus:outline-none focus:border-taxable-blue/40 appearance-none cursor-pointer pr-10"
+                        value={value}
                         onChange={(e) => handleAnswerChange(q.questionId, e.target.value)}
                     >
                         <option value="" disabled>Select an option</option>
@@ -382,19 +472,23 @@ export default function PITDetails() {
                             <option key={opt} value={opt}>{opt}</option>
                         ))}
                     </select>
-                ) : q.questionType === 'multiple_choice' ? (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-hover:text-taxable-dark transition-colors">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                    </div>
+                </div>
+            ) : q.questionType === 'multiple_choice' ? (
+                    <div className="grid grid-cols-2 gap-3 mb-8">
                         {q.options?.map(opt => {
                             const isSelected = q.allowMultiple
-                                ? (responses[q.questionId] || []).includes(opt)
-                                : responses[q.questionId] === opt;
+                                ? (value || []).includes(opt)
+                                : value === opt;
 
                             return (
                                 <div
                                     key={opt}
                                     onClick={() => {
                                         if (q.allowMultiple) {
-                                            const current = responses[q.questionId] || [];
+                                            const current = value || [];
                                             const next = current.includes(opt)
                                                 ? current.filter((i: string) => i !== opt)
                                                 : [...current, opt];
@@ -403,7 +497,7 @@ export default function PITDetails() {
                                             handleAnswerChange(q.questionId, opt);
                                         }
                                     }}
-                                    className={`px-4 py-3 rounded-xl border text-sm font-medium cursor-pointer transition-all ${isSelected ? 'border-taxable-blue bg-blue-50 text-taxable-blue' : 'border-gray-100 hover:bg-gray-50 text-gray-600'}`}
+                                    className={`px-4 py-2.5 rounded-xl border text-[13px] font-bold cursor-pointer transition-all text-center ${isSelected ? 'border-taxable-blue bg-blue-50 text-taxable-blue' : 'border-gray-100 hover:bg-[#F9FBFC] text-taxable-gray'}`}
                                 >
                                     {opt}
                                 </div>
@@ -411,84 +505,58 @@ export default function PITDetails() {
                         })}
                     </div>
                 ) : q.questionType === 'date' ? (
-                    <input
-                        type="date"
-                        className="w-full h-14 bg-white border border-gray-100 rounded-2xl px-4 focus:outline-none focus:ring-1 focus:ring-taxable-blue/20"
-                        value={responses[q.questionId] || ''}
-                        onChange={(e) => handleAnswerChange(q.questionId, e.target.value)}
-                    />
+                    <div className="mb-8">
+                        <input
+                            type="date"
+                            className="w-full h-12 bg-[#F9FBFC] border border-gray-100 rounded-xl px-4 text-sm font-medium text-taxable-dark focus:outline-none focus:border-taxable-blue/40"
+                            value={value}
+                            onChange={(e) => handleAnswerChange(q.questionId, e.target.value)}
+                        />
+                    </div>
                 ) : q.questionType === 'table' ? (
-                    <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+                    <div className="col-span-2 mb-8 bg-white border border-gray-100 rounded-2xl overflow-hidden">
+                        {/* Table implementation simplified for new design grid compatibility */}
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse min-w-[600px]">
-                                <thead className="bg-[#F8FAFC] border-b border-gray-100">
+                            <table className="w-full text-left border-collapse">
+                                <thead className="bg-[#F9FBFC] border-b border-gray-100">
                                     <tr>
                                         {q.columns?.map((col: any) => (
-                                            <th key={col.field} className="px-5 py-4 text-xs font-bold text-[#64748B] uppercase tracking-wider">{col.label}</th>
+                                            <th key={col.field} className="px-5 py-3 text-[11px] font-bold text-[#A3A3A3] uppercase tracking-wider">{col.label}</th>
                                         ))}
-                                        <th className="w-16 px-5 py-4"></th>
+                                        <th className="w-12 px-5 py-3"></th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
-                                    {(!responses[q.questionId] || responses[q.questionId].length === 0) ? (
+                                    {(!value || value.length === 0) ? (
                                         <tr>
-                                            <td colSpan={(q.columns?.length || 0) + 1} className="px-5 py-12 text-center text-sm text-[#94A3B8] font-medium">
-                                                No data added yet. Click "+ Add row" to start.
+                                            <td colSpan={(q.columns?.length || 0) + 1} className="px-5 py-8 text-center text-[13px] text-[#94A3B8] font-medium">
+                                                No details added yet.
                                             </td>
                                         </tr>
                                     ) : (
-                                        responses[q.questionId].map((row: any, rowIndex: number) => (
-                                            <tr key={rowIndex} className="group hover:bg-gray-50/50 transition-colors">
+                                        value.map((row: any, rowIndex: number) => (
+                                            <tr key={rowIndex} className="group hover:bg-[#FBFCFD] transition-colors">
                                                 {q.columns?.map((col: any) => (
-                                                    <td key={col.field} className="px-5 py-3">
-                                                        {col.type === 'select' ? (
-                                                            <select
-                                                                className="w-full h-10 bg-transparent border-none focus:ring-0 text-sm font-medium text-taxable-dark p-0 cursor-pointer"
-                                                                value={row[col.field] || ''}
-                                                                onChange={(e) => handleTableRowChange(q.questionId, rowIndex, col.field, e.target.value)}
-                                                            >
-                                                                <option value="" disabled>Select</option>
-                                                                {col.options?.map((opt: string) => (
-                                                                    <option key={opt} value={opt}>{opt}</option>
-                                                                ))}
-                                                            </select>
-                                                        ) : col.type === 'yes_no' ? (
-                                                            <select
-                                                                className="w-full h-10 bg-transparent border-none focus:ring-0 text-sm font-medium text-taxable-dark p-0 cursor-pointer"
-                                                                value={row[col.field] || ''}
-                                                                onChange={(e) => handleTableRowChange(q.questionId, rowIndex, col.field, e.target.value)}
-                                                            >
-                                                                <option value="" disabled>Select</option>
-                                                                <option value="yes">Yes</option>
-                                                                <option value="no">No</option>
-                                                            </select>
-                                                        ) : (
-                                                            <input
-                                                                type="text"
-                                                                className="w-full h-10 bg-transparent border-none focus:ring-0 text-sm font-medium text-taxable-dark p-0 placeholder-[#CBD5E1]"
-                                                                placeholder={col.type === 'number' ? '0.00' : 'Type here...'}
-                                                                value={col.type === 'number' ? formatAmount(row[col.field]) : (row[col.field] || '')}
-                                                                onChange={(e) => {
-                                                                    let val = e.target.value;
-                                                                    if (col.type === 'number') {
-                                                                        val = parseAmount(val);
-                                                                        // Allow only numbers and one decimal point
-                                                                        if (val !== '' && !/^\d*\.?\d*$/.test(val)) return;
-                                                                    }
-                                                                    handleTableRowChange(q.questionId, rowIndex, col.field, val);
-                                                                }}
-                                                            />
-                                                        )}
+                                                    <td key={col.field} className="px-5 py-2">
+                                                        <input
+                                                            type="text"
+                                                            className="w-full h-8 bg-transparent border-none focus:ring-0 text-[13px] font-semibold text-taxable-dark p-0 placeholder-[#CBD5E1]"
+                                                            placeholder={col.type === 'number' ? '0.00' : '...'}
+                                                            value={col.type === 'number' ? formatAmount(row[col.field]) : (row[col.field] || '')}
+                                                            onChange={(e) => {
+                                                                let val = e.target.value;
+                                                                if (col.type === 'number') {
+                                                                    val = parseAmount(val);
+                                                                    if (val !== '' && !/^\d*\.?\d*$/.test(val)) return;
+                                                                }
+                                                                handleTableRowChange(q.questionId, rowIndex, col.field, val);
+                                                            }}
+                                                        />
                                                     </td>
                                                 ))}
-                                                <td className="px-5 py-3 text-right">
-                                                    <button
-                                                        onClick={() => handleRemoveRow(q.questionId, rowIndex)}
-                                                        className="p-2 text-[#94A3B8] hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                                                    >
-                                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                            <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                                                        </svg>
+                                                <td className="px-5 py-2 text-right">
+                                                    <button onClick={() => handleRemoveRow(q.questionId, rowIndex)} className="text-[#94A3B8] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
                                                     </button>
                                                 </td>
                                             </tr>
@@ -497,31 +565,18 @@ export default function PITDetails() {
                                 </tbody>
                             </table>
                         </div>
-                        <button
-                            onClick={() => handleAddRow(q.questionId, q.columns || [])}
-                            className="w-full py-4 text-sm font-bold text-taxable-blue hover:bg-blue-50/50 transition-colors border-t border-gray-100 flex items-center justify-center gap-2"
-                        >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="12" y1="5" x2="12" y2="19" />
-                                <line x1="5" y1="12" x2="19" y2="12" />
-                            </svg>
-                            Add row
+                        <button onClick={() => handleAddRow(q.questionId, q.columns || [])} className="w-full py-3 text-[13px] font-bold text-taxable-blue hover:bg-blue-50/50 transition-all border-t border-gray-50 flex items-center justify-center gap-2">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                            Add Details
                         </button>
                     </div>
-                ) : q.questionType === 'address' ? (
-                    <textarea
-                        placeholder="Type address here..."
-                        className="w-full min-h-[100px] bg-white border border-gray-100 rounded-2xl p-4 focus:outline-none focus:ring-1 focus:ring-taxable-blue/20 resize-none"
-                        value={responses[q.questionId] || ''}
-                        onChange={(e) => handleAnswerChange(q.questionId, e.target.value)}
-                    />
                 ) : (
-                    <div className="relative">
+                    <div className="relative mb-8 group">
                         <input
                             type="text"
-                            placeholder={q.validation?.currency === 'NGN' ? (isMonthly ? '₦0 / month' : '₦0 / year') : 'Type here...'}
-                            className="w-full h-14 bg-white border border-gray-100 rounded-2xl px-4 focus:outline-none focus:ring-1 focus:ring-taxable-blue/20"
-                            value={q.questionType === 'number' ? formatAmount(responses[q.questionId]) : (responses[q.questionId] || '')}
+                            placeholder={q.validation?.currency === 'NGN' ? '₦0' : 'Type here...'}
+                            className="w-full h-12 bg-[#F9FBFC] border border-gray-100 rounded-xl px-4 text-sm font-bold text-taxable-dark placeholder:text-[#CBD5E1] focus:outline-none focus:border-taxable-blue/40 transition-all"
+                            value={q.questionType === 'number' ? formatAmount(value) : (value || '')}
                             onChange={(e) => {
                                 let val = e.target.value;
                                 if (q.questionType === 'number') {
@@ -531,6 +586,16 @@ export default function PITDetails() {
                                 handleAnswerChange(q.questionId, val);
                             }}
                         />
+                        {q.explanation && (
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 group-hover:opacity-100 transition-opacity cursor-help">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+                                </svg>
+                                <div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-taxable-dark text-white text-[10px] rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 shadow-xl">
+                                    {q.explanation}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -583,134 +648,218 @@ export default function PITDetails() {
                     <PITSkeleton />
                 ) : (
                     <>
-                        <button
-                            onClick={() => router.back()}
-                            className="flex items-center gap-2 text-sm font-medium text-taxable-dark hover:text-taxable-blue transition-colors mb-4"
-                        >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
-                            </svg>
-                            Back
-                        </button>
-
-                        {/* Breadcrumbs */}
-                        <div className="flex items-center gap-2 text-[13px] text-[#94A3B8] font-medium mb-6">
-                            <span>{profileInfo?.year} {profileInfo?.type} Tax</span>
-                            <span>/</span>
-                            <span className="text-[#64748B]">{activeCategory?.categoryName}</span>
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={() => router.back()}
+                                    className="flex items-center gap-2 text-sm font-semibold text-taxable-dark hover:text-taxable-blue transition-colors"
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
+                                    </svg>
+                                    Back
+                                </button>
+                                <div className="flex items-center gap-2 text-[13px] text-[#94A3B8] font-medium">
+                                    <span>{profileInfo?.year} {profileInfo?.type} Tax</span>
+                                    <span>/</span>
+                                    <span className="text-[#64748B]">{activeCategory?.categoryName}</span>
+                                </div>
+                            </div>
                         </div>
 
-                        {/* Page Content */}
-                        <div className="flex justify-between items-start mb-10">
+                        {/* Summary Header */}
+                        <div className="flex justify-between items-end mb-10">
                             <div>
-                                <h1 className="text-2xl font-medium text-taxable-dark mb-1.5">{profileInfo?.year} {profileInfo?.type} Tax</h1>
-                                <p className="text-base text-taxable-gray font-medium">{currentIndex + 1} of {categories.length} sections</p>
+                                <h1 className="text-2xl font-bold text-taxable-dark mb-1">{profileInfo?.year} {profileInfo?.type} Tax</h1>
+                                <p className="text-[14px] text-taxable-gray font-semibold">
+                                    {categories.filter(c => isCategoryComplete(c)).length} of {categories.length} sections complete
+                                </p>
+                            </div>
+                            <div className="text-right">
+                                <h2 className="text-xl font-bold text-taxable-dark mb-1">₦0 (no data yet)</h2>
+                                <p className="text-[13px] text-taxable-gray font-semibold">Current Tax Due</p>
                             </div>
                         </div>
 
                         <div className="flex items-start gap-8">
                             {/* Sidebar */}
-                            <div className="w-[320px] flex-shrink-0 flex flex-col gap-6 sticky top-32">
-                                <div className="bg-white rounded-[24px] p-4 border border-gray-100">
-                                    <h3 className="text-[20px] font-bold text-[#A3A3A3] mb-5 px-3">Sections</h3>
-                                    {categories.map((cat, idx) => (
-                                        <SidebarItem
-                                            key={cat.categoryKey}
-                                            label={cat.categoryName}
-                                            active={activeSectionKey === cat.categoryKey}
-                                            completed={isCategoryComplete(cat)}
-                                            onClick={() => setActiveSectionKey(cat.categoryKey)}
-                                        />
-                                    ))}
+                            <div className="w-[260px] flex-shrink-0 flex flex-col gap-6">
+                                <div className="bg-white rounded-[24px] p-5 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)] border border-gray-100">
+                                    <h3 className="text-[12px] font-bold text-[#A3A3A3] mb-4 uppercase tracking-wider">Select</h3>
+                                    <div className="space-y-1">
+                                        {categories.map((cat) => (
+                                            <SidebarItem
+                                                key={cat.categoryKey}
+                                                label={cat.categoryName}
+                                                active={activeSectionKey === cat.categoryKey}
+                                                completed={isCategoryComplete(cat)}
+                                                onClick={() => {
+                                                    setActiveSectionKey(cat.categoryKey);
+                                                    setActiveMonth(1);
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-[20px] p-6 border border-gray-100/60 shadow-sm relative overflow-hidden group">
+                                    <div className="relative z-10">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+                                            </svg>
+                                            <h4 className="text-[14px] font-bold text-taxable-dark">Need expert eyes?</h4>
+                                        </div>
+                                        <p className="text-[12px] text-taxable-gray font-medium leading-relaxed mb-5">
+                                            Get your return reviewed by a certified tax accountant. They'll ensure accuracy and compliance.
+                                        </p>
+                                        <button className="w-full py-3 bg-white border border-gray-100 rounded-xl text-[13px] font-bold text-taxable-dark hover:bg-gray-50 transition-all shadow-sm">
+                                            Book Accountant (₦15,000)
+                                        </button>
+                                    </div>
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-blue-50/50 rounded-full -mr-10 -mt-10 blur-2xl" />
                                 </div>
                             </div>
 
-                            {/* Main Content Area */}
-                            <div className="flex-1 min-w-0 max-w-[840px]">
+                            {/* Middle Column: Selection (Month or Sub-section) */}
+                            {checkIfIncomeCategory(activeCategory) ? (
+                                <div className="w-[220px] flex-shrink-0 flex flex-col gap-6">
+                                    <div className="flex items-center gap-3">
+                                        <span className={`text-[13px] font-bold transition-colors ${isMonthly ? 'text-taxable-dark' : 'text-[#A3A3A3]'}`}>Monthly</span>
+                                        <button
+                                            onClick={() => {
+                                                setIsMonthly(!isMonthly);
+                                                setActiveMonth(1);
+                                            }}
+                                            className={`w-[38px] h-[20px] rounded-full relative transition-all ${isMonthly ? 'bg-[#00388D]' : 'bg-gray-300'}`}
+                                        >
+                                            <div className={`absolute top-0.5 w-[16px] h-[16px] bg-white rounded-full transition-all ${isMonthly ? 'left-0.5' : 'left-[21.5px]'}`} />
+                                        </button>
+                                        <span className={`text-[13px] font-bold transition-colors ${!isMonthly ? 'text-taxable-dark' : 'text-[#A3A3A3]'}`}>Annually</span>
+                                    </div>
+
+                                    {isMonthly ? (
+                                        <div className="bg-white rounded-[24px] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)] border border-gray-100 overflow-hidden">
+                                            {MONTHS.map((m) => (
+                                                <button
+                                                    key={m.id}
+                                                    onClick={() => setActiveMonth(m.id)}
+                                                    className={`w-full px-5 py-4 flex items-center justify-between border-b border-gray-50 last:border-b-0 transition-colors ${activeMonth === m.id ? 'bg-[#F8FAFC]' : 'hover:bg-gray-50'}`}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={activeMonth === m.id ? "#00388D" : "#94A3B8"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                                                        </svg>
+                                                        <span className={`text-[14px] font-semibold ${activeMonth === m.id ? 'text-taxable-dark' : 'text-[#64748B]'}`}>{m.name}</span> 
+                                                    </div>
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform ${activeMonth === m.id ? 'rotate-180' : ''}`}>
+                                                        <polyline points="6 9 12 15 18 9" />
+                                                    </svg>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="bg-white rounded-[24px] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)] border border-gray-100 overflow-hidden">
+                                            <button
+                                                onClick={() => setAnnualSubSection('income')}
+                                                className={`w-full px-5 py-5 flex items-center justify-between border-b border-gray-50 transition-colors ${annualSubSection === 'income' ? 'bg-[#F8FAFC]' : 'hover:bg-gray-50'}`}
+                                            >
+                                                <span className={`text-[13px] font-bold ${annualSubSection === 'income' ? 'text-taxable-dark' : 'text-[#64748B]'}`}>Total Income for {profileInfo?.year}</span>
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+                                            </button>
+                                            <button
+                                                onClick={() => setAnnualSubSection('deduction')}
+                                                className={`w-full px-5 py-5 flex items-center justify-between transition-colors ${annualSubSection === 'deduction' ? 'bg-[#F8FAFC]' : 'hover:bg-gray-50'}`}
+                                            >
+                                                <span className={`text-[13px] font-bold ${annualSubSection === 'deduction' ? 'text-taxable-dark' : 'text-[#64748B]'}`}>Total deductible for {profileInfo?.year}</span>
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : null}
+
+                            {/* Right Content Area */}
+                            <div className={`${checkIfIncomeCategory(activeCategory) ? 'flex-1' : 'max-w-[840px] flex-1'} min-w-0`}>
                                 {activeCategory ? (
                                     <div className="animate-in fade-in duration-500">
-                                        <h2 className="text-lg font-bold text-taxable-dark mb-6">{activeCategory.categoryName}</h2>
+                                        <div className="mb-6">
+                                            {!isMonthly || !checkIfIncomeCategory(activeCategory) ? (
+                                                <h2 className="text-xl font-bold text-taxable-dark">{activeCategory.categoryName}</h2>
+                                            ) : (
+                                                <div className="flex flex-col gap-1">
+                                                    <p className="text-[13px] text-taxable-gray font-semibold mb-1 uppercase tracking-wide">
+                                                        {isMonthly ? `Editing ${MONTHS.find(m => m.id === activeMonth)?.name}` : `Annual ${annualSubSection === 'income' ? 'Income' : 'Deductions'}`} {profileInfo?.year}
+                                                    </p>
+                                                    <h2 className="text-xl font-bold text-taxable-dark">{activeCategory.categoryName}</h2>
+                                                </div>
+                                            )}
+                                        </div>
 
-                                        {supportsPeriodToggle && (
-                                            <div className="flex items-center gap-6 mb-10">
-                                                <span className={`text-[15px] font-bold transition-colors ${isMonthly ? 'text-taxable-dark' : 'text-[#A3A3A3]'}`}>Monthly</span>
+                                        {!isMonthly && supportsPeriodToggle && !checkIfIncomeCategory(activeCategory) && (
+                                            <div className="flex items-center gap-3 mb-8">
+                                                <span className={`text-[13px] font-bold transition-colors ${isMonthly ? 'text-taxable-dark' : 'text-[#A3A3A3]'}`}>Monthly</span>
                                                 <button
                                                     onClick={() => setIsMonthly(!isMonthly)}
-                                                    className="w-[52px] h-[26px] bg-[#00388D] rounded-full relative transition-all"
+                                                    className={`w-[38px] h-[20px] rounded-full relative transition-all ${isMonthly ? 'bg-[#00388D]' : 'bg-gray-200'}`}
                                                 >
-                                                    <div className={`absolute top-1 w-[18px] h-[18px] bg-white rounded-full transition-all ${isMonthly ? 'left-1' : 'left-[32px]'}`} />
+                                                    <div className={`absolute top-0.5 w-[16px] h-[16px] bg-white rounded-full transition-all ${isMonthly ? 'left-0.5' : 'left-[21.5px]'}`} />
                                                 </button>
-                                                <span className={`text-[15px] font-bold transition-colors ${!isMonthly ? 'text-taxable-dark' : 'text-[#A3A3A3]'}`}>Annually</span>
+                                                <span className={`text-[13px] font-bold transition-colors ${!isMonthly ? 'text-taxable-dark' : 'text-[#A3A3A3]'}`}>Annually</span>
                                             </div>
                                         )}
 
-                                        {activeCategory.questions.map((q) => renderQuestion(q))}
+                                        <div className="bg-white rounded-[24px] p-8 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)] border border-gray-100">
+                                            {checkIfIncomeCategory(activeCategory) && (
+                                                <p className="text-[14px] text-taxable-gray font-medium mb-10">
+                                                    Enter your {annualSubSection === 'income' ? 'income' : 'deductions'} for {isMonthly ? `${MONTHS.find(m => m.id === activeMonth)?.name} ` : ''}{profileInfo?.year}. Skip fields that don't apply to you. You can update amounts anytime.
+                                                </p>
+                                            )}
 
+                                            <div className="space-y-12">
+                                                {(() => {
+                                                    const filteredQuestions = activeCategory.questions.filter(q => {
+                                                        if (!isMonthly && checkIfIncomeCategory(activeCategory)) {
+                                                            const isIncome = q.categoryKey.toLowerCase().includes('income') || q.categoryKey.toLowerCase().includes('employment') || q.categoryKey.toLowerCase().includes('business');
+                                                            const isDeduction = q.categoryKey.toLowerCase().includes('deduction');
+                                                            if (annualSubSection === 'income') return isIncome;
+                                                            return isDeduction;
+                                                        }
+                                                        return true;
+                                                    });
 
-                                        <button
-                                            onClick={handleNext}
-                                            disabled={submitting}
-                                            className="h-14 px-10 bg-[#00388D] text-white font-bold rounded-2xl hover:bg-[#002b6d] transition-colors mt-8 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                        >
-                                            {submitting ? 'Saving...' : (currentIndex === categories.length - 1 ? 'Finish' : 'Save & Continue')}
-                                        </button>
+                                                    const grouped = filteredQuestions.reduce((acc, q) => {
+                                                        const groupName = q.category || 'Information';
+                                                        if (!acc[groupName]) acc[groupName] = [];
+                                                        acc[groupName].push(q);
+                                                        return acc;
+                                                    }, {} as Record<string, Question[]>);
+
+                                                    return Object.entries(grouped).map(([groupName, groupQuestions]) => (
+                                                        <div key={groupName} className="col-span-full">
+                                                            <h3 className="text-[17px] font-bold text-taxable-dark mb-6">{groupName}</h3>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-0">
+                                                                {groupQuestions.map(q => renderQuestion(q))}
+                                                            </div>
+                                                        </div>
+                                                    ));
+                                                })()}
+                                            </div>
+
+                                            <button
+                                                onClick={handleNext}
+                                                disabled={submitting}
+                                                className="w-full h-14 bg-[#00388D] text-white font-bold rounded-2xl hover:bg-[#002b6d] transition-colors mt-12 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg shadow-blue-900/10"
+                                            >
+                                                {submitting ? 'Saving Progress...' : (currentIndex === categories.length - 1 ? 'Review & File Tax Return' : 'Save & Continue')}
+                                            </button>
+                                        </div>
                                     </div>
                                 ) : (
-                                    <div className="flex items-center justify-center py-20">
-                                        <span className="text-taxable-gray font-medium">No questions found.</span>
+                                    <div className="flex items-center justify-center py-20 bg-white rounded-[24px] border border-gray-100">
+                                        <span className="text-taxable-gray font-medium italic">Select a section to begin.</span>
                                     </div>
                                 )}
-                            </div>
-
-                            {/* Right Help Sidebar */}
-                            <div className="w-[280px] flex-shrink-0 sticky top-32 bg-taxable-lightgray2 rounded-[24px] p-7 min-h-[367px] border border-gray-100/50">
-                                <div className="mb-4">
-                                    <div className="flex items-center gap-2.5 mb-2.5">
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-taxable-dark">
-                                            <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
-                                        </svg>
-                                        <h4 className="text-base font-semibold text-taxable-dark">Why we need this</h4>
-                                    </div>
-                                    <p className="text-sm text-[#64748B] leading-[1.5] font-medium">
-                                        Your details help us identify you with relevant tax authorities and ensure your tax return is filed correctly. All information is encrypted and stored securely.
-                                    </p>
-                                </div>
-
-                                <div className="space-y-0">
-                                    <div className="py-2.5">
-                                        <div className="w-[270px] h-[3px] bg-white rounded-[10px] mb-4 -mx-1" />
-                                        <div className="space-y-3.5">
-                                            <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors">
-                                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
-                                                </svg>
-                                                <span>Tax filing guide</span>
-                                            </button>
-                                            <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
-                                                <span>Understanding taxes</span>
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="py-2.5">
-                                        <div className="w-[270px] h-[3px] bg-white rounded-[10px] mb-4 -mx-1" />
-                                        <div className="space-y-3.5">
-                                            <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors">
-                                                    <path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
-                                                </svg>
-                                                <span>Chat with support</span>
-                                            </button>
-                                            <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors">
-                                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
-                                                </svg>
-                                                <span>Email us</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </>

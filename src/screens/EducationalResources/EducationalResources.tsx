@@ -33,37 +33,48 @@ const VideoCard = ({ thumbnail, title, duration }: { thumbnail: string; title: s
 const FAQAccordion = ({ question, answer }: { question: string; answer: string }) => {
     const [isOpen, setIsOpen] = useState(false);
     return (
-        <div className="mb-3">
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full px-8 py-6 bg-[#F8FAFC] rounded-[20px] flex items-center justify-between text-left transition-all hover:bg-gray-100"
-            >
-                <div>
-                    <h3 className="text-base font-medium text-taxable-dark mb-1">{question}</h3>
-                    <p className={`text-sm text-taxable-gray font-medium transition-all ${isOpen ? 'opacity-100 mt-2' : 'opacity-100 line-clamp-1'}`}>
-                        {answer}
-                    </p>
-                </div>
-                <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className={`text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
+        <div className="mb-4">
+            <div className="bg-[#F9FBFC] rounded-[24px] overflow-hidden transition-all border border-transparent hover:border-gray-100">
+                <button
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="w-full px-8 py-6 flex items-center justify-between text-left transition-all"
                 >
-                    <polyline points="6 9 12 15 18 9" />
-                </svg>
-            </button>
+                    <div className="pr-4">
+                        <h3 className="text-[17px] font-bold text-taxable-dark leading-snug">{question}</h3>
+                        {!isOpen && (
+                            <p className="text-[15px] text-taxable-gray font-medium mt-1.5 line-clamp-1">
+                                {answer}
+                            </p>
+                        )}
+                    </div>
+                    <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#94A3B8"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={`transition-transform duration-300 shrink-0 ${isOpen ? 'rotate-180' : ''}`}
+                    >
+                        <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                </button>
+                {isOpen && (
+                    <div className="px-8 pb-8 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <p className="text-[16px] text-taxable-gray font-medium leading-relaxed">
+                            {answer}
+                        </p>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
 
 export default function EducationalResources() {
-    const [activeTab, setActiveTab] = useState('Video Tutorials');
+    const [activeTab, setActiveTab] = useState('Frequently Asked Questions');
     const [activeFAQCategory, setActiveFAQCategory] = useState('General Tax Questions');
     const [isSupportDropdownOpen, setIsSupportDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -83,15 +94,11 @@ export default function EducationalResources() {
         },
         {
             question: "What's my Tax Identification Number (TIN) and how do I get one?",
-            answer: "Your TIN is a unique number issued by FIRS. Here's how to register..."
+            answer: "Your TIN is a unique number issued by FIRS. Here's how to register for a new TIN or retrieve your existing one via the FIRS portal."
         },
         {
             question: "When is the tax filing deadline for 2026?",
-            answer: "Individual tax returns must be filed by March 31, 2026. Here's what you need to know.."
-        },
-        {
-            question: "When is the tax filing deadline for 2026?",
-            answer: "Individual tax returns must be filed by March 31, 2026. Here's what you need to know.."
+            answer: "Individual tax returns must be filed by March 31, 2026. Here's what you need to know about penalties for late filing."
         }
     ];
 
@@ -129,87 +136,73 @@ export default function EducationalResources() {
 
             <main className="max-w-[1240px] mx-auto pt-8 pb-20 px-6">
                 {/* Back Button & Breadcrumbs */}
-                <div className="mb-8">
+                <div className="mb-10">
                     <Link href="/home" className="flex items-center gap-2 group mb-4">
-                        <div className="w-8 h-8 rounded-full bg-[#F5F5F3] flex items-center justify-center transition-colors group-hover:bg-gray-200">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-taxable-dark">
+                        <div className="w-10 h-10 rounded-full bg-[#F5F5F3] flex items-center justify-center transition-colors group-hover:bg-gray-200">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-taxable-dark">
                                 <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
                             </svg>
                         </div>
-                        <span className="text-[15px] font-bold text-taxable-dark">Back</span>
+                        <span className="text-[17px] font-bold text-taxable-dark">Back</span>
                     </Link>
-                    <div className="flex items-center gap-2 text-[13px] font-medium text-taxable-gray">
+                    <div className="flex items-center gap-2 text-[14px] font-medium text-taxable-gray">
                         <Link href="/home" className="hover:text-taxable-dark transition-colors">Home</Link>
                         <span>/</span>
-                        <span className="text-taxable-dark">Educational resources</span>
+                        <span className="text-taxable-dark font-semibold">Educational resources</span>
                     </div>
                 </div>
 
                 {/* Header Section */}
-                <div className="flex items-start justify-between mb-10">
+                <div className="flex items-start justify-between mb-12">
                     <div>
-                        <h1 className="text-2xl font-medium text-taxable-dark mb-3">Help Center & Resources</h1>
-                        <p className="text-lg text-taxable-gray font-medium max-w-[500px] leading-relaxed">
+                        <h1 className="text-[28px] font-bold text-taxable-dark mb-3">Help Center & Resources</h1>
+                        <p className="text-[17px] text-taxable-gray font-medium max-w-[500px] leading-relaxed">
                             Everything you need to understand Nigerian taxes and make the most of Taxable
                         </p>
                     </div>
                     <div className="relative" ref={dropdownRef}>
                         <button
                             onClick={() => setIsSupportDropdownOpen(!isSupportDropdownOpen)}
-                            className="h-[52px] px-7 bg-white border border-gray-100 rounded-[18px] text-[15px] font-bold text-taxable-dark shadow-xs hover:shadow-md transition-all flex items-center gap-2"
+                            className="h-[52px] px-8 bg-white border border-gray-100 rounded-[18px] text-[15px] font-bold text-taxable-dark shadow-xs hover:shadow-md transition-all flex items-center"
                         >
                             Contact support
                         </button>
 
                         {isSupportDropdownOpen && (
-                            <div className="absolute top-14 right-0 w-[240px] bg-white rounded-[24px] shadow-2xl border border-gray-50 p-2 z-50 animate-in fade-in zoom-in duration-200">
-                                <button className="w-full flex items-center gap-3 p-3 hover:bg-[#F8FAFC] rounded-xl transition-all group">
-                                    <div className="w-8 h-8 rounded-lg bg-[#F8FAFC] group-hover:bg-white flex items-center justify-center transition-colors">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500">
-                                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                                        </svg>
+                            <>
+                                <div className="fixed inset-0 z-40" onClick={() => setIsSupportDropdownOpen(false)} />
+                                <div className="absolute top-full mt-2 right-0 w-[280px] bg-white border border-gray-100 rounded-[32px] shadow-xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="flex flex-col gap-1">
+                                        <button className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-gray-50 transition-colors text-taxable-dark text-[16px] font-bold text-left">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A3A3A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" /></svg>
+                                            Chat with support
+                                        </button>
+                                        <a href="mailto:support@taxable.ng" className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-gray-50 transition-colors text-taxable-dark text-[16px] font-bold">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A3A3A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
+                                            support@taxable.ng
+                                        </a>
+                                        <button className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-gray-50 transition-colors text-taxable-dark text-[16px] font-bold text-left">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A3A3A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="10" r="3" /><path d="M7 20.662V19c0-1.657 2.239-3 5-3s5 1.343 5 3v1.662" /></svg>
+                                            Consult an Accountant
+                                        </button>
+                                        <button className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-gray-50 transition-colors text-taxable-dark text-[16px] font-bold text-left">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A3A3A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /><path d="M8 6h10" /><path d="M8 10h10" /><path d="M8 14h10" /></svg>
+                                            Visit FIRS Resources
+                                        </button>
                                     </div>
-                                    <span className="text-sm font-medium text-taxable-dark">Chat with support</span>
-                                </button>
-                                <button className="w-full flex items-center gap-3 p-3 hover:bg-[#F8FAFC] rounded-xl transition-all group">
-                                    <div className="w-8 h-8 rounded-lg bg-[#F8FAFC] group-hover:bg-white flex items-center justify-center transition-colors">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500">
-                                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                                            <polyline points="22,6 12,13 2,6" />
-                                        </svg>
-                                    </div>
-                                    <span className="text-sm font-medium text-taxable-dark">support@taxable.ng</span>
-                                </button>
-                                <button className="w-full flex items-center gap-3 p-3 hover:bg-[#F8FAFC] rounded-xl transition-all group">
-                                    <div className="w-8 h-8 rounded-lg bg-[#F8FAFC] group-hover:bg-white flex items-center justify-center transition-colors">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500">
-                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                                            <circle cx="12" cy="7" r="4" />
-                                        </svg>
-                                    </div>
-                                    <span className="text-sm font-medium text-taxable-dark">Consult an Accountant</span>
-                                </button>
-                                <button className="w-full flex items-center gap-3 p-3 hover:bg-[#F8FAFC] rounded-xl transition-all group">
-                                    <div className="w-8 h-8 rounded-lg bg-[#F8FAFC] group-hover:bg-white flex items-center justify-center transition-colors">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500">
-                                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                                        </svg>
-                                    </div>
-                                    <span className="text-sm font-medium text-taxable-dark">Visit FIRS Resources</span>
-                                </button>
-                            </div>
+                                </div>
+                            </>
                         )}
                     </div>
                 </div>
 
                 {/* Navigation Tabs */}
-                <div className="flex gap-10 border-b border-gray-100 mb-12">
+                <div className="flex gap-12 border-b border-gray-100 mb-12">
                     {tabs.map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`pb-4 text-lg font-medium transition-all relative ${activeTab === tab ? 'text-taxable-blue' : 'text-taxable-gray'
+                            className={`pb-5 text-[17px] font-bold transition-all relative ${activeTab === tab ? 'text-taxable-blue' : 'text-taxable-gray'
                                 }`}
                         >
                             {tab}
@@ -222,7 +215,7 @@ export default function EducationalResources() {
 
                 {/* Content Sections */}
                 {activeTab === 'Video Tutorials' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-14">
                         {videos.map((video, index) => (
                             <VideoCard key={index} {...video} />
                         ))}
@@ -230,20 +223,20 @@ export default function EducationalResources() {
                 )}
 
                 {activeTab === 'Frequently Asked Questions' && (
-                    <div className="flex gap-12">
+                    <div className="flex gap-14 items-start">
                         {/* FAQ Sidebar */}
-                        <div className="w-[303px] h-[184px] bg-white rounded-[20px] border border-gray-100 p-3 shadow-sm flex flex-col shrink-0">
-                            <h4 className="text-base font-medium text-taxable-dark mb-3 px-2">Select</h4>
-                            <div className="flex flex-col gap-1 items-center">
+                        <div className="w-[303px] bg-white rounded-[24px] border border-gray-100 p-4 shadow-xs shrink-0 sticky top-28">
+                            <h4 className="text-[15px] font-bold text-taxable-dark mb-4 px-3">Select</h4>
+                            <div className="flex flex-col gap-1.5">
                                 {faqCategories.map((category) => (
                                     <button
                                         key={category}
                                         onClick={() => setActiveFAQCategory(category)}
-                                        className={`w-[279px] h-[37px] flex items-center justify-between px-3 transition-all rounded-[8px] ${activeFAQCategory === category ? 'bg-[#F1F5F9] text-taxable-dark' : 'hover:bg-gray-50 text-taxable-gray'
+                                        className={`w-full h-12 flex items-center justify-between px-3 transition-all rounded-xl ${activeFAQCategory === category ? 'bg-[#F1F5F9] text-taxable-dark' : 'hover:bg-gray-50 text-taxable-gray'
                                             }`}
                                     >
-                                        <span className={`text-sm ${activeFAQCategory === category ? 'font-semibold' : 'font-medium'}`}>{category}</span>
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={activeFAQCategory === category ? 'text-taxable-dark' : 'text-gray-300'}>
+                                        <span className={`text-[14.5px] ${activeFAQCategory === category ? 'font-bold' : 'font-semibold'}`}>{category}</span>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={`transition-colors ${activeFAQCategory === category ? 'text-taxable-dark' : 'text-gray-300'}`}>
                                             <polyline points="9 18 15 12 9 6" />
                                         </svg>
                                     </button>
@@ -252,21 +245,25 @@ export default function EducationalResources() {
                         </div>
 
                         {/* FAQ Content */}
-                        <div className="flex-1 max-w-[800px]">
-                            {faqs.map((faq, index) => (
-                                <FAQAccordion key={index} {...faq} />
-                            ))}
+                        <div className="flex-1 max-w-[840px]">
+                            <div className="space-y-4">
+                                {faqs.map((faq, index) => (
+                                    <FAQAccordion key={index} {...faq} />
+                                ))}
+                            </div>
                         </div>
                     </div>
                 )}
 
                 {activeTab === 'Blog/Articles' && (
-                    <div className="py-20 text-center">
+                    <div className="py-24 text-center bg-white rounded-[32px] border border-gray-100">
                         <div className="flex items-center justify-center mx-auto mb-6">
-                            <Image src="/icons/docs.svg" alt="empty" width={52} height={52} />
+                            <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center">
+                                <Image src="/icons/docs.svg" alt="empty" width={40} height={40} className="opacity-40" />
+                            </div>
                         </div>
-                        <h3 className="text-lg font-bold text-taxable-dark mb-2">No content yet</h3>
-                        <p className="text-taxable-gray font-medium">We're currently preparing some great articles for you.</p>
+                        <h3 className="text-xl font-bold text-taxable-dark mb-2">No articles yet</h3>
+                        <p className="text-taxable-gray font-medium">We're currently preparing some insightful tax guides for you.</p>
                     </div>
                 )}
             </main>

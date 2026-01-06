@@ -10,7 +10,7 @@ interface ApiConfig extends RequestInit {
 }
 
 export const useApi = () => {
-    const { token, logout } = useUser();
+    const { token, logout, loading: authLoading } = useUser();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -18,6 +18,15 @@ export const useApi = () => {
 
     const request = useCallback(async (endpoint: string, config: ApiConfig = {}) => {
         const { useToken = true, ...customConfig } = config;
+
+        // If we're still loading the auth state, we should wait or handle it
+        if (useToken && authLoading) {
+            // We can't really "wait" easily here without more complexity, 
+            // but we should definitely NOT redirect yet.
+            // Let's return a promise that we can handle, or just wait for authLoading to be false.
+            // For now, let's just throw a specific error or return early.
+            // Actually, the component should probably handle this.
+        }
 
         setLoading(true);
         setError(null);
@@ -32,6 +41,11 @@ export const useApi = () => {
 
         if (useToken) {
             if (!token) {
+                if (authLoading) {
+                    // Don't redirect if we're still loading auth state
+                    setLoading(false);
+                    return;
+                }
                 console.warn('No token found for authenticated request, redirecting to login');
                 router.push('/signin');
                 setLoading(false);
@@ -79,7 +93,7 @@ export const useApi = () => {
         } finally {
             setLoading(false);
         }
-    }, [token, logout, router]);
+    }, [token, logout, router, authLoading]);
 
     const get = useCallback((endpoint: string, config?: ApiConfig) =>
         request(endpoint, { ...config, method: 'GET' }), [request]);
@@ -107,6 +121,10 @@ export const useApi = () => {
 
         if (useToken) {
             if (!token) {
+                if (authLoading) {
+                    setLoading(false);
+                    return;
+                }
                 router.push('/signin');
                 setLoading(false);
                 throw new Error('Authentication required');
@@ -144,7 +162,7 @@ export const useApi = () => {
         } finally {
             setLoading(false);
         }
-    }, [token, logout, router]);
+    }, [token, logout, router, authLoading]);
 
     return { get, post, put, patch, del, upload, loading, error, data };
 };

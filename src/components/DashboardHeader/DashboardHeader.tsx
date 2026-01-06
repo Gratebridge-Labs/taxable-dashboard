@@ -1,11 +1,12 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 export default function DashboardHeader() {
     const pathname = usePathname();
+    const [showSupport, setShowSupport] = useState(false);
 
     const navLinks = [
         {
@@ -77,10 +78,39 @@ export default function DashboardHeader() {
             </nav>
 
             {/* Right Section: Button */}
-            <div className="flex-1 flex justify-end">
-                <button className="px-5 h-[46px] border border-gray-100 rounded-[12] text-[14px] font-bold text-taxable-dark hover:shadow-xs hover:bg-gray-50 transition-all cursor-pointer">
+            <div className="flex-1 flex justify-end relative">
+                <button
+                    onClick={() => setShowSupport(!showSupport)}
+                    className="px-5 h-[46px] border border-gray-100 rounded-[12px] text-[14px] font-bold text-taxable-dark hover:shadow-xs hover:bg-gray-50 transition-all cursor-pointer flex items-center gap-2"
+                >
                     Talk to an Accountant
                 </button>
+
+                {showSupport && (
+                    <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowSupport(false)} />
+                        <div className="absolute top-full mt-2 right-0 w-[280px] bg-white border border-gray-100 rounded-[32px] shadow-xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="flex flex-col gap-1">
+                                <button className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-gray-50 transition-colors text-taxable-dark text-[16px] font-bold text-left">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A3A3A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" /></svg>
+                                    Chat with support
+                                </button>
+                                <a href="mailto:support@taxable.ng" className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-gray-50 transition-colors text-taxable-dark text-[16px] font-bold font-sans">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A3A3A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
+                                    support@taxable.ng
+                                </a>
+                                <button className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-gray-50 transition-colors text-taxable-dark text-[16px] font-bold text-left">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A3A3A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="10" r="3" /><path d="M7 20.662V19c0-1.657 2.239-3 5-3s5 1.343 5 3v1.662" /></svg>
+                                    Consult an Accountant
+                                </button>
+                                <button className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-gray-50 transition-colors text-taxable-dark text-[16px] font-bold text-left">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A3A3A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /><path d="M8 6h10" /><path d="M8 10h10" /><path d="M8 14h10" /></svg>
+                                    Visit FIRS Resources
+                                </button>
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
         </header>
     );

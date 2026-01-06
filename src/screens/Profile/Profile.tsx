@@ -6,6 +6,7 @@ import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
 import { useApi } from '@/hooks/useApi';
 import { useUser } from '@/contexts/UserContext';
 import { useEffect } from 'react';
+import QRCode from "react-qr-code";
 
 const ProfileField = ({ label, placeholder, value, onChange, type = "text", prefix }: { label: string; placeholder: string; value: string; onChange: (val: string) => void; type?: string; prefix?: string }) => (
     <div className="mb-6">
@@ -41,6 +42,7 @@ export default function Profile() {
     const [profileImage, setProfileImage] = useState<string | null>(null);
     const { get, post, patch, loading: apiLoading, error: apiError } = useApi();
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [showSupport, setShowSupport] = useState(false);
 
     const [formData, setFormData] = useState({
         firstName: '',
@@ -152,6 +154,19 @@ export default function Profile() {
         }
     };
 
+    const handleDisable2FA = async () => {
+        setSuccessMessage(null);
+        try {
+            const response = await post('/auth/disable-2fa', {});
+            if (response?.success) {
+                setSuccessMessage("Two-factor authentication has been disabled from your account.");
+                refreshUser();
+            }
+        } catch (err) {
+            console.error("Failed to disable 2FA:", err);
+        }
+    };
+
     const handleSaveProfile = async () => {
         setSuccessMessage(null);
         try {
@@ -192,9 +207,40 @@ export default function Profile() {
                             Everything you need to understand Nigerian taxes and make the most of Taxable
                         </p>
                     </div>
-                    <button className="h-[52px] px-7 bg-white border border-gray-100 rounded-[18px] text-[15px] font-bold text-taxable-dark shadow-xs hover:shadow-md transition-all">
-                        Contact support
-                    </button>
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowSupport(!showSupport)}
+                            className="h-[52px] px-7 bg-white border border-gray-100 rounded-[18px] text-[15px] font-bold text-taxable-dark shadow-xs hover:shadow-md transition-all flex items-center gap-2"
+                        >
+                            Contact support
+                        </button>
+
+                        {showSupport && (
+                            <>
+                                <div className="fixed inset-0 z-40" onClick={() => setShowSupport(false)} />
+                                <div className="absolute top-full mt-2 right-0 w-[280px] bg-white border border-gray-100 rounded-[32px] shadow-xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="flex flex-col gap-1">
+                                        <button className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-gray-50 transition-colors text-taxable-dark text-[16px] font-bold text-left">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A3A3A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" /></svg>
+                                            Chat with support
+                                        </button>
+                                        <a href="mailto:support@taxable.ng" className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-gray-50 transition-colors text-taxable-dark text-[16px] font-bold">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A3A3A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
+                                            support@taxable.ng
+                                        </a>
+                                        <button className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-gray-50 transition-colors text-taxable-dark text-[16px] font-bold text-left">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A3A3A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="10" r="3" /><path d="M7 20.662V19c0-1.657 2.239-3 5-3s5 1.343 5 3v1.662" /></svg>
+                                            Consult an Accountant
+                                        </button>
+                                        <button className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-gray-50 transition-colors text-taxable-dark text-[16px] font-bold text-left">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A3A3A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /><path d="M8 6h10" /><path d="M8 10h10" /><path d="M8 14h10" /></svg>
+                                            Visit FIRS Resources
+                                        </button>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
 
                 <div className="flex gap-16">
@@ -434,63 +480,122 @@ export default function Profile() {
                                         </label>
                                     </div>
 
-                                    {securityData.isEnabling ? (
+                                    {securityData.isEnabling && !user?.twoFactorEnabled ? (
                                         <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
                                             {tfaSetupData && (
-                                                <div className="bg-white border border-gray-100 rounded-[24px] p-6 flex flex-col items-center">
-                                                    <p className="text-[14px] text-taxable-gray font-medium mb-4 text-center">
-                                                        Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)
+                                                <div className="bg-white border border-gray-100 rounded-[32px] p-8 flex flex-col items-center shadow-sm">
+                                                    <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
+                                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#003787" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                            <rect x="5" y="2" width="14" height="20" rx="2" ry="2" /><line x1="12" y1="18" x2="12.01" y2="18" />
+                                                        </svg>
+                                                    </div>
+
+                                                    <h3 className="text-lg font-bold text-taxable-dark mb-2 text-center">Set up Authenticator App</h3>
+                                                    <p className="text-[14px] text-taxable-gray font-medium mb-8 text-center leading-relaxed">
+                                                        Open your authenticator app (like Google Authenticator or Authy) and scan the QR code below.
                                                     </p>
-                                                    <div className="relative w-48 h-48 mb-4 border border-gray-50 rounded-xl overflow-hidden bg-white p-2">
-                                                        <img
-                                                            src={tfaSetupData.qrCode}
-                                                            alt="2FA QR Code"
-                                                            className="w-full h-full object-contain"
+
+                                                    <div className="bg-white p-4 rounded-3xl border-4 border-gray-50 mb-8">
+                                                        <QRCode
+                                                            value={`otpauth://totp/Taxable:${user?.email || 'User'}?secret=${tfaSetupData.secret}&issuer=Taxable`}
+                                                            size={200}
+                                                            style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                                                            viewBox={`0 0 256 256`}
                                                         />
                                                     </div>
-                                                    <div className="w-full">
-                                                        <p className="text-[12px] text-taxable-gray font-bold mb-1 uppercase tracking-wider">Manual Entry Key</p>
-                                                        <div className="bg-gray-50 rounded-lg p-3 break-all font-mono text-[13px] text-taxable-dark border border-gray-100">
-                                                            {tfaSetupData.manualEntryKey}
+
+                                                    <div className="w-full space-y-4">
+                                                        <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+                                                            <p className="text-[11px] text-taxable-blue font-bold uppercase tracking-wider mb-2">Can't scan? Enter manually</p>
+                                                            <div className="flex items-center justify-between">
+                                                                <code className="text-[13px] font-mono font-bold text-taxable-dark">{tfaSetupData.manualEntryKey}</code>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        navigator.clipboard.writeText(tfaSetupData.manualEntryKey);
+                                                                        setSuccessMessage("Key copied to clipboard!");
+                                                                        setTimeout(() => setSuccessMessage(null), 3000);
+                                                                    }}
+                                                                    className="text-taxable-blue text-[12px] font-bold hover:underline"
+                                                                >
+                                                                    Copy
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             )}
 
-                                            <div className="max-w-[200px]">
-                                                <ProfileField
-                                                    label="Enter Verification Code"
-                                                    placeholder="000000"
-                                                    value={securityData.tfaCode}
-                                                    onChange={(val) => setSecurityData({ ...securityData, tfaCode: val })}
-                                                />
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <button
-                                                    onClick={() => {
-                                                        setSecurityData({ ...securityData, isEnabling: false, tfaCode: '' });
-                                                        setTfaSetupData(null);
-                                                    }}
-                                                    className="h-[52px] px-8 border border-gray-100 text-taxable-dark font-bold rounded-xl hover:bg-gray-50 transition-colors"
-                                                >
-                                                    Cancel
-                                                </button>
-                                                <button
-                                                    onClick={handleVerify2FA}
-                                                    disabled={apiLoading || (securityData.tfaCode?.length || 0) < 6}
-                                                    className="h-[52px] px-10 bg-[#00388D] text-white font-bold rounded-xl hover:opacity-95 transition-opacity disabled:opacity-50 flex items-center gap-2"
-                                                >
-                                                    {apiLoading ? "Verifying..." : "Verify & Enable"}
-                                                </button>
+                                            <div className="pt-4">
+                                                <div className="mb-6">
+                                                    <label className="block text-[14px] font-bold text-taxable-dark mb-3 text-center">Enter the 6-digit code from your app</label>
+                                                    <div className="flex justify-center">
+                                                        <input
+                                                            type="text"
+                                                            maxLength={6}
+                                                            placeholder="000000"
+                                                            className="w-48 h-14 bg-white border border-gray-100 rounded-[18px] text-center text-2xl font-bold tracking-[0.5em] text-taxable-dark focus:outline-none focus:ring-2 focus:ring-taxable-blue/20 placeholder:text-gray-200"
+                                                            value={securityData.tfaCode}
+                                                            onChange={(e) => {
+                                                                const val = e.target.value.replace(/\D/g, '');
+                                                                setSecurityData({ ...securityData, tfaCode: val });
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        onClick={() => {
+                                                            setSecurityData({ ...securityData, isEnabling: false, tfaCode: '' });
+                                                            setTfaSetupData(null);
+                                                        }}
+                                                        className="flex-1 h-14 bg-white border border-gray-100 text-taxable-dark font-bold rounded-2xl hover:bg-gray-50 transition-all"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        onClick={handleVerify2FA}
+                                                        disabled={apiLoading || securityData.tfaCode.length !== 6}
+                                                        className="flex-[1.5] h-14 bg-[#00388D] text-white font-bold rounded-2xl hover:opacity-95 transition-all shadow-lg shadow-blue-900/10 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
+                                                    >
+                                                        {apiLoading ? (
+                                                            <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                            </svg>
+                                                        ) : "Enable 2FA"}
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     ) : (
-                                        <button
-                                            onClick={handleInitiate2FA}
-                                            className="h-[52px] px-8 bg-white border border-gray-100 text-taxable-dark font-bold rounded-xl hover:bg-gray-50 transition-colors shadow-sm"
-                                        >
-                                            Enable 2FA
-                                        </button>
+                                        <div className="flex flex-col gap-4">
+                                            {user?.twoFactorEnabled ? (
+                                                <div className="bg-white border border-gray-100 rounded-[24px] p-6 flex flex-col items-center">
+                                                    <div className="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center mb-4">
+                                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><polyline points="9 11 11 13 15 9" />
+                                                        </svg>
+                                                    </div>
+                                                    <p className="text-[14px] text-taxable-gray font-medium mb-6 text-center">
+                                                        2FA is currently <span className="text-green-600 font-bold">Enabled</span>. Your account is protected with an extra layer of security.
+                                                    </p>
+                                                    <button
+                                                        onClick={handleDisable2FA}
+                                                        className="h-[52px] px-8 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition-colors w-full flex items-center justify-center gap-2"
+                                                    >
+                                                        {apiLoading ? "Disabling..." : "Disable 2FA"}
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    onClick={handleInitiate2FA}
+                                                    className="h-[52px] px-8 bg-white border border-gray-100 text-taxable-dark font-bold rounded-xl hover:bg-gray-50 transition-colors shadow-sm"
+                                                >
+                                                    Enable 2FA
+                                                </button>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </div>

@@ -6,6 +6,61 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
 import { useApi } from '@/hooks/useApi';
 import { useUser } from '@/contexts/UserContext';
+import ReviewAndFile from './ReviewAndFile';
+
+const WhyWeNeedThis = () => (
+    <div className="hidden xl:block w-[280px] flex-shrink-0 animate-in fade-in slide-in-from-right duration-500">
+        <div className="sticky top-32 bg-taxable-lightgray2 rounded-[24px] p-7 min-h-[367px] border border-gray-100/50">
+            <div className="mb-4">
+                <div className="flex items-center gap-2.5 mb-2.5">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-taxable-dark">
+                        <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+                    </svg>
+                    <h4 className="text-base font-semibold text-taxable-dark">Why we need this</h4>
+                </div>
+                <p className="text-sm text-[#64748B] leading-[1.5] font-medium">
+                    Your details help us identify you with relevant tax authorities and ensure your tax return is filed correctly. All information is encrypted and stored securely.
+                </p>
+            </div>
+
+            <div className="space-y-0">
+                <div className="py-2.5">
+                    <div className="w-full h-[3px] bg-white rounded-[10px] mb-4" />
+                    <div className="space-y-3.5">
+                        <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+                            </svg>
+                            <span>Tax filing guide</span>
+                        </button>
+                        <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+                            <span>Understanding taxes</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div className="py-2.5">
+                    <div className="w-full h-[3px] bg-white rounded-[10px] mb-4" />
+                    <div className="space-y-3.5">
+                        <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors">
+                                <path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+                            </svg>
+                            <span>Chat with support</span>
+                        </button>
+                        <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
+                            </svg>
+                            <span>Email us</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+);
 
 interface QuestionValidation {
     pattern?: string;
@@ -375,6 +430,9 @@ export default function PITDetails() {
                 setActiveSectionKey(categories[currentIndex + 1].categoryKey);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 setActiveMonth(1); // Reset month for next category
+            } else if (activeSectionKey !== 'review-and-file') {
+                setActiveSectionKey('review-and-file');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
                 router.push('/home');
             }
@@ -461,22 +519,22 @@ export default function PITDetails() {
                         ))}
                     </div>
                 ) : q.questionType === 'select' ? (
-                <div className="mb-8 relative group">
-                    <select
-                        className="w-full h-12 bg-[#F9FBFC] border border-gray-100 rounded-xl px-4 text-sm font-medium text-taxable-dark focus:outline-none focus:border-taxable-blue/40 appearance-none cursor-pointer pr-10"
-                        value={value}
-                        onChange={(e) => handleAnswerChange(q.questionId, e.target.value)}
-                    >
-                        <option value="" disabled>Select an option</option>
-                        {q.options?.map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                    </select>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-hover:text-taxable-dark transition-colors">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                    <div className="mb-8 relative group">
+                        <select
+                            className="w-full h-12 bg-[#F9FBFC] border border-gray-100 rounded-xl px-4 text-sm font-medium text-taxable-dark focus:outline-none focus:border-taxable-blue/40 appearance-none cursor-pointer pr-10"
+                            value={value}
+                            onChange={(e) => handleAnswerChange(q.questionId, e.target.value)}
+                        >
+                            <option value="" disabled>Select an option</option>
+                            {q.options?.map(opt => (
+                                <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-hover:text-taxable-dark transition-colors">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </div>
                     </div>
-                </div>
-            ) : q.questionType === 'multiple_choice' ? (
+                ) : q.questionType === 'multiple_choice' ? (
                     <div className="grid grid-cols-2 gap-3 mb-8">
                         {q.options?.map(opt => {
                             const isSelected = q.allowMultiple
@@ -687,18 +745,46 @@ export default function PITDetails() {
                                 <div className="bg-white rounded-[24px] p-5 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)] border border-gray-100">
                                     <h3 className="text-[12px] font-bold text-[#A3A3A3] mb-4 uppercase tracking-wider">Select</h3>
                                     <div className="space-y-1">
-                                        {categories.map((cat) => (
-                                            <SidebarItem
-                                                key={cat.categoryKey}
-                                                label={cat.categoryName}
-                                                active={activeSectionKey === cat.categoryKey}
-                                                completed={isCategoryComplete(cat)}
-                                                onClick={() => {
-                                                    setActiveSectionKey(cat.categoryKey);
-                                                    setActiveMonth(1);
-                                                }}
-                                            />
-                                        ))}
+                                        {categories
+                                            .filter(cat => !cat.categoryName.toLowerCase().includes('income'))
+                                            .map((cat) => (
+                                                <SidebarItem
+                                                    key={cat.categoryKey}
+                                                    label={cat.categoryName}
+                                                    active={activeSectionKey === cat.categoryKey}
+                                                    completed={isCategoryComplete(cat)}
+                                                    onClick={() => {
+                                                        setActiveSectionKey(cat.categoryKey);
+                                                        setActiveMonth(1);
+                                                    }}
+                                                />
+                                            ))}
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-[24px] p-5 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)] border border-gray-100">
+                                    <h3 className="text-[12px] font-bold text-[#A3A3A3] mb-4 uppercase tracking-wider">Select</h3>
+                                    <div className="space-y-1">
+                                        {categories
+                                            .filter(cat => cat.categoryName.toLowerCase().includes('income'))
+                                            .map((cat) => (
+                                                <SidebarItem
+                                                    key={cat.categoryKey}
+                                                    label={cat.categoryName}
+                                                    active={activeSectionKey === cat.categoryKey}
+                                                    completed={isCategoryComplete(cat)}
+                                                    onClick={() => {
+                                                        setActiveSectionKey(cat.categoryKey);
+                                                        setActiveMonth(1);
+                                                    }}
+                                                />
+                                            ))}
+                                        <SidebarItem
+                                            label="Review & File"
+                                            active={activeSectionKey === 'review-and-file'}
+                                            completed={false}
+                                            onClick={() => setActiveSectionKey('review-and-file')}
+                                        />
                                     </div>
                                 </div>
 
@@ -750,7 +836,7 @@ export default function PITDetails() {
                                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={activeMonth === m.id ? "#00388D" : "#94A3B8"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                             <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
                                                         </svg>
-                                                        <span className={`text-[14px] font-semibold ${activeMonth === m.id ? 'text-taxable-dark' : 'text-[#64748B]'}`}>{m.name}</span> 
+                                                        <span className={`text-[14px] font-semibold ${activeMonth === m.id ? 'text-taxable-dark' : 'text-[#64748B]'}`}>{m.name}</span>
                                                     </div>
                                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform ${activeMonth === m.id ? 'rotate-180' : ''}`}>
                                                         <polyline points="6 9 12 15 18 9" />
@@ -780,8 +866,10 @@ export default function PITDetails() {
                             ) : null}
 
                             {/* Right Content Area */}
-                            <div className={`${checkIfIncomeCategory(activeCategory) ? 'flex-1' : 'max-w-[840px] flex-1'} min-w-0`}>
-                                {activeCategory ? (
+                            <div className={`${(checkIfIncomeCategory(activeCategory) || activeSectionKey === 'review-and-file') ? 'flex-1' : 'max-w-[840px] flex-1'} min-w-0`}>
+                                {activeSectionKey === 'review-and-file' ? (
+                                    <ReviewAndFile onSaveAndContinue={() => router.push('/home')} />
+                                ) : activeCategory ? (
                                     <div className="animate-in fade-in duration-500">
                                         <div className="mb-6">
                                             {!isMonthly || !checkIfIncomeCategory(activeCategory) ? (
@@ -855,12 +943,16 @@ export default function PITDetails() {
                                             </button>
                                         </div>
                                     </div>
-                                ) : (
+                                ) : activeSectionKey !== 'review-and-file' && (
                                     <div className="flex items-center justify-center py-20 bg-white rounded-[24px] border border-gray-100">
                                         <span className="text-taxable-gray font-medium italic">Select a section to begin.</span>
                                     </div>
                                 )}
                             </div>
+
+                            {!checkIfIncomeCategory(activeCategory) && activeSectionKey !== 'review-and-file' && (
+                                <WhyWeNeedThis />
+                            )}
                         </div>
                     </>
                 )}

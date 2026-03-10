@@ -1,11 +1,11 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import SetupSidebar from '@/components/SetupSidebar/SetupSidebar';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
-import { useApi } from '@/hooks/useApi';
+
 import { useUser } from '@/contexts/UserContext';
 
 const StatusBadge = ({ type, text }: { type: 'complete' | 'progress' | 'none' | 'filed', text: string }) => {
@@ -163,35 +163,30 @@ const FAQSection = () => {
 
 export default function Home() {
     const { user, isAuthenticated, loading: authLoading } = useUser();
-    const { get } = useApi();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [hasTaxFolders, setHasTaxFolders] = useState(false);
-    const [profiles, setProfiles] = useState<any[]>([]);
-    const [isInitialLoading, setIsInitialLoading] = useState(true);
 
-    const fetchProfiles = useCallback(async () => {
-        if (!isAuthenticated || authLoading) return;
+    // ── Local mock profiles (replace with real API when backend is ready) ──
+    const [profiles, setProfiles] = useState<any[]>([
+        {
+            profileId: 'mock-profile-1',
+            _id: 'mock-profile-1',
+            year: '2026',
+            profileType: 'Individual',
+            title: '2026 Individual Tax',
+            status: 'draft',
+            statusText: 'In progress',
+            baseQuestionsAnswered: true,
+            taxDue: null,
+            description: 'Your individual tax filing for the 2026 tax year.',
+        },
+    ]);
+    const hasTaxFolders = profiles.length > 0;
+    const isInitialLoading = authLoading;
 
-        try {
-            const response = await get('/taxableprofile/list');
-
-            if (response?.success) {
-                const profileList = response.data?.profiles || [];
-                const count = response.data?.count ?? profileList.length;
-
-                setProfiles(profileList);
-                setHasTaxFolders(count > 0);
-            }
-        } catch (err) {
-            console.error("❌ Failed to fetch tax profiles:", err);
-        } finally {
-            setIsInitialLoading(false);
-        }
-    }, [get, isAuthenticated, authLoading]);
-
-    useEffect(() => {
-        fetchProfiles();
-    }, [fetchProfiles]);
+    // Kept so SetupSidebar can notify us of newly created profiles
+    const fetchProfiles = useCallback(() => {
+        // No-op while using mock data — profiles are managed in local state
+    }, []);
 
     const videos = [
         {

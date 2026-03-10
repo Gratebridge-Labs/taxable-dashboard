@@ -19,13 +19,8 @@ export const useApi = () => {
     const request = useCallback(async (endpoint: string, config: ApiConfig = {}) => {
         const { useToken = true, ...customConfig } = config;
 
-        // If we're still loading the auth state, we should wait or handle it
         if (useToken && authLoading) {
-            // We can't really "wait" easily here without more complexity, 
-            // but we should definitely NOT redirect yet.
-            // Let's return a promise that we can handle, or just wait for authLoading to be false.
-            // For now, let's just throw a specific error or return early.
-            // Actually, the component should probably handle this.
+            // Auth state still loading — wait
         }
 
         setLoading(true);
@@ -42,7 +37,6 @@ export const useApi = () => {
         if (useToken) {
             if (!token) {
                 if (authLoading) {
-                    // Don't redirect if we're still loading auth state
                     setLoading(false);
                     return;
                 }
@@ -77,7 +71,6 @@ export const useApi = () => {
                     logout();
                     router.push('/signin');
                 }
-                // Centralized error parsing: prioritizing backend message
                 const errorMessage = responseData?.message || responseData?.error || `Error: ${response.status} ${response.statusText}`;
                 const error: any = new Error(errorMessage);
                 error.data = responseData;

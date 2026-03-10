@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
-import { useApi } from '@/hooks/useApi';
+
 import { useUser } from '@/contexts/UserContext';
 import ReviewAndFile from './ReviewAndFile';
 
@@ -97,6 +97,154 @@ interface Category {
     questions: Question[];
 }
 
+
+// Mock detailed questions (replace with real API when backend is ready)
+// ───────────────────────────────────────────────────────────────
+const MOCK_DETAILED_QUESTIONS = {
+    profileType: 'Individual',
+    year: '2026',
+    period: 'annual',
+    categories: [
+        {
+            categoryKey: 'PERSONAL_INFO',
+            categoryName: 'Personal Information',
+            questions: [
+                {
+                    questionId: 'dq_name',
+                    category: 'Personal Information',
+                    categoryKey: 'PERSONAL_INFO',
+                    questionText: 'What is your full legal name?',
+                    questionType: 'text' as const,
+                    required: true,
+                    explanation: 'Must match your official government-issued ID.',
+                    existingResponse: null
+                },
+                {
+                    questionId: 'dq_dob',
+                    category: 'Personal Information',
+                    categoryKey: 'PERSONAL_INFO',
+                    questionText: 'What is your date of birth?',
+                    questionType: 'date' as const,
+                    required: true,
+                    explanation: null,
+                    existingResponse: null
+                },
+                {
+                    questionId: 'dq_tin',
+                    category: 'Personal Information',
+                    categoryKey: 'PERSONAL_INFO',
+                    questionText: 'What is your Tax Identification Number (TIN)?',
+                    questionType: 'text' as const,
+                    required: true,
+                    explanation: 'Your TIN is issued by FIRS. Register at firs.gov.ng if you don\'t have one.',
+                    existingResponse: null
+                },
+                {
+                    questionId: 'dq_marital',
+                    category: 'Personal Information',
+                    categoryKey: 'PERSONAL_INFO',
+                    questionText: 'What is your marital status?',
+                    questionType: 'multiple_choice' as const,
+                    required: true,
+                    options: ['Single', 'Married', 'Divorced', 'Widowed'],
+                    allowMultiple: false,
+                    explanation: 'Marital status may affect your tax reliefs.',
+                    existingResponse: null
+                }
+            ]
+        },
+        {
+            categoryKey: 'EMPLOYMENT_INCOME',
+            categoryName: 'Employment Income',
+            questions: [
+                {
+                    questionId: 'dq_salary',
+                    category: 'Employment Income',
+                    categoryKey: 'EMPLOYMENT_INCOME',
+                    questionText: 'What is your total annual gross salary?',
+                    questionType: 'number' as const,
+                    required: true,
+                    supportsMonthly: true,
+                    supportsAnnually: true,
+                    validation: { currency: 'NGN', min: 0 },
+                    explanation: 'Your total salary before any deductions.',
+                    existingResponse: null
+                },
+                {
+                    questionId: 'dq_bonus',
+                    category: 'Employment Income',
+                    categoryKey: 'EMPLOYMENT_INCOME',
+                    questionText: 'Did you receive any bonuses or allowances?',
+                    questionType: 'yes_no' as const,
+                    required: true,
+                    supportsMonthly: false,
+                    supportsAnnually: true,
+                    explanation: null,
+                    existingResponse: null
+                },
+                {
+                    questionId: 'dq_bonus_amount',
+                    category: 'Employment Income',
+                    categoryKey: 'EMPLOYMENT_INCOME',
+                    questionText: 'Total amount of bonuses and allowances received',
+                    questionType: 'number' as const,
+                    required: true,
+                    supportsMonthly: false,
+                    supportsAnnually: true,
+                    validation: { currency: 'NGN', min: 0 },
+                    dependsOn: { questionId: 'dq_bonus', value: 'yes' },
+                    explanation: 'Include all performance bonuses, transport, housing allowances, etc.',
+                    existingResponse: null
+                }
+            ]
+        },
+        {
+            categoryKey: 'DEDUCTIONS',
+            categoryName: 'Deductions & Reliefs',
+            questions: [
+                {
+                    questionId: 'dq_pension',
+                    category: 'Deductions & Reliefs',
+                    categoryKey: 'DEDUCTIONS',
+                    questionText: 'Do you make pension contributions?',
+                    questionType: 'yes_no' as const,
+                    required: true,
+                    supportsMonthly: false,
+                    supportsAnnually: true,
+                    explanation: 'Pension contributions are tax-deductible.',
+                    existingResponse: null
+                },
+                {
+                    questionId: 'dq_pension_amount',
+                    category: 'Deductions & Reliefs',
+                    categoryKey: 'DEDUCTIONS',
+                    questionText: 'Total annual pension contributions',
+                    questionType: 'number' as const,
+                    required: true,
+                    supportsMonthly: false,
+                    supportsAnnually: true,
+                    validation: { currency: 'NGN', min: 0 },
+                    dependsOn: { questionId: 'dq_pension', value: 'yes' },
+                    explanation: 'Include both employee and employer contributions.',
+                    existingResponse: null
+                },
+                {
+                    questionId: 'dq_nhf',
+                    category: 'Deductions & Reliefs',
+                    categoryKey: 'DEDUCTIONS',
+                    questionText: 'Do you contribute to the National Housing Fund (NHF)?',
+                    questionType: 'yes_no' as const,
+                    required: true,
+                    supportsMonthly: false,
+                    supportsAnnually: true,
+                    explanation: 'NHF contributions at 2.5% of basic salary are tax deductible.',
+                    existingResponse: null
+                }
+            ]
+        }
+    ]
+};
+
 const MONTHS = [
     { id: 1, name: 'January' }, { id: 2, name: 'February' }, { id: 3, name: 'March' },
     { id: 4, name: 'April' }, { id: 5, name: 'May' }, { id: 6, name: 'June' },
@@ -144,7 +292,6 @@ export default function PITDetails() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const pathname = usePathname();
-    const { get, post } = useApi();
     const { loading: authLoading } = useUser();
 
     const profileId = searchParams.get('id');
@@ -168,57 +315,26 @@ export default function PITDetails() {
             router.replace(pathname + (profileId ? `?id=${profileId}` : ''));
         }
 
-        if (profileId) {
-            fetchDetailedQuestions();
-        }
+        // Load mock detailed questions (no API call)
+        loadMockDetailedQuestions();
     }, [profileId, authLoading]);
 
-    const fetchDetailedQuestions = async () => {
+    const loadMockDetailedQuestions = async () => {
         setLoading(true);
-        try {
-            const response = await get(`/questions/${profileId}/detailed-questions`);
-            if (response?.success && response.data) {
-                setCategories(response.data.categories);
-                setProfileInfo({
-                    type: response.data.profileType,
-                    year: response.data.year,
-                    period: response.data.period
-                });
-                if (response.data.categories.length > 0) {
-                    setActiveSectionKey(response.data.categories[0].categoryKey);
-                }
+        // Simulate a brief load delay
+        await new Promise(res => setTimeout(res, 500));
 
-                // Initialize responses with existing ones
-                const initialResponses: any = {};
-
-                response.data.categories.forEach((cat: Category) => {
-                    const isIncome = checkIfIncomeCategory(cat);
-
-                    cat.questions.forEach((q: Question) => {
-                        if (q.existingResponse !== undefined && q.existingResponse !== null) {
-                            if (isIncome && typeof q.existingResponse === 'object' && !Array.isArray(q.existingResponse) && q.questionType !== 'table') {
-                                // If it's already an object of monthly data, use it
-                                initialResponses[q.questionId] = q.existingResponse;
-                            } else if (isIncome && Array.isArray(q.existingResponse) && q.questionType !== 'table') {
-                                // If it's an array, map it to our 1-12 object
-                                const monthlyData: any = {};
-                                q.existingResponse.forEach((res: any) => {
-                                    if (res.month) monthlyData[res.month] = res.response;
-                                });
-                                initialResponses[q.questionId] = monthlyData;
-                            } else {
-                                initialResponses[q.questionId] = q.existingResponse;
-                            }
-                        }
-                    });
-                });
-                setResponses(initialResponses);
-            }
-        } catch (err) {
-            console.error("Failed to fetch detailed questions:", err);
-        } finally {
-            setLoading(false);
+        const data = MOCK_DETAILED_QUESTIONS;
+        setCategories(data.categories as Category[]);
+        setProfileInfo({
+            type: data.profileType,
+            year: data.year,
+            period: data.period
+        });
+        if (data.categories.length > 0) {
+            setActiveSectionKey(data.categories[0].categoryKey);
         }
+        setLoading(false);
     };
 
     const checkIfIncomeCategory = (category: Category | undefined) => {
@@ -366,7 +482,7 @@ export default function PITDetails() {
     const supportsPeriodToggle = activeCategory?.questions.some(q => q.supportsMonthly && q.supportsAnnually);
 
     const handleNext = async () => {
-        if (!activeCategory || !profileId) return;
+        if (!activeCategory) return;
 
         if (!isCategoryComplete(activeCategory)) {
             alert("Please fill in all required questions before proceeding.");
@@ -374,74 +490,21 @@ export default function PITDetails() {
         }
 
         setSubmitting(true);
-        try {
-            const isIncomeCategory = checkIfIncomeCategory(activeCategory);
-            const visibleQuestions = activeCategory.questions.filter(q => isQuestionVisible(q));
+        // Simulate a brief save delay (no API calls in mock mode)
+        await new Promise(res => setTimeout(res, 400));
 
-            for (const q of visibleQuestions) {
-                const responseData = responses[q.questionId];
-                if (responseData === undefined) continue;
-
-                if (isIncomeCategory) {
-                    if (isMonthly) {
-                        // Save each month's data
-                        for (let m = 1; m <= 12; m++) {
-                            let val = responseData?.[m];
-                            if (val === undefined) val = (q.questionType === 'number' ? 0 : (q.questionType === 'table' ? [] : ''));
-
-                            if (q.questionType === 'number' && typeof val === 'string') {
-                                val = Number(parseAmount(val)) || 0;
-                            }
-
-                            await post(`/questions/${profileId}/income`, {
-                                questionId: q.questionId,
-                                response: val,
-                                period: 'monthly',
-                                month: m,
-                                year: Number(profileInfo?.year) || 2025,
-                                autoSave: true
-                            });
-                        }
-                    } else {
-                        // Save annual data
-                        let val = responseData;
-                        if (q.questionType === 'number' && typeof val === 'string') {
-                            val = Number(parseAmount(val)) || 0;
-                        }
-
-                        await post(`/questions/${profileId}/income`, {
-                            questionId: q.questionId,
-                            response: val,
-                            period: 'annually',
-                            month: 1,
-                            year: Number(profileInfo?.year) || 2025,
-                            autoSave: true
-                        });
-                    }
-                } else {
-                    await post(`/questions/${profileId}/answer`, {
-                        questionId: q.questionId,
-                        response: responseData
-                    });
-                }
-            }
-
-            if (currentIndex < categories.length - 1) {
-                setActiveSectionKey(categories[currentIndex + 1].categoryKey);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                setActiveMonth(1); // Reset month for next category
-            } else if (activeSectionKey !== 'review-and-file') {
-                setActiveSectionKey('review-and-file');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            } else {
-                router.push('/home');
-            }
-        } catch (err: any) {
-            console.error("Failed to save progress:", err);
-            // Optionally show error to user
-        } finally {
-            setSubmitting(false);
+        if (currentIndex < categories.length - 1) {
+            setActiveSectionKey(categories[currentIndex + 1].categoryKey);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setActiveMonth(1);
+        } else if (activeSectionKey !== 'review-and-file') {
+            setActiveSectionKey('review-and-file');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+            router.push('/home');
         }
+
+        setSubmitting(false);
     };
 
     const isQuestionVisible = (q: Question) => {

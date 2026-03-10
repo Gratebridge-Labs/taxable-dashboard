@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import LoadingScreen from '@/screens/Onboarding/LoadingScreen';
 
-import { useApi } from '@/hooks/useApi';
+
 
 interface Question {
     questionId: string;
@@ -66,8 +66,54 @@ const SidebarCheckbox = ({ label, description, isSelected, onClick }: { label: s
     </div>
 );
 
+// ── Local mock base questions (replace with real API when backend is ready) ──
+const MOCK_BASE_QUESTIONS: Question[] = [
+    {
+        questionId: 'bq1',
+        order: 1,
+        category: 'Employment',
+        questionText: 'Did you earn any salary or wages from an employer in 2026?',
+        questionType: 'yes_no',
+        required: true,
+        explanation: 'This helps us determine if you need to report employment income.',
+        helpText: 'Include any income from full-time, part-time, or contract employment.',
+        dependsOn: [],
+        allowMultiple: false,
+        answered: false,
+        existingResponse: null
+    },
+    {
+        questionId: 'bq2',
+        order: 2,
+        category: 'Business',
+        questionText: 'Do you operate any business or trade on your own account?',
+        questionType: 'yes_no',
+        required: true,
+        explanation: 'If you run a business or freelance, this income must be declared.',
+        helpText: 'This includes freelancing, consulting, or any self-employed activities.',
+        dependsOn: [],
+        allowMultiple: false,
+        answered: false,
+        existingResponse: null
+    },
+    {
+        questionId: 'bq3',
+        order: 3,
+        category: 'Income Sources',
+        questionText: 'What are your primary sources of income?',
+        questionType: 'multiple_choice',
+        required: true,
+        explanation: 'Select all that apply to your situation.',
+        helpText: 'We use this to show only the relevant sections in your tax workspace.',
+        options: ['Employment / Salary', 'Freelance / Consulting', 'Business Income', 'Rental Income', 'Investment / Dividends'],
+        dependsOn: [],
+        allowMultiple: true,
+        answered: false,
+        existingResponse: null
+    }
+];
+
 export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfileId, initialData }: SetupSidebarProps) {
-    const { post, get } = useApi();
     const [step, setStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isCreatingFolder, setIsCreatingFolder] = useState(false);
@@ -90,56 +136,34 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
     const handleCreateTaxFolder = async () => {
         setIsCreatingFolder(true);
         setCreateError(null);
-        try {
-            const response = await post('/taxableprofile/create', {
-                year: selections.taxYear,
-                profileType: selections.category
-            });
-
-            if (response?.success && response?.data?.profileId) {
-                setActiveProfileId(response.data.profileId);
-                setShowSuccessModal(true);
-            } else {
-                throw new Error("Failed to get profile ID from response");
-            }
-        } catch (err: any) {
-            console.error("Failed to create tax folder:", err);
-            setCreateError(err.message || "Failed to create tax folder. Please try again.");
-        } finally {
-            setIsCreatingFolder(false);
-        }
+        // Simulate a brief delay then create a mock profile locally
+        await new Promise(res => setTimeout(res, 500));
+        const newProfileId = `mock-profile-${Date.now()}`;
+        setActiveProfileId(newProfileId);
+        setShowSuccessModal(true);
+        setIsCreatingFolder(false);
     };
 
     const fetchBaseQuestions = async () => {
-        if (!activeProfileId) return;
-
         setLoadingQuestions(true);
-        try {
-            const response = await get(`/questions/${activeProfileId}/base-questions`);
-            if (response?.success && response?.data?.questions) {
-                setQuestions(response.data.questions);
-                setStep(1); // Move to dynamic questions step
-                setCurrentQuestionIndex(0);
-            }
-        } catch (err) {
-            console.error("Failed to fetch base questions:", err);
-        } finally {
-            setLoadingQuestions(false);
-        }
+        // Simulate a brief load delay
+        await new Promise(res => setTimeout(res, 400));
+        setQuestions(MOCK_BASE_QUESTIONS);
+        setStep(1);
+        setCurrentQuestionIndex(0);
+        setLoadingQuestions(false);
     };
 
-    // Reset step and status when opening
+    // Reset state when opening
     useEffect(() => {
         if (isOpen) {
             if (resumeProfileId) {
                 setStep(1);
                 setActiveProfileId(resumeProfileId);
                 setShowSuccessModal(false);
-                setQuestions([]);
                 setCurrentQuestionIndex(0);
                 setResponses({});
 
-                // If initialData is provided, sync it to selections
                 if (initialData?.year || initialData?.category) {
                     setSelections(prev => ({
                         ...prev,
@@ -148,22 +172,12 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                     }));
                 }
 
-                // Automatically fetch questions for resume
-                const fetchOnOpen = async () => {
-                    setLoadingQuestions(true);
-                    try {
-                        const response = await get(`/questions/${resumeProfileId}/base-questions`);
-                        if (response?.success && response?.data?.questions) {
-                            setQuestions(response.data.questions);
-                            setCurrentQuestionIndex(0);
-                        }
-                    } catch (err) {
-                        console.error("Failed to fetch base questions:", err);
-                    } finally {
-                        setLoadingQuestions(false);
-                    }
-                };
-                fetchOnOpen();
+                // Load mock questions immediately for resume
+                setLoadingQuestions(true);
+                setTimeout(() => {
+                    setQuestions(MOCK_BASE_QUESTIONS);
+                    setLoadingQuestions(false);
+                }, 400);
             } else {
                 setStep(0);
                 setIsSubmitting(false);
@@ -174,7 +188,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                 setResponses({});
             }
         }
-    }, [isOpen, resumeProfileId, get]);
+    }, [isOpen, resumeProfileId]);
 
     if (!isOpen) return null;
 
@@ -189,23 +203,8 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
         if (currentQuestionIndex < questions.length - 1) {
             setCurrentQuestionIndex(prev => prev + 1);
         } else {
-            // Final submission
-            setIsSubmitting(true);
-            try {
-                // Formatting responses as an array of { questionId, response }
-                const formattedAnswers = Object.entries(responses).map(([questionId, response]) => ({
-                    questionId,
-                    response
-                }));
-
-                await post(`/questions/${activeProfileId}/answer-base-questions`, {
-                    answers: formattedAnswers
-                });
-                handleComplete(true);
-            } catch (err) {
-                console.error("Failed to submit answers:", err);
-                setIsSubmitting(false);
-            }
+            // Mock final submission — no API call needed
+            handleComplete(true);
         }
     };
 

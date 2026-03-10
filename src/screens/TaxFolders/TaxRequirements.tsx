@@ -84,7 +84,7 @@ export default function TaxRequirements() {
 
                 <div className="flex items-center gap-4">
                     <button className="h-14 px-8 bg-[#00388D] text-white font-bold rounded-2xl hover:bg-[#002b6d] transition-all">
-                        Get started with 2026 taxes
+                        Get started
                     </button>
                     <button className="h-14 px-8 bg-white border border-gray-100 text-taxable-dark font-bold rounded-2xl hover:bg-gray-50 transition-all">
                         Watch more guides

@@ -263,7 +263,7 @@ export default function Home() {
                                     onClick={() => setIsSidebarOpen(true)}
                                     className="h-12 px-6 bg-[#003787] hover:opacity-90 text-white font-bold rounded-xl transition-all shadow-sm whitespace-nowrap"
                                 >
-                                    Get started with 2026 taxes
+                                    Get started
                                 </button>
                                 <Link
                                     href="/educational-resources"

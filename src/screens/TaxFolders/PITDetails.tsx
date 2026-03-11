@@ -1,1024 +1,597 @@
 'use client';
-import React from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
-
-import { useUser } from '@/contexts/UserContext';
 import ReviewAndFile from './ReviewAndFile';
 
-const WhyWeNeedThis = () => (
-    <div className="hidden xl:block w-[280px] flex-shrink-0 animate-in fade-in slide-in-from-right duration-500">
-        <div className="sticky top-32 bg-taxable-lightgray2 rounded-[24px] p-7 min-h-[367px] border border-gray-100/50">
-            <div className="mb-4">
-                <div className="flex items-center gap-2.5 mb-2.5">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-taxable-dark">
-                        <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
-                    </svg>
-                    <h4 className="text-base font-semibold text-taxable-dark">Why we need this</h4>
-                </div>
-                <p className="text-sm text-[#64748B] leading-[1.5] font-medium">
-                    Your details help us identify you with relevant tax authorities and ensure your tax return is filed correctly. All information is encrypted and stored securely.
-                </p>
-            </div>
-
-            <div className="space-y-0">
-                <div className="py-2.5">
-                    <div className="w-full h-[3px] bg-white rounded-[10px] mb-4" />
-                    <div className="space-y-3.5">
-                        <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors">
-                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
-                            </svg>
-                            <span>Tax filing guide</span>
-                        </button>
-                        <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
-                            <span>Understanding taxes</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div className="py-2.5">
-                    <div className="w-full h-[3px] bg-white rounded-[10px] mb-4" />
-                    <div className="space-y-3.5">
-                        <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors">
-                                <path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
-                            </svg>
-                            <span>Chat with support</span>
-                        </button>
-                        <button className="flex items-center gap-3.5 text-base font-semibold text-taxable-dark hover:text-taxable-blue transition-colors text-left w-full group">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#64748B] group-hover:text-taxable-blue transition-colors">
-                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
-                            </svg>
-                            <span>Email us</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-);
-
-interface QuestionValidation {
-    pattern?: string;
-    min?: number;
-    max?: number;
-    currency?: string;
-}
-
-interface Question {
-    questionId: string;
-    category: string;
-    categoryKey: string;
-    questionText: string;
-    questionType: 'text' | 'number' | 'date' | 'yes_no' | 'multiple_choice' | 'email' | 'url' | 'address' | 'table' | 'select';
-    required: boolean;
-    options?: string[];
-    explanation?: string;
-    validation?: QuestionValidation;
-    allowMultiple?: boolean;
-    existingResponse?: any;
-    columns?: any[];
-    supportsMonthly?: boolean;
-    supportsAnnually?: boolean;
-    conditionalQuestions?: Record<string, string[]>;
-    dependsOn?: string | string[] | {
-        questionId: string;
-        value: any;
-    };
-}
-
-interface Category {
-    categoryKey: string;
-    categoryName: string;
-    questions: Question[];
-}
-
-
-// Mock detailed questions (replace with real API when backend is ready)
-// ───────────────────────────────────────────────────────────────
-const MOCK_DETAILED_QUESTIONS = {
-    profileType: 'Individual',
-    year: '2026',
-    period: 'annual',
-    categories: [
-        {
-            categoryKey: 'PERSONAL_INFO',
-            categoryName: 'Personal Information',
-            questions: [
-                {
-                    questionId: 'dq_name',
-                    category: 'Personal Information',
-                    categoryKey: 'PERSONAL_INFO',
-                    questionText: 'What is your full legal name?',
-                    questionType: 'text' as const,
-                    required: true,
-                    explanation: 'Must match your official government-issued ID.',
-                    existingResponse: null
-                },
-                {
-                    questionId: 'dq_dob',
-                    category: 'Personal Information',
-                    categoryKey: 'PERSONAL_INFO',
-                    questionText: 'What is your date of birth?',
-                    questionType: 'date' as const,
-                    required: true,
-                    explanation: null,
-                    existingResponse: null
-                },
-                {
-                    questionId: 'dq_tin',
-                    category: 'Personal Information',
-                    categoryKey: 'PERSONAL_INFO',
-                    questionText: 'What is your Tax Identification Number (TIN)?',
-                    questionType: 'text' as const,
-                    required: true,
-                    explanation: 'Your TIN is issued by FIRS. Register at firs.gov.ng if you don\'t have one.',
-                    existingResponse: null
-                },
-                {
-                    questionId: 'dq_marital',
-                    category: 'Personal Information',
-                    categoryKey: 'PERSONAL_INFO',
-                    questionText: 'What is your marital status?',
-                    questionType: 'multiple_choice' as const,
-                    required: true,
-                    options: ['Single', 'Married', 'Divorced', 'Widowed'],
-                    allowMultiple: false,
-                    explanation: 'Marital status may affect your tax reliefs.',
-                    existingResponse: null
-                }
-            ]
-        },
-        {
-            categoryKey: 'EMPLOYMENT_INCOME',
-            categoryName: 'Employment Income',
-            questions: [
-                {
-                    questionId: 'dq_salary',
-                    category: 'Employment Income',
-                    categoryKey: 'EMPLOYMENT_INCOME',
-                    questionText: 'What is your total annual gross salary?',
-                    questionType: 'number' as const,
-                    required: true,
-                    supportsMonthly: true,
-                    supportsAnnually: true,
-                    validation: { currency: 'NGN', min: 0 },
-                    explanation: 'Your total salary before any deductions.',
-                    existingResponse: null
-                },
-                {
-                    questionId: 'dq_bonus',
-                    category: 'Employment Income',
-                    categoryKey: 'EMPLOYMENT_INCOME',
-                    questionText: 'Did you receive any bonuses or allowances?',
-                    questionType: 'yes_no' as const,
-                    required: true,
-                    supportsMonthly: false,
-                    supportsAnnually: true,
-                    explanation: null,
-                    existingResponse: null
-                },
-                {
-                    questionId: 'dq_bonus_amount',
-                    category: 'Employment Income',
-                    categoryKey: 'EMPLOYMENT_INCOME',
-                    questionText: 'Total amount of bonuses and allowances received',
-                    questionType: 'number' as const,
-                    required: true,
-                    supportsMonthly: false,
-                    supportsAnnually: true,
-                    validation: { currency: 'NGN', min: 0 },
-                    dependsOn: { questionId: 'dq_bonus', value: 'yes' },
-                    explanation: 'Include all performance bonuses, transport, housing allowances, etc.',
-                    existingResponse: null
-                }
-            ]
-        },
-        {
-            categoryKey: 'DEDUCTIONS',
-            categoryName: 'Deductions & Reliefs',
-            questions: [
-                {
-                    questionId: 'dq_pension',
-                    category: 'Deductions & Reliefs',
-                    categoryKey: 'DEDUCTIONS',
-                    questionText: 'Do you make pension contributions?',
-                    questionType: 'yes_no' as const,
-                    required: true,
-                    supportsMonthly: false,
-                    supportsAnnually: true,
-                    explanation: 'Pension contributions are tax-deductible.',
-                    existingResponse: null
-                },
-                {
-                    questionId: 'dq_pension_amount',
-                    category: 'Deductions & Reliefs',
-                    categoryKey: 'DEDUCTIONS',
-                    questionText: 'Total annual pension contributions',
-                    questionType: 'number' as const,
-                    required: true,
-                    supportsMonthly: false,
-                    supportsAnnually: true,
-                    validation: { currency: 'NGN', min: 0 },
-                    dependsOn: { questionId: 'dq_pension', value: 'yes' },
-                    explanation: 'Include both employee and employer contributions.',
-                    existingResponse: null
-                },
-                {
-                    questionId: 'dq_nhf',
-                    category: 'Deductions & Reliefs',
-                    categoryKey: 'DEDUCTIONS',
-                    questionText: 'Do you contribute to the National Housing Fund (NHF)?',
-                    questionType: 'yes_no' as const,
-                    required: true,
-                    supportsMonthly: false,
-                    supportsAnnually: true,
-                    explanation: 'NHF contributions at 2.5% of basic salary are tax deductible.',
-                    existingResponse: null
-                }
-            ]
-        }
-    ]
-};
-
-const MONTHS = [
-    { id: 1, name: 'January' }, { id: 2, name: 'February' }, { id: 3, name: 'March' },
-    { id: 4, name: 'April' }, { id: 5, name: 'May' }, { id: 6, name: 'June' },
-    { id: 7, name: 'July' }, { id: 8, name: 'August' }, { id: 9, name: 'September' },
-    { id: 10, name: 'October' }, { id: 11, name: 'November' }, { id: 12, name: 'December' }
-];
-
-const SidebarItem = ({ label, active = false, completed = false, onClick }: { label: string; active?: boolean; completed?: boolean; onClick: () => void }) => (
-    <button
-        onClick={onClick}
-        className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all mb-1 ${active ? 'bg-[#F1F5F9]' : 'hover:bg-gray-50'}`}
-    >
-        <div className="flex items-center gap-3 text-left">
-            <div className="w-8 h-8 rounded-lg bg-[#F5F5F3] flex items-center justify-center flex-shrink-0">
-                <Image
-                    src="/icons/inactive_folder.svg"
-                    alt="section"
-                    width={18}
-                    height={18}
-                />
-            </div>
-
-            <div className="flex items-center gap-2">
-                <span className={`text-[14px] font-semibold ${active ? 'text-taxable-dark' : 'text-[#64748B]'}`}>{label}</span>
-                {completed && (
-                    <div className="w-4 h-4 bg-[#10B981] rounded-[3px] flex items-center justify-center">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                    </div>
-                )}
-            </div>
-        </div>
-        <svg className={`w-3.5 h-3.5 flex-shrink-0 ${active ? 'text-taxable-dark' : 'text-gray-300'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-        </svg>
-    </button>
-);
-
-
-
-
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 export default function PITDetails() {
-    const searchParams = useSearchParams();
     const router = useRouter();
-    const pathname = usePathname();
-    const { loading: authLoading } = useUser();
 
-    const profileId = searchParams.get('id');
-    const [categories, setCategories] = React.useState<Category[]>([]);
-    const [activeSectionKey, setActiveSectionKey] = React.useState<string>('');
-    const [loading, setLoading] = React.useState(true);
-    const [responses, setResponses] = React.useState<Record<string, any>>({});
-    const [showWelcomeModal, setShowWelcomeModal] = React.useState(false);
-    const [profileInfo, setProfileInfo] = React.useState<any>(null);
-    const [isMonthly, setIsMonthly] = React.useState(false);
-    const [activeMonth, setActiveMonth] = React.useState(1);
-    const [submitting, setSubmitting] = React.useState(false);
-    const [annualSubSection, setAnnualSubSection] = React.useState<'income' | 'deduction'>('income');
+    const [activeSection, setActiveSection] = useState<'personal-info' | 'tax-reliefs' | 'income-deductions' | 'review'>('personal-info');
 
-    React.useEffect(() => {
-        if (authLoading) return;
+    // Income & Deductions specific state
+    const [periodMode, setPeriodMode] = useState<'monthly' | 'annually'>('monthly');
+    const [activeMonth, setActiveMonth] = useState('January');
+    const [incomeSubTab, setIncomeSubTab] = useState<'income' | 'deductions'>('income');
 
-        const isNew = searchParams.get('new');
-        if (isNew === 'workspace') {
-            setShowWelcomeModal(true);
-            router.replace(pathname + (profileId ? `?id=${profileId}` : ''));
-        }
-
-        // Load mock detailed questions (no API call)
-        loadMockDetailedQuestions();
-    }, [profileId, authLoading]);
-
-    const loadMockDetailedQuestions = async () => {
-        setLoading(true);
-        // Simulate a brief load delay
-        await new Promise(res => setTimeout(res, 500));
-
-        const data = MOCK_DETAILED_QUESTIONS;
-        setCategories(data.categories as Category[]);
-        setProfileInfo({
-            type: data.profileType,
-            year: data.year,
-            period: data.period
-        });
-        if (data.categories.length > 0) {
-            setActiveSectionKey(data.categories[0].categoryKey);
-        }
-        setLoading(false);
-    };
-
-    const checkIfIncomeCategory = (category: Category | undefined) => {
-        if (!category) return false;
-        return (
-            category.categoryKey.includes('EMPLOYMENT') ||
-            category.categoryKey.includes('BUSINESS') ||
-            category.categoryKey.includes('DEDUCTION') ||
-            category.categoryName.toLowerCase().includes('income') ||
-            category.categoryName.toLowerCase().includes('deduction')
-        );
-    };
-
-    const PITSkeleton = () => (
-        <div className="animate-pulse">
-            {/* Breadcrumbs Skeleton */}
-            <div className="flex items-center gap-2 mb-6">
-                <div className="h-4 bg-gray-200 rounded w-24"></div>
-                <span className="text-gray-200">/</span>
-                <div className="h-4 bg-gray-200 rounded w-32"></div>
-            </div>
-
-            {/* Title Skeleton */}
-            <div className="flex justify-between items-start mb-10">
-                <div>
-                    <div className="h-8 bg-gray-200 rounded-lg w-48 mb-2"></div>
-                    <div className="h-4 bg-gray-200 rounded w-24"></div>
+    const renderSidebar = () => (
+        <div className="w-[240px] flex-shrink-0 flex flex-col gap-6">
+            <div>
+                <p className="text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-2 px-1">Select</p>
+                <div className="space-y-0.5">
+                    {[
+                        { key: 'personal-info', label: 'Personal Information' },
+                        { key: 'tax-reliefs', label: 'Tax Reliefs' },
+                    ].map(sec => (
+                        <button
+                            key={sec.key}
+                            onClick={() => setActiveSection(sec.key as any)}
+                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${activeSection === sec.key ? 'bg-[#F1F5F9] text-[#0C0C0E]' : 'hover:bg-gray-50 text-[#374151]'
+                                }`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <span className={`text-lg leading-none ${activeSection !== sec.key ? 'opacity-60' : ''}`}>📁</span>
+                                <span className="text-[13px] font-semibold">{sec.label}</span>
+                            </div>
+                            <svg className={`w-3.5 h-3.5 flex-shrink-0 ${activeSection === sec.key ? 'text-[#0C0C0E]' : 'text-gray-300'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            <div className="flex items-start gap-8">
-                {/* Sidebar Skeleton */}
-                <div className="w-[320px] flex-shrink-0">
-                    <div className="bg-white rounded-[24px] p-6 border border-gray-100">
-                        <div className="h-6 bg-gray-200 rounded w-24 mb-6"></div>
-                        <div className="space-y-4">
-                            {[1, 2, 3, 4, 5].map(i => (
-                                <div key={i} className="flex items-center gap-4">
-                                    <div className="w-10 h-10 bg-gray-100 rounded-xl flex-shrink-0"></div>
-                                    <div className="h-4 bg-gray-100 rounded w-full"></div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+            <div>
+                <p className="text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-2 px-1">Select</p>
+                <div className="space-y-0.5">
+                    {[
+                        { key: 'income-deductions', label: 'Income & Deductions' },
+                        { key: 'review', label: 'Review & File' },
+                    ].map(sec => (
+                        <button
+                            key={sec.key}
+                            onClick={() => setActiveSection(sec.key as any)}
+                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${activeSection === sec.key ? 'bg-[#F1F5F9] text-[#0C0C0E]' : 'hover:bg-gray-50 text-[#374151]'
+                                }`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <span className={`text-lg leading-none ${activeSection !== sec.key ? 'opacity-60' : ''}`}>{sec.key === 'review' ? '📄' : '📁'}</span>
+                                <span className="text-[13px] font-semibold">{sec.label}</span>
+                            </div>
+                            <svg className={`w-3.5 h-3.5 flex-shrink-0 ${activeSection === sec.key ? 'text-[#0C0C0E]' : 'text-gray-300'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    ))}
                 </div>
+            </div>
 
-                {/* Main Content Skeleton */}
-                <div className="flex-1 min-w-0 max-w-[840px]">
-                    <div className="bg-white rounded-[24px] p-8 border border-gray-100">
-                        <div className="h-7 bg-gray-200 rounded-lg w-1/3 mb-8"></div>
-                        <div className="space-y-10">
-                            {[1, 2, 3].map(i => (
-                                <div key={i} className="space-y-4">
-                                    <div className="h-5 bg-gray-200 rounded w-1/4"></div>
-                                    <div className="h-14 bg-gray-50 rounded-2xl w-full"></div>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="h-14 bg-gray-200 rounded-2xl w-40 mt-10"></div>
-                    </div>
+            <div className="mt-4 bg-white border border-gray-100 rounded-[20px] p-5">
+                <div className="flex items-center gap-2 mb-2">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#003787" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </svg>
+                    <h4 className="text-[13px] font-bold text-[#0C0C0E]">Need expert eyes on your return?</h4>
                 </div>
-
-                {/* Right Sidebar Skeleton */}
-                <div className="w-[280px] flex-shrink-0">
-                    <div className="bg-gray-50 rounded-[24px] p-7 h-[367px]">
-                        <div className="flex items-center gap-2 mb-4">
-                            <div className="w-5 h-5 bg-gray-200 rounded-full"></div>
-                            <div className="h-4 bg-gray-200 rounded w-24"></div>
-                        </div>
-                        <div className="space-y-3 mb-8">
-                            <div className="h-3 bg-gray-200 rounded w-full"></div>
-                            <div className="h-3 bg-gray-200 rounded w-5/6"></div>
-                            <div className="h-3 bg-gray-200 rounded w-4/6"></div>
-                        </div>
-                        <div className="space-y-4">
-                            {[1, 2, 3, 4].map(i => (
-                                <div key={i} className="flex items-center gap-3">
-                                    <div className="w-4 h-4 bg-gray-200 rounded"></div>
-                                    <div className="h-4 bg-gray-200 rounded w-full"></div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
+                <p className="text-[12px] text-[#6B7280] leading-relaxed font-medium mb-4">
+                    Get your return reviewed by a certified tax accountant. They'll ensure accuracy, compliance, and file for you.
+                </p>
+                <button className="w-full h-10 border border-gray-200 text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-colors text-[12px]">
+                    Book Accountant (₦15,000)
+                </button>
             </div>
         </div>
     );
 
-    const formatAmount = (val: any) => {
-        if (!val && val !== 0) return '';
-        const parts = val.toString().split('.');
-        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        return parts.join('.');
-    };
-
-    const parseAmount = (val: string) => {
-        return val.replace(/,/g, '');
-    };
-
-    const handleAnswerChange = (questionId: string, value: any) => {
-        if (isMonthly && checkIfIncomeCategory(activeCategory)) {
-            setResponses(prev => ({
-                ...prev,
-                [questionId]: {
-                    ...(typeof prev[questionId] === 'object' ? prev[questionId] : {}),
-                    [activeMonth]: value
-                }
-            }));
-        } else {
-            setResponses(prev => ({ ...prev, [questionId]: value }));
-        }
-    };
-
-    const handleAddRow = (questionId: string, columns: any[]) => {
-        const currentRes = responses[questionId];
-        const currentData = (isMonthly && checkIfIncomeCategory(activeCategory))
-            ? (currentRes?.[activeMonth] || [])
-            : (currentRes || []);
-
-        const newRow = columns.reduce((acc, col) => ({ ...acc, [col.field || col.key]: '' }), {});
-        handleAnswerChange(questionId, [...currentData, newRow]);
-    };
-
-    const handleTableRowChange = (questionId: string, rowIndex: number, field: string, value: any) => {
-        const currentRes = responses[questionId];
-        const currentData = (isMonthly && checkIfIncomeCategory(activeCategory))
-            ? [...(currentRes?.[activeMonth] || [])]
-            : [...(currentRes || [])];
-
-        currentData[rowIndex] = { ...currentData[rowIndex], [field]: value };
-        handleAnswerChange(questionId, currentData);
-    };
-
-    const handleRemoveRow = (questionId: string, rowIndex: number) => {
-        const currentRes = responses[questionId];
-        const currentData = (isMonthly && checkIfIncomeCategory(activeCategory))
-            ? (currentRes?.[activeMonth] || [])
-            : (currentRes || []);
-
-        handleAnswerChange(questionId, currentData.filter((_: any, idx: number) => idx !== rowIndex));
-    };
-
-    const activeCategory = categories.find(c => c.categoryKey === activeSectionKey);
-    const currentIndex = categories.findIndex(c => c.categoryKey === activeSectionKey);
-    const supportsPeriodToggle = activeCategory?.questions.some(q => q.supportsMonthly && q.supportsAnnually);
-
-    const handleNext = async () => {
-        if (!activeCategory) return;
-
-        if (!isCategoryComplete(activeCategory)) {
-            alert("Please fill in all required questions before proceeding.");
-            return;
-        }
-
-        setSubmitting(true);
-        // Simulate a brief save delay (no API calls in mock mode)
-        await new Promise(res => setTimeout(res, 400));
-
-        if (currentIndex < categories.length - 1) {
-            setActiveSectionKey(categories[currentIndex + 1].categoryKey);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            setActiveMonth(1);
-        } else if (activeSectionKey !== 'review-and-file') {
-            setActiveSectionKey('review-and-file');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        } else {
-            router.push('/home');
-        }
-
-        setSubmitting(false);
-    };
-
-    const isQuestionVisible = (q: Question) => {
-        if (!q.dependsOn) return true;
-
-        if (typeof q.dependsOn === 'string') {
-            return responses[q.dependsOn] === 'yes';
-        }
-
-        if (Array.isArray(q.dependsOn)) {
-            return q.dependsOn.every(id => responses[id] === 'yes');
-        }
-
-        if (typeof q.dependsOn === 'object' && q.dependsOn !== null) {
-            const res = responses[q.dependsOn.questionId];
-            const parentResponse = (isMonthly && checkIfIncomeCategory(activeCategory))
-                ? res?.[activeMonth]
-                : res;
-
-            if (Array.isArray(parentResponse)) {
-                return parentResponse.includes(q.dependsOn.value);
-            }
-            return parentResponse === q.dependsOn.value;
-        }
-
-        return true;
-    };
-
-    const isCategoryComplete = (category: Category) => {
-        return category.questions.every(q => {
-            if (!isQuestionVisible(q)) return true;
-            if (!q.required) return true;
-
-            const res = responses[q.questionId];
-            const response = (isMonthly && checkIfIncomeCategory(category))
-                ? res?.[activeMonth]
-                : res;
-
-            if (response === undefined || response === null || response === '') return false;
-            if (Array.isArray(response) && response.length === 0) return false;
-
-            return true;
-        });
-    };
-
-    const renderQuestion = (q: Question) => {
-        if (!isQuestionVisible(q)) return null;
-        const res = responses[q.questionId];
-        const value = (isMonthly && checkIfIncomeCategory(activeCategory))
-            ? (res?.[activeMonth] ?? '')
-            : (res ?? '');
-
-        return (
-            <div key={q.questionId} className="mb-8">
-                <label className="block text-sm font-bold text-taxable-dark mb-3">
-                    {isMonthly && q.supportsMonthly ? q.questionText.replace(/tax year|annual|annually/gi, 'month') : q.questionText} {q.required && <span className="text-red-500">*</span>}
-                </label>
-
-                {q.questionType === 'yes_no' ? (
-                    <div className="flex gap-6 mb-8">
-                        {['yes', 'no'].map(opt => (
-                            <label key={opt} className="flex items-center gap-2 cursor-pointer group">
-                                <div className="w-5 h-5 rounded-full border-2 border-gray-100 flex items-center justify-center group-hover:border-taxable-blue/40 transition-colors">
-                                    <input
-                                        type="radio"
-                                        name={`${activeMonth}-${q.questionId}`}
-                                        className="hidden"
-                                        checked={value === opt}
-                                        onChange={() => handleAnswerChange(q.questionId, opt)}
-                                    />
-                                    {value === opt && <div className="w-2.5 h-2.5 rounded-full bg-taxable-blue" />}
-                                </div>
-                                <span className="text-sm font-semibold text-taxable-gray group-hover:text-taxable-dark capitalize">{opt}</span>
-                            </label>
-                        ))}
-                    </div>
-                ) : q.questionType === 'select' ? (
-                    <div className="mb-8 relative group">
-                        <select
-                            className="w-full h-12 bg-[#F9FBFC] border border-gray-100 rounded-xl px-4 text-sm font-medium text-taxable-dark focus:outline-none focus:border-taxable-blue/40 appearance-none cursor-pointer pr-10"
-                            value={value}
-                            onChange={(e) => handleAnswerChange(q.questionId, e.target.value)}
-                        >
-                            <option value="" disabled>Select an option</option>
-                            {q.options?.map(opt => (
-                                <option key={opt} value={opt}>{opt}</option>
-                            ))}
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-hover:text-taxable-dark transition-colors">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-                        </div>
-                    </div>
-                ) : q.questionType === 'multiple_choice' ? (
-                    <div className="grid grid-cols-2 gap-3 mb-8">
-                        {q.options?.map(opt => {
-                            const isSelected = q.allowMultiple
-                                ? (value || []).includes(opt)
-                                : value === opt;
-
-                            return (
-                                <div
-                                    key={opt}
-                                    onClick={() => {
-                                        if (q.allowMultiple) {
-                                            const current = value || [];
-                                            const next = current.includes(opt)
-                                                ? current.filter((i: string) => i !== opt)
-                                                : [...current, opt];
-                                            handleAnswerChange(q.questionId, next);
-                                        } else {
-                                            handleAnswerChange(q.questionId, opt);
-                                        }
-                                    }}
-                                    className={`px-4 py-2.5 rounded-xl border text-[13px] font-bold cursor-pointer transition-all text-center ${isSelected ? 'border-taxable-blue bg-blue-50 text-taxable-blue' : 'border-gray-100 hover:bg-[#F9FBFC] text-taxable-gray'}`}
-                                >
-                                    {opt}
-                                </div>
-                            );
-                        })}
-                    </div>
-                ) : q.questionType === 'date' ? (
-                    <div className="mb-8">
-                        <input
-                            type="date"
-                            className="w-full h-12 bg-[#F9FBFC] border border-gray-100 rounded-xl px-4 text-sm font-medium text-taxable-dark focus:outline-none focus:border-taxable-blue/40"
-                            value={value}
-                            onChange={(e) => handleAnswerChange(q.questionId, e.target.value)}
-                        />
-                    </div>
-                ) : q.questionType === 'table' ? (
-                    <div className="col-span-2 mb-8 bg-white border border-gray-100 rounded-2xl overflow-hidden">
-                        {/* Table implementation simplified for new design grid compatibility */}
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead className="bg-[#F9FBFC] border-b border-gray-100">
-                                    <tr>
-                                        {q.columns?.map((col: any) => (
-                                            <th key={col.field} className="px-5 py-3 text-[11px] font-bold text-[#A3A3A3] uppercase tracking-wider">{col.label}</th>
-                                        ))}
-                                        <th className="w-12 px-5 py-3"></th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50">
-                                    {(!value || value.length === 0) ? (
-                                        <tr>
-                                            <td colSpan={(q.columns?.length || 0) + 1} className="px-5 py-8 text-center text-[13px] text-[#94A3B8] font-medium">
-                                                No details added yet.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        value.map((row: any, rowIndex: number) => (
-                                            <tr key={rowIndex} className="group hover:bg-[#FBFCFD] transition-colors">
-                                                {q.columns?.map((col: any) => (
-                                                    <td key={col.field} className="px-5 py-2">
-                                                        <input
-                                                            type="text"
-                                                            className="w-full h-8 bg-transparent border-none focus:ring-0 text-[13px] font-semibold text-taxable-dark p-0 placeholder-[#CBD5E1]"
-                                                            placeholder={col.type === 'number' ? '0.00' : '...'}
-                                                            value={col.type === 'number' ? formatAmount(row[col.field]) : (row[col.field] || '')}
-                                                            onChange={(e) => {
-                                                                let val = e.target.value;
-                                                                if (col.type === 'number') {
-                                                                    val = parseAmount(val);
-                                                                    if (val !== '' && !/^\d*\.?\d*$/.test(val)) return;
-                                                                }
-                                                                handleTableRowChange(q.questionId, rowIndex, col.field, val);
-                                                            }}
-                                                        />
-                                                    </td>
-                                                ))}
-                                                <td className="px-5 py-2 text-right">
-                                                    <button onClick={() => handleRemoveRow(q.questionId, rowIndex)} className="text-[#94A3B8] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                        <button onClick={() => handleAddRow(q.questionId, q.columns || [])} className="w-full py-3 text-[13px] font-bold text-taxable-blue hover:bg-blue-50/50 transition-all border-t border-gray-50 flex items-center justify-center gap-2">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-                            Add Details
-                        </button>
-                    </div>
-                ) : (
-                    <div className="relative mb-8 group">
-                        <input
-                            type="text"
-                            placeholder={q.validation?.currency === 'NGN' ? '₦0' : 'Type here...'}
-                            className="w-full h-12 bg-[#F9FBFC] border border-gray-100 rounded-xl px-4 text-sm font-bold text-taxable-dark placeholder:text-[#CBD5E1] focus:outline-none focus:border-taxable-blue/40 transition-all"
-                            value={q.questionType === 'number' ? formatAmount(value) : (value || '')}
-                            onChange={(e) => {
-                                let val = e.target.value;
-                                if (q.questionType === 'number') {
-                                    val = parseAmount(val);
-                                    if (val !== '' && !/^\d*\.?\d*$/.test(val)) return;
-                                }
-                                handleAnswerChange(q.questionId, val);
-                            }}
-                        />
-                        {q.explanation && (
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 group-hover:opacity-100 transition-opacity cursor-help">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
-                                </svg>
-                                <div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-taxable-dark text-white text-[10px] rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 shadow-xl">
-                                    {q.explanation}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {q.explanation && (
-                    <p className="text-[12px] text-taxable-gray mt-2 font-medium">{q.explanation}</p>
-                )}
-            </div>
-        );
-    };
+    const activeLabel = {
+        'personal-info': 'Personal Information',
+        'tax-reliefs': 'Tax Reliefs',
+        'income-deductions': 'Income & Deductions',
+        'review': 'Review & File',
+    }[activeSection];
 
     return (
         <div className="min-h-screen bg-[#FAFAFA] font-sans pb-20">
             <DashboardHeader />
 
-            {/* Welcome Modal */}
-            {showWelcomeModal && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-[#001D48]/40 backdrop-blur-[4px]" onClick={() => setShowWelcomeModal(false)} />
-                    <div className="relative bg-white rounded-[24px] w-full max-w-[440px] p-6 md:p-8 shadow-2xl animate-in fade-in zoom-in duration-300 flex flex-col">
-                        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                            {/* Logo Icon Container */}
-                            <div className="w-12 h-12 rounded-xl bg-[#F5F5F3] flex items-center justify-center flex-shrink-0">
-                                <Image src="/logo_black.svg" alt="Taxable" width={24} height={24} />
-                            </div>
-
-                            {/* Text Content */}
-                            <div className="text-left">
-                                <h2 className="text-xl font-semibold text-taxable-dark mb-2.5">Welcome to your tax workspace!</h2>
-                                <p className="text-sm text-taxable-gray font-medium leading-[1.6]">
-                                    Everything you need is organized in sections on the left. Start with <span className="text-taxable-dark font-bold">Personal Information</span> and work your way down.
-                                </p>
-                                <p className="text-sm text-taxable-gray font-medium mt-4 leading-[1.6]">
-                                    Your progress is saved automatically.
-                                </p>
+            <main className="max-w-[1200px] mx-auto px-4 md:px-8 py-8">
+                {/* Back + Breadcrumb */}
+                <div className="flex justify-between items-start mb-6 border-b border-gray-100 pb-6">
+                    <div>
+                        <div className="flex items-center gap-2 mb-5">
+                            <button onClick={() => router.back()} className="flex items-center gap-1.5 text-[13px] font-bold text-[#0C0C0E] hover:text-[#003787] transition-colors">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
+                                </svg>
+                                Back
+                            </button>
+                            <div className="flex items-center gap-1.5 text-[12px] text-[#9CA3AF] font-medium">
+                                <span>2028 Individual Tax</span><span>/</span>
+                                <span className="text-[#6B7280]">{activeLabel}</span>
+                                {activeSection === 'income-deductions' && periodMode === 'monthly' && (
+                                    <><span>/</span><span className="text-[#6B7280]">{activeMonth}</span><span>/</span><span className="text-[#6B7280] capitalize">{incomeSubTab}</span></>
+                                )}
                             </div>
                         </div>
 
-                        <button
-                            onClick={() => setShowWelcomeModal(false)}
-                            className="w-full h-12 bg-[#003787] text-white text-[15px] font-semibold rounded-xl hover:opacity-90 shadow-lg shadow-[#003787]/10 transition-all text-center"
-                        >
-                            Got it
-                        </button>
+                        {/* Title */}
+                        <div>
+                            <h1 className="text-[22px] font-bold text-[#0C0C0E] mb-1.5">Gideon Akin, 2026 Individual Tax</h1>
+                            <div className="flex items-center gap-2">
+                                <span className="flex items-center gap-1 text-[12px] font-bold text-[#16A34A]">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                    Tax Compliant
+                                </span>
+                                <span className="text-[#D1D5DB]">·</span>
+                                <span className="text-[12px] text-[#6B7280] font-medium">TCC Valid until Dec 31, 2026</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="text-right">
+                        <h2 className="text-[20px] font-bold text-[#0C0C0E]">₦0 (no data yet)</h2>
+                        <p className="text-[13px] text-[#6B7280] font-medium">Estimated Net Tax Payable</p>
                     </div>
                 </div>
-            )}
 
-            <main className="max-w-[1440px] mx-auto px-4 md:px-8 py-6 md:py-8">
-                {loading ? (
-                    <PITSkeleton />
-                ) : (
-                    <>
-                        <div className="flex items-center justify-between mb-8">
-                            <div className="flex items-center gap-4">
-                                <button
-                                    onClick={() => router.back()}
-                                    className="flex items-center gap-2 text-[13px] md:text-sm font-bold text-taxable-dark hover:text-taxable-blue transition-colors shrink-0"
-                                >
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                        <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
-                                    </svg>
-                                    Back
-                                </button>
-                                <div className="flex items-center gap-2 text-[11px] md:text-[13px] text-[#94A3B8] font-bold overflow-hidden">
-                                    <span className="whitespace-nowrap">{profileInfo?.year} {profileInfo?.type} Tax</span>
-                                    <span>/</span>
-                                    <span className="text-[#64748B] truncate">{activeCategory?.categoryName}</span>
-                                </div>
-                            </div>
-                        </div>
+                <div className="flex items-start gap-8 mt-8">
+                    {renderSidebar()}
 
-                        {/* Summary Header */}
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-10">
-                            <div>
-                                <h1 className="text-xl md:text-2xl font-bold text-taxable-dark mb-1">{profileInfo?.year} {profileInfo?.type} Tax</h1>
-                                <p className="text-[13px] md:text-[14px] text-taxable-gray font-semibold">
-                                    {categories.filter(c => isCategoryComplete(c)).length} of {categories.length} sections complete
-                                </p>
-                            </div>
-                            <div className="text-left md:text-right">
-                                <h2 className="text-lg md:text-xl font-bold text-taxable-dark mb-1">₦0 (no data yet)</h2>
-                                <p className="text-[12px] md:text-[13px] text-taxable-gray font-semibold">Current Tax Due</p>
-                            </div>
-                        </div>
+                    <div className="flex-1 min-w-0">
+                        {activeSection === 'personal-info' && (
+                            <div className="flex items-start gap-8">
+                                <div className="flex-1 space-y-7 max-w-[480px]">
+                                    <h2 className="text-[18px] font-bold text-[#0C0C0E]">Personal Information</h2>
 
-                        <div className="flex flex-col lg:flex-row items-start gap-8">
-                            {/* Sidebar */}
-                            <div className="w-full lg:w-[260px] flex-shrink-0 flex flex-col gap-6">
-                                <div className="bg-white rounded-[24px] p-5 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)] border border-gray-100">
-                                    <h3 className="text-[12px] font-bold text-[#A3A3A3] mb-4 uppercase tracking-wider">Select</h3>
-                                    <div className="space-y-1">
-                                        {categories
-                                            .filter(cat => !cat.categoryName.toLowerCase().includes('income'))
-                                            .map((cat) => (
-                                                <SidebarItem
-                                                    key={cat.categoryKey}
-                                                    label={cat.categoryName}
-                                                    active={activeSectionKey === cat.categoryKey}
-                                                    completed={isCategoryComplete(cat)}
-                                                    onClick={() => {
-                                                        setActiveSectionKey(cat.categoryKey);
-                                                        setActiveMonth(1);
-                                                    }}
-                                                />
-                                            ))}
-                                    </div>
-                                </div>
-
-                                <div className="bg-white rounded-[24px] p-5 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)] border border-gray-100">
-                                    <h3 className="text-[12px] font-bold text-[#A3A3A3] mb-4 uppercase tracking-wider">Select</h3>
-                                    <div className="space-y-1">
-                                        {categories
-                                            .filter(cat => cat.categoryName.toLowerCase().includes('income'))
-                                            .map((cat) => (
-                                                <SidebarItem
-                                                    key={cat.categoryKey}
-                                                    label={cat.categoryName}
-                                                    active={activeSectionKey === cat.categoryKey}
-                                                    completed={isCategoryComplete(cat)}
-                                                    onClick={() => {
-                                                        setActiveSectionKey(cat.categoryKey);
-                                                        setActiveMonth(1);
-                                                    }}
-                                                />
-                                            ))}
-                                        <SidebarItem
-                                            label="Review & File"
-                                            active={activeSectionKey === 'review-and-file'}
-                                            completed={false}
-                                            onClick={() => setActiveSectionKey('review-and-file')}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="bg-white rounded-[20px] p-6 border border-gray-100/60 shadow-sm relative overflow-hidden group">
-                                    <div className="relative z-10">
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                                <path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
-                                            </svg>
-                                            <h4 className="text-[14px] font-bold text-taxable-dark">Need expert eyes?</h4>
-                                        </div>
-                                        <p className="text-[12px] text-taxable-gray font-medium leading-relaxed mb-5">
-                                            Get your return reviewed by a certified tax accountant. They'll ensure accuracy and compliance.
+                                    <div>
+                                        <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#374151] mb-2">
+                                            Tax ID (Tax Identification Number)
+                                            <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                                        </label>
+                                        <input type="text" readOnly value="12345678901" className="w-full h-11 border border-gray-100 bg-gray-50 rounded-xl px-4 text-[14px] font-medium text-[#6B7280] focus:outline-none" />
+                                        <p className="flex items-center gap-1 mt-2 text-[12px] font-semibold text-[#16A34A]">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                            Verified
                                         </p>
-                                        <button className="w-full py-3 bg-white border border-gray-100 rounded-xl text-[13px] font-bold text-taxable-dark hover:bg-gray-50 transition-all shadow-sm">
-                                            Book Accountant (₦15,000)
-                                        </button>
                                     </div>
-                                    <div className="absolute top-0 right-0 w-20 h-20 bg-blue-50/50 rounded-full -mr-10 -mt-10 blur-2xl" />
+
+                                    <div className="flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                        <div className="flex items-center gap-1.5 text-[13px] font-semibold text-[#374151]">
+                                            Residency status
+                                            <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 text-[14px] font-semibold text-[#16A34A]">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+                                                <polyline points="18 8 21 11 18 14" />
+                                            </svg>
+                                            Resident of Nigeria
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#374151] mb-2">
+                                            Full Legal Name
+                                            <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                                        </label>
+                                        <input type="text" value="Gideon Akin" readOnly className="w-full h-11 border border-gray-100 bg-gray-50 rounded-xl px-4 text-[14px] font-medium text-[#6B7280] focus:outline-none" />
+                                    </div>
+
+                                    <div>
+                                        <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#374151] mb-2">
+                                            Date of birth
+                                            <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                                        </label>
+                                        <input type="text" placeholder="DD / MM / YYYY" className="w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-gray-300" />
+                                    </div>
+
+                                    <div>
+                                        <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#374151] mb-2">
+                                            Street Address
+                                            <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                                        </label>
+                                        <input type="text" placeholder="Enter" className="w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-gray-300 mb-3" />
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="relative">
+                                                <select className="appearance-none w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#9CA3AF] focus:outline-none focus:border-[#003787]/40 transition-all">
+                                                    <option>City</option>
+                                                </select>
+                                                <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                                            </div>
+                                            <div className="relative">
+                                                <select className="appearance-none w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#9CA3AF] focus:outline-none focus:border-[#003787]/40 transition-all">
+                                                    <option>State</option>
+                                                </select>
+                                                <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button className="h-11 px-8 bg-[#003787] text-white font-bold rounded-xl hover:bg-[#002b6d] transition-colors text-[14px]">
+                                        Save & Continue
+                                    </button>
+                                </div>
+
+                                <div className="w-[280px] bg-[#FAFAFA] border border-gray-100/60 p-6 rounded-2xl flex-shrink-0">
+                                    <h4 className="flex items-center gap-2 text-[14px] font-bold text-[#0C0C0E] mb-3">
+                                        <span className="w-4 h-4 rounded-full border border-gray-400 flex items-center justify-center text-[10px] font-bold">i</span>
+                                        Why we need this
+                                    </h4>
+                                    <p className="text-[13px] text-[#6B7280] leading-relaxed font-medium mb-5">
+                                        Your personal details help us identify you with FIRS and ensure your tax return is filed correctly. All information is encrypted and stored securely. We only share data with FIRS when you choose to file.
+                                    </p>
+                                    <div className="space-y-3">
+                                        <a href="#" className="flex items-center gap-2 text-[13px] font-semibold text-[#0C0C0E] hover:text-[#003787] transition-colors group">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 group-hover:text-[#003787]">
+                                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+                                            </svg>
+                                            How to find your TIN
+                                        </a>
+                                        <a href="#" className="flex items-center gap-2 text-[13px] font-semibold text-[#0C0C0E] hover:text-[#003787] transition-colors group">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 group-hover:text-[#003787]">
+                                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+                                            </svg>
+                                            Understanding tax filing
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
+                        )}
 
-                            {/* Middle Column: Selection (Month or Sub-section) */}
-                            {checkIfIncomeCategory(activeCategory) ? (
-                                <div className="w-full lg:w-[220px] flex-shrink-0 flex flex-col gap-6">
-                                    <div className="flex items-center gap-3">
-                                        <span className={`text-[13px] font-bold transition-colors ${isMonthly ? 'text-taxable-dark' : 'text-[#A3A3A3]'}`}>Monthly</span>
-                                        <button
-                                            onClick={() => {
-                                                setIsMonthly(!isMonthly);
-                                                setActiveMonth(1);
-                                            }}
-                                            className={`w-[38px] h-[20px] rounded-full relative transition-all ${isMonthly ? 'bg-[#00388D]' : 'bg-gray-300'}`}
-                                        >
-                                            <div className={`absolute top-0.5 w-[16px] h-[16px] bg-white rounded-full transition-all ${isMonthly ? 'left-0.5' : 'left-[21.5px]'}`} />
-                                        </button>
-                                        <span className={`text-[13px] font-bold transition-colors ${!isMonthly ? 'text-taxable-dark' : 'text-[#A3A3A3]'}`}>Annually</span>
+                        {activeSection === 'tax-reliefs' && (
+                            <div className="flex items-start gap-8">
+                                <div className="flex-1 space-y-8 max-w-[480px]">
+                                    <div>
+                                        <h2 className="text-[18px] font-bold text-[#0C0C0E] mb-5">Rent Relief</h2>
+                                        <div className="space-y-5">
+                                            <div>
+                                                <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#374151] mb-2">
+                                                    Annual Rent Commitment.
+                                                    <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                                                </label>
+                                                <input type="text" placeholder="₦0" className="w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-gray-300" />
+                                            </div>
+                                            <div>
+                                                <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#374151] mb-2">
+                                                    Upload Tenancy Agreements or Receipt
+                                                    <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                                                </label>
+                                                <div className="border border-dashed border-gray-300 rounded-xl p-4 flex items-center justify-between hover:bg-gray-50 transition-colors cursor-pointer bg-white">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
+                                                            📄
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[13px] font-semibold text-[#0C0C0E]">Proof of Rent Required</p>
+                                                            <p className="text-[11px] font-medium text-gray-500">PDF, JPG, or PNG (Max 5MB)</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="px-4 py-2 rounded-lg border border-gray-200 text-[13px] font-semibold text-[#0C0C0E]">
+                                                        Upload
+                                                    </div>
+                                                </div>
+                                                <p className="flex items-start gap-1.5 mt-3 text-[11px] font-medium text-gray-500">
+                                                    <span className="w-3 h-3 rounded-full border border-gray-400 flex items-center justify-center text-[8px] font-bold shrink-0 mt-0.5">i</span>
+                                                    Once uploaded, our system will verify your document against NRS records to lock in your tax relief
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    {isMonthly ? (
-                                        <div className="bg-white rounded-[24px] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)] border border-gray-100 overflow-hidden">
-                                            {MONTHS.map((m) => (
-                                                <button
-                                                    key={m.id}
-                                                    onClick={() => setActiveMonth(m.id)}
-                                                    className={`w-full px-5 py-4 flex items-center justify-between border-b border-gray-50 last:border-b-0 transition-colors ${activeMonth === m.id ? 'bg-[#F8FAFC]' : 'hover:bg-gray-50'}`}
-                                                >
+                                    <div>
+                                        <h2 className="text-[18px] font-bold text-[#0C0C0E] mb-5">Statutory Deductions</h2>
+
+                                        <div className="bg-[#FAFAFA] border border-gray-100/60 rounded-2xl p-5 space-y-5 mb-5">
+                                            <div>
+                                                <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#374151] mb-2">
+                                                    Pension
+                                                    <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                                                </label>
+                                                <input type="text" placeholder="₦0" className="w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-gray-300" />
+                                            </div>
+                                            <div>
+                                                <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#374151] mb-2">
+                                                    Upload your Pension Statement
+                                                    <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                                                </label>
+                                                <div className="border border-gray-200 rounded-xl p-3.5 flex items-center justify-between bg-white">
                                                     <div className="flex items-center gap-3">
-                                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={activeMonth === m.id ? "#00388D" : "#94A3B8"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-                                                        </svg>
-                                                        <span className={`text-[14px] font-semibold ${activeMonth === m.id ? 'text-taxable-dark' : 'text-[#64748B]'}`}>{m.name}</span>
+                                                        <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
+                                                            📄
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[13px] font-semibold text-[#0C0C0E]">Pension Receipt</p>
+                                                            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
+                                                                120 KB · <span className="flex items-center gap-1 text-[#16A34A]"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg> Completed</span>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform ${activeMonth === m.id ? 'rotate-180' : ''}`}>
-                                                        <polyline points="6 9 12 15 18 9" />
-                                                    </svg>
-                                                </button>
-                                            ))}
+                                                    <button className="text-gray-400 hover:text-red-500 p-1">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" /></svg>
+                                                    </button>
+                                                </div>
+                                                <p className="mt-2 text-[11.5px] font-semibold text-amber-600">
+                                                    Verification in Progress — Our system is matching your document with NRS records
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-[#FAFAFA] border border-gray-100/60 rounded-2xl p-5 space-y-5 mb-5">
+                                            <div>
+                                                <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#374151] mb-2">
+                                                    National Housing Fund (NHF)
+                                                    <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                                                </label>
+                                                <input type="text" placeholder="₦0" className="w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-gray-300" />
+                                            </div>
+                                            <div>
+                                                <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#374151] mb-2">
+                                                    Upload your NHF contribution history
+                                                    <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                                                </label>
+                                                <div className="border border-gray-200 rounded-xl p-3.5 flex items-center justify-between bg-white">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
+                                                            📄
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[13px] font-semibold text-[#0C0C0E]">NHF Contribution</p>
+                                                            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
+                                                                120 KB · <span className="flex items-center gap-1 text-[#16A34A]"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg> Completed</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <button className="text-gray-400 hover:text-red-500 p-1">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" /></svg>
+                                                    </button>
+                                                </div>
+                                                <p className="mt-2 text-[11.5px] font-medium text-[#16A34A]">
+                                                    Verified. A 2.5% deduction has been effected. Your taxable income has been reduced to [Amount].
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-[#FAFAFA] border border-gray-100/60 rounded-2xl p-5 space-y-5">
+                                            <div>
+                                                <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#374151] mb-2">
+                                                    Life Insurance
+                                                    <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                                                </label>
+                                                <input type="text" placeholder="₦0" className="w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-gray-300" />
+                                            </div>
+                                            <div>
+                                                <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#374151] mb-2">
+                                                    Upload your Insurance Certificate
+                                                    <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                                                </label>
+                                                <div className="border border-dashed border-gray-300 rounded-xl p-4 flex items-center justify-between hover:bg-gray-50 transition-colors cursor-pointer bg-white">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
+                                                            📄
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[13px] font-semibold text-[#0C0C0E]">Proof of Insurance Required</p>
+                                                            <p className="text-[11px] font-medium text-gray-500">PDF, JPG, or PNG (Max 5MB)</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="px-4 py-2 rounded-lg border border-gray-200 text-[13px] font-semibold text-[#0C0C0E]">
+                                                        Upload
+                                                    </div>
+                                                </div>
+                                                <p className="flex items-start gap-1.5 mt-3 text-[11px] font-medium text-gray-500">
+                                                    <span className="w-3 h-3 rounded-full border border-gray-400 flex items-center justify-center text-[8px] font-bold shrink-0 mt-0.5">i</span>
+                                                    Once uploaded, our system will verify your document against NRS records to lock in your tax relief
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button className="h-11 px-8 bg-[#003787] text-white font-bold rounded-xl hover:bg-[#002b6d] transition-colors text-[14px]">
+                                        Save & Continue
+                                    </button>
+                                </div>
+
+                                <div className="w-[280px] bg-[#FAFAFA] border border-gray-100/60 p-6 rounded-2xl flex-shrink-0 sticky top-6">
+                                    <h4 className="flex items-center gap-2 text-[14px] font-bold text-[#0C0C0E] mb-3">
+                                        <span className="w-4 h-4 rounded-full border border-gray-400 flex items-center justify-center text-[10px] font-bold">i</span>
+                                        Take Your Time
+                                    </h4>
+                                    <p className="text-[13px] text-[#6B7280] leading-relaxed font-medium mb-6">
+                                        Deductions and reliefs are your legal way to reduce the tax you owe. Don't worry if you don't have a receipt yet; you can save your progress now and return to upload your proof anytime before the March 31, 2027 deadline.
+                                    </p>
+                                    <div className="space-y-4 pt-4 border-t border-gray-200">
+                                        <button className="flex items-center gap-2 text-[13px] font-bold text-[#0C0C0E] hover:text-[#003787] transition-colors">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                                            Chat with support
+                                        </button>
+                                        <button className="flex items-center gap-2 text-[13px] font-bold text-[#0C0C0E] hover:text-[#003787] transition-colors">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></svg>
+                                            Email us
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeSection === 'income-deductions' && (
+                            <div className="flex gap-10">
+
+                                <div className="w-[180px] flex-shrink-0 space-y-4">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <span className={`text-[13px] font-semibold ${periodMode === 'monthly' ? 'text-[#0C0C0E]' : 'text-gray-400'}`}>Monthly</span>
+                                        <button
+                                            onClick={() => setPeriodMode(p => p === 'monthly' ? 'annually' : 'monthly')}
+                                            className={`relative w-10 h-5 rounded-full transition-colors ${periodMode === 'monthly' ? 'bg-[#003787]' : 'bg-gray-300'}`}
+                                        >
+                                            <div className={`absolute left-0 top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${periodMode === 'monthly' ? 'translate-x-[2px]' : 'translate-x-[22px]'}`} />
+                                        </button>
+                                        <span className={`text-[13px] font-semibold ${periodMode === 'annually' ? 'text-[#0C0C0E]' : 'text-gray-400'}`}>Annually</span>
+                                    </div>
+
+                                    {periodMode === 'monthly' ? (
+                                        <div className="space-y-1">
+                                            {MONTHS.map((m, i) => {
+                                                const isActive = m === activeMonth;
+                                                const isCompleted = i < MONTHS.indexOf(activeMonth); // Mock completed state
+                                                return (
+                                                    <div key={m}>
+                                                        <button
+                                                            onClick={() => setActiveMonth(m)}
+                                                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${isActive ? 'bg-[#F9FAFB] text-[#0C0C0E] font-bold' : 'hover:bg-gray-50 text-gray-400 font-semibold'
+                                                                } text-[13px]`}
+                                                        >
+                                                            <div className="flex items-center gap-2">
+                                                                <span>🗓️</span>
+                                                                {m}
+                                                            </div>
+                                                            {isActive && (
+                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                                                            )}
+                                                        </button>
+                                                        {isActive && (
+                                                            <div className="ml-8 mt-1 space-y-1">
+                                                                <button
+                                                                    onClick={() => setIncomeSubTab('income')}
+                                                                    className={`w-full text-left px-3 py-2 rounded-lg text-[13px] font-semibold ${incomeSubTab === 'income' ? 'bg-gray-100 text-[#0C0C0E]' : 'text-gray-500 hover:bg-gray-50'}`}
+                                                                >
+                                                                    Income
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setIncomeSubTab('deductions')}
+                                                                    className={`w-full text-left px-3 py-2 rounded-lg text-[13px] font-semibold ${incomeSubTab === 'deductions' ? 'bg-gray-100 text-[#0C0C0E]' : 'text-gray-500 hover:bg-gray-50'}`}
+                                                                >
+                                                                    Deductions
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     ) : (
-                                        <div className="bg-white rounded-[24px] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)] border border-gray-100 overflow-hidden">
-                                            <button
-                                                onClick={() => setAnnualSubSection('income')}
-                                                className={`w-full px-5 py-5 flex items-center justify-between border-b border-gray-50 transition-colors ${annualSubSection === 'income' ? 'bg-[#F8FAFC]' : 'hover:bg-gray-50'}`}
-                                            >
-                                                <span className={`text-[13px] font-bold ${annualSubSection === 'income' ? 'text-taxable-dark' : 'text-[#64748B]'}`}>Total Income for {profileInfo?.year}</span>
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+                                        <div className="space-y-1">
+                                            <button className="w-full text-left px-4 py-3 rounded-xl bg-gray-50 text-[#0C0C0E] font-bold text-[13px] border border-gray-100 flex items-center justify-between">
+                                                Total Income for 2026
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 rotate-[-90deg]"><polyline points="6 9 12 15 18 9" /></svg>
                                             </button>
-                                            <button
-                                                onClick={() => setAnnualSubSection('deduction')}
-                                                className={`w-full px-5 py-5 flex items-center justify-between transition-colors ${annualSubSection === 'deduction' ? 'bg-[#F8FAFC]' : 'hover:bg-gray-50'}`}
-                                            >
-                                                <span className={`text-[13px] font-bold ${annualSubSection === 'deduction' ? 'text-taxable-dark' : 'text-[#64748B]'}`}>Total deductible for {profileInfo?.year}</span>
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+                                            <button className="w-full text-left px-4 py-3 rounded-xl border border-transparent hover:border-gray-100 text-[#6B7280] font-semibold text-[13px] flex items-center justify-between">
+                                                Total deductible for 2026
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 rotate-[-90deg]"><polyline points="6 9 12 15 18 9" /></svg>
                                             </button>
                                         </div>
                                     )}
                                 </div>
-                            ) : null}
 
-                            {/* Right Content Area */}
-                            <div className={`${(checkIfIncomeCategory(activeCategory) || activeSectionKey === 'review-and-file') ? 'flex-1' : 'max-w-[840px] flex-1'} min-w-0`}>
-                                {activeSectionKey === 'review-and-file' ? (
-                                    <ReviewAndFile onSaveAndContinue={() => router.push('/home')} />
-                                ) : activeCategory ? (
-                                    <div className="animate-in fade-in duration-500">
-                                        <div className="mb-6">
-                                            {!isMonthly || !checkIfIncomeCategory(activeCategory) ? (
-                                                <h2 className="text-xl font-bold text-taxable-dark">{activeCategory.categoryName}</h2>
-                                            ) : (
-                                                <div className="flex flex-col gap-1">
-                                                    <p className="text-[13px] text-taxable-gray font-semibold mb-1 uppercase tracking-wide">
-                                                        {isMonthly ? `Editing ${MONTHS.find(m => m.id === activeMonth)?.name}` : `Annual ${annualSubSection === 'income' ? 'Income' : 'Deductions'}`} {profileInfo?.year}
-                                                    </p>
-                                                    <h2 className="text-xl font-bold text-taxable-dark">{activeCategory.categoryName}</h2>
+                                <div className="flex-1 min-w-0 pb-10">
+                                    <p className="text-[13px] text-[#6B7280] font-medium leading-relaxed mb-8 max-w-[500px]">
+                                        {periodMode === 'monthly' ?
+                                            `Enter your ${incomeSubTab} for ${activeMonth} 2026. Skip fields that don't apply to you. You can update amounts anytime.` :
+                                            `Enter your total income for 2026. Skip fields that don't apply to you. You can update amounts anytime.`
+                                        }
+                                    </p>
+
+                                    {incomeSubTab === 'income' && (
+                                        <div className="space-y-10">
+                                            <div>
+                                                <h3 className="text-[16px] font-bold text-[#0C0C0E] mb-4">Employment Income</h3>
+                                                <div className="bg-[#FAFAFA] border border-gray-100/60 rounded-2xl p-5 grid grid-cols-1 md:grid-cols-3 gap-5">
+                                                    <div>
+                                                        <label className="flex items-center gap-1.5 text-[12px] font-semibold text-[#6B7280] mb-2">
+                                                            Gross Salary/wages <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                                                        </label>
+                                                        <input type="text" placeholder="₦0" className="w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-gray-300" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="flex items-center gap-1.5 text-[12px] font-semibold text-[#6B7280] mb-2">
+                                                            Bonuses <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                                                        </label>
+                                                        <input type="text" placeholder="₦0" className="w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-gray-300" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="flex items-center gap-1.5 text-[12px] font-semibold text-[#6B7280] mb-2">
+                                                            Commissions <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                                                        </label>
+                                                        <input type="text" placeholder="₦0" className="w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-gray-300" />
+                                                    </div>
                                                 </div>
-                                            )}
-                                        </div>
-
-                                        {!isMonthly && supportsPeriodToggle && !checkIfIncomeCategory(activeCategory) && (
-                                            <div className="flex items-center gap-3 mb-8">
-                                                <span className={`text-[13px] font-bold transition-colors ${isMonthly ? 'text-taxable-dark' : 'text-[#A3A3A3]'}`}>Monthly</span>
-                                                <button
-                                                    onClick={() => setIsMonthly(!isMonthly)}
-                                                    className={`w-[38px] h-[20px] rounded-full relative transition-all ${isMonthly ? 'bg-[#00388D]' : 'bg-gray-200'}`}
-                                                >
-                                                    <div className={`absolute top-0.5 w-[16px] h-[16px] bg-white rounded-full transition-all ${isMonthly ? 'left-0.5' : 'left-[21.5px]'}`} />
-                                                </button>
-                                                <span className={`text-[13px] font-bold transition-colors ${!isMonthly ? 'text-taxable-dark' : 'text-[#A3A3A3]'}`}>Annually</span>
                                             </div>
-                                        )}
 
-                                        <div className="bg-white rounded-[24px] p-8 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)] border border-gray-100">
-                                            {checkIfIncomeCategory(activeCategory) && (
-                                                <p className="text-[14px] text-taxable-gray font-medium mb-10">
-                                                    Enter your {annualSubSection === 'income' ? 'income' : 'deductions'} for {isMonthly ? `${MONTHS.find(m => m.id === activeMonth)?.name} ` : ''}{profileInfo?.year}. Skip fields that don't apply to you. You can update amounts anytime.
-                                                </p>
-                                            )}
-
-                                            <div className="space-y-12">
-                                                {(() => {
-                                                    const filteredQuestions = activeCategory.questions.filter(q => {
-                                                        if (!isMonthly && checkIfIncomeCategory(activeCategory)) {
-                                                            const isIncome = q.categoryKey.toLowerCase().includes('income') || q.categoryKey.toLowerCase().includes('employment') || q.categoryKey.toLowerCase().includes('business');
-                                                            const isDeduction = q.categoryKey.toLowerCase().includes('deduction');
-                                                            if (annualSubSection === 'income') return isIncome;
-                                                            return isDeduction;
-                                                        }
-                                                        return true;
-                                                    });
-
-                                                    const grouped = filteredQuestions.reduce((acc, q) => {
-                                                        const groupName = q.category || 'Information';
-                                                        if (!acc[groupName]) acc[groupName] = [];
-                                                        acc[groupName].push(q);
-                                                        return acc;
-                                                    }, {} as Record<string, Question[]>);
-
-                                                    return Object.entries(grouped).map(([groupName, groupQuestions]) => (
-                                                        <div key={groupName} className="col-span-full">
-                                                            <h3 className="text-[17px] font-bold text-taxable-dark mb-6">{groupName}</h3>
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-0">
-                                                                {groupQuestions.map(q => renderQuestion(q))}
-                                                            </div>
+                                            <div>
+                                                <h3 className="text-[16px] font-bold text-[#0C0C0E] mb-4">Investment Income</h3>
+                                                <div className="bg-[#FAFAFA] border border-gray-100/60 rounded-2xl p-5 space-y-5">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                                        <div>
+                                                            <label className="flex items-center gap-1.5 text-[12px] font-semibold text-[#6B7280] mb-2">
+                                                                Dividends <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                                                            </label>
+                                                            <input type="text" placeholder="₦0" className="w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-gray-300" />
                                                         </div>
-                                                    ));
-                                                })()}
+                                                        <div>
+                                                            <label className="flex items-center gap-1.5 text-[12px] font-semibold text-[#6B7280] mb-2">
+                                                                Interest (bank, bonds, etc.) <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                                                            </label>
+                                                            <input type="text" placeholder="₦0" className="w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-gray-300" />
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                                        <div>
+                                                            <label className="flex items-center gap-1.5 text-[12px] font-semibold text-[#6B7280] mb-2">
+                                                                Capital gains (stocks, property sales) <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                                                            </label>
+                                                            <input type="text" placeholder="₦0" className="w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-gray-300" />
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
 
-                                            <button
-                                                onClick={handleNext}
-                                                disabled={submitting}
-                                                className="w-full h-14 bg-[#00388D] text-white font-bold rounded-2xl hover:bg-[#002b6d] transition-colors mt-12 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg shadow-blue-900/10"
-                                            >
-                                                {submitting ? 'Saving Progress...' : (currentIndex === categories.length - 1 ? 'Review & File Tax Return' : 'Save & Continue')}
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : activeSectionKey !== 'review-and-file' && (
-                                    <div className="flex items-center justify-center py-20 bg-white rounded-[24px] border border-gray-100">
-                                        <span className="text-taxable-gray font-medium italic">Select a section to begin.</span>
-                                    </div>
-                                )}
-                            </div>
+                                            <div>
+                                                <h3 className="text-[16px] font-bold text-[#0C0C0E] mb-4">Other Income</h3>
+                                                <div className="bg-[#FAFAFA] border border-gray-100/60 rounded-2xl p-5 grid grid-cols-1 md:grid-cols-3 gap-5">
+                                                    <div>
+                                                        <label className="flex items-center gap-1.5 text-[12px] font-semibold text-[#6B7280] mb-2">
+                                                            Freelance/consulting fees <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                                                        </label>
+                                                        <input type="text" placeholder="₦0" className="w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-gray-300" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="flex items-center gap-1.5 text-[12px] font-semibold text-[#6B7280] mb-2">
+                                                            Royalties <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                                                        </label>
+                                                        <input type="text" placeholder="₦0" className="w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-gray-300" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="flex items-center gap-1.5 text-[12px] font-semibold text-[#6B7280] mb-2">
+                                                            Other <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                                                        </label>
+                                                        <input type="text" placeholder="₦0" className="w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-gray-300" />
+                                                    </div>
+                                                </div>
+                                            </div>
 
-                            {!checkIfIncomeCategory(activeCategory) && activeSectionKey !== 'review-and-file' && (
-                                <WhyWeNeedThis />
-                            )}
-                        </div>
-                    </>
-                )}
+                                            <div className="flex items-center gap-4 pt-4">
+                                                <button className="h-11 px-8 bg-[#003787] text-white font-bold rounded-xl hover:bg-[#002b6d] transition-colors text-[14px]">
+                                                    Save & Continue
+                                                </button>
+                                                {periodMode === 'monthly' && (
+                                                    <button className="h-11 px-6 bg-white border border-gray-200 text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-colors text-[14px]">
+                                                        Copy from last month
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeSection === 'review' && (
+                            <ReviewAndFile />
+                        )}
+
+                    </div>
+                </div>
             </main>
         </div>
     );

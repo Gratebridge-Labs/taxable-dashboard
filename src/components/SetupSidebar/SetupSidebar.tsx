@@ -78,7 +78,7 @@ const RadioOption = ({
             {selected && <div className="w-[9px] h-[9px] rounded-full bg-[#003787]" />}
         </div>
         <div>
-            <p className={`text-[15px] font-semibold leading-snug ${selected ? 'text-[#0C0C0E]' : 'text-[#0C0C0E]'}`}>{label}</p>
+            <p className={`text-[15px] font-medium leading-snug ${selected ? 'text-[#0C0C0E]' : 'text-[#0C0C0E]'}`}>{label}</p>
             {desc && <p className="text-[13px] text-gray-400 mt-0.5">{desc}</p>}
         </div>
     </button>
@@ -104,7 +104,7 @@ const CheckboxOption = ({
             )}
         </div>
         <div>
-            <p className="text-[15px] font-semibold text-[#0C0C0E] leading-snug">{label}</p>
+            <p className="text-[15px] font-medium text-[#0C0C0E] leading-snug">{label}</p>
             {desc && <p className="text-[13px] text-gray-400 mt-0.5">{desc}</p>}
         </div>
     </button>
@@ -239,7 +239,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                 />
 
                 {/* Modal card */}
-                <div className="relative w-full max-w-[520px] h-[720px] bg-white rounded-[24px] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right-8 fade-in duration-300 z-10">
+                <div className="relative w-full max-w-[480px] h-[720px] bg-white rounded-[24px] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right-8 fade-in duration-300 z-10">
 
                     {/* Header */}
                     <div className="flex items-center gap-4 px-6 pt-4 pb-3 flex-shrink-0">
@@ -253,9 +253,9 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                             </svg>
                         </button>
                         <div className="flex-1 text-center">
-                            <h2 className="text-[16px] font-bold text-[#0C0C0E] leading-tight">{getTitle()}</h2>
+                            <h2 className="text-[19px] font-semibold text-[#0C0C0E] leading-tight">{getTitle()}</h2>
                             {getSubtitle() && (
-                                <p className="text-[12px] text-gray-400 font-medium mt-0.5">{getSubtitle()}</p>
+                                <p className="text-[13px] text-gray-400 font-normal mt-0.5">{getSubtitle()}</p>
                             )}
                         </div>
                         {/* Spacer to balance the back button */}
@@ -270,7 +270,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                         {/* ─── STEP 0: Create filing ─── */}
                         {step === 0 && (
                             <div className="space-y-1">
-                                <p className="text-[14px] font-semibold text-[#0C0C0E] mb-2">
+                                <p className="text-[15px] font-medium text-[#0C0C0E] mb-2">
                                     What type of tax do you want to file today?
                                 </p>
 
@@ -289,7 +289,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
 
                                 {/* Tax ID — label changes based on filing type */}
                                 <div className="pt-5">
-                                    <label className="block text-[14px] font-semibold text-[#0C0C0E] mb-1.5">
+                                    <label className="block text-[15px] font-medium text-[#0C0C0E] mb-1.5">
                                         {filingType === 'Business' ? 'Tax ID (RC/BN)' : 'Tax ID (Your NIN)'}{' '}
                                         <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-gray-300 text-[10px] text-gray-400 font-bold ml-0.5 cursor-help">?</span>
                                     </label>
@@ -300,7 +300,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                         onChange={e => setTaxId(e.target.value)}
                                         className="w-full h-11 border border-gray-200 rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#003787]/20 focus:border-[#003787]/40 transition-all"
                                     />
-                                    <p className="text-[12px] text-gray-400 mt-1.5">
+                                    <p className="text-[13px] text-gray-400 mt-1.5">
                                         {filingType === 'Business' ? "Don't have a RC/BN?" : "Don't have a NIN?"}{' '}
                                         <a href="#" className="text-[#003787] font-semibold hover:underline">Apply here</a>
                                     </p>
@@ -309,7 +309,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                 {/* What to do — Individual gets radio buttons, Business gets checkboxes */}
                                 {filingType === 'Individual' ? (
                                     <div className="pt-4">
-                                        <p className="text-[14px] font-semibold text-[#0C0C0E] mb-1">What would you like to do?</p>
+                                        <p className="text-[15px] font-medium text-[#0C0C0E] mb-1">What would you like to do?</p>
                                         <RadioOption
                                             label="File my tax returns"
                                             selected={filingIntent === 'returns'}
@@ -323,7 +323,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                     </div>
                                 ) : (
                                     <div className="pt-4">
-                                        <p className="text-[14px] font-semibold text-[#0C0C0E] mb-2">What do you need to do?</p>
+                                        <p className="text-[15px] font-medium text-[#0C0C0E] mb-2">What do you need to do?</p>
                                         {[
                                             { id: 'paye', label: 'PAYE (Pay As You Earn)', desc: 'File monthly tax for employees and annual reconciliation. Required if you have staff.' },
                                             { id: 'vat', label: 'VAT/WHT (Value Added Tax & Withholding Tax)', desc: 'File monthly VAT returns and remit WHT deductions. Required if turnover > ₦25M.' },
@@ -344,7 +344,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
 
                                 {/* Tax year */}
                                 <div className="pt-4">
-                                    <p className="text-[14px] font-semibold text-[#0C0C0E] mb-1">Which tax year are you filing for?</p>
+                                    <p className="text-[15px] font-medium text-[#0C0C0E] mb-1">Which tax year are you filing for?</p>
                                     <div className="flex items-center gap-6 pt-2">
                                         <RadioOption
                                             label="2026 (Current year)"
@@ -364,7 +364,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                         {/* ─── STEP 1: Income sources ─── */}
                         {step === 1 && (
                             <div>
-                                <p className="text-[14px] font-semibold text-[#0C0C0E] mb-3">
+                                <p className="text-[15px] font-medium text-[#0C0C0E] mb-3">
                                     What's your primary income source?
                                 </p>
                                 <div className="space-y-0">
@@ -386,7 +386,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                             <div className="space-y-6">
                                 {LIFE_QUESTIONS.map((q) => (
                                     <div key={q.id}>
-                                        <p className="text-[14px] font-semibold text-[#0C0C0E] mb-2">{q.question}</p>
+                                        <p className="text-[15px] font-medium text-[#0C0C0E] mb-2">{q.question}</p>
                                         <div className="flex gap-6">
                                             {q.options.map(opt => (
                                                 <RadioOption
@@ -398,7 +398,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                             ))}
                                         </div>
                                         {q.hint && (
-                                            <p className="text-[12px] text-gray-400 font-medium mt-1 leading-relaxed">
+                                            <p className="text-[13px] text-gray-400 font-normal mt-1 leading-relaxed">
                                                 {q.hint}
                                             </p>
                                         )}
@@ -420,7 +420,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                 </button>
                                 <button
                                     onClick={handleGetStarted}
-                                    className="flex-[2] h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[15px]"
+                                    className="flex-1 h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[15px]"
                                 >
                                     Get Started
                                 </button>
@@ -438,7 +438,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                 <button
                                     onClick={handleNextFromSources}
                                     disabled={selectedSources.length === 0}
-                                    className="flex-[2] h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[15px] disabled:opacity-40"
+                                    className="flex-1 h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[15px] disabled:opacity-40"
                                 >
                                     Next
                                 </button>
@@ -455,7 +455,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                 </button>
                                 <button
                                     onClick={handleProceed}
-                                    className="flex-[2] h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[15px]"
+                                    className="flex-1 h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[15px]"
                                 >
                                     Proceed
                                 </button>

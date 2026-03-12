@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { use, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
+import { ShieldCheck, EyeOff, Lock, ChevronDown, Search, Check, CheckCircle2 } from 'lucide-react';
 
 const API_BASE_URL = 'https://api.gettaxable.com/api';
 
@@ -43,9 +44,7 @@ type UploadSession = {
 };
 
 type PageProps = {
-  params: {
-    uploadId: string;
-  };
+  params: Promise<{ uploadId: string }>;
 };
 
 async function fetchJson<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
@@ -71,7 +70,7 @@ const allowedFileTypes = '.pdf,.jpg,.jpeg,.png,.gif,.webp';
 const maxFileSizeBytes = 20 * 1024 * 1024;
 
 export default function UploadPage({ params }: PageProps) {
-  const { uploadId } = params;
+  const { uploadId } = use(params);
 
   const [session, setSession] = useState<UploadSession | null>(null);
   const [loadingSession, setLoadingSession] = useState(true);
@@ -80,6 +79,16 @@ export default function UploadPage({ params }: PageProps) {
   const [savingBanks, setSavingBanks] = useState(false);
   const [uploadingFileId, setUploadingFileId] = useState<string | null>(null);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+
+  const [bankDropdownOpen, setBankDropdownOpen] = useState(false);
+  const [bankSearchQuery, setBankSearchQuery] = useState('');
+  const bankDropdownRef = useRef<HTMLDivElement>(null);
+
+  const [step, setStep] = useState(0);
+
+  const hasReliefStep = Boolean(
+    session?.reliefDocumentStatus && session.reliefDocumentStatus.length > 0,
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -128,6 +137,25 @@ export default function UploadPage({ params }: PageProps) {
     });
     return map;
   }, [session]);
+
+  const filteredBanks = useMemo(() => {
+    if (!session?.banks) return [];
+    const q = bankSearchQuery.trim().toLowerCase();
+    if (!q) return session.banks;
+    return session.banks.filter((b) => b.name.toLowerCase().includes(q));
+  }, [session?.banks, bankSearchQuery]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (bankDropdownRef.current && !bankDropdownRef.current.contains(event.target as Node)) {
+        setBankDropdownOpen(false);
+      }
+    }
+    if (bankDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [bankDropdownOpen]);
 
   const handleToggleBank = async (bankId: string) => {
     if (!session) return;
@@ -253,6 +281,69 @@ export default function UploadPage({ params }: PageProps) {
     return map;
   }, [session]);
 
+  const canAddAnotherBank = useMemo(() => {
+    if (!session || session.selectedBanks.length === 0) return true;
+    const lastBankId = session.selectedBanks[session.selectedBanks.length - 1];
+    const files = existingBankFilesByBankId.get(lastBankId) ?? [];
+    return files.length >= 1;
+  }, [session?.selectedBanks, existingBankFilesByBankId]);
+
+  const step1CanProceed = useMemo(() => {
+    if (!session || session.selectedBanks.length === 0) return false;
+    return session.selectedBanks.every(
+      (id) => (existingBankFilesByBankId.get(id)?.length ?? 0) >= 1,
+    );
+  }, [session?.selectedBanks, existingBankFilesByBankId]);
+
+  const step2CanProceed = useMemo(() => {
+    if (!session?.reliefDocumentStatus?.length) return true;
+    return session.reliefDocumentStatus.every(
+      (r) => (existingReliefFilesByDeductionId.get(r.deductionId)?.length ?? 0) >= 1,
+    );
+  }, [session?.reliefDocumentStatus, existingReliefFilesByDeductionId]);
+
+  const banksNotYetAdded = useMemo(() => {
+    if (!session?.banks) return [];
+    const selected = new Set(session.selectedBanks);
+    return session.banks.filter((b) => !selected.has(b.id));
+  }, [session?.banks, session?.selectedBanks]);
+
+  const filteredBanksNotYetAdded = useMemo(() => {
+    const q = bankSearchQuery.trim().toLowerCase();
+    if (!q) return banksNotYetAdded;
+    return banksNotYetAdded.filter((b) => b.name.toLowerCase().includes(q));
+  }, [banksNotYetAdded, bankSearchQuery]);
+
+  const handleAddBank = async (bankId: string) => {
+    if (!session || session.selectedBanks.includes(bankId)) return;
+    const next = [...session.selectedBanks, bankId];
+    setSavingBanks(true);
+    setSession((prev) => (prev ? { ...prev, selectedBanks: next } : prev));
+    setBankDropdownOpen(false);
+    setBankSearchQuery('');
+    try {
+      await fetchJson<{ success: boolean; data: { selectedBanks: string[] } }>(
+        `${API_BASE_URL}/uploads/${session.uploadId}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ selectedBanks: next }),
+        },
+      );
+    } catch {
+      try {
+        const data = await fetchJson<{ success: boolean; data: UploadSession }>(
+          `${API_BASE_URL}/uploads/${uploadId}`,
+        );
+        setSession(data.data);
+      } catch {
+        /* noop */
+      }
+    } finally {
+      setSavingBanks(false);
+    }
+  };
+
   const title = useMemo(() => {
     if (!session) return 'Secure document upload';
     if (session.type === 'bank_statements') return 'Securely upload your bank statements';
@@ -274,87 +365,108 @@ export default function UploadPage({ params }: PageProps) {
 
   const isExpired = sessionError !== null;
 
+  const showIntroCard = step === 0 || loadingSession || isExpired;
+
   return (
     <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center px-4 py-10">
       <div className="max-w-md w-full">
         <div className="w-full rounded-3xl bg-white shadow-md border border-gray-100 px-7 py-8">
-          <div className="flex flex-col items-center text-center mb-6">
-            <div className="mb-3 flex items-center justify-center gap-2">
+          {/* Full intro (title, Trust/Private/Secure) only on initial card or loading/error */}
+          {showIntroCard && (
+            <>
+              <div className="flex flex-col items-center text-center mb-6">
+                <div className="mb-3 flex items-center justify-center gap-2">
+                  <Image
+                    src="/favicon.svg"
+                    alt="Taxable"
+                    width={28}
+                    height={28}
+                    className="rounded-full"
+                  />
+                  <span className="text-[12px] font-semibold px-2 py-0.5 rounded-full bg-[#F3F4FF] text-[#003787] uppercase tracking-wide">
+                    TEST MODE
+                  </span>
+                </div>
+
+                <p className="text-xs font-semibold text-taxable-gray mb-1">
+                  Secure upload powered by <span className="text-[#003787]">Taxable</span>
+                </p>
+
+                <h1 className="text-[22px] font-bold text-taxable-dark leading-snug mb-2">
+                  {title}
+                </h1>
+                <p className="text-[13px] text-taxable-gray font-medium leading-relaxed">
+                  {subtitle}
+                </p>
+              </div>
+
+              <div className="space-y-3 text-left mb-6">
+                <div className="flex gap-3">
+                  <div className="mt-0.5 shrink-0">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#E0ECFF] text-[#003787]">
+                      <ShieldCheck className="h-4 w-4" strokeWidth={2.25} />
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-semibold text-taxable-dark mb-0.5">
+                      Trust
+                    </p>
+                    <p className="text-[12px] text-taxable-gray leading-relaxed">
+                      Thousands of Nigerians use Taxable to handle their tax documents securely.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <div className="mt-0.5 shrink-0">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#E6F9F3] text-[#047857]">
+                      <EyeOff className="h-4 w-4" strokeWidth={2.25} />
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-semibold text-taxable-dark mb-0.5">
+                      Private
+                    </p>
+                    <p className="text-[12px] text-taxable-gray leading-relaxed">
+                      Your files are encrypted and only used to prepare your tax report. We never
+                      share them without your consent.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <div className="mt-0.5 shrink-0">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#EFF6FF] text-[#1D4ED8]">
+                      <Lock className="h-4 w-4" strokeWidth={2.25} />
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-semibold text-taxable-dark mb-0.5">
+                      Secure
+                    </p>
+                    <p className="text-[12px] text-taxable-gray leading-relaxed">
+                      Industry-standard AES-256 encryption and strict access controls keep your
+                      data safe.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Compact header for step 1 and 2 cards */}
+          {!showIntroCard && session && (
+            <div className="flex items-center gap-2 mb-4">
               <Image
                 src="/favicon.svg"
                 alt="Taxable"
-                width={28}
-                height={28}
-                className="rounded-full"
+                width={24}
+                height={24}
+                className="rounded-full shrink-0"
               />
-              <span className="text-[12px] font-semibold px-2 py-0.5 rounded-full bg-[#F3F4FF] text-[#003787] uppercase tracking-wide">
-                TEST MODE
-              </span>
+              <span className="text-[14px] font-semibold text-taxable-dark">Taxable</span>
             </div>
-
-            <p className="text-xs font-semibold text-taxable-gray mb-1">
-              Secure upload powered by <span className="text-[#003787]">Taxable</span>
-            </p>
-
-            <h1 className="text-[22px] font-bold text-taxable-dark leading-snug mb-2">
-              {title}
-            </h1>
-            <p className="text-[13px] text-taxable-gray font-medium leading-relaxed">
-              {subtitle}
-            </p>
-          </div>
-
-          <div className="space-y-3 text-left mb-6">
-            <div className="flex gap-3">
-              <div className="mt-0.5">
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#E0ECFF] text-[#003787] text-xs font-bold">
-                  T
-                </span>
-              </div>
-              <div>
-                <p className="text-[13px] font-semibold text-taxable-dark mb-0.5">
-                  Trust
-                </p>
-                <p className="text-[12px] text-taxable-gray leading-relaxed">
-                  Thousands of Nigerians use Taxable to handle their tax documents securely.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <div className="mt-0.5">
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#E6F9F3] text-[#047857] text-xs font-bold">
-                  P
-                </span>
-              </div>
-              <div>
-                <p className="text-[13px] font-semibold text-taxable-dark mb-0.5">
-                  Private
-                </p>
-                <p className="text-[12px] text-taxable-gray leading-relaxed">
-                  Your files are encrypted and only used to prepare your tax report. We never
-                  share them without your consent.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <div className="mt-0.5">
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#EFF6FF] text-[#1D4ED8] text-xs font-bold">
-                  S
-                </span>
-              </div>
-              <div>
-                <p className="text-[13px] font-semibold text-taxable-dark mb-0.5">
-                  Secure
-                </p>
-                <p className="text-[12px] text-taxable-gray leading-relaxed">
-                  Industry-standard AES-256 encryption and strict access controls keep your
-                  data safe.
-                </p>
-              </div>
-            </div>
-          </div>
+          )}
 
           {loadingSession && (
             <div className="rounded-2xl border border-dashed border-gray-200 bg-[#F9FAFB] px-4 py-6 text-center text-[13px] text-taxable-gray">
@@ -374,122 +486,331 @@ export default function UploadPage({ params }: PageProps) {
             </div>
           )}
 
-          {!loadingSession && session && !isExpired && (
+          {/* Step 0: Intro card — no bank or relief content */}
+          {!loadingSession && session && !isExpired && step === 0 && (
             <>
-              <section className="mb-5">
-                <h2 className="text-[14px] font-semibold text-taxable-dark mb-2">
-                  Bank statements
-                </h2>
-                <p className="text-[12px] text-taxable-gray mb-3">
-                  Select the banks you use, then upload your statements for each one. You can
-                  choose more than one bank.
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-xl bg-[#003787] px-4 text-[14px] font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+              >
+                Link documents
+              </button>
+              <p className="mt-3 text-center text-[11px] text-taxable-gray leading-relaxed">
+                By continuing, you agree that Taxable may securely store and process your
+                documents for the purpose of preparing your tax report. You can request deletion
+                of your files at any time.
+              </p>
+            </>
+          )}
+
+          {/* Step 1: Bank statements card only */}
+          {!loadingSession && session && !isExpired && step === 1 && (
+            <>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-[12px] text-taxable-gray font-medium">
+                  {hasReliefStep ? 'Step 1 of 2' : 'Step 1'}
                 </p>
+                <button
+                  type="button"
+                  onClick={() => setStep(0)}
+                  className="text-[12px] font-semibold text-[#003787] hover:underline"
+                >
+                  Back
+                </button>
+              </div>
+              <h2 className="text-[18px] font-bold text-taxable-dark mb-1">
+                Bank statements
+              </h2>
+              <p className="text-[13px] text-taxable-gray mb-4">
+                Select a bank, upload at least one statement, then add another bank if you have more.
+              </p>
 
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {session.banks.map((bank) => {
-                    const isSelected = session.selectedBanks.includes(bank.id);
-                    return (
-                      <button
-                        key={bank.id}
-                        type="button"
-                        onClick={() => handleToggleBank(bank.id)}
-                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors ${
-                          isSelected
-                            ? 'bg-[#003787] border-[#003787] text-white'
-                            : 'bg-white border-gray-200 text-taxable-dark hover:bg-gray-50'
-                        }`}
-                        disabled={savingBanks}
-                      >
-                        {bank.logo && (
-                          <span className="relative h-4 w-4 overflow-hidden rounded-full bg-white">
-                            <Image
-                              src={bank.logo}
-                              alt={bank.name}
-                              fill
-                              sizes="16px"
-                              className="object-contain"
-                            />
-                          </span>
-                        )}
-                        <span>{bank.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+              <section className="mb-6">
+                {session.selectedBanks.length === 0 ? (
+                  <div className="relative" ref={bankDropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBankDropdownOpen((o) => !o);
+                        if (!bankDropdownOpen) setBankSearchQuery('');
+                      }}
+                      className="flex w-full items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-left shadow-sm hover:border-gray-300 transition-colors"
+                    >
+                      <span className="text-[13px] text-taxable-dark truncate">
+                        Select your bank
+                      </span>
+                      <ChevronDown
+                        className={`h-4 w-4 shrink-0 text-taxable-gray transition-transform ${bankDropdownOpen ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+                    {bankDropdownOpen && (
+                      <div className="absolute top-full left-0 right-0 z-10 mt-1 rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden">
+                        <div className="flex items-center gap-2 border-b border-gray-100 px-3 py-2 bg-[#FAFAFA]">
+                          <Search className="h-4 w-4 text-taxable-gray shrink-0" />
+                          <input
+                            type="text"
+                            value={bankSearchQuery}
+                            onChange={(e) => setBankSearchQuery(e.target.value)}
+                            placeholder="Search banks..."
+                            className="flex-1 min-w-0 bg-transparent text-[13px] text-taxable-dark placeholder:text-taxable-gray outline-none py-1"
+                          />
+                        </div>
+                        <div className="max-h-56 overflow-y-auto py-1">
+                          {filteredBanksNotYetAdded.length === 0 ? (
+                            <p className="px-3 py-4 text-[12px] text-taxable-gray text-center">
+                              No banks match your search.
+                            </p>
+                          ) : (
+                            filteredBanksNotYetAdded.map((bank) => (
+                              <button
+                                key={bank.id}
+                                type="button"
+                                onClick={() => handleAddBank(bank.id)}
+                                disabled={savingBanks}
+                                className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-[#F5F5F5] transition-colors"
+                              >
+                                {bank.logo ? (
+                                  <span className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full bg-white border border-gray-100">
+                                    <Image
+                                      src={bank.logo}
+                                      alt=""
+                                      width={24}
+                                      height={24}
+                                      className="object-contain"
+                                    />
+                                  </span>
+                                ) : (
+                                  <span className="h-6 w-6 shrink-0 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-semibold text-taxable-gray">
+                                    {bank.name.charAt(0)}
+                                  </span>
+                                )}
+                                <span className="flex-1 text-[13px] font-medium text-taxable-dark truncate">
+                                  {bank.name}
+                                </span>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                        <div className="border-t border-gray-100 px-3 py-2 bg-[#FAFAFA]">
+                          <button
+                            type="button"
+                            onClick={() => setBankDropdownOpen(false)}
+                            className="w-full rounded-lg border border-gray-200 py-2 text-[12px] font-semibold text-taxable-dark hover:bg-gray-50"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-4">
+                      {session.selectedBanks.map((bankId) => {
+                        const bank = banksById.get(bankId);
+                        const existingFiles = existingBankFilesByBankId.get(bankId) || [];
 
-                {session.selectedBanks.length > 0 && (
-                  <div className="space-y-4">
-                    {session.selectedBanks.map((bankId) => {
-                      const bank = banksById.get(bankId);
-                      const existingFiles = existingBankFilesByBankId.get(bankId) || [];
-
-                      return (
-                        <div
-                          key={bankId}
-                          className="rounded-2xl border border-gray-100 bg-[#F9FAFB] px-4 py-3"
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              {bank?.logo && (
-                                <span className="relative h-6 w-6 overflow-hidden rounded-full bg-white">
-                                  <Image
-                                    src={bank.logo}
-                                    alt={bank.name}
-                                    fill
-                                    sizes="24px"
-                                    className="object-contain"
-                                  />
+                        return (
+                          <div
+                            key={bankId}
+                            className="rounded-2xl border border-gray-100 bg-[#F9FAFB] px-4 py-3"
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                {bank?.logo && (
+                                  <span className="relative h-6 w-6 overflow-hidden rounded-full bg-white shrink-0">
+                                    <Image
+                                      src={bank.logo}
+                                      alt=""
+                                      width={24}
+                                      height={24}
+                                      className="object-contain"
+                                    />
+                                  </span>
+                                )}
+                                <p className="text-[13px] font-semibold text-taxable-dark">
+                                  {bank?.name || bankId}
+                                </p>
+                              </div>
+                              {existingFiles.length > 0 ? (
+                                <span className="rounded-full bg-[#E6F9F3] px-2 py-0.5 text-[11px] font-semibold text-[#047857]">
+                                  {existingFiles.length} file
+                                  {existingFiles.length > 1 ? 's' : ''} uploaded
+                                </span>
+                              ) : (
+                                <span className="rounded-full bg-[#FFF7ED] px-2 py-0.5 text-[11px] font-semibold text-[#C05621]">
+                                  Upload required
                                 </span>
                               )}
-                              <p className="text-[13px] font-semibold text-taxable-dark">
-                                {bank?.name || bankId}
-                              </p>
                             </div>
-                            {existingFiles.length > 0 && (
-                              <span className="rounded-full bg-[#E6F9F3] px-2 py-0.5 text-[11px] font-semibold text-[#047857]">
-                                {existingFiles.length} file
-                                {existingFiles.length > 1 ? 's' : ''} uploaded
-                              </span>
-                            )}
-                          </div>
 
-                          <label className="flex cursor-pointer flex-col items-start gap-1 rounded-xl border border-dashed border-gray-300 bg-white px-3 py-3 text-left hover:border-[#003787]">
-                            <span className="text-[12px] font-semibold text-taxable-dark">
-                              Upload bank statement
-                            </span>
-                            <span className="text-[11px] text-taxable-gray">
-                              PDF or image files, up to 20MB each.
-                            </span>
-                            <input
-                              type="file"
-                              multiple
-                              accept={allowedFileTypes}
-                              className="mt-1 text-[11px]"
-                              onChange={(event) =>
-                                handleUpload(event.target.files, 'bank_statement', {
-                                  bankId,
-                                })
-                              }
-                            />
-                          </label>
-                        </div>
-                      );
-                    })}
-                  </div>
+                            <label className="flex cursor-pointer flex-col items-start gap-1 rounded-xl border border-dashed border-gray-300 bg-white px-3 py-3 text-left hover:border-[#003787] transition-colors">
+                              <span className="text-[12px] font-semibold text-taxable-dark">
+                                Upload bank statement
+                              </span>
+                              <span className="text-[11px] text-taxable-gray">
+                                PDF or image files, up to 20MB each.
+                              </span>
+                              <input
+                                type="file"
+                                multiple
+                                accept={allowedFileTypes}
+                                className="mt-1 text-[11px]"
+                                onChange={(event) =>
+                                  handleUpload(event.target.files, 'bank_statement', {
+                                    bankId,
+                                  })
+                                }
+                              />
+                            </label>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {canAddAnotherBank ? (
+                      <div className="relative mt-4" ref={bankDropdownRef}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBankDropdownOpen((o) => !o);
+                            if (!bankDropdownOpen) setBankSearchQuery('');
+                          }}
+                          className="flex w-full items-center justify-between gap-2 rounded-xl border border-dashed border-[#003787] bg-[#F3F4FF] px-3 py-2.5 text-left hover:bg-[#E8EAFF] transition-colors"
+                        >
+                          <span className="text-[13px] font-semibold text-[#003787]">
+                            I have another bank
+                          </span>
+                          <ChevronDown
+                            className={`h-4 w-4 shrink-0 text-[#003787] transition-transform ${bankDropdownOpen ? 'rotate-180' : ''}`}
+                          />
+                        </button>
+                        {bankDropdownOpen && (
+                          <div className="absolute top-full left-0 right-0 z-10 mt-1 rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden">
+                            <div className="flex items-center gap-2 border-b border-gray-100 px-3 py-2 bg-[#FAFAFA]">
+                              <Search className="h-4 w-4 text-taxable-gray shrink-0" />
+                              <input
+                                type="text"
+                                value={bankSearchQuery}
+                                onChange={(e) => setBankSearchQuery(e.target.value)}
+                                placeholder="Search banks..."
+                                className="flex-1 min-w-0 bg-transparent text-[13px] text-taxable-dark placeholder:text-taxable-gray outline-none py-1"
+                              />
+                            </div>
+                            <div className="max-h-56 overflow-y-auto py-1">
+                              {filteredBanksNotYetAdded.length === 0 ? (
+                                <p className="px-3 py-4 text-[12px] text-taxable-gray text-center">
+                                  No more banks to add.
+                                </p>
+                              ) : (
+                                filteredBanksNotYetAdded.map((bank) => (
+                                  <button
+                                    key={bank.id}
+                                    type="button"
+                                    onClick={() => handleAddBank(bank.id)}
+                                    disabled={savingBanks}
+                                    className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-[#F5F5F5] transition-colors"
+                                  >
+                                    {bank.logo ? (
+                                      <span className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full bg-white border border-gray-100">
+                                        <Image
+                                          src={bank.logo}
+                                          alt=""
+                                          width={24}
+                                          height={24}
+                                          className="object-contain"
+                                        />
+                                      </span>
+                                    ) : (
+                                      <span className="h-6 w-6 shrink-0 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-semibold text-taxable-gray">
+                                        {bank.name.charAt(0)}
+                                      </span>
+                                    )}
+                                    <span className="flex-1 text-[13px] font-medium text-taxable-dark truncate">
+                                      {bank.name}
+                                    </span>
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                            <div className="border-t border-gray-100 px-3 py-2 bg-[#FAFAFA]">
+                              <button
+                                type="button"
+                                onClick={() => setBankDropdownOpen(false)}
+                                className="w-full rounded-lg border border-gray-200 py-2 text-[12px] font-semibold text-taxable-dark hover:bg-gray-50"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="mt-4 text-[12px] text-taxable-gray">
+                        Upload at least one statement for{' '}
+                        <span className="font-semibold text-taxable-dark">
+                          {banksById.get(session.selectedBanks[session.selectedBanks.length - 1])?.name ?? 'your bank'}
+                        </span>{' '}
+                        to add another bank.
+                      </p>
+                    )}
+                  </>
                 )}
               </section>
 
-              {session.reliefDocumentStatus && session.reliefDocumentStatus.length > 0 && (
-                <section className="mb-4">
-                  <h2 className="text-[14px] font-semibold text-taxable-dark mb-2">
-                    Relief documents
-                  </h2>
-                  <p className="text-[12px] text-taxable-gray mb-3">
-                    If you claimed any tax reliefs, upload the supporting documents for each
-                    one so our team can validate them.
-                  </p>
+              {!step1CanProceed && session.selectedBanks.length > 0 && (
+                <p className="mb-2 text-[12px] text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+                  Upload at least one statement for each bank above before continuing.
+                </p>
+              )}
+              <div className="flex gap-3 mt-6">
+                {hasReliefStep ? (
+                  <button
+                    type="button"
+                    onClick={() => setStep(2)}
+                    disabled={!step1CanProceed}
+                    className="flex-1 inline-flex h-11 items-center justify-center rounded-xl bg-[#003787] px-4 text-[14px] font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setStep(3)}
+                    disabled={!step1CanProceed}
+                    className="flex-1 inline-flex h-11 items-center justify-center rounded-xl bg-[#003787] px-4 text-[14px] font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Done
+                  </button>
+                )}
+              </div>
+            </>
+          )}
 
-                  <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+          {/* Step 2: Relief documents card only */}
+          {!loadingSession && session && !isExpired && step === 2 && (
+            <>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-[12px] text-taxable-gray font-medium">
+                  Step 2 of 2
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="text-[12px] font-semibold text-[#003787] hover:underline"
+                >
+                  Back
+                </button>
+              </div>
+              <h2 className="text-[18px] font-bold text-taxable-dark mb-1">
+                Relief documents
+              </h2>
+              <p className="text-[13px] text-taxable-gray mb-4">
+                If you claimed tax reliefs, upload supporting documents for each so we can validate them.
+              </p>
+
+              <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
                     {session.reliefDocumentStatus.map((relief) => {
                       const files =
                         existingReliefFilesByDeductionId.get(relief.deductionId) || [];
@@ -510,7 +831,7 @@ export default function UploadPage({ params }: PageProps) {
                               </p>
                             </div>
                             <span
-                              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0 ${
                                 relief.hasSupportingDocument
                                   ? 'bg-[#E6F9F3] text-[#047857]'
                                   : 'bg-[#FFF7ED] text-[#C05621]'
@@ -528,7 +849,7 @@ export default function UploadPage({ params }: PageProps) {
                             </p>
                           )}
 
-                          <label className="flex cursor-pointer flex-col items-start gap-1 rounded-xl border border-dashed border-gray-300 bg-white px-3 py-3 text-left hover:border-[#003787]">
+                          <label className="flex cursor-pointer flex-col items-start gap-1 rounded-xl border border-dashed border-gray-300 bg-white px-3 py-3 text-left hover:border-[#003787] transition-colors">
                             <span className="text-[12px] font-semibold text-taxable-dark">
                               Upload supporting document
                             </span>
@@ -551,37 +872,59 @@ export default function UploadPage({ params }: PageProps) {
                         </div>
                       );
                     })}
-                  </div>
-                </section>
-              )}
+              </div>
 
-              {uploadMessage && (
-                <p className="mt-2 text-center text-[11px] font-medium text-taxable-gray">
-                  {uploadMessage}
+              {!step2CanProceed && (
+                <p className="mt-4 mb-2 text-[12px] text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+                  Upload at least one supporting document for each relief above before finishing.
                 </p>
               )}
-
-              {uploadingFileId && (
-                <p className="mt-1 text-center text-[11px] text-taxable-gray">
-                  Uploading file&hellip; please keep this page open.
-                </p>
-              )}
+              <button
+                type="button"
+                onClick={() => setStep(3)}
+                disabled={!step2CanProceed}
+                className="mt-6 w-full inline-flex h-11 items-center justify-center rounded-xl bg-[#003787] px-4 text-[14px] font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Done
+              </button>
             </>
           )}
 
-          <button
-            type="button"
-            disabled={loadingSession || isExpired}
-            className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-xl bg-[#003787] px-4 text-[14px] font-semibold text-white shadow-sm transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isExpired ? 'Upload link unavailable' : 'Link documents'}
-          </button>
+          {/* Step 3: Success — data collected */}
+          {!loadingSession && session && !isExpired && step === 3 && (
+            <div className="flex flex-col items-center text-center py-6">
+              <span className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-[#E6F9F3] text-[#047857] mb-4">
+                <CheckCircle2 className="h-10 w-10" strokeWidth={2} />
+              </span>
+              <h2 className="text-[20px] font-bold text-taxable-dark mb-2">
+                Data collected
+              </h2>
+              <p className="text-[14px] text-taxable-gray font-medium leading-relaxed max-w-[280px] mb-6">
+                Your documents have been received. We&apos;ll use them to prepare your tax report. You can close this page.
+              </p>
+              <a
+                href="https://gettaxable.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-[#003787] px-5 text-[14px] font-semibold text-white hover:opacity-90 transition-opacity"
+              >
+                Go to gettaxable.com
+              </a>
+            </div>
+          )}
 
-          <p className="mt-3 text-center text-[11px] text-taxable-gray leading-relaxed">
-            By continuing, you agree that Taxable may securely store and process your
-            documents for the purpose of preparing your tax report. You can request deletion
-            of your files at any time.
-          </p>
+          {(step === 1 || step === 2) && (uploadMessage || uploadingFileId) && (
+            <div className="mt-3 text-center">
+              {uploadMessage && (
+                <p className="text-[11px] font-medium text-taxable-gray">{uploadMessage}</p>
+              )}
+              {uploadingFileId && (
+                <p className="mt-0.5 text-[11px] text-taxable-gray">
+                  Uploading file&hellip; please keep this page open.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -610,6 +610,8 @@ export default function UploadPage({ params }: PageProps) {
                       {session.selectedBanks.map((bankId) => {
                         const bank = banksById.get(bankId);
                         const existingFiles = existingBankFilesByBankId.get(bankId) || [];
+                        const isUploadingThisBank =
+                          uploadingFileId?.startsWith(`bank_statement-${bankId}-`) ?? false;
 
                         return (
                           <div
@@ -633,7 +635,11 @@ export default function UploadPage({ params }: PageProps) {
                                   {bank?.name || bankId}
                                 </p>
                               </div>
-                              {existingFiles.length > 0 ? (
+                              {isUploadingThisBank ? (
+                                <span className="rounded-full bg-[#EFF6FF] px-2 py-0.5 text-[11px] font-semibold text-[#1D4ED8]">
+                                  Uploading&hellip;
+                                </span>
+                              ) : existingFiles.length > 0 ? (
                                 <span className="rounded-full bg-[#E6F9F3] px-2 py-0.5 text-[11px] font-semibold text-[#047857]">
                                   {existingFiles.length} file
                                   {existingFiles.length > 1 ? 's' : ''} uploaded
@@ -657,6 +663,7 @@ export default function UploadPage({ params }: PageProps) {
                                 multiple
                                 accept={allowedFileTypes}
                                 className="mt-1 text-[11px]"
+                                disabled={isUploadingThisBank}
                                 onChange={(event) =>
                                   handleUpload(event.target.files, 'bank_statement', {
                                     bankId,
@@ -816,6 +823,9 @@ export default function UploadPage({ params }: PageProps) {
                         existingReliefFilesByDeductionId.get(relief.deductionId) || [];
                       const uploadKey = `relief-${relief.deductionId}`;
 
+                      const isUploadingThisRelief =
+                        uploadingFileId?.startsWith(`relief-${relief.deductionId}-`) ?? false;
+
                       return (
                         <div
                           key={relief.deductionId}
@@ -832,18 +842,22 @@ export default function UploadPage({ params }: PageProps) {
                             </div>
                             <span
                               className={`rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0 ${
-                                relief.hasSupportingDocument
+                                isUploadingThisRelief
+                                  ? 'bg-[#EFF6FF] text-[#1D4ED8]'
+                                  : relief.hasSupportingDocument
                                   ? 'bg-[#E6F9F3] text-[#047857]'
                                   : 'bg-[#FFF7ED] text-[#C05621]'
                               }`}
                             >
-                              {relief.hasSupportingDocument
+                              {isUploadingThisRelief
+                                ? 'Uploading\u2026'
+                                : relief.hasSupportingDocument
                                 ? 'Document on file'
                                 : 'Document required'}
                             </span>
                           </div>
 
-                          {files.length > 0 && (
+                          {files.length > 0 && !isUploadingThisRelief && (
                             <p className="mb-1 text-[11px] font-medium text-taxable-gray">
                               {files.length} file{files.length > 1 ? 's' : ''} uploaded
                             </p>
@@ -862,6 +876,7 @@ export default function UploadPage({ params }: PageProps) {
                               multiple
                               accept={allowedFileTypes}
                               className="mt-1 text-[11px]"
+                              disabled={isUploadingThisRelief}
                               onChange={(event) =>
                                 handleUpload(event.target.files, 'relief', {
                                   deductionId: relief.deductionId,

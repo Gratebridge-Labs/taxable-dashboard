@@ -811,7 +811,7 @@ export default function UploadPage({ params }: PageProps) {
               </p>
 
               <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
-                    {session.reliefDocumentStatus.map((relief) => {
+                    {(session.reliefDocumentStatus ?? []).map((relief) => {
                       const files =
                         existingReliefFilesByDeductionId.get(relief.deductionId) || [];
                       const uploadKey = `relief-${relief.deductionId}`;

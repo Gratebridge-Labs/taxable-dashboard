@@ -17,7 +17,7 @@ export default function PITDetails() {
     const [incomeSubTab, setIncomeSubTab] = useState<'income' | 'deductions'>('income');
 
     const renderSidebar = () => (
-        <div className="w-[240px] flex-shrink-0 flex flex-col gap-6">
+        <div className="w-[240px] flex-shrink-0 flex flex-col gap-6 sticky top-24">
             <div>
                 <p className="text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-2 px-1">Select</p>
                 <div className="space-y-0.5">
@@ -118,7 +118,7 @@ export default function PITDetails() {
 
                         {/* Title */}
                         <div>
-                            <h1 className="text-[22px] font-bold text-[#0C0C0E] mb-1.5">Gideon Akin, 2026 Individual Tax</h1>
+                            <h1 className="text-lg font-bold text-[#0C0C0E] mb-1.5">Gideon Akin, 2026 Individual Tax</h1>
                             <div className="flex items-center gap-2">
                                 <span className="flex items-center gap-1 text-[12px] font-bold text-[#16A34A]">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
@@ -131,19 +131,19 @@ export default function PITDetails() {
                     </div>
 
                     <div className="text-right">
-                        <h2 className="text-[20px] font-bold text-[#0C0C0E]">₦0 (no data yet)</h2>
+                        <h2 className="text-base font-bold text-[#0C0C0E]">₦0 (no data yet)</h2>
                         <p className="text-[13px] text-[#6B7280] font-medium">Estimated Net Tax Payable</p>
                     </div>
                 </div>
 
-                <div className="flex items-start gap-8 mt-8">
+                <div className="flex items-start justify-center gap-8 mt-8">
                     {renderSidebar()}
 
                     <div className="flex-1 min-w-0">
                         {activeSection === 'personal-info' && (
-                            <div className="flex items-start gap-8">
+                            <div className="flex items-start justify-center gap-8">
                                 <div className="flex-1 space-y-7 max-w-[480px]">
-                                    <h2 className="text-[18px] font-bold text-[#0C0C0E]">Personal Information</h2>
+                                    <h2 className="text-base font-bold text-[#0C0C0E]">Personal Information</h2>
 
                                     <div>
                                         <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#374151] mb-2">
@@ -241,10 +241,10 @@ export default function PITDetails() {
                         )}
 
                         {activeSection === 'tax-reliefs' && (
-                            <div className="flex items-start gap-8">
+                            <div className="flex items-start justify-center gap-8">
                                 <div className="flex-1 space-y-8 max-w-[480px]">
                                     <div>
-                                        <h2 className="text-[18px] font-bold text-[#0C0C0E] mb-5">Rent Relief</h2>
+                                        <h2 className="text-base font-bold text-[#0C0C0E] mb-5">Rent Relief</h2>
                                         <div className="space-y-5">
                                             <div>
                                                 <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#374151] mb-2">
@@ -281,7 +281,7 @@ export default function PITDetails() {
                                     </div>
 
                                     <div>
-                                        <h2 className="text-[18px] font-bold text-[#0C0C0E] mb-5">Statutory Deductions</h2>
+                                        <h2 className="text-base font-bold text-[#0C0C0E] mb-5">Statutory Deductions</h2>
 
                                         <div className="bg-[#FAFAFA] border border-gray-100/60 rounded-2xl p-5 space-y-5 mb-5">
                                             <div>
@@ -418,7 +418,7 @@ export default function PITDetails() {
                         {activeSection === 'income-deductions' && (
                             <div className="flex gap-10">
 
-                                <div className="w-[180px] flex-shrink-0 space-y-4">
+                                <div className="w-[180px] flex-shrink-0 space-y-4 sticky top-24">
                                     <div className="flex items-center gap-3 mb-6">
                                         <span className={`text-[13px] font-semibold ${periodMode === 'monthly' ? 'text-[#0C0C0E]' : 'text-gray-400'}`}>Monthly</span>
                                         <button
@@ -495,7 +495,7 @@ export default function PITDetails() {
                                     {incomeSubTab === 'income' && (
                                         <div className="space-y-10">
                                             <div>
-                                                <h3 className="text-[16px] font-bold text-[#0C0C0E] mb-4">Employment Income</h3>
+                                                <h3 className="text-sm font-bold text-[#0C0C0E] mb-4">Employment Income</h3>
                                                 <div className="bg-[#FAFAFA] border border-gray-100/60 rounded-2xl p-5 grid grid-cols-1 md:grid-cols-3 gap-5">
                                                     <div>
                                                         <label className="flex items-center gap-1.5 text-[12px] font-semibold text-[#6B7280] mb-2">
@@ -519,7 +519,7 @@ export default function PITDetails() {
                                             </div>
 
                                             <div>
-                                                <h3 className="text-[16px] font-bold text-[#0C0C0E] mb-4">Investment Income</h3>
+                                                <h3 className="text-sm font-bold text-[#0C0C0E] mb-4">Investment Income</h3>
                                                 <div className="bg-[#FAFAFA] border border-gray-100/60 rounded-2xl p-5 space-y-5">
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                                         <div>
@@ -547,7 +547,7 @@ export default function PITDetails() {
                                             </div>
 
                                             <div>
-                                                <h3 className="text-[16px] font-bold text-[#0C0C0E] mb-4">Other Income</h3>
+                                                <h3 className="text-sm font-bold text-[#0C0C0E] mb-4">Other Income</h3>
                                                 <div className="bg-[#FAFAFA] border border-gray-100/60 rounded-2xl p-5 grid grid-cols-1 md:grid-cols-3 gap-5">
                                                     <div>
                                                         <label className="flex items-center gap-1.5 text-[12px] font-semibold text-[#6B7280] mb-2">

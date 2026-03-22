@@ -243,9 +243,9 @@ export default function Profile() {
                     </div>
                 </div>
 
-                <div className="flex flex-col lg:flex-row gap-10 lg:gap-16">
+                <div className="flex flex-col lg:flex-row lg:justify-center gap-10 lg:gap-16">
                     {/* Sidebar */}
-                    <div className="w-full lg:w-[303px] h-auto lg:h-[218px] bg-white rounded-[20px] border border-gray-100 p-3 shadow-sm flex flex-col shrink-0">
+                    <div className="w-full lg:w-[303px] h-auto lg:h-[218px] bg-white rounded-[20px] border border-gray-100 p-3 shadow-sm flex flex-col shrink-0 lg:sticky lg:top-24">
                         <h4 className="text-base font-medium text-taxable-dark mb-3 px-2">Select</h4>
                         <div className="flex flex-col gap-1 items-center">
                             {categories.map((category) => (
@@ -265,7 +265,7 @@ export default function Profile() {
                     </div>
 
                     {/* Main Settings Content */}
-                    <div className="flex-1 w-full max-w-full lg:max-w-[480px]">
+                    <div className="flex-1 w-full max-w-full lg:max-w-[480px] lg:mx-auto">
                         {activeSection === 'Personal Information' && (
                             <div className="animate-in fade-in duration-500">
                                 {/* Profile Image Upload */}

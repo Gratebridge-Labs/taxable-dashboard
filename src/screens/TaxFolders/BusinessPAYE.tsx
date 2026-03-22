@@ -223,7 +223,7 @@ export default function BusinessPAYE() {
 
                 {/* Page title + tab toggle */}
                 <div className="flex items-center justify-between mb-6">
-                    <h1 className="text-[22px] font-bold text-[#0C0C0E]">Pay As You Earn (PAYE)</h1>
+                    <h1 className="text-lg font-bold text-[#0C0C0E]">Pay As You Earn (PAYE)</h1>
                     <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden bg-white">
                         <button
                             onClick={() => { setView('monthly'); setStep('method'); }}
@@ -466,7 +466,7 @@ export default function BusinessPAYE() {
                     return (
                         <div className="max-w-[680px] mx-auto">
                             {/* Title */}
-                            <h2 className="text-[20px] font-bold text-[#0C0C0E] mb-1">PAYE · Annual Returns (2026)</h2>
+                            <h2 className="text-base font-bold text-[#0C0C0E] mb-1">PAYE · Annual Returns (2026)</h2>
                             <p className="text-[13px] text-[#6B7280] font-medium mb-6">Your annual PAYE reconciliation is ready</p>
 
                             {/* Summary bullets */}
@@ -602,11 +602,11 @@ export default function BusinessPAYE() {
                                                 <div className="flex gap-8">
                                                     <div>
                                                         <p className="text-[11px] font-semibold text-[#6B7280] mb-0.5">Total Gross</p>
-                                                        <p className="text-[18px] font-bold text-[#0C0C0E]">{fmtN(totalGrossPayroll)}</p>
+                                                        <p className="text-base font-bold text-[#0C0C0E]">{fmtN(totalGrossPayroll)}</p>
                                                     </div>
                                                     <div>
                                                         <p className="text-[11px] font-semibold text-[#6B7280] mb-0.5">PAYE Remitted</p>
-                                                        <p className="text-[18px] font-bold text-[#0C0C0E]">{fmtN(totalAnnualPAYE)}</p>
+                                                        <p className="text-base font-bold text-[#0C0C0E]">{fmtN(totalAnnualPAYE)}</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-4 text-[12px] font-bold text-[#16A34A]">

@@ -51,7 +51,7 @@ const BreakdownTable = ({ title, rows, totalLabel, totalValue }: { title: string
             ))}
             <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
                 <span className="text-[15px] text-taxable-gray font-bold">{totalLabel}</span>
-                <span className="text-[18px] text-taxable-dark font-extrabold">{totalValue}</span>
+                <span className="text-base text-taxable-dark font-extrabold">{totalValue}</span>
             </div>
         </div>
     </div>
@@ -71,7 +71,7 @@ export default function ReviewAndFile({ data, onSaveAndContinue }: ReviewAndFile
             {/* Top Banner Section */}
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 mb-10">
                 <div>
-                    <h2 className="text-[22px] font-extrabold text-taxable-dark mb-1">Your Tax Filings Is Ready</h2>
+                    <h2 className="text-lg font-extrabold text-taxable-dark mb-1">Your Tax Filings Is Ready</h2>
                     <p className="text-[14px] text-taxable-gray font-medium">Based on the information you provided, you need to file:</p>
                 </div>
                 <button
@@ -119,7 +119,7 @@ export default function ReviewAndFile({ data, onSaveAndContinue }: ReviewAndFile
                     />
 
                     <div className="mt-20">
-                        <h3 className="text-[19px] font-extrabold text-taxable-dark mb-4">Apply Tax Brackets</h3>
+                        <h3 className="text-base font-extrabold text-taxable-dark mb-4">Apply Tax Brackets</h3>
                         <p className="text-[13px] text-taxable-gray font-medium leading-relaxed mb-8">
                             Nigeria uses progressive tax rates. Here's how your income is taxed across different brackets
                         </p>
@@ -134,7 +134,7 @@ export default function ReviewAndFile({ data, onSaveAndContinue }: ReviewAndFile
 
                         <div className="flex items-center justify-between py-6 border-t border-gray-100">
                             <span className="text-[15px] text-taxable-gray font-bold">Gross Tax</span>
-                            <span className="text-[18px] text-taxable-dark font-extrabold">₦1,024,640</span>
+                            <span className="text-base text-taxable-dark font-extrabold">₦1,024,640</span>
                         </div>
                     </div>
                 </div>
@@ -152,7 +152,7 @@ export default function ReviewAndFile({ data, onSaveAndContinue }: ReviewAndFile
                     />
 
                     <div className="mt-20">
-                        <h3 className="text-[19px] font-extrabold text-taxable-dark mb-4">Apply Personal Reliefs</h3>
+                        <h3 className="text-base font-extrabold text-taxable-dark mb-4">Apply Personal Reliefs</h3>
                         <p className="text-[13px] text-taxable-gray font-medium leading-relaxed mb-6">
                             Consolidated Relief Allowance (CRA) Higher of: 1% of gross income OR ₦200,000 + 20% of gross income
                         </p>
@@ -177,7 +177,7 @@ export default function ReviewAndFile({ data, onSaveAndContinue }: ReviewAndFile
 
                         <div className="flex items-center justify-between py-6 border-t border-gray-100 mt-5">
                             <span className="text-[15px] text-taxable-gray font-bold">Gross Tax</span>
-                            <span className="text-[18px] text-taxable-dark font-extrabold">₦1,024,640</span>
+                            <span className="text-base text-taxable-dark font-extrabold">₦1,024,640</span>
                         </div>
                     </div>
                 </div>

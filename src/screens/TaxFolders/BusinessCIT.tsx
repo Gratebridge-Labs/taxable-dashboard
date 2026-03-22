@@ -42,7 +42,7 @@ const LeftSidebar = ({
     ];
 
     return (
-        <div className="w-[220px] flex-shrink-0 flex flex-col gap-4">
+        <div className="w-[220px] flex-shrink-0 flex flex-col gap-4 sticky top-24">
             <div>
                 <div className="flex items-center justify-between mb-2 px-1">
                     <p className="text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider">Select</p>
@@ -337,7 +337,7 @@ export function BusinessCITContent({
                                 </div>
                             )}
 
-                            <h2 className="text-[18px] font-bold text-[#0C0C0E] mb-1">Quarterly Assessments (2026)</h2>
+                            <h2 className="text-base font-bold text-[#0C0C0E] mb-1">Quarterly Assessments (2026)</h2>
                             <p className="text-[13px] text-[#6B7280] font-medium mb-6">Pay your estimated CIT in quarterly installments</p>
 
                             {/* Summary */}
@@ -490,7 +490,7 @@ export function BusinessCITContent({
                 {/* ── Step 1: Method selection ── */}
                 {subSection === 'file-returns' && step === 'method' && (
                     <div className="max-w-[520px] mx-auto">
-                        <h2 className="text-[18px] font-bold text-[#0C0C0E] mb-1">Enter your company's financial performance</h2>
+                        <h2 className="text-base font-bold text-[#0C0C0E] mb-1">Enter your company's financial performance</h2>
                         <p className="text-[13px] text-[#6B7280] font-medium mb-6">How do you want to provide your financials?</p>
                         <div className="space-y-0 mb-8">
                             {ENTRY_OPTIONS.map(opt => (
@@ -512,7 +512,7 @@ export function BusinessCITContent({
                 {subSection === 'file-returns' && step === 'form' && (
                     <div className="max-w-[720px]">
                         {/* Revenue */}
-                        <h2 className="text-[16px] font-bold text-[#0C0C0E] mb-4">Revenue</h2>
+                        <h2 className="text-sm font-bold text-[#0C0C0E] mb-4">Revenue</h2>
                         <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-6">
                             <div className="grid grid-cols-3 gap-4">
                                 <Field label="Total revenue" tip="All revenue earned from your main business activities." value={totalRevenue} onChange={setTotalRevenue} />
@@ -522,7 +522,7 @@ export function BusinessCITContent({
                         </div>
 
                         {/* Expenses */}
-                        <h2 className="text-[16px] font-bold text-[#0C0C0E] mb-4">Expenses</h2>
+                        <h2 className="text-sm font-bold text-[#0C0C0E] mb-4">Expenses</h2>
                         <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-6">
                             <div className="grid grid-cols-2 gap-4">
                                 <Field label="Cost of goods sold (COGS)" tip="Direct costs of producing goods/services sold." value={cogs} onChange={setCogs} />
@@ -534,7 +534,7 @@ export function BusinessCITContent({
                         </div>
 
                         {/* Financial statements */}
-                        <h2 className="text-[16px] font-bold text-[#0C0C0E] mb-4">Financial statements</h2>
+                        <h2 className="text-sm font-bold text-[#0C0C0E] mb-4">Financial statements</h2>
                         <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-7">
                             <div className="flex items-center justify-between gap-4 p-3 border border-dashed border-gray-200 rounded-xl">
                                 <div className="flex items-center gap-2.5">
@@ -559,7 +559,7 @@ export function BusinessCITContent({
                 {/* ── Tax Adjustment ── */}
                 {subSection === 'tax-adjustment' && (
                     <div className="max-w-[620px]">
-                        <h2 className="text-[18px] font-bold text-[#0C0C0E] mb-1">Tax Adjustments</h2>
+                        <h2 className="text-base font-bold text-[#0C0C0E] mb-1">Tax Adjustments</h2>
                         <p className="text-[13px] text-[#6B7280] font-medium mb-6">Adjust your accounting profit to get taxable profit</p>
 
                         <div className="mb-4">
@@ -616,7 +616,7 @@ export function BusinessCITContent({
                 {/* ── WHT Credits ── */}
                 {subSection === 'wht-credits' && (
                     <div className="max-w-[620px]">
-                        <h2 className="text-[18px] font-bold text-[#0C0C0E] mb-1">WHT Credits</h2>
+                        <h2 className="text-base font-bold text-[#0C0C0E] mb-1">WHT Credits</h2>
                         <p className="text-[13px] text-[#6B7280] font-medium leading-relaxed mb-6">
                             WHT is tax your clients already paid to FIRS on your behalf.<br />
                             You can deduct this from your final tax bill.
@@ -754,7 +754,7 @@ export function BusinessCITContent({
                 {/* ── Review ── */}
                 {subSection === 'review' && (
                     <div className="max-w-[560px]">
-                        <h2 className="text-[18px] font-bold text-[#0C0C0E] mb-6">Your CIT calculation for 2025</h2>
+                        <h2 className="text-base font-bold text-[#0C0C0E] mb-6">Your CIT calculation for 2025</h2>
 
                         <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
                             <LedgerRow label="Revenue" value={fmt(totalRev)} />

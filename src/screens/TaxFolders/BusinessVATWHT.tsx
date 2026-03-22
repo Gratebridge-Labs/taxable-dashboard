@@ -57,7 +57,7 @@ const LeftSidebar = ({
     ];
 
     return (
-        <div className="w-[220px] flex-shrink-0 flex flex-col gap-4">
+        <div className="w-[220px] flex-shrink-0 flex flex-col gap-4 sticky top-24">
             <div>
                 <div className="flex items-center justify-between mb-2 px-1">
                     <p className="text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider">Select</p>
@@ -194,7 +194,7 @@ const defaultMonth = (): MonthVATData => ({
 const MonthTabCol = ({ activeMonth, setActiveMonth, filedMonths }: {
     activeMonth: number; setActiveMonth: (i: number) => void; filedMonths: Set<number>;
 }) => (
-    <div className="flex flex-col gap-0 w-[110px] flex-shrink-0">
+    <div className="flex flex-col gap-0 w-[110px] flex-shrink-0 sticky top-24">
         {MONTHS_SHORT.slice(0, 3).map((m, i) => {
             const filed = filedMonths.has(i);
             const isActive = i === activeMonth;
@@ -252,7 +252,7 @@ const WHTDeductionForm = ({ onSave, onCancel, initial }: {
 
     return (
         <div>
-            <h2 className="text-[18px] font-bold text-[#0C0C0E] mb-5">Add WHT Deduction</h2>
+            <h2 className="text-base font-bold text-[#0C0C0E] mb-5">Add WHT Deduction</h2>
 
             {/* Payee Details */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-4">
@@ -613,7 +613,7 @@ export function BusinessVATWHTContent({
                 {/* ── File Monthly VAT Return ── */}
                 {subSection === 'file-vat' && vatStep === 'method' && (
                     <div className="max-w-[480px] mx-auto">
-                        <h2 className="text-[18px] font-bold text-[#0C0C0E] mb-1">File Monthly VAT Return</h2>
+                        <h2 className="text-base font-bold text-[#0C0C0E] mb-1">File Monthly VAT Return</h2>
                         <p className="text-[13px] text-[#6B7280] font-medium mb-6">How do you want to enter your VAT data?</p>
                         <div className="space-y-0 mb-8">
                             {ENTRY_OPTIONS.map(opt => (
@@ -635,7 +635,7 @@ export function BusinessVATWHTContent({
                 {subSection === 'file-vat' && vatStep === 'form' && (
                     <div className="flex gap-6">
                         {/* Month tabs column */}
-                        <div className="flex flex-col gap-0 w-[110px] flex-shrink-0 mt-1">
+                        <div className="flex flex-col gap-0 w-[110px] flex-shrink-0 mt-1 sticky top-24">
                             {MONTHS_SHORT.slice(0, 6).map((m, i) => {
                                 const filed = filedMonths.has(i);
                                 const isActive = i === activeMonth;
@@ -732,7 +732,7 @@ export function BusinessVATWHTContent({
                                     {/* Total output */}
                                     <div className="pt-2">
                                         <p className="text-[11px] font-semibold text-[#6B7280] mb-0.5">Total output VAT</p>
-                                        <p className="text-[20px] font-bold text-[#0C0C0E]">{fmt(outputVAT)}</p>
+                                        <p className="text-base font-bold text-[#0C0C0E]">{fmt(outputVAT)}</p>
                                     </div>
                                 </div>
                             </div>
@@ -785,14 +785,14 @@ export function BusinessVATWHTContent({
                                     {/* Total input */}
                                     <div className="pt-2">
                                         <p className="text-[11px] font-semibold text-[#6B7280] mb-0.5">Total input VAT</p>
-                                        <p className="text-[20px] font-bold text-[#0C0C0E]">{fmt(inputVAT)}</p>
+                                        <p className="text-base font-bold text-[#0C0C0E]">{fmt(inputVAT)}</p>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Net VAT Payable */}
                             <div>
-                                <h3 className="text-[16px] font-bold text-[#0C0C0E] mb-4">Net VAT Payable</h3>
+                                <h3 className="text-sm font-bold text-[#0C0C0E] mb-4">Net VAT Payable</h3>
                                 <div className="space-y-2.5 mb-4">
                                     <div className="flex items-center justify-between text-[13px]">
                                         <span className="text-[#6B7280] font-medium">Output VAT</span>

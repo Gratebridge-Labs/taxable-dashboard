@@ -92,7 +92,7 @@ const WelcomeModal = ({ onClose }: { onClose: () => void }) => (
                     <polyline points="20 6 9 17 4 12" />
                 </svg>
             </div>
-            <h2 className="text-[18px] font-bold text-[#0C0C0E] mb-3">Welcome to your tax workspace!</h2>
+            <h2 className="text-base font-bold text-[#0C0C0E] mb-3">Welcome to your tax workspace!</h2>
             <p className="text-[14px] text-[#6B7280] font-medium leading-relaxed mb-1.5">
                 Everything you need is organized in sections on the left. Start with{' '}
                 <span className="text-[#0C0C0E] font-bold">Company Information</span>{' '}
@@ -210,7 +210,7 @@ export default function BusinessTaxDetails() {
 
                 {/* Page Header */}
                 <div className="mb-8">
-                    <h1 className="text-[22px] font-bold text-[#0C0C0E] mb-2">
+                    <h1 className="text-lg font-bold text-[#0C0C0E] mb-2">
                         {companyDisplayName}, {taxYear} Company Tax
                     </h1>
                     {/* Outstanding badge */}
@@ -226,7 +226,7 @@ export default function BusinessTaxDetails() {
                 {/* 3-column layout */}
                 <div className="flex items-start gap-6">
                     {/* Left sidebar */}
-                    <div className="w-[220px] flex-shrink-0 flex flex-col gap-4">
+                    <div className="w-[220px] flex-shrink-0 flex flex-col gap-4 sticky top-24">
                         {/* Main sections */}
                         <div>
                             <div className="flex items-center justify-between mb-2 px-1">
@@ -343,8 +343,8 @@ export default function BusinessTaxDetails() {
                     <div className="flex-1 min-w-0">
                         {/* Company Information */}
                         {activeSection === 'company-info' && (
-                            <div className="animate-in fade-in duration-300">
-                                <h2 className="text-[18px] font-bold text-[#0C0C0E] mb-6">Company Information</h2>
+                            <div className="animate-in fade-in duration-300 flex items-start justify-center gap-8">
+                                <h2 className="text-base font-bold text-[#0C0C0E] mb-6">Company Information</h2>
 
                                 <div className="space-y-6 max-w-[480px]">
                                     {/* RC/BN number */}
@@ -500,11 +500,11 @@ export default function BusinessTaxDetails() {
                                                         <div className="grid grid-cols-2 gap-6 mb-3">
                                                             <div>
                                                                 <p className="text-[11px] font-semibold text-[#6B7280] mb-1">Estimated CIT (30%)</p>
-                                                                <p className="text-[22px] font-bold text-[#0C0C0E]">{qFmt(estimatedCIT)}</p>
+                                                                <p className="text-base font-bold text-[#0C0C0E]">{qFmt(estimatedCIT)}</p>
                                                             </div>
                                                             <div>
                                                                 <p className="text-[11px] font-semibold text-[#6B7280] mb-1">Quarterly payment</p>
-                                                                <p className="text-[22px] font-bold text-[#0C0C0E]">{qFmt(quarterlyPayment)}</p>
+                                                                <p className="text-base font-bold text-[#0C0C0E]">{qFmt(quarterlyPayment)}</p>
                                                             </div>
                                                         </div>
                                                         <p className="text-[12px] font-medium text-[#6B7280]">
@@ -559,7 +559,7 @@ export default function BusinessTaxDetails() {
 
                             const methodContent = (
                                 <div className="max-w-[480px] mx-auto">
-                                    <h2 className="text-[18px] font-bold text-[#0C0C0E] mb-1">How do you want to add payroll data?</h2>
+                                    <h2 className="text-base font-bold text-[#0C0C0E] mb-1">How do you want to add payroll data?</h2>
                                     <p className="text-[13px] text-[#6B7280] font-medium mb-6">Upload or enter your payroll for this month</p>
                                     <div className="mb-8">
                                         {MONTH_METHODS.map(opt => (
@@ -675,7 +675,7 @@ export default function BusinessTaxDetails() {
                             return showMonthCol ? (
                                 <div className="flex gap-6 w-full">
                                     {/* Month column */}
-                                    <div className="w-[120px] flex-shrink-0">
+                                    <div className="w-[120px] flex-shrink-0 sticky top-24">
                                         {visibleMonths.map((m: string) => {
                                             const isActive = m === activeMonth;
                                             return (
@@ -750,7 +750,7 @@ export default function BusinessTaxDetails() {
                             ];
                             return (
                                 <div className="max-w-[620px] mx-auto animate-in fade-in duration-300">
-                                    <h2 className="text-[18px] font-bold text-[#0C0C0E] mb-1">PAYE · Annual Returns (2026)</h2>
+                                    <h2 className="text-base font-bold text-[#0C0C0E] mb-1">PAYE · Annual Returns (2026)</h2>
                                     <p className="text-[13px] text-[#6B7280] font-medium mb-6">Your annual PAYE reconciliation</p>
 
                                     {/* Status check list */}
@@ -812,11 +812,11 @@ export default function BusinessTaxDetails() {
                                                     <tr>
                                                         <td className="px-5 py-3">
                                                             <p className="text-[11px] font-semibold text-[#6B7280] mb-0.5">Total PAYE Deducted</p>
-                                                            <p className="text-[20px] font-bold text-[#0C0C0E]">{fmtN(totalDeducted)}</p>
+                                                            <p className="text-base font-bold text-[#0C0C0E]">{fmtN(totalDeducted)}</p>
                                                         </td>
                                                         <td colSpan={2} className="px-5 py-3">
                                                             <p className="text-[11px] font-semibold text-[#6B7280] mb-0.5">PAYE Remitted</p>
-                                                            <p className="text-[20px] font-bold text-[#0C0C0E]">{fmtN(totalRemitted)}</p>
+                                                            <p className="text-base font-bold text-[#0C0C0E]">{fmtN(totalRemitted)}</p>
                                                         </td>
                                                     </tr>
                                                     <tr>
@@ -870,7 +870,7 @@ export default function BusinessTaxDetails() {
                                         <polyline points="20 6 9 17 4 12" />
                                     </svg>
                                 </div>
-                                <h3 className="text-[18px] font-bold text-[#0C0C0E] mb-2">Ready to file?</h3>
+                                <h3 className="text-base font-bold text-[#0C0C0E] mb-2">Ready to file?</h3>
                                 <p className="text-[14px] text-[#6B7280] font-medium mb-6">
                                     Review your information and submit your company tax return.
                                 </p>

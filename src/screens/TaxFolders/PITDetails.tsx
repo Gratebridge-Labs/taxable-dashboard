@@ -184,6 +184,10 @@ export default function PITDetails() {
     const [generatingPaymentLink, setGeneratingPaymentLink] = useState(false);
     const [paymentsByMonth, setPaymentsByMonth] = useState<Record<number, any>>({});
     const [monthlySummaryByMonth, setMonthlySummaryByMonth] = useState<Record<number, any>>({});
+    const [paymentLinkCooldownEndByMonth, setPaymentLinkCooldownEndByMonth] = useState<Record<number, number>>({});
+    const [awaitingPaymentByMonth, setAwaitingPaymentByMonth] = useState<Record<number, boolean>>({});
+    const [refreshingPayments, setRefreshingPayments] = useState(false);
+    const [nowTick, setNowTick] = useState(() => Date.now());
     const [savingPersonalInfo, setSavingPersonalInfo] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
     
@@ -506,6 +510,11 @@ export default function PITDetails() {
     }, [activeMonth, incomeRecords, incomeData, periodMode]);
 
     useEffect(() => {
+        const t = window.setInterval(() => setNowTick(Date.now()), 1000);
+        return () => window.clearInterval(t);
+    }, []);
+
+    useEffect(() => {
         loadProfileData();
     }, [loadProfileData]);
 
@@ -545,6 +554,10 @@ export default function PITDetails() {
     const isDecember = activeMonthNum === 12;
     const paidMonthsCount = paidMonths.size;
     const allMonthlyPaymentsCompletedForYear = paidMonthsCount >= 12;
+    const cooldownEndsAt = paymentLinkCooldownEndByMonth[activeMonthNum] ?? 0;
+    const cooldownRemainingMs = Math.max(0, cooldownEndsAt - nowTick);
+    const canGenerateAnotherPaymentLink = cooldownRemainingMs === 0;
+    const showIHavePaid = !!awaitingPaymentByMonth[activeMonthNum] && !isPaidForActiveMonth;
 
     type NormalizedDeduction = {
         type?: string;
@@ -646,6 +659,31 @@ export default function PITDetails() {
 
             if (batchItems.length === 0) {
                 toast.warning('Please enter at least one deduction amount before saving.');
+                return;
+            }
+
+            // Enforce supporting documents for any deduction being saved.
+            const missingDocs: string[] = [];
+            for (const item of batchItems) {
+                const wantType = item.deductionType as string;
+                const existing = (deductions || []).map(normalizeDeduction).find(d =>
+                    (d.type === wantType || d.type === (wantType === 'mortgage' ? 'mortgage_interest' : wantType)) &&
+                    (isMonthly ? (d.frequency === 'monthly' && d.month === monthNum) : (d.frequency === 'annual' || d.month === null))
+                );
+                const hasDoc = !!item.documentUrl || !!existing?.documentUrl || !!existing?.raw?.documentUrl;
+                if (!hasDoc) {
+                    const label =
+                        wantType === 'rent_relief' ? 'Rent Relief document'
+                        : wantType === 'pension' ? 'Pension statement'
+                        : wantType === 'insurance' ? 'Health insurance document'
+                        : wantType === 'mortgage' ? 'Mortgage statement'
+                        : 'Supporting document';
+                    missingDocs.push(label);
+                }
+            }
+
+            if (missingDocs.length > 0) {
+                toast.warning(`Upload required document(s) before saving: ${Array.from(new Set(missingDocs)).join(', ')}.`);
                 return;
             }
 
@@ -1177,7 +1215,20 @@ export default function PITDetails() {
                                                         className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all ${activeMonth === month ? 'bg-white' : 'hover:bg-gray-50'}`}
                                                     >
                                                         <div className="flex items-center gap-3">
-                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={activeMonth === month ? "#0C0C0E" : "#94A3B8"} strokeWidth="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                                            {(() => {
+                                                                const monthNum = MONTHS.indexOf(month) + 1;
+                                                                const paid = paidMonths.has(monthNum);
+                                                                if (!paid) {
+                                                                    return (
+                                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={activeMonth === month ? "#0C0C0E" : "#94A3B8"} strokeWidth="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                                                    );
+                                                                }
+                                                                return (
+                                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.8">
+                                                                        <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+                                                                    </svg>
+                                                                );
+                                                            })()}
                                                             <span className={`text-[13px] font-bold ${activeMonth === month ? 'text-[#0C0C0E]' : 'text-[#94A3B8]'}`}>{month}</span>
                                                         </div>
                                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={activeMonth === month ? "#0C0C0E" : "#94A3B8"} strokeWidth="3" className={`transition-transform ${expandedMonth === month ? 'rotate-180' : ''}`}><polyline points="6 9 12 15 18 9"/></svg>
@@ -1297,7 +1348,7 @@ export default function PITDetails() {
                                                                 uploadLabel="Upload Tenancy Agreements or Receipt"
                                                                 fileName={
                                                                     uploadedFileNames.rentRelief ||
-                                                                    (hasUpload ? 'Document uploaded' : (rentDeduction ? `Rent Receipt (₦${rentDeduction.amount.toLocaleString()})` : 'Proof of Rent Required'))
+                                                                    (hasUpload ? 'Document uploaded' : (rentDeduction ? `Rent Receipt (₦${Number((rentDeduction as any).amount ?? (rentDeduction as any).value ?? 0).toLocaleString()})` : 'Proof of Rent Required'))
                                                                 }
                                                                 status={
                                                                     rentStatus === 'verified'
@@ -1340,7 +1391,7 @@ export default function PITDetails() {
                                                                 uploadLabel="Upload Health Insurance Statement"
                                                                 fileName={
                                                                     uploadedFileNames.healthInsurance ||
-                                                                    (hasUpload ? 'Document uploaded' : (nhisDeduction ? `Insurance Receipt (₦${nhisDeduction.amount.toLocaleString()})` : 'Upload Insurance Statement'))
+                                                                    (hasUpload ? 'Document uploaded' : (nhisDeduction ? `Insurance Receipt (₦${Number((nhisDeduction as any).amount ?? (nhisDeduction as any).value ?? 0).toLocaleString()})` : 'Upload Insurance Statement'))
                                                                 }
                                                                 status={
                                                                     nhisStatus === 'verified'
@@ -1383,7 +1434,7 @@ export default function PITDetails() {
                                                                 uploadLabel="Upload your Pension Statement"
                                                                 fileName={
                                                                     uploadedFileNames.pension ||
-                                                                    (hasUpload ? 'Document uploaded' : (pensionDeduction ? `Pension Receipt (₦${pensionDeduction.amount.toLocaleString()})` : 'Upload Pension Statement'))
+                                                                    (hasUpload ? 'Document uploaded' : (pensionDeduction ? `Pension Receipt (₦${Number((pensionDeduction as any).amount ?? (pensionDeduction as any).value ?? 0).toLocaleString()})` : 'Upload Pension Statement'))
                                                                 }
                                                                 status={
                                                                     pensionStatus === 'verified'
@@ -1426,7 +1477,7 @@ export default function PITDetails() {
                                                                 uploadLabel="Upload Mortgage Statement"
                                                                 fileName={
                                                                     uploadedFileNames.mortgage ||
-                                                                    (hasUpload ? 'Document uploaded' : (mortgageDeduction ? `Mortgage Statement (₦${mortgageDeduction.amount.toLocaleString()})` : 'Upload Mortgage Statement'))
+                                                                    (hasUpload ? 'Document uploaded' : (mortgageDeduction ? `Mortgage Statement (₦${Number((mortgageDeduction as any).amount ?? (mortgageDeduction as any).value ?? 0).toLocaleString()})` : 'Upload Mortgage Statement'))
                                                                 }
                                                                 status={
                                                                     mortgageStatus === 'verified'
@@ -1535,16 +1586,61 @@ export default function PITDetails() {
                                                     </button>
                                                 )}
                                                 {incomeSubTab === 'deductions' && periodMode === 'monthly' && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={async () => {
+                                                    <div className="flex flex-col items-stretch gap-1">
+                                                        <button
+                                                            type="button"
+                                                            onClick={async () => {
                                                             if (!profileId) return;
+                                                            // If user says they've paid, refresh payment records.
+                                                            if (showIHavePaid) {
+                                                                setRefreshingPayments(true);
+                                                                try {
+                                                                    const profileYear = Number((currentProfile as any)?.year);
+                                                                    const paymentsRes = await getPaymentRecords(profileId);
+                                                                    const payments = (paymentsRes?.data?.payments || []).filter((p: any) => {
+                                                                        const py = typeof p?.year === 'number' ? p.year : null;
+                                                                        return typeof profileYear === 'number' && !!profileYear ? py === profileYear : true;
+                                                                    });
+                                                                    const paid = new Set<number>();
+                                                                    const byMonth: Record<number, any> = {};
+                                                                    payments.forEach((p: any) => {
+                                                                        const monthVal = typeof p?.month === 'number' ? p.month : undefined;
+                                                                        const status = String(p?.status || '').toLowerCase();
+                                                                        const isPaid = status.includes('paid') || status.includes('success') || status.includes('completed');
+                                                                        if (monthVal) {
+                                                                            byMonth[monthVal] = p;
+                                                                            if (isPaid) paid.add(monthVal);
+                                                                        }
+                                                                    });
+                                                                    setPaidMonths(paid);
+                                                                    setPaymentsByMonth(byMonth);
+
+                                                                    if (paid.has(activeMonthNum)) {
+                                                                        setAwaitingPaymentByMonth((prev) => ({ ...prev, [activeMonthNum]: false }));
+                                                                        toast.success('Payment confirmed for this month.', { title: 'Paid' });
+                                                                    } else {
+                                                                        toast.info('We haven’t confirmed payment yet. Please try again shortly.');
+                                                                    }
+                                                                } catch (err: any) {
+                                                                    toast.error(err?.message || 'Failed to refresh payment records');
+                                                                } finally {
+                                                                    setRefreshingPayments(false);
+                                                                }
+                                                                return;
+                                                            }
+
                                                             if (!hasCalculatedForActiveMonth) {
                                                                 toast.warning('Calculate this month’s tax before generating a payment link.');
                                                                 return;
                                                             }
                                                             if (isPaidForActiveMonth) {
                                                                 toast.info('This month is already paid.');
+                                                                return;
+                                                            }
+                                                            if (!canGenerateAnotherPaymentLink) {
+                                                                const mins = Math.floor(cooldownRemainingMs / 60000);
+                                                                const secs = Math.floor((cooldownRemainingMs % 60000) / 1000);
+                                                                toast.info(`You can generate another link in ${mins}:${String(secs).padStart(2, '0')}.`);
                                                                 return;
                                                             }
 
@@ -1559,37 +1655,38 @@ export default function PITDetails() {
                                                                     toast.success('Payment link created successfully.');
                                                                 }
 
-                                                                // Refresh payment records so UI updates (paid months, etc.)
-                                                                try {
-                                                                    const paymentsRes = await getPaymentRecords(profileId);
-                                                                    const payments = paymentsRes?.data?.payments || [];
-                                                                    const paid = new Set<number>();
-                                                                    const byMonth: Record<number, any> = {};
-                                                                    payments.forEach((p: any) => {
-                                                                        const monthVal = typeof p?.month === 'number' ? p.month : undefined;
-                                                                        const status = String(p?.status || '').toLowerCase();
-                                                                        const isPaid = status.includes('paid') || status.includes('success') || status.includes('completed');
-                                                                        if (monthVal) {
-                                                                            byMonth[monthVal] = p;
-                                                                            if (isPaid) paid.add(monthVal);
-                                                                        }
-                                                                    });
-                                                                    setPaidMonths(paid);
-                                                                    setPaymentsByMonth(byMonth);
-                                                                } catch {
-                                                                    // ignore
-                                                                }
+                                                                // After generating a link, show "I have Paid" and start cooldown.
+                                                                setAwaitingPaymentByMonth((prev) => ({ ...prev, [activeMonthNum]: true }));
+                                                                setPaymentLinkCooldownEndByMonth((prev) => ({ ...prev, [activeMonthNum]: Date.now() + 10 * 60 * 1000 }));
                                                             } catch (err: any) {
                                                                 toast.error(err.message || 'Failed to generate payment link');
                                                             } finally {
                                                                 setGeneratingPaymentLink(false);
                                                             }
-                                                        }}
-                                                        disabled={generatingPaymentLink || isPaidForActiveMonth || !hasCalculatedForActiveMonth}
-                                                        className="h-11 w-full sm:w-auto px-5 rounded-xl border border-gray-200 bg-white text-[#0C0C0E] text-[13px] font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    >
-                                                        {isPaidForActiveMonth ? 'Paid' : generatingPaymentLink ? 'Generating…' : 'Generate payment link'}
-                                                    </button>
+                                                            }}
+                                                            disabled={
+                                                                generatingPaymentLink ||
+                                                                refreshingPayments ||
+                                                                isPaidForActiveMonth ||
+                                                                (!showIHavePaid && !hasCalculatedForActiveMonth) ||
+                                                                (!showIHavePaid && !canGenerateAnotherPaymentLink)
+                                                            }
+                                                            className="h-11 w-full sm:w-auto px-5 rounded-xl border border-gray-200 bg-white text-[#0C0C0E] text-[13px] font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            {isPaidForActiveMonth
+                                                                ? 'Paid'
+                                                                : showIHavePaid
+                                                                ? (refreshingPayments ? 'Checking…' : 'I have Paid')
+                                                                : generatingPaymentLink
+                                                                ? 'Generating…'
+                                                                : 'Generate payment link'}
+                                                        </button>
+                                                        {!showIHavePaid && !isPaidForActiveMonth && !canGenerateAnotherPaymentLink && (
+                                                            <p className="text-[11px] font-medium text-[#94A3B8] text-right">
+                                                                You can generate another link in {Math.floor(cooldownRemainingMs / 60000)}:{String(Math.floor((cooldownRemainingMs % 60000) / 1000)).padStart(2, '0')}
+                                                            </p>
+                                                        )}
+                                                    </div>
                                                 )}
                                         {incomeSubTab !== 'deductions' && (
                                         <button
@@ -1767,27 +1864,11 @@ export default function PITDetails() {
                                                     setIncomeSaved(true);
 
                                                     // Progress the flow after saving:
-                                                    // - Monthly: go to Deductions if not completed, otherwise next month (or Review on December)
+                                                    // - Monthly: always go to Deductions for the same month
                                                     // - Annual: go to Deductions
                                                     if (periodMode === 'monthly') {
-                                                        if (!deductionsSaved) {
-                                                            setIncomeSubTab('deductions');
-                                                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                                                        } else {
-                                                            const currentMonthIdx = MONTHS.indexOf(activeMonth);
-                                                            const isLastMonth = currentMonthIdx >= MONTHS.length - 1;
-                                                            if (isLastMonth) {
-                                                                setActiveSection('review');
-                                                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                                                            } else {
-                                                                const nextMonth = MONTHS[currentMonthIdx + 1];
-                                                                setActiveMonth(nextMonth);
-                                                                setExpandedMonth(nextMonth);
-                                                                setIncomeSubTab('income');
-                                                                setIncomeSaved(false);
-                                                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                                                            }
-                                                        }
+                                                        setIncomeSubTab('deductions');
+                                                        window.scrollTo({ top: 0, behavior: 'smooth' });
                                                     } else {
                                                         setIncomeSubTab('deductions');
                                                         window.scrollTo({ top: 0, behavior: 'smooth' });

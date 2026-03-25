@@ -1,4 +1,6 @@
 'use client';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Info, ChevronRight } from 'lucide-react';
@@ -191,6 +193,11 @@ export default function PITDetails() {
     const [savingPersonalInfo, setSavingPersonalInfo] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+    const [confirmFilingPrefOpen, setConfirmFilingPrefOpen] = useState(false);
+    const [pendingPeriodMode, setPendingPeriodMode] = useState<'monthly' | 'annually' | null>(null);
+    const [switchingFilingPref, setSwitchingFilingPref] = useState(false);
+    const [helpModalOpen, setHelpModalOpen] = useState(false);
+    const [bookingTaxAgent, setBookingTaxAgent] = useState(false);
     
     const [personalInfo, setPersonalInfo] = useState({
         nin: '',
@@ -432,7 +439,7 @@ export default function PITDetails() {
                     if (incomeDataRes.success && incomeDataRes.data.incomes) {
                         setIncomeData(incomeDataRes.data.incomes);
                     }
-                } catch (incomeDataErr) {
+                } catch {
                     console.log('[PITDetails] Using legacy income data, income-data API not available');
                 }
             } else {
@@ -444,7 +451,7 @@ export default function PITDetails() {
         } finally {
             setLoading(false);
         }
-    }, [profileId, year, authLoading, token, router, getProfile, setCurrentProfile, getIncomeList, getDeductionList, getTaxSummary, getIncomeData, user]);
+    }, [profileId, year, authLoading, token, router, getProfile, setCurrentProfile, getIncomeList, getDeductionList, getTaxSummary, getIncomeData, getPaymentRecords, user]);
 
     useEffect(() => {
         if (periodMode === 'monthly') {
@@ -547,9 +554,6 @@ export default function PITDetails() {
     const activePayment = paymentsByMonth[activeMonthNum];
     const paymentSnapshot = activePayment?.calculationSnapshot;
     const activeMonthTaxSummary = monthlySummaryByMonth[activeMonthNum] ?? paymentSnapshot ?? null;
-    const isDecember = activeMonthNum === 12;
-    const paidMonthsCount = paidMonths.size;
-    const allMonthlyPaymentsCompletedForYear = paidMonthsCount >= 12;
     const cooldownEndsAt = paymentLinkCooldownEndByMonth[activeMonthNum] ?? 0;
     const cooldownRemainingMs = Math.max(0, cooldownEndsAt - nowTick);
     const canGenerateAnotherPaymentLink = cooldownRemainingMs === 0;
@@ -718,7 +722,7 @@ export default function PITDetails() {
         } finally {
             setSavingReliefs(false);
         }
-    }, [profileId, currentProfile, reliefs, documentUrls, deductions, normalizeDeduction, updateDeduction, batchCreateDeductions, getDeductionList, toast, activeMonth, periodMode, incomeSaved]);
+    }, [profileId, currentProfile, reliefs, documentUrls, deductions, normalizeDeduction, updateDeduction, batchCreateDeductions, getDeductionList, toast, activeMonth, periodMode]);
 
     useEffect(() => {
         if (user) {
@@ -818,22 +822,23 @@ export default function PITDetails() {
                     </div>
                 </div>
 
-            {taxSummary?.actions && (
-                <div className="mt-4 bg-white border border-gray-100 rounded-[20px] p-5">
-                    <div className="flex items-center gap-2 mb-2">
-                        <h4 className="text-[13px] font-bold text-[#0C0C0E]">Need expert eyes on your return?</h4>
+                {taxSummary?.actions && (
+                    <div className="mt-4 bg-white border border-gray-100 rounded-[20px] p-5">
+                        <div className="flex items-center gap-2 mb-2">
+                            <h4 className="text-[13px] font-bold text-[#0C0C0E]">Need expert eyes on your return?</h4>
+                        </div>
+                        <p className="text-[12px] text-[#6B7280] leading-relaxed font-medium mb-4">
+                            Get your return reviewed by a certified tax accountant. They&apos;ll ensure accuracy, compliance, and file for you.
+                        </p>
+                        {taxSummary.actions.canPayAccountantReview && (
+                            <button className="w-full h-10 border border-gray-200 text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-colors text-[12px]">
+                                Book Accountant (₦30,000)
+                            </button>
+                        )}
                     </div>
-                    <p className="text-[12px] text-[#6B7280] leading-relaxed font-medium mb-4">
-                        Get your return reviewed by a certified tax accountant. They'll ensure accuracy, compliance, and file for you.
-                    </p>
-                    {taxSummary.actions.canPayAccountantReview && (
-                        <button className="w-full h-10 border border-gray-200 text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-colors text-[12px]">
-                            Book Accountant (₦30,000)
-                        </button>
-                    )}
-                </div>
-            )}
-        </div>
+                )}
+            </div>
+        </>
     );
 
     const activeLabel = {
@@ -898,14 +903,15 @@ export default function PITDetails() {
         );
     }
 
-    const activeMonthNumForHeader = MONTHS.indexOf(activeMonth) + 1;
+    const currentStepIndex = getCurrentStepIndex();
 
     const displayedTaxAmount = (() => {
         if (periodMode === 'monthly') {
-            const paymentMonthTax = paymentsByMonth[activeMonthNumForHeader]?.calculationSnapshot?.monthlyTax;
+            const monthNum = MONTHS.indexOf(activeMonth) + 1;
+            const paymentMonthTax = paymentsByMonth[monthNum]?.calculationSnapshot?.monthlyTax;
             const monthTax = typeof paymentMonthTax === 'number'
                 ? paymentMonthTax
-                : monthlyTaxByMonth[activeMonthNumForHeader];
+                : monthlyTaxByMonth[monthNum];
             if (typeof monthTax === 'number') {
                 return `₦${monthTax.toLocaleString()}`;
             }
@@ -915,8 +921,6 @@ export default function PITDetails() {
         const annual = taxSummary?.taxSummary?.estimatedAnnualTax;
         return annual ? `₦${annual.toLocaleString()}` : '₦0 (no data yet)';
     })();
-
-    const currentStepIndex = getCurrentStepIndex();
 
     return (
         <div className="min-h-screen bg-[#FAFAFA] font-sans pb-24 md:pb-20">
@@ -987,7 +991,7 @@ export default function PITDetails() {
                     </div>
 
                     <div className="text-right">
-                        <h2 className="text-base font-bold text-[#0C0C0E]">{taxAmount}</h2>
+                        <h2 className="text-base font-bold text-[#0C0C0E]">{displayedTaxAmount}</h2>
                         <p className="text-[13px] text-[#6B7280] font-medium">Estimated Net Tax Payable</p>
                     </div>
                 </div>
@@ -2454,13 +2458,6 @@ export default function PITDetails() {
                                 }
                                 setSavingDeduction(true);
                                 try {
-                                    const data = {
-                                        profileId,
-                                        year: deductionForm.year,
-                                        deductionType: deductionForm.deductionType,
-                                        amount: parseFloat(deductionForm.amount)
-                                    };
-                                    
                                     if (editingDeduction) {
                                         await updateDeduction(editingDeduction._id, {
                                             amount: parseFloat(deductionForm.amount),

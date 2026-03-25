@@ -125,6 +125,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
     
     const [step, setStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [loadingStep, setLoadingStep] = useState<0 | 1 | 2 | null>(null);
     const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
     const [shouldRedirectAfterLoading, setShouldRedirectAfterLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -199,6 +200,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
         // Create profile via API
         try {
             setError(null);
+            setLoadingStep(0);
             const profile = await createProfile(parseInt(taxYear), 'Individual');
             console.log('[SetupSidebar] Profile created:', profile);
             setActiveProfileId(profile.profileId);
@@ -206,12 +208,16 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
         } catch (err: any) {
             console.error('[SetupSidebar] Failed to create profile:', err);
             setError(err.message || 'Failed to create profile');
+        } finally {
+            setLoadingStep(null);
         }
     };
 
     // ── Handle "Next" on step 1 → go to step 2 ───────────────────────────────
     const handleNextFromSources = () => {
+        setLoadingStep(1);
         setStep(2);
+        setTimeout(() => setLoadingStep(null), 300);
     };
 
     // ── Handle "Proceed" on step 2 → complete profile then redirect ───────────────────
@@ -374,8 +380,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                         className="w-full h-11 border border-gray-200 rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#003787]/20 focus:border-[#003787]/40 transition-all"
                                     />
                                     <p className="text-[13px] text-gray-400 mt-1.5">
-                                        {filingType === 'Business' ? "Don't have a RC/BN?" : "Don't have a NIN?"}{' '}
-                                        <a href="#" className="text-[#003787] font-semibold hover:underline">Apply here</a>
+                                        {/* NIN/RC/BN help text removed */}
                                     </p>
                                 </div>
 
@@ -494,9 +499,18 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                 </button>
                                 <button
                                     onClick={handleGetStarted}
-                                    className="flex-1 h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[15px]"
+                                    disabled={loadingStep === 0}
+                                    className="flex-1 h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[15px] disabled:opacity-70 flex items-center justify-center gap-2"
                                 >
-                                    Get Started
+                                    {loadingStep === 0 ? (
+                                        <>
+                                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Creating...
+                                        </>
+                                    ) : 'Get Started'}
                                 </button>
                             </div>
                         )}
@@ -505,16 +519,25 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setStep(0)}
-                                    className="flex-1 h-12 border border-gray-200 text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-colors text-[15px]"
+                                    disabled={loadingStep === 1}
+                                    className="flex-1 h-12 border border-gray-200 text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-colors text-[15px] disabled:opacity-50"
                                 >
                                     Back
                                 </button>
                                 <button
                                     onClick={handleNextFromSources}
-                                    disabled={selectedSources.length === 0}
-                                    className="flex-1 h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[15px] disabled:opacity-40"
+                                    disabled={selectedSources.length === 0 || loadingStep === 1}
+                                    className="flex-1 h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[15px] disabled:opacity-40 flex items-center justify-center gap-2"
                                 >
-                                    Next
+                                    {loadingStep === 1 ? (
+                                        <>
+                                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Loading...
+                                        </>
+                                    ) : 'Next'}
                                 </button>
                             </div>
                         )}
@@ -523,15 +546,25 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setStep(1)}
-                                    className="flex-1 h-12 border border-gray-200 text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-colors text-[15px]"
+                                    disabled={isSubmitting}
+                                    className="flex-1 h-12 border border-gray-200 text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-colors text-[15px] disabled:opacity-50"
                                 >
                                     Back
                                 </button>
                                 <button
                                     onClick={handleProceed}
-                                    className="flex-1 h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[15px]"
+                                    disabled={isSubmitting}
+                                    className="flex-1 h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[15px] disabled:opacity-70 flex items-center justify-center gap-2"
                                 >
-                                    Proceed
+                                    {isSubmitting ? (
+                                        <>
+                                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Saving...
+                                        </>
+                                    ) : 'Proceed'}
                                 </button>
                             </div>
                         )}

@@ -44,6 +44,7 @@ export interface Profile {
   dob?: string;
   street?: string;
   city?: string;
+  state?: string;
   fullName?: string;
   email?: string;
   phone?: string;

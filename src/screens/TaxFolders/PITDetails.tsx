@@ -155,7 +155,7 @@ export default function PITDetails() {
     
     const { currentProfile, setCurrentProfile, loading: profileLoading } = useProfile();
     const { user } = useUser();
-    const { getProfile, getIncomeList, getDeductionList, getTaxSummary, updatePersonalInfo, addIncome, updateIncome, deleteIncome, uploadFile, uploadSimple, batchCreateDeductions, updateDeduction, deleteDeduction, getIncomeData, updateMonthlyIncomeData, updateAnnualIncomeData, calculateTaxByMonth, calculateTaxGet } = useTaxableApi();
+    const { getProfile, getIncomeList, getDeductionList, getTaxSummary, updatePersonalInfo, completeProfile, addIncome, updateIncome, deleteIncome, uploadFile, uploadSimple, batchCreateDeductions, updateDeduction, deleteDeduction, getIncomeData, updateMonthlyIncomeData, updateAnnualIncomeData, calculateTaxByMonth, calculateTaxGet } = useTaxableApi();
     
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -858,6 +858,21 @@ export default function PITDetails() {
                                                     state: personalInfo.state,
                                                     residencyStatus: personalInfo.residencyStatus
                                                 });
+                                                
+                                                if (currentProfile) {
+                                                    await completeProfile(profileId, {
+                                                        primaryNIN: normalizedNin || undefined,
+                                                        paysMortgage: currentProfile.paysMortgage ?? false,
+                                                        filingPreference: currentProfile.filingPreference || 'monthly',
+                                                        primaryIncomeSources: currentProfile.primaryIncomeSources,
+                                                        residency183Days: currentProfile.residency183Days,
+                                                        state: currentProfile.state,
+                                                        paysRent: currentProfile.paysRent,
+                                                        hasHealthInsurance: currentProfile.hasHealthInsurance,
+                                                        hasPension: currentProfile.hasPension,
+                                                    });
+                                                }
+                                                
                                                 setSaveSuccess(true);
                                                 // Automatically move to the next section after success
                                                 setTimeout(() => {

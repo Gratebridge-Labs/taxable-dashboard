@@ -46,8 +46,7 @@ export const TAXABLE_ENDPOINTS = {
     VERIFY: (deductionId: string) => `/deductions/${deductionId}/verify`,
   },
   PAYSTACK: {
-    FILING_LINK: (profileId: string, month?: number) => 
-      month ? `/paystack/filing/link?profileId=${profileId}&month=${month}` : `/paystack/filing/link?profileId=${profileId}`,
+    FILING_LINK: '/paystack/filing/link',
     TAX_AGENT_LINK: '/paystack/tax-agent/link',
     SUBSCRIPTION_LINK: '/paystack/create-link',
     SUBSCRIPTION_STATUS: '/paystack/subscription/status',

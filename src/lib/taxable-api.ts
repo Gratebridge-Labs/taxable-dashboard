@@ -290,12 +290,13 @@ class TaxableApiService {
   }
 
   async createFilingPaymentLink(token: string, profileId: string, month?: number): Promise<PaymentLinkResponse> {
-    const url = month 
-      ? `${this.baseUrl}${TAXABLE_ENDPOINTS.PAYSTACK.FILING_LINK(profileId, month)}`
-      : `${this.baseUrl}${TAXABLE_ENDPOINTS.PAYSTACK.FILING_LINK(profileId)}`;
-    const response = await fetch(url, {
+    const response = await fetch(`${this.baseUrl}${TAXABLE_ENDPOINTS.PAYSTACK.FILING_LINK}`, {
       method: 'POST',
       headers: this.getHeaders(token),
+      body: JSON.stringify({
+        profileId,
+        ...(typeof month === 'number' ? { month } : {}),
+      }),
     });
     return this.handleResponse<PaymentLinkResponse>(response);
   }
@@ -381,7 +382,29 @@ class TaxableApiService {
       method: 'GET',
       headers: this.getHeaders(token),
     });
-    return this.handleResponse<DeductionListResponse>(response);
+    const result = await this.handleResponse<any>(response);
+
+    // Backend may return either:
+    // A) { success: true, data: Deduction[], count: number }
+    // B) { success: true, data: { deductions: Deduction[], ... } }
+    if (result?.success && Array.isArray(result.data)) {
+      const deductions: Deduction[] = result.data;
+      const y = typeof year === 'number' ? year : deductions[0]?.year;
+      return {
+        success: true,
+        data: {
+          profileId,
+          profileYear: y ?? 0,
+          deductions,
+          deductionsByYear: {
+            [(y ?? 0).toString()]: deductions,
+          },
+          count: result.count ?? deductions.length,
+        },
+      } as DeductionListResponse;
+    }
+
+    return result as DeductionListResponse;
   }
 
   async uploadFile(token: string, profileId: string, file: File, category?: string, description?: string): Promise<UploadResponse> {

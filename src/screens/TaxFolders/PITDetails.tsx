@@ -169,7 +169,7 @@ export default function PITDetails() {
     const { currentProfile, setCurrentProfile, loading: profileLoading } = useProfile();
     const { user, token, loading: authLoading } = useUser();
     const toast = useToast();
-    const { getProfile, getIncomeList, getDeductionList, getTaxSummary, updatePersonalInfo, completeProfile, addIncome, updateIncome, deleteIncome, uploadFile, uploadSimple, batchCreateDeductions, updateDeduction, deleteDeduction, getIncomeData, updateMonthlyIncomeData, updateAnnualIncomeData, calculateTaxByMonth, calculateTaxGet } = useTaxableApi();
+    const { getProfile, getIncomeList, getDeductionList, getTaxSummary, updatePersonalInfo, completeProfile, addIncome, updateIncome, deleteIncome, uploadFile, uploadSimple, batchCreateDeductions, updateDeduction, deleteDeduction, getIncomeData, updateMonthlyIncomeData, updateAnnualIncomeData, calculateTaxByMonth, calculateTaxGet, createFilingPaymentLink, createTaxAgentPaymentLink, getPaymentRecords } = useTaxableApi();
     
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -179,6 +179,11 @@ export default function PITDetails() {
     const [taxSummary, setTaxSummary] = useState<any>(null);
     const [calculatedTax, setCalculatedTax] = useState<any>(null);
     const [calculatingTax, setCalculatingTax] = useState(false);
+    const [monthlyTaxByMonth, setMonthlyTaxByMonth] = useState<Record<number, number>>({});
+    const [paidMonths, setPaidMonths] = useState<Set<number>>(new Set());
+    const [generatingPaymentLink, setGeneratingPaymentLink] = useState(false);
+    const [paymentsByMonth, setPaymentsByMonth] = useState<Record<number, any>>({});
+    const [monthlySummaryByMonth, setMonthlySummaryByMonth] = useState<Record<number, any>>({});
     const [savingPersonalInfo, setSavingPersonalInfo] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
     
@@ -196,6 +201,11 @@ export default function PITDetails() {
 
     const [activeSection, setActiveSection] = useState<'personal-info' | 'income-deductions' | 'review'>('personal-info');
     const [periodMode, setPeriodMode] = useState<'monthly' | 'annually'>('monthly');
+    const [confirmFilingPrefOpen, setConfirmFilingPrefOpen] = useState(false);
+    const [pendingPeriodMode, setPendingPeriodMode] = useState<'monthly' | 'annually' | null>(null);
+    const [switchingFilingPref, setSwitchingFilingPref] = useState(false);
+    const [helpModalOpen, setHelpModalOpen] = useState(false);
+    const [bookingTaxAgent, setBookingTaxAgent] = useState(false);
     const [activeMonth, setActiveMonth] = useState('January');
     const [incomeSubTab, setIncomeSubTab] = useState<'income' | 'deductions'>('income');
     const [expandedMonth, setExpandedMonth] = useState<string | null>('January');
@@ -338,6 +348,7 @@ export default function PITDetails() {
                 const defaultFullName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '';
                 
                 const profileData = profile as any;
+                const profileYear = Number(profileData?.year) || year;
                 
                 console.log('[PITDetails] primaryNIN:', profileData.primaryNIN);
                 console.log('[PITDetails] dob:', profileData.dob);
@@ -376,10 +387,34 @@ export default function PITDetails() {
                 });
                 
                 const [incomeRes, deductionRes, summaryRes] = await Promise.all([
-                    getIncomeList(profileId, { year }),
-                    getDeductionList(profileId, year),
-                    getTaxSummary(profileId, year)
+                    getIncomeList(profileId, { year: profileYear }),
+                    getDeductionList(profileId, profileYear),
+                    getTaxSummary(profileId, profileYear)
                 ]);
+
+                // Payment records: used to know which months are already paid (for this profile year).
+                try {
+                    const paymentsRes = await getPaymentRecords(profileId);
+                    const payments = (paymentsRes?.data?.payments || []).filter((p: any) => {
+                        const py = typeof p?.year === 'number' ? p.year : null;
+                        return py === profileYear;
+                    });
+                    const paid = new Set<number>();
+                    const byMonth: Record<number, any> = {};
+                    payments.forEach((p: any) => {
+                        const monthVal = typeof p?.month === 'number' ? p.month : undefined;
+                        const status = String(p?.status || '').toLowerCase();
+                        const isPaid = status.includes('paid') || status.includes('success') || status.includes('completed');
+                        if (monthVal) {
+                            byMonth[monthVal] = p;
+                            if (isPaid) paid.add(monthVal);
+                        }
+                    });
+                    setPaidMonths(paid);
+                    setPaymentsByMonth(byMonth);
+                } catch {
+                    // non-blocking
+                }
                 
                 if (incomeRes.success) {
                     setIncomeRecords(incomeRes.data.incomeRecords || []);
@@ -491,7 +526,25 @@ export default function PITDetails() {
             ? incomeSaved && deductionsSaved
             : true;
 
+    const extractMonthlyTax = useCallback((payload: any): number | null => {
+        const taxSummaryObj =
+            payload?.taxSummary ??
+            payload?.data?.taxSummary ??
+            payload?.data?.data?.taxSummary;
+
+        const val = taxSummaryObj?.monthlyTax ?? taxSummaryObj?.totalTaxAmount;
+        return typeof val === 'number' ? val : null;
+    }, []);
+
     const activeMonthNum = MONTHS.indexOf(activeMonth) + 1;
+    const isPaidForActiveMonth = paidMonths.has(activeMonthNum);
+    const hasCalculatedForActiveMonth = typeof monthlyTaxByMonth[activeMonthNum] === 'number';
+    const activePayment = paymentsByMonth[activeMonthNum];
+    const paymentSnapshot = activePayment?.calculationSnapshot;
+    const activeMonthTaxSummary = monthlySummaryByMonth[activeMonthNum] ?? paymentSnapshot ?? null;
+    const isDecember = activeMonthNum === 12;
+    const paidMonthsCount = paidMonths.size;
+    const allMonthlyPaymentsCompletedForYear = paidMonthsCount >= 12;
 
     type NormalizedDeduction = {
         type?: string;
@@ -514,7 +567,16 @@ export default function PITDetails() {
     const monthScopedDeductions = useMemo(() => {
         const list = (deductions || []).map(normalizeDeduction).filter(d => !!d.type);
         if (periodMode !== 'monthly') return list;
-        return list.filter(d => (d.frequency === 'monthly') && (d.month === activeMonthNum));
+        return list.filter(d => {
+            // Monthly deductions are month-scoped.
+            if (d.frequency === 'monthly') return d.month === activeMonthNum;
+
+            // Annual rent relief should only be applied in January (month 1).
+            if (d.type === 'rent_relief') return activeMonthNum === 1;
+
+            // Other annual deductions shouldn't repeat across months.
+            return false;
+        });
     }, [deductions, normalizeDeduction, periodMode, activeMonthNum]);
 
     useEffect(() => {
@@ -617,22 +679,6 @@ export default function PITDetails() {
 
             toast.success('Deductions saved successfully!');
             setDeductionsSaved(true);
-
-            // If income is already saved for this month, move to next month after deductions.
-            if (periodMode === 'monthly' && incomeSaved) {
-                const currentMonthIdx = MONTHS.indexOf(activeMonth);
-                const isLastMonth = currentMonthIdx >= MONTHS.length - 1;
-                if (isLastMonth) {
-                    setActiveSection('review');
-                } else {
-                    const nextMonth = MONTHS[currentMonthIdx + 1];
-                    setActiveMonth(nextMonth);
-                    setExpandedMonth(nextMonth);
-                    setIncomeSubTab('income');
-                    setIncomeSaved(false);
-                }
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
         } catch (err: any) {
             toast.error(err.message || 'Failed to save deductions');
         } finally {
@@ -723,8 +769,12 @@ export default function PITDetails() {
                         Get your return reviewed by a certified tax accountant. They'll ensure accuracy, compliance, and file for you.
                     </p>
                     {taxSummary.actions.canPayAccountantReview && (
-                        <button className="w-full h-10 border border-gray-200 text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-colors text-[12px]">
-                            Book Accountant (₦30,000)
+                        <button
+                            type="button"
+                            onClick={() => setHelpModalOpen(true)}
+                            className="w-full h-10 border border-gray-200 text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-colors text-[12px]"
+                        >
+                            I need help
                         </button>
                     )}
                 </div>
@@ -794,9 +844,23 @@ export default function PITDetails() {
         );
     }
 
-    const taxAmount = taxSummary?.taxSummary?.estimatedAnnualTax 
-        ? `₦${taxSummary.taxSummary.estimatedAnnualTax.toLocaleString()}`
-        : '₦0 (no data yet)';
+    const activeMonthNumForHeader = MONTHS.indexOf(activeMonth) + 1;
+
+    const displayedTaxAmount = (() => {
+        if (periodMode === 'monthly') {
+            const paymentMonthTax = paymentsByMonth[activeMonthNumForHeader]?.calculationSnapshot?.monthlyTax;
+            const monthTax = typeof paymentMonthTax === 'number'
+                ? paymentMonthTax
+                : monthlyTaxByMonth[activeMonthNumForHeader];
+            if (typeof monthTax === 'number') {
+                return `₦${monthTax.toLocaleString()}`;
+            }
+            return '₦0 (no data yet)';
+        }
+
+        const annual = taxSummary?.taxSummary?.estimatedAnnualTax;
+        return annual ? `₦${annual.toLocaleString()}` : '₦0 (no data yet)';
+    })();
 
     return (
         <div className="min-h-screen bg-[#FAFAFA] font-sans pb-20">
@@ -833,8 +897,15 @@ export default function PITDetails() {
                     </div>
 
                     <div className="text-right">
-                        <h2 className="text-base font-bold text-[#0C0C0E]">{taxAmount}</h2>
-                        <p className="text-[13px] text-[#6B7280] font-medium">Estimated Net Tax Payable</p>
+                        <h2 className="text-base font-bold text-[#0C0C0E]">{displayedTaxAmount}</h2>
+                        <div className="flex items-center justify-end gap-2">
+                            <p className="text-[13px] text-[#6B7280] font-medium">Estimated Net Tax Payable</p>
+                            {periodMode === 'monthly' && isPaidForActiveMonth && (
+                                <span className="inline-flex items-center rounded-full bg-[#E6F9F3] px-2 py-0.5 text-[11px] font-semibold text-[#047857]">
+                                    Paid ₦{Number(activePayment?.amountNaira ?? 0).toLocaleString()}
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -1079,7 +1150,11 @@ export default function PITDetails() {
                                     <div className="flex items-center gap-4 px-1">
                                         <span className={`text-[13px] font-bold transition-colors ${periodMode === 'monthly' ? 'text-[#0C0C0E]' : 'text-[#94A3B8]'}`}>Monthly</span>
                                         <button 
-                                            onClick={() => setPeriodMode(periodMode === 'monthly' ? 'annually' : 'monthly')}
+                                            onClick={() => {
+                                                const next = periodMode === 'monthly' ? 'annually' : 'monthly';
+                                                setPendingPeriodMode(next);
+                                                setConfirmFilingPrefOpen(true);
+                                            }}
                                             className="w-10 h-5 bg-[#003787] rounded-full relative p-0.5 transition-all"
                                         >
                                             <div className={`w-4 h-4 bg-white rounded-full transition-all ${periodMode === 'annually' ? 'translate-x-5' : 'translate-x-0'}`} />
@@ -1140,6 +1215,20 @@ export default function PITDetails() {
 
                                 {/* Main Form Area */}
                                 <div className="flex-1 max-w-[700px] space-y-10">
+                                        {periodMode === 'monthly' && isDecember && (
+                                            <div className={`rounded-2xl border px-4 py-3 ${allMonthlyPaymentsCompletedForYear ? 'border-[#A7F3D0] bg-[#E6F9F3]' : 'border-[#FED7AA] bg-[#FFF7ED]'}`}>
+                                                <p className="text-[13px] font-semibold text-[#0C0C0E]">
+                                                    {allMonthlyPaymentsCompletedForYear
+                                                        ? `All monthly filing payments for ${currentProfile?.year || 2026} are completed.`
+                                                        : `You’ve completed ${paidMonthsCount}/12 monthly filing payments for ${currentProfile?.year || 2026}.`}
+                                                </p>
+                                                {!allMonthlyPaymentsCompletedForYear && (
+                                                    <p className="mt-0.5 text-[12px] font-medium text-[#7C2D12]">
+                                                        Before filing for the year, ensure all months are calculated and paid.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
                                         <div className="flex items-center gap-4">
                                             <p className="text-[14px] text-[#64748B] font-medium leading-relaxed">
                                                 {periodMode === 'annually' 
@@ -1189,22 +1278,33 @@ export default function PITDetails() {
                                         </div>
                                     ) : (
                                         <div className="space-y-10">
-                                            {/* Rent Relief — only shown if user pays rent */}
-                                            {currentProfile?.paysRent && (
+                                            {/* Rent Relief — annual, only shown in January for monthly mode */}
+                                            {currentProfile?.paysRent && (periodMode === 'annually' || activeMonthNum === 1) && (
                                                 <div className="space-y-6">
                                                     <h3 className="text-[17px] font-extrabold text-[#0C0C0E]">Rent Relief</h3>
                                                     {(() => {
                                                         const rentDeduction = (deductions || []).find(d => (d.deductionType as string) === 'rent_relief');
                                                         const rentStatus = rentDeduction?.verificationStatus;
-                                                        const hasUpload = !!uploadedFileNames.rentRelief || !!rentDeduction?.documentUrl;
+                                                        const hasUpload = !!uploadedFileNames.rentRelief || !!documentUrls.rentRelief || !!rentDeduction?.documentUrl;
                                                         return (
                                                             <DeductionItem 
                                                                 label="Annual Rent Commitment" 
                                                                 value={reliefs.rentRelief}
                                                                 onChange={(val) => setReliefs({...reliefs, rentRelief: val})}
                                                                 uploadLabel="Upload Tenancy Agreements or Receipt"
-                                                                fileName={uploadedFileNames.rentRelief || (rentDeduction ? `Rent Receipt (₦${rentDeduction.amount.toLocaleString()})` : 'Proof of Rent Required')}
-                                                                status={uploadedFileNames.rentRelief ? 'completed' : rentStatus === 'verified' ? 'verified' : rentStatus === 'pending' ? 'pending' : undefined}
+                                                                fileName={
+                                                                    uploadedFileNames.rentRelief ||
+                                                                    (hasUpload ? 'Document uploaded' : (rentDeduction ? `Rent Receipt (₦${rentDeduction.amount.toLocaleString()})` : 'Proof of Rent Required'))
+                                                                }
+                                                                status={
+                                                                    rentStatus === 'verified'
+                                                                        ? 'verified'
+                                                                        : rentStatus === 'pending'
+                                                                        ? 'pending'
+                                                                        : hasUpload
+                                                                        ? 'completed'
+                                                                        : undefined
+                                                                }
                                                                 statusMessage={rentStatus === 'verified' ? 'Verified. Your rent relief has been approved.' : rentStatus === 'pending' ? 'Verification in Progress — Our system is matching your document with NRS records' : undefined}
                                                                 onUpload={async (file) => {
                                                                     const res = await uploadSimple(file);
@@ -1228,14 +1328,26 @@ export default function PITDetails() {
                                                     {(() => {
                                                         const nhisDeduction = (monthScopedDeductions || []).find(d => d.type === 'insurance' || d.type === 'nhis' || d.type === 'health_insurance')?.raw;
                                                         const nhisStatus = nhisDeduction?.verificationStatus;
+                                                        const hasUpload = !!uploadedFileNames.healthInsurance || !!documentUrls.healthInsurance || !!nhisDeduction?.documentUrl;
                                                         return (
                                                             <DeductionItem 
                                                                 label="Health Insurance Premium" 
                                                                 value={reliefs.healthInsurance}
                                                                 onChange={(val) => setReliefs({...reliefs, healthInsurance: val})}
                                                                 uploadLabel="Upload Health Insurance Statement"
-                                                                fileName={uploadedFileNames.healthInsurance || (nhisDeduction ? `NHIS Receipt (₦${nhisDeduction.amount.toLocaleString()})` : 'Upload NHIS Statement')}
-                                                                status={uploadedFileNames.healthInsurance ? 'completed' : nhisStatus === 'verified' ? 'verified' : nhisStatus === 'pending' ? 'pending' : undefined}
+                                                                fileName={
+                                                                    uploadedFileNames.healthInsurance ||
+                                                                    (hasUpload ? 'Document uploaded' : (nhisDeduction ? `Insurance Receipt (₦${nhisDeduction.amount.toLocaleString()})` : 'Upload Insurance Statement'))
+                                                                }
+                                                                status={
+                                                                    nhisStatus === 'verified'
+                                                                        ? 'verified'
+                                                                        : nhisStatus === 'pending'
+                                                                        ? 'pending'
+                                                                        : hasUpload
+                                                                        ? 'completed'
+                                                                        : undefined
+                                                                }
                                                                 statusMessage={nhisStatus === 'verified' ? 'Verified. Your health insurance relief has been applied.' : nhisStatus === 'pending' ? 'Verification in Progress — Our system is matching your document with NRS records' : undefined}
                                                                 onUpload={async (file) => {
                                                                     const res = await uploadSimple(file);
@@ -1259,14 +1371,26 @@ export default function PITDetails() {
                                                     {(() => {
                                                         const pensionDeduction = (deductions || []).find(d => (d.deductionType as string) === 'pension');
                                                         const pensionStatus = pensionDeduction?.verificationStatus;
+                                                        const hasUpload = !!uploadedFileNames.pension || !!documentUrls.pension || !!pensionDeduction?.documentUrl;
                                                         return (
                                                             <DeductionItem 
                                                                 label="Pension" 
                                                                 value={reliefs.pension}
                                                                 onChange={(val) => setReliefs({...reliefs, pension: val})}
                                                                 uploadLabel="Upload your Pension Statement"
-                                                                fileName={uploadedFileNames.pension || (pensionDeduction ? `Pension Receipt (₦${pensionDeduction.amount.toLocaleString()})` : 'Upload Pension Statement')}
-                                                                status={uploadedFileNames.pension ? 'completed' : pensionStatus === 'verified' ? 'verified' : pensionStatus === 'pending' ? 'pending' : undefined}
+                                                                fileName={
+                                                                    uploadedFileNames.pension ||
+                                                                    (hasUpload ? 'Document uploaded' : (pensionDeduction ? `Pension Receipt (₦${pensionDeduction.amount.toLocaleString()})` : 'Upload Pension Statement'))
+                                                                }
+                                                                status={
+                                                                    pensionStatus === 'verified'
+                                                                        ? 'verified'
+                                                                        : pensionStatus === 'pending'
+                                                                        ? 'pending'
+                                                                        : hasUpload
+                                                                        ? 'completed'
+                                                                        : undefined
+                                                                }
                                                                 statusMessage={pensionStatus === 'verified' ? 'Verified. A 5% pension deduction has been applied to your taxable income.' : pensionStatus === 'pending' ? 'Verification in Progress — Our system is matching your document with NRS records' : undefined}
                                                                 onUpload={async (file) => {
                                                                     const res = await uploadSimple(file);
@@ -1290,14 +1414,26 @@ export default function PITDetails() {
                                                     {(() => {
                                                         const mortgageDeduction = (monthScopedDeductions || []).find(d => d.type === 'mortgage' || d.type === 'mortgage_interest')?.raw;
                                                         const mortgageStatus = mortgageDeduction?.verificationStatus;
+                                                        const hasUpload = !!uploadedFileNames.mortgage || !!documentUrls.mortgage || !!mortgageDeduction?.documentUrl;
                                                         return (
                                                             <DeductionItem 
                                                                 label="Mortgage Interest Paid" 
                                                                 value={reliefs.mortgage}
                                                                 onChange={(val) => setReliefs({...reliefs, mortgage: val})}
                                                                 uploadLabel="Upload Mortgage Statement"
-                                                                fileName={uploadedFileNames.mortgage || (mortgageDeduction ? `Mortgage Statement (₦${mortgageDeduction.amount.toLocaleString()})` : 'Upload Mortgage Statement')}
-                                                                status={uploadedFileNames.mortgage ? 'completed' : mortgageStatus === 'verified' ? 'verified' : mortgageStatus === 'pending' ? 'pending' : undefined}
+                                                                fileName={
+                                                                    uploadedFileNames.mortgage ||
+                                                                    (hasUpload ? 'Document uploaded' : (mortgageDeduction ? `Mortgage Statement (₦${mortgageDeduction.amount.toLocaleString()})` : 'Upload Mortgage Statement'))
+                                                                }
+                                                                status={
+                                                                    mortgageStatus === 'verified'
+                                                                        ? 'verified'
+                                                                        : mortgageStatus === 'pending'
+                                                                        ? 'pending'
+                                                                        : hasUpload
+                                                                        ? 'completed'
+                                                                        : undefined
+                                                                }
                                                                 statusMessage={mortgageStatus === 'verified' ? 'Verified. Your mortgage interest relief has been applied.' : mortgageStatus === 'pending' ? 'Verification in Progress — Our system is matching your document with NRS records' : undefined}
                                                                 onUpload={async (file) => {
                                                                     const res = await uploadSimple(file);
@@ -1328,6 +1464,42 @@ export default function PITDetails() {
 
                                     <div className="mt-8 sticky bottom-6 z-10 pt-4">
                                         <div className="rounded-2xl border border-gray-100 bg-white/80 backdrop-blur px-4 py-4 shadow-sm">
+                                            {periodMode === 'monthly' && incomeSubTab === 'deductions' && activeMonthTaxSummary && (
+                                                <div className="mb-3 rounded-xl border border-gray-100 bg-white px-3 py-3">
+                                                    <div className="flex flex-wrap items-start justify-between gap-2">
+                                                        <div>
+                                                            <p className="text-[12px] font-semibold text-[#0C0C0E]">This month summary</p>
+                                                            <p className="text-[12px] text-[#6B7280]">
+                                                                {isPaidForActiveMonth ? 'Payment completed' : hasCalculatedForActiveMonth ? 'Calculated (not paid yet)' : 'Snapshot available'}
+                                                            </p>
+                                                        </div>
+                                                        {isPaidForActiveMonth && (
+                                                            <span className="inline-flex items-center rounded-full bg-[#E6F9F3] px-2 py-0.5 text-[11px] font-semibold text-[#047857]">
+                                                                Paid ₦{Number(activePayment?.amountNaira ?? 0).toLocaleString()}
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="mt-3 grid grid-cols-2 gap-2">
+                                                        <div className="rounded-lg bg-[#FAFAFA] px-2 py-2">
+                                                            <p className="text-[11px] text-[#6B7280]">Total income</p>
+                                                            <p className="text-[12px] font-semibold text-[#0C0C0E]">₦{Number(activeMonthTaxSummary?.totalIncome ?? 0).toLocaleString()}</p>
+                                                        </div>
+                                                        <div className="rounded-lg bg-[#FAFAFA] px-2 py-2">
+                                                            <p className="text-[11px] text-[#6B7280]">Total relief</p>
+                                                            <p className="text-[12px] font-semibold text-[#0C0C0E]">₦{Number(activeMonthTaxSummary?.totalCalculatedRelief ?? 0).toLocaleString()}</p>
+                                                        </div>
+                                                        <div className="rounded-lg bg-[#FAFAFA] px-2 py-2">
+                                                            <p className="text-[11px] text-[#6B7280]">Taxable income</p>
+                                                            <p className="text-[12px] font-semibold text-[#0C0C0E]">₦{Number(activeMonthTaxSummary?.taxableIncome ?? 0).toLocaleString()}</p>
+                                                        </div>
+                                                        <div className="rounded-lg bg-[#FAFAFA] px-2 py-2">
+                                                            <p className="text-[11px] text-[#6B7280]">Monthly tax</p>
+                                                            <p className="text-[12px] font-semibold text-[#0C0C0E]">₦{Number(activeMonthTaxSummary?.monthlyTax ?? activeMonthTaxSummary?.totalTaxAmount ?? 0).toLocaleString()}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
                                             {periodMode === 'monthly' && (!incomeSaved || !deductionsSaved) && (
                                                 <div className="mb-3 rounded-xl bg-[#FAFAFA] border border-gray-100 px-3 py-2">
                                                     <p className="text-[12px] font-semibold text-[#0C0C0E]">
@@ -1357,6 +1529,63 @@ export default function PITDetails() {
                                                         className="h-11 w-full sm:w-auto px-5 rounded-xl bg-[#003787] text-white text-[13px] font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                                                     >
                                                         {savingReliefs ? 'Saving...' : 'Save deductions'}
+                                                    </button>
+                                                )}
+                                                {incomeSubTab === 'deductions' && periodMode === 'monthly' && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={async () => {
+                                                            if (!profileId) return;
+                                                            if (!hasCalculatedForActiveMonth) {
+                                                                toast.warning('Calculate this month’s tax before generating a payment link.');
+                                                                return;
+                                                            }
+                                                            if (isPaidForActiveMonth) {
+                                                                toast.info('This month is already paid.');
+                                                                return;
+                                                            }
+
+                                                            setGeneratingPaymentLink(true);
+                                                            try {
+                                                                const res = await createFilingPaymentLink(profileId, activeMonthNum);
+                                                                const url = res?.data?.authorization_url;
+                                                                if (url) {
+                                                                    window.open(url, '_blank', 'noopener,noreferrer');
+                                                                    toast.success('Payment link generated.');
+                                                                } else {
+                                                                    toast.success('Payment link created successfully.');
+                                                                }
+
+                                                                // Refresh payment records so UI updates (paid months, etc.)
+                                                                try {
+                                                                    const paymentsRes = await getPaymentRecords(profileId);
+                                                                    const payments = paymentsRes?.data?.payments || [];
+                                                                    const paid = new Set<number>();
+                                                                    const byMonth: Record<number, any> = {};
+                                                                    payments.forEach((p: any) => {
+                                                                        const monthVal = typeof p?.month === 'number' ? p.month : undefined;
+                                                                        const status = String(p?.status || '').toLowerCase();
+                                                                        const isPaid = status.includes('paid') || status.includes('success') || status.includes('completed');
+                                                                        if (monthVal) {
+                                                                            byMonth[monthVal] = p;
+                                                                            if (isPaid) paid.add(monthVal);
+                                                                        }
+                                                                    });
+                                                                    setPaidMonths(paid);
+                                                                    setPaymentsByMonth(byMonth);
+                                                                } catch {
+                                                                    // ignore
+                                                                }
+                                                            } catch (err: any) {
+                                                                toast.error(err.message || 'Failed to generate payment link');
+                                                            } finally {
+                                                                setGeneratingPaymentLink(false);
+                                                            }
+                                                        }}
+                                                        disabled={generatingPaymentLink || isPaidForActiveMonth || !hasCalculatedForActiveMonth}
+                                                        className="h-11 w-full sm:w-auto px-5 rounded-xl border border-gray-200 bg-white text-[#0C0C0E] text-[13px] font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        {isPaidForActiveMonth ? 'Paid' : generatingPaymentLink ? 'Generating…' : 'Generate payment link'}
                                                     </button>
                                                 )}
                                         {incomeSubTab !== 'deductions' && (
@@ -1636,8 +1865,16 @@ export default function PITDetails() {
                                                         const result = await calculateTaxByMonth(profileId, monthNum);
                                                         if (result.success) {
                                                             setCalculatedTax(result.data);
+                                                            const taxSummaryObj = (result.data as any)?.taxSummary ?? null;
+                                                            if (taxSummaryObj) {
+                                                                setMonthlySummaryByMonth((prev) => ({ ...prev, [monthNum]: taxSummaryObj }));
+                                                            }
+                                                            const monthTax = extractMonthlyTax(result.data);
+                                                            if (monthTax !== null) {
+                                                                setMonthlyTaxByMonth((prev) => ({ ...prev, [monthNum]: monthTax }));
+                                                            }
                                                             toast.success(
-                                                                `${activeMonth} tax calculated. Tax payable: ₦${(result.data.calculation?.netTaxPayable ?? 0).toLocaleString()}`,
+                                                                `${activeMonth} tax calculated. Tax payable: ₦${((monthTax ?? 0) as number).toLocaleString()}`,
                                                                 { title: 'Calculated' },
                                                             );
                                                         }
@@ -1656,6 +1893,37 @@ export default function PITDetails() {
                                         >
                                             {calculatingTax ? 'Calculating...' : (periodMode === 'annually' ? 'Calculate Annual Tax' : 'Calculate Monthly Tax')}
                                         </button>
+                                        {periodMode === 'annually' && (
+                                            <button
+                                                type="button"
+                                                onClick={async () => {
+                                                    if (!profileId) return;
+                                                    if (!calculatedTax) {
+                                                        toast.warning('Calculate your annual tax before generating a payment link.');
+                                                        return;
+                                                    }
+                                                    setGeneratingPaymentLink(true);
+                                                    try {
+                                                        const res = await createFilingPaymentLink(profileId);
+                                                        const url = res?.data?.authorization_url;
+                                                        if (url) {
+                                                            window.open(url, '_blank', 'noopener,noreferrer');
+                                                            toast.success('Payment link generated.');
+                                                        } else {
+                                                            toast.success('Payment link created successfully.');
+                                                        }
+                                                    } catch (err: any) {
+                                                        toast.error(err?.message || 'Failed to generate payment link');
+                                                    } finally {
+                                                        setGeneratingPaymentLink(false);
+                                                    }
+                                                }}
+                                                disabled={generatingPaymentLink || !calculatedTax}
+                                                className="h-11 w-full sm:w-auto px-5 rounded-xl border border-gray-200 bg-white text-[#0C0C0E] text-[13px] font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {generatingPaymentLink ? 'Generating…' : 'Generate payment link'}
+                                            </button>
+                                        )}
                                             </div>
                                         </div>
                                     </div>
@@ -1673,6 +1941,164 @@ export default function PITDetails() {
                     </div>
                 </div>
             </main>
+
+            {/* Filing preference confirmation modal */}
+            {confirmFilingPrefOpen && pendingPeriodMode && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+                    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <h3 className="text-[15px] font-extrabold text-[#0C0C0E]">
+                                    Switch to {pendingPeriodMode === 'monthly' ? 'Monthly' : 'Annual'} filing?
+                                </h3>
+                                <p className="mt-1 text-[13px] font-medium text-[#64748B]">
+                                    This will update your tax profile and change how you enter income/deductions and how tax is calculated.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (switchingFilingPref) return;
+                                    setConfirmFilingPrefOpen(false);
+                                    setPendingPeriodMode(null);
+                                }}
+                                className="text-[#94A3B8] hover:text-[#0C0C0E]"
+                                aria-label="Close"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-end">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (switchingFilingPref) return;
+                                    setConfirmFilingPrefOpen(false);
+                                    setPendingPeriodMode(null);
+                                }}
+                                className="h-11 w-full sm:w-auto rounded-xl border border-gray-200 bg-white px-5 text-[13px] font-semibold text-[#0C0C0E] hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={switchingFilingPref}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    if (!profileId) return;
+                                    setSwitchingFilingPref(true);
+                                    try {
+                                        const filingPreference = pendingPeriodMode === 'annually' ? 'annual' : 'monthly';
+                                        await completeProfile(profileId, { filingPreference } as any);
+
+                                        setPeriodMode(pendingPeriodMode);
+                                        setIncomeSubTab('income');
+                                        setActiveMonth('January');
+                                        setExpandedMonth(pendingPeriodMode === 'monthly' ? 'January' : null);
+                                        setMonthlyTaxByMonth({});
+                                        setMonthlySummaryByMonth({});
+                                        setPaidMonths(new Set());
+                                        setPaymentsByMonth({});
+
+                                        if (currentProfile) {
+                                            setCurrentProfile({ ...(currentProfile as any), filingPreference });
+                                        }
+                                        toast.success(`Switched to ${pendingPeriodMode === 'monthly' ? 'Monthly' : 'Annual'} filing.`, { title: 'Updated' });
+                                        setConfirmFilingPrefOpen(false);
+                                        setPendingPeriodMode(null);
+                                    } catch (err: any) {
+                                        toast.error(err?.message || 'Failed to update filing preference');
+                                    } finally {
+                                        setSwitchingFilingPref(false);
+                                    }
+                                }}
+                                className="h-11 w-full sm:w-auto rounded-xl bg-[#0C0C0E] px-5 text-[13px] font-semibold text-white shadow-sm hover:bg-black transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                disabled={switchingFilingPref}
+                            >
+                                {switchingFilingPref ? 'Switching…' : `Switch to ${pendingPeriodMode === 'monthly' ? 'Monthly' : 'Annual'}`}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Help / Tax agent modal */}
+            {helpModalOpen && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+                    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <h3 className="text-[15px] font-extrabold text-[#0C0C0E]">I need help</h3>
+                                <p className="mt-1 text-[13px] font-medium text-[#64748B]">
+                                    If you’re unsure about your income, deductions, or payment data, you can book a Tax Agent to review your return for you.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (bookingTaxAgent) return;
+                                    setHelpModalOpen(false);
+                                }}
+                                className="text-[#94A3B8] hover:text-[#0C0C0E]"
+                                aria-label="Close"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="mt-4 rounded-xl border border-gray-100 bg-[#FAFAFA] px-3 py-3">
+                            <p className="text-[12px] font-semibold text-[#0C0C0E]">Cost</p>
+                            <p className="mt-0.5 text-[13px] font-extrabold text-[#0C0C0E]">₦30,000</p>
+                            <p className="mt-1 text-[12px] font-medium text-[#64748B]">
+                                You’ll be redirected to Paystack to complete payment.
+                            </p>
+                        </div>
+
+                        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-end">
+                            <button
+                                type="button"
+                                onClick={() => setHelpModalOpen(false)}
+                                disabled={bookingTaxAgent}
+                                className="h-11 w-full sm:w-auto rounded-xl border border-gray-200 bg-white px-5 text-[13px] font-semibold text-[#0C0C0E] hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Not now
+                            </button>
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    if (!profileId) return;
+                                    setBookingTaxAgent(true);
+                                    try {
+                                        const res = await createTaxAgentPaymentLink(profileId);
+                                        const url = res?.data?.authorization_url;
+                                        if (url) {
+                                            window.open(url, '_blank', 'noopener,noreferrer');
+                                            toast.success('Tax agent payment link generated.');
+                                        } else {
+                                            toast.success('Tax agent payment link created successfully.');
+                                        }
+                                        setHelpModalOpen(false);
+                                    } catch (err: any) {
+                                        toast.error(err?.message || 'Failed to generate tax agent payment link');
+                                    } finally {
+                                        setBookingTaxAgent(false);
+                                    }
+                                }}
+                                disabled={bookingTaxAgent}
+                                className="h-11 w-full sm:w-auto rounded-xl bg-[#0C0C0E] px-5 text-[13px] font-semibold text-white shadow-sm hover:bg-black transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                {bookingTaxAgent ? 'Generating…' : 'Book a Tax Agent'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Income Modal */}
             {incomeModalOpen && (

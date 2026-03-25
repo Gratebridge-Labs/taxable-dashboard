@@ -25,9 +25,9 @@ export default function Step4() {
     const { createProfile, completeProfile, getAllowedYears } = useTaxableApi();
     
     const [selections, setSelections] = useState<string[]>(
-        data.filingPreference ? [data.filingPreference] : ['Monthly']
+        data.year === 2025 ? ['Annually'] : (data.filingPreference ? [data.filingPreference.charAt(0).toUpperCase() + data.filingPreference.slice(1)] : ['Monthly'])
     );
-    const [year, setYearLocal] = useState(data.year || new Date().getFullYear());
+    const [yearToUse, setYearToUse] = useState(data.year || new Date().getFullYear());
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -42,14 +42,13 @@ export default function Step4() {
         
         try {
             const profileType = FILING_TYPES[data.filingType] || 'Individual';
-            const yearToUse = year || new Date().getFullYear();
             
             const createdProfile = await createProfile(yearToUse, profileType);
             
             if (createdProfile && createdProfile.profileId) {
                 await completeProfile(createdProfile.profileId, {
                     primaryIncomeSources: data.incomeSources,
-                    filingPreference: data.filingPreference,
+                    filingPreference: yearToUse === 2025 ? 'annual' : data.filingPreference,
                 });
                 
                 await fetchProfiles();
@@ -69,7 +68,8 @@ export default function Step4() {
         {
             label: 'Monthly',
             description: 'Keep running totals all year',
-            badge: 'Recommended'
+            badge: 'Recommended',
+            disabled: yearToUse === 2025
         },
         {
             label: 'Annually',
@@ -77,9 +77,10 @@ export default function Step4() {
         },
         {
             label: 'Not sure yet',
-            description: 'Enter everything at once'
+            description: 'Enter everything at once',
+            disabled: yearToUse === 2025
         }
-    ];
+    ].filter(opt => !opt.disabled);
 
     return (
         <>

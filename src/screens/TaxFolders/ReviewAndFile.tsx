@@ -22,14 +22,14 @@ const SummaryCard = ({ title, income, deductions }: { title: string; income: str
             </div>
         </div>
 
-        <div className="space-y-4 mb-8">
+        <div className="space-y-3 md:space-y-4 mb-4 md:mb-8">
             <div className="flex items-center justify-between">
-                <span className="text-[14px] text-taxable-gray font-medium">Total Income</span>
-                <span className="text-[14px] text-taxable-dark font-bold">{income}</span>
+                <span className="text-[13px] md:text-[14px] text-taxable-gray font-medium">Total Income</span>
+                <span className="text-[13px] md:text-[14px] text-taxable-dark font-bold">{income}</span>
             </div>
             <div className="flex items-center justify-between">
-                <span className="text-[14px] text-taxable-gray font-medium">Total Deductions & Reliefs</span>
-                <span className="text-[14px] text-taxable-dark font-bold">{deductions}</span>
+                <span className="text-[13px] md:text-[14px] text-taxable-gray font-medium">Total Deductions</span>
+                <span className="text-[13px] md:text-[14px] text-taxable-dark font-bold">{deductions}</span>
             </div>
         </div>
     </div>

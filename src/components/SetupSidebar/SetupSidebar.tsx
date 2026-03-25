@@ -252,7 +252,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                 hasHealthInsurance: lifeAnswers.health_insurance === 'yes',
                 hasPension: lifeAnswers.pension === 'yes',
                 hasMortgage: lifeAnswers.mortgage === 'yes',
-                filingPreference: 'monthly',
+                filingPreference: taxYear === '2025' ? 'annual' : 'monthly',
             };
             
             console.log('[SetupSidebar] Completing profile with:', completeData);

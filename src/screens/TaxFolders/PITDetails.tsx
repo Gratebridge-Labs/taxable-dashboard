@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Info, ChevronRight } from 'lucide-react';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
@@ -387,41 +387,6 @@ export default function PITDetails() {
                 if (deductionRes.success) {
                     const loadedDeductions = deductionRes.data?.deductions || [];
                     setDeductions(loadedDeductions);
-                    
-                    const reliefMap = {
-                        rentRelief: '',
-                        pension: '',
-                        healthInsurance: '',
-                        mortgage: ''
-                    };
-                    const docUrlMap = {
-                        rentRelief: '',
-                        healthInsurance: '',
-                        pension: '',
-                        mortgage: ''
-                    };
-                    
-                    loadedDeductions.forEach(d => {
-                        const type = d.deductionType as string;
-                        if (type === 'rent_relief') {
-                            reliefMap.rentRelief = d.amount.toString();
-                            if (d.documentUrl) docUrlMap.rentRelief = d.documentUrl;
-                        }
-                        if (type === 'pension') {
-                            reliefMap.pension = d.amount.toString();
-                            if (d.documentUrl) docUrlMap.pension = d.documentUrl;
-                        }
-                        if (type === 'nhis' || type === 'health_insurance') {
-                            reliefMap.healthInsurance = d.amount.toString();
-                            if (d.documentUrl) docUrlMap.healthInsurance = d.documentUrl;
-                        }
-                        if (type === 'mortgage_interest' || type === 'mortgage') {
-                            reliefMap.mortgage = d.amount.toString();
-                            if (d.documentUrl) docUrlMap.mortgage = d.documentUrl;
-                        }
-                    });
-                    setReliefs(reliefMap);
-                    setDocumentUrls(docUrlMap);
                 }
                 if (summaryRes.success) {
                     setTaxSummary(summaryRes.data);
@@ -526,24 +491,94 @@ export default function PITDetails() {
             ? incomeSaved && deductionsSaved
             : true;
 
+    const activeMonthNum = MONTHS.indexOf(activeMonth) + 1;
+
+    type NormalizedDeduction = {
+        type?: string;
+        value?: number;
+        frequency: string;
+        month: number | null;
+        documentUrl?: string;
+        raw: any;
+    };
+
+    const normalizeDeduction = useCallback((d: any): NormalizedDeduction => {
+        const type = (d?.type ?? d?.deductionType) as string | undefined;
+        const value = (d?.value ?? d?.amount) as number | undefined;
+        const frequency = (d?.frequency ?? 'annual') as string;
+        const month = (d?.month ?? null) as number | null;
+        const documentUrl = d?.documentUrl as string | undefined;
+        return { type, value, frequency, month, documentUrl, raw: d };
+    }, []);
+
+    const monthScopedDeductions = useMemo(() => {
+        const list = (deductions || []).map(normalizeDeduction).filter(d => !!d.type);
+        if (periodMode !== 'monthly') return list;
+        return list.filter(d => (d.frequency === 'monthly') && (d.month === activeMonthNum));
+    }, [deductions, normalizeDeduction, periodMode, activeMonthNum]);
+
+    useEffect(() => {
+        // Keep deduction inputs in sync with selected month + fetched deductions.
+        const reliefMap = {
+            rentRelief: '',
+            pension: '',
+            healthInsurance: '',
+            mortgage: ''
+        };
+        const docUrlMap = {
+            rentRelief: '',
+            healthInsurance: '',
+            pension: '',
+            mortgage: ''
+        };
+
+        monthScopedDeductions.forEach((d: NormalizedDeduction) => {
+            const type = d.type;
+            if (!type) return;
+            if (type === 'rent_relief') {
+                reliefMap.rentRelief = (d.value ?? '').toString();
+                if (d.documentUrl) docUrlMap.rentRelief = d.documentUrl;
+            }
+            if (type === 'pension') {
+                reliefMap.pension = (d.value ?? '').toString();
+                if (d.documentUrl) docUrlMap.pension = d.documentUrl;
+            }
+            if (type === 'insurance' || type === 'nhis' || type === 'health_insurance') {
+                reliefMap.healthInsurance = (d.value ?? '').toString();
+                if (d.documentUrl) docUrlMap.healthInsurance = d.documentUrl;
+            }
+            if (type === 'mortgage' || type === 'mortgage_interest') {
+                reliefMap.mortgage = (d.value ?? '').toString();
+                if (d.documentUrl) docUrlMap.mortgage = d.documentUrl;
+            }
+        });
+
+        setReliefs(reliefMap);
+        setDocumentUrls(docUrlMap);
+    }, [monthScopedDeductions]);
+
     const handleSaveDeductions = useCallback(async () => {
         if (!profileId || !currentProfile) return;
         setSavingReliefs(true);
         try {
             const currentYear = currentProfile.year;
+            const monthNum = MONTHS.indexOf(activeMonth) + 1;
+            const isMonthly = periodMode === 'monthly';
+            const frequency: 'annual' | 'monthly' = isMonthly ? 'monthly' : 'annual';
+            const monthToSend = isMonthly ? monthNum : null;
 
             const batchItems: BatchDeductionItem[] = [
                 ...(currentProfile.paysRent && reliefs.rentRelief && parseFloat(reliefs.rentRelief) > 0
-                    ? [{ deductionType: 'rent_relief' as DeductionType, amount: parseFloat(reliefs.rentRelief), documentUrl: documentUrls.rentRelief || undefined }]
+                    ? [{ deductionType: 'rent_relief' as DeductionType, amount: parseFloat(reliefs.rentRelief), documentUrl: documentUrls.rentRelief || undefined, frequency, month: monthToSend }]
                     : []),
                 ...(currentProfile.hasPension && reliefs.pension && parseFloat(reliefs.pension) > 0
-                    ? [{ deductionType: 'pension' as DeductionType, amount: parseFloat(reliefs.pension), documentUrl: documentUrls.pension || undefined }]
+                    ? [{ deductionType: 'pension' as DeductionType, amount: parseFloat(reliefs.pension), documentUrl: documentUrls.pension || undefined, frequency, month: monthToSend }]
                     : []),
                 ...(currentProfile.hasHealthInsurance && reliefs.healthInsurance && parseFloat(reliefs.healthInsurance) > 0
-                    ? [{ deductionType: 'nhis' as DeductionType, amount: parseFloat(reliefs.healthInsurance), documentUrl: documentUrls.healthInsurance || undefined }]
+                    ? [{ deductionType: 'insurance' as DeductionType, amount: parseFloat(reliefs.healthInsurance), documentUrl: documentUrls.healthInsurance || undefined, frequency, month: monthToSend }]
                     : []),
                 ...(currentProfile.paysMortgage && reliefs.mortgage && parseFloat(reliefs.mortgage) > 0
-                    ? [{ deductionType: 'mortgage_interest' as DeductionType, amount: parseFloat(reliefs.mortgage), documentUrl: documentUrls.mortgage || undefined }]
+                    ? [{ deductionType: 'mortgage' as DeductionType, amount: parseFloat(reliefs.mortgage), documentUrl: documentUrls.mortgage || undefined, frequency, month: monthToSend }]
                     : []),
             ];
 
@@ -552,7 +587,28 @@ export default function PITDetails() {
                 return;
             }
 
-            await batchCreateDeductions({ profileId, year: currentYear, deductions: batchItems });
+            // Upsert per deduction (create if missing, else update)
+            for (const item of batchItems) {
+                const wantType = item.deductionType as string;
+                const existing = (deductions || []).map(normalizeDeduction).find(d =>
+                    (d.type === wantType || d.type === (wantType === 'mortgage' ? 'mortgage_interest' : wantType)) &&
+                    (isMonthly ? (d.frequency === 'monthly' && d.month === monthNum) : (d.frequency === 'annual' || d.month === null))
+                );
+
+                if (existing?.raw?._id) {
+                    await updateDeduction(existing.raw._id, {
+                        profileId,
+                        year: currentYear,
+                        type: wantType,
+                        value: item.amount,
+                        frequency,
+                        month: monthToSend,
+                        documentUrl: item.documentUrl,
+                    });
+                } else {
+                    await batchCreateDeductions({ profileId, year: currentYear, deductions: [item] });
+                }
+            }
 
             const deductionRes = await getDeductionList(profileId, currentYear);
             if (deductionRes.success) {
@@ -561,12 +617,28 @@ export default function PITDetails() {
 
             toast.success('Deductions saved successfully!');
             setDeductionsSaved(true);
+
+            // If income is already saved for this month, move to next month after deductions.
+            if (periodMode === 'monthly' && incomeSaved) {
+                const currentMonthIdx = MONTHS.indexOf(activeMonth);
+                const isLastMonth = currentMonthIdx >= MONTHS.length - 1;
+                if (isLastMonth) {
+                    setActiveSection('review');
+                } else {
+                    const nextMonth = MONTHS[currentMonthIdx + 1];
+                    setActiveMonth(nextMonth);
+                    setExpandedMonth(nextMonth);
+                    setIncomeSubTab('income');
+                    setIncomeSaved(false);
+                }
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         } catch (err: any) {
             toast.error(err.message || 'Failed to save deductions');
         } finally {
             setSavingReliefs(false);
         }
-    }, [profileId, currentProfile, reliefs, documentUrls, batchCreateDeductions, getDeductionList, toast]);
+    }, [profileId, currentProfile, reliefs, documentUrls, deductions, normalizeDeduction, updateDeduction, batchCreateDeductions, getDeductionList, toast, activeMonth, periodMode, incomeSaved]);
 
     useEffect(() => {
         if (user) {
@@ -1154,11 +1226,11 @@ export default function PITDetails() {
                                                 <div className={`space-y-6 ${currentProfile?.paysRent ? 'pt-6 border-t border-gray-100' : ''}`}>
                                                     <h3 className="text-[17px] font-extrabold text-[#0C0C0E]">Health Insurance (NHIS)</h3>
                                                     {(() => {
-                                                        const nhisDeduction = (deductions || []).find(d => (d.deductionType as string) === 'nhis' || (d.deductionType as string) === 'health_insurance');
+                                                        const nhisDeduction = (monthScopedDeductions || []).find(d => d.type === 'insurance' || d.type === 'nhis' || d.type === 'health_insurance')?.raw;
                                                         const nhisStatus = nhisDeduction?.verificationStatus;
                                                         return (
                                                             <DeductionItem 
-                                                                label="Annual Health Insurance Premium" 
+                                                                label="Health Insurance Premium" 
                                                                 value={reliefs.healthInsurance}
                                                                 onChange={(val) => setReliefs({...reliefs, healthInsurance: val})}
                                                                 uploadLabel="Upload Health Insurance Statement"
@@ -1216,11 +1288,11 @@ export default function PITDetails() {
                                                 <div className={`space-y-6 ${(currentProfile?.paysRent || currentProfile?.hasHealthInsurance || currentProfile?.hasPension) ? 'pt-6 border-t border-gray-100' : ''}`}>
                                                     <h3 className="text-[17px] font-extrabold text-[#0C0C0E]">Mortgage Interest Relief</h3>
                                                     {(() => {
-                                                        const mortgageDeduction = (deductions || []).find(d => (d.deductionType as string) === 'mortgage_interest' || (d.deductionType as string) === 'mortgage');
+                                                        const mortgageDeduction = (monthScopedDeductions || []).find(d => d.type === 'mortgage' || d.type === 'mortgage_interest')?.raw;
                                                         const mortgageStatus = mortgageDeduction?.verificationStatus;
                                                         return (
                                                             <DeductionItem 
-                                                                label="Annual Mortgage Interest Paid" 
+                                                                label="Mortgage Interest Paid" 
                                                                 value={reliefs.mortgage}
                                                                 onChange={(val) => setReliefs({...reliefs, mortgage: val})}
                                                                 uploadLabel="Upload Mortgage Statement"
@@ -1586,7 +1658,6 @@ export default function PITDetails() {
                                         </button>
                                             </div>
                                         </div>
-                                    </div>
                                     </div>
                                 </div>
                             </div>

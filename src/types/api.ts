@@ -408,12 +408,28 @@ export interface ApiSuccess<T> {
   message?: string;
 }
 
-export type DeductionType = 'nhf' | 'nhis' | 'pension' | 'life_insurance' | 'mortgage_interest' | 'rent_relief' | 'transport_allowance' | 'other';
+export type DeductionType =
+  | 'nhf'
+  | 'nhis'
+  | 'insurance'
+  | 'health_insurance'
+  | 'pension'
+  | 'life_insurance'
+  | 'mortgage_interest'
+  | 'mortgage'
+  | 'rent_relief'
+  | 'transport_allowance'
+  | 'other';
 
 export interface Deduction {
   _id: string;
   deductionType: DeductionType;
   amount: number;
+  // Newer API shape support
+  type?: string;
+  value?: number;
+  frequency?: 'annual' | 'monthly' | string;
+  month?: number | null;
   period: {
     year: number;
     startDate: string;
@@ -440,6 +456,8 @@ export interface BatchDeductionItem {
   deductionType: DeductionType;
   amount: number;
   documentUrl?: string;
+  frequency?: 'annual' | 'monthly';
+  month?: number | null;
 }
 
 export interface BatchDeductionRequest {
@@ -478,8 +496,18 @@ export interface CreateDeductionRequest {
 }
 
 export interface UpdateDeductionRequest {
+  // Legacy support
   amount?: number;
   deductionType?: DeductionType;
+
+  // Newer API shape support
+  profileId?: string;
+  year?: number;
+  type?: string;
+  value?: number;
+  frequency?: 'annual' | 'monthly';
+  month?: number | null;
+  documentUrl?: string;
 }
 
 export interface DeductionResponse {

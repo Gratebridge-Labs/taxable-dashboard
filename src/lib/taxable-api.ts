@@ -408,15 +408,31 @@ class TaxableApiService {
     
     // Since the batch endpoint is not available, we loop through individual creations
     for (const item of data.deductions) {
+      const mappedType =
+        item.deductionType === 'rent_relief' ? 'rent_relief'
+        : item.deductionType === 'pension' ? 'pension'
+        : item.deductionType === 'mortgage_interest' ? 'mortgage'
+        : item.deductionType === 'mortgage' ? 'mortgage'
+        : item.deductionType === 'nhis' ? 'insurance'
+        : item.deductionType === 'insurance' ? 'insurance'
+        : item.deductionType === 'health_insurance' ? 'insurance'
+        : item.deductionType === 'life_insurance' ? 'insurance'
+        : undefined;
+
+      if (!mappedType) {
+        throw new Error(`Unsupported deduction type: ${item.deductionType}`);
+      }
+
       const response = await fetch(`${this.baseUrl}${TAXABLE_ENDPOINTS.DEDUCTIONS.CREATE}`, {
         method: 'POST',
         headers: this.getHeaders(token),
         body: JSON.stringify({
           profileId: data.profileId,
           year: data.year,
-          type: item.deductionType,
+          type: mappedType,
           value: item.amount,
-          frequency: 'annual',
+          frequency: item.frequency ?? 'annual',
+          month: item.month ?? null,
           documentUrl: item.documentUrl
         }),
       });

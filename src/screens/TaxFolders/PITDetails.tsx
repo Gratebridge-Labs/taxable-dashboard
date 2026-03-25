@@ -1254,13 +1254,21 @@ export default function PITDetails() {
                                             ))
                                         ) : (
                                             <>
-                                                <button className="w-full flex items-center justify-between px-4 py-4 rounded-2xl bg-white">
-                                                    <span className="text-[13px] font-bold text-[#0C0C0E]">Total Income for {currentProfile?.year || 2026}</span>
-                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0C0C0E" strokeWidth="3"><polyline points="9 18 15 12 9 6"/></svg>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIncomeSubTab('income')}
+                                                    className={`w-full flex items-center justify-between px-4 py-4 rounded-2xl transition-all ${incomeSubTab === 'income' ? 'bg-white text-[#0C0C0E]' : 'hover:bg-gray-50 text-[#94A3B8]'}`}
+                                                >
+                                                    <span className={`text-[13px] font-bold ${incomeSubTab === 'income' ? 'text-[#0C0C0E]' : 'text-[#94A3B8]'}`}>Total Income for {currentProfile?.year || 2026}</span>
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={incomeSubTab === 'income' ? "#0C0C0E" : "#94A3B8"} strokeWidth="3"><polyline points="9 18 15 12 9 6"/></svg>
                                                 </button>
-                                                <button className="w-full flex items-center justify-between px-4 py-4 rounded-2xl hover:bg-gray-50 transition-all">
-                                                    <span className="text-[13px] font-bold text-[#94A3B8]">Total deductible for {currentProfile?.year || 2026}</span>
-                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="3"><polyline points="9 18 15 12 9 6"/></svg>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIncomeSubTab('deductions')}
+                                                    className={`w-full flex items-center justify-between px-4 py-4 rounded-2xl transition-all ${incomeSubTab === 'deductions' ? 'bg-white text-[#0C0C0E]' : 'hover:bg-gray-50 text-[#94A3B8]'}`}
+                                                >
+                                                    <span className={`text-[13px] font-bold ${incomeSubTab === 'deductions' ? 'text-[#0C0C0E]' : 'text-[#94A3B8]'}`}>Total deductible for {currentProfile?.year || 2026}</span>
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={incomeSubTab === 'deductions' ? "#0C0C0E" : "#94A3B8"} strokeWidth="3"><polyline points="9 18 15 12 9 6"/></svg>
                                                 </button>
                                             </>
                                         )}
@@ -1516,8 +1524,24 @@ export default function PITDetails() {
                                         </div>
                                     )}
 
-                                    <div className="mt-8 sticky bottom-6 z-10 pt-4">
-                                        <div className="rounded-2xl border border-gray-100 bg-white/80 backdrop-blur px-4 py-4 shadow-sm">
+                                    {periodMode === 'annually' && incomeSubTab === 'deductions' ? (
+                                        <div className="mt-10 flex justify-end">
+                                            <button
+                                                type="button"
+                                                onClick={async () => {
+                                                    await handleSaveDeductions();
+                                                    setActiveSection('review');
+                                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                }}
+                                                disabled={savingReliefs}
+                                                className="h-11 px-6 rounded-xl bg-[#003787] text-white text-[13px] font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {savingReliefs ? 'Saving...' : 'File annual tax returns'}
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className={periodMode === 'monthly' ? 'mt-8 sticky bottom-6 z-10 pt-4' : 'mt-10 flex justify-end'}>
+                                            <div className={periodMode === 'monthly' ? 'rounded-2xl border border-gray-100 bg-white/80 backdrop-blur px-4 py-4 shadow-sm' : ''}>
                                             {periodMode === 'monthly' && incomeSubTab === 'deductions' && activeMonthTaxSummary && (
                                                 <div className="mb-3 rounded-xl border border-gray-100 bg-white px-3 py-3">
                                                     <div className="flex flex-wrap items-start justify-between gap-2">
@@ -1882,7 +1906,7 @@ export default function PITDetails() {
                                             disabled={savingMonthlyIncome}
                                             className="h-11 w-full sm:w-auto px-5 rounded-xl bg-[#003787] text-white text-[13px] font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            {periodMode === 'annually' ? 'File annual tax returns' : (savingMonthlyIncome ? 'Saving...' : 'Save & Continue')}
+                                            {savingMonthlyIncome ? 'Saving...' : (periodMode === 'annually' ? 'Save income' : 'Save & Continue')}
                                         </button>
                                         )}
                                         {incomeSubTab !== 'deductions' && periodMode === 'monthly' && MONTHS.indexOf(activeMonth) > 0 && (
@@ -1926,21 +1950,12 @@ export default function PITDetails() {
                                             </button>
                                         )}
                                         
-                                        <button
-                                            onClick={async () => {
-                                                if (!profileId) return;
-                                                setCalculatingTax(true);
-                                                try {
-                                                    if (periodMode === 'annually') {
-                                                        const result = await calculateTaxGet(profileId);
-                                                        if (result.success) {
-                                                            setCalculatedTax(result.data);
-                                                            toast.success(
-                                                                `Annual tax calculated. Tax payable: ₦${(result.data.calculation?.netTaxPayable ?? 0).toLocaleString()}`,
-                                                                { title: 'Calculated' },
-                                                            );
-                                                        }
-                                                    } else {
+                                        {periodMode === 'monthly' && (
+                                            <button
+                                                onClick={async () => {
+                                                    if (!profileId) return;
+                                                    setCalculatingTax(true);
+                                                    try {
                                                         if (!canCalculateMonthlyTax) {
                                                             toast.warning('Complete your income and deductions first, then calculate your monthly tax.');
                                                             return;
@@ -1962,55 +1977,22 @@ export default function PITDetails() {
                                                                 { title: 'Calculated' },
                                                             );
                                                         }
-                                                    }
-                                                } catch (err: any) {
-                                                    toast.error(err.message || 'Failed to calculate tax');
-                                                } finally {
-                                                    setCalculatingTax(false);
-                                                }
-                                            }}
-                                            disabled={
-                                                calculatingTax ||
-                                                (periodMode === 'monthly' && !canCalculateMonthlyTax)
-                                            }
-                                            className="h-11 w-full sm:w-auto px-5 rounded-xl bg-[#0C0C0E] text-white text-[13px] font-semibold shadow-sm hover:bg-black transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                        >
-                                            {calculatingTax ? 'Calculating...' : (periodMode === 'annually' ? 'Calculate Annual Tax' : 'Calculate Monthly Tax')}
-                                        </button>
-                                        {periodMode === 'annually' && (
-                                            <button
-                                                type="button"
-                                                onClick={async () => {
-                                                    if (!profileId) return;
-                                                    if (!calculatedTax) {
-                                                        toast.warning('Calculate your annual tax before generating a payment link.');
-                                                        return;
-                                                    }
-                                                    setGeneratingPaymentLink(true);
-                                                    try {
-                                                        const res = await createFilingPaymentLink(profileId);
-                                                        const url = res?.data?.authorization_url;
-                                                        if (url) {
-                                                            window.open(url, '_blank', 'noopener,noreferrer');
-                                                            toast.success('Payment link generated.');
-                                                        } else {
-                                                            toast.success('Payment link created successfully.');
-                                                        }
                                                     } catch (err: any) {
-                                                        toast.error(err?.message || 'Failed to generate payment link');
+                                                        toast.error(err.message || 'Failed to calculate tax');
                                                     } finally {
-                                                        setGeneratingPaymentLink(false);
+                                                        setCalculatingTax(false);
                                                     }
                                                 }}
-                                                disabled={generatingPaymentLink || !calculatedTax}
-                                                className="h-11 w-full sm:w-auto px-5 rounded-xl border border-gray-200 bg-white text-[#0C0C0E] text-[13px] font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                disabled={calculatingTax || !canCalculateMonthlyTax}
+                                                className="h-11 w-full sm:w-auto px-5 rounded-xl bg-[#0C0C0E] text-white text-[13px] font-semibold shadow-sm hover:bg-black transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                             >
-                                                {generatingPaymentLink ? 'Generating…' : 'Generate payment link'}
+                                                {calculatingTax ? 'Calculating...' : 'Calculate Monthly Tax'}
                                             </button>
                                         )}
                                             </div>
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
                             </div>
                         )}

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Download, Info, ChevronRight, HelpCircle, Calculator } from 'lucide-react';
 import { useTaxableApi } from '@/lib';
 import { useSearchParams } from 'next/navigation';
+import { useToast } from '@/components/Toast/ToastProvider';
 
 interface ReviewAndFileProps {
     profileId?: string;
@@ -73,6 +74,7 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
     const profileId = propProfileId || searchParams.get('profileId') || searchParams.get('id') || '';
     
     const { submitProfile, fileTax, createFilingPaymentLink, calculateTaxGet, calculateTaxByMonth, getIncomeData, getDeductionList } = useTaxableApi();
+    const toast = useToast();
     
     const [submitting, setSubmitting] = useState(false);
     const [filing, setFiling] = useState(false);
@@ -178,7 +180,7 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
                 }
             }
         } catch (err: any) {
-            alert(err.message || 'Failed to calculate tax');
+            toast.error(err.message || 'Failed to calculate tax');
         } finally {
             setCalculating(false);
         }
@@ -191,7 +193,7 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
             await submitProfile(profileId);
             setCurrentStep('file');
         } catch (err: any) {
-            alert(err.message || 'Failed to submit profile');
+            toast.error(err.message || 'Failed to submit profile');
         } finally {
             setSubmitting(false);
         }
@@ -204,7 +206,7 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
             await fileTax(profileId);
             setCurrentStep('pay');
         } catch (err: any) {
-            alert(err.message || 'Failed to file tax');
+            toast.error(err.message || 'Failed to file tax');
         } finally {
             setFiling(false);
         }
@@ -218,10 +220,10 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
             if (result.data?.authorization_url) {
                 window.open(result.data.authorization_url, '_blank');
             } else {
-                alert('Payment link created successfully!');
+                toast.success('Payment link created successfully!');
             }
         } catch (err: any) {
-            alert(err.message || 'Failed to create payment link');
+            toast.error(err.message || 'Failed to create payment link');
         } finally {
             setProcessingPayment(false);
         }

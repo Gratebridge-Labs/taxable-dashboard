@@ -7,9 +7,21 @@ import ReviewAndFile from './ReviewAndFile';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useUser } from '@/contexts/UserContext';
 import { useTaxableApi } from '@/lib';
+import { useToast } from '@/components/Toast/ToastProvider';
 import type { Profile, IncomeRecord, Deduction, DeductionType, BatchDeductionItem } from '@/types/api';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+const stripNumberFormatting = (input: string) => input.replace(/[^\d.]/g, '');
+
+const formatNumberWithCommas = (raw: string) => {
+    const cleaned = stripNumberFormatting(raw);
+    if (!cleaned) return '';
+    const [intPart, decPart] = cleaned.split('.');
+    const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    if (decPart === undefined) return formattedInt;
+    return `${formattedInt}.${decPart}`;
+};
 
 const IncomeField = ({ label, value, onChange, placeholder = "N0" }: { label: string; value: string; onChange: (val: string) => void; placeholder?: string }) => (
     <div className="space-y-2">
@@ -21,8 +33,8 @@ const IncomeField = ({ label, value, onChange, placeholder = "N0" }: { label: st
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] font-medium text-[#94A3B8]">₦</span>
             <input 
                 type="text" 
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
+                value={formatNumberWithCommas(value)}
+                onChange={(e) => onChange(stripNumberFormatting(e.target.value))}
                 placeholder={placeholder}
                 className="w-full h-12 border border-gray-100 bg-white rounded-2xl pl-8 pr-4 text-[14px] font-bold text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-[#94A3B8]/40" 
             />
@@ -61,7 +73,8 @@ const DeductionItem = ({
         try {
             await onUpload(file);
         } catch (err: any) {
-            alert(err.message || 'Failed to upload file');
+            // handled by parent
+            throw err;
         } finally {
             setUploading(false);
             if (fileInputRef.current) fileInputRef.current.value = '';
@@ -79,8 +92,8 @@ const DeductionItem = ({
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] font-medium text-[#6B7280]">₦</span>
                 <input 
                     type="text" 
-                    value={value}
-                    onChange={(e) => onChange(e.target.value)}
+                    value={formatNumberWithCommas(value)}
+                    onChange={(e) => onChange(stripNumberFormatting(e.target.value))}
                     placeholder="NG"
                     className="w-full h-12 border border-gray-100 bg-white rounded-2xl pl-8 pr-4 text-[14px] font-bold text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-gray-300" 
                 />
@@ -154,7 +167,8 @@ export default function PITDetails() {
     const year = searchParams.get('year') ? parseInt(searchParams.get('year')!, 10) : 2026;
     
     const { currentProfile, setCurrentProfile, loading: profileLoading } = useProfile();
-    const { user } = useUser();
+    const { user, token, loading: authLoading } = useUser();
+    const toast = useToast();
     const { getProfile, getIncomeList, getDeductionList, getTaxSummary, updatePersonalInfo, addIncome, updateIncome, deleteIncome, uploadFile, uploadSimple, batchCreateDeductions, updateDeduction, deleteDeduction, getIncomeData, updateMonthlyIncomeData, updateAnnualIncomeData, calculateTaxByMonth, calculateTaxGet } = useTaxableApi();
     
     const [loading, setLoading] = useState(true);
@@ -197,6 +211,8 @@ export default function PITDetails() {
     });
 
     const [savingMonthlyIncome, setSavingMonthlyIncome] = useState(false);
+    const [incomeSaved, setIncomeSaved] = useState(false);
+    const [deductionsSaved, setDeductionsSaved] = useState(false);
     
     const [incomeModalOpen, setIncomeModalOpen] = useState(false);
     const [editingIncome, setEditingIncome] = useState<IncomeRecord | null>(null);
@@ -295,6 +311,19 @@ export default function PITDetails() {
     const loadProfileData = useCallback(async () => {
         if (!profileId) {
             setLoading(false);
+            return;
+        }
+
+        // Wait for auth state hydration before calling authenticated APIs.
+        if (authLoading) {
+            return;
+        }
+
+        // If there's no token after auth has loaded, redirect to sign-in.
+        if (!token) {
+            setError('Authentication required');
+            setLoading(false);
+            router.replace('/signin');
             return;
         }
         
@@ -415,7 +444,7 @@ export default function PITDetails() {
         } finally {
             setLoading(false);
         }
-    }, [profileId, year, getProfile, setCurrentProfile, getIncomeList, getDeductionList, getTaxSummary, getIncomeData, user]);
+    }, [profileId, year, authLoading, token, router, getProfile, setCurrentProfile, getIncomeList, getDeductionList, getTaxSummary, getIncomeData, user]);
 
     useEffect(() => {
         if (periodMode === 'monthly') {
@@ -479,6 +508,65 @@ export default function PITDetails() {
     useEffect(() => {
         loadProfileData();
     }, [loadProfileData]);
+
+    useEffect(() => {
+        // If we already have saved data from the API, treat steps as complete.
+        const monthNum = MONTHS.indexOf(activeMonth) + 1;
+        const monthIndex = monthNum - 1;
+        const hasIncomeForMonth =
+            (incomeData?.[monthIndex]?.length ?? 0) > 0 ||
+            incomeRecords.some(r => r.period.month === monthNum);
+
+        if (hasIncomeForMonth) setIncomeSaved(true);
+        if ((deductions?.length ?? 0) > 0) setDeductionsSaved(true);
+    }, [activeMonth, incomeData, incomeRecords, deductions]);
+
+    const canCalculateMonthlyTax =
+        periodMode === 'monthly'
+            ? incomeSaved && deductionsSaved
+            : true;
+
+    const handleSaveDeductions = useCallback(async () => {
+        if (!profileId || !currentProfile) return;
+        setSavingReliefs(true);
+        try {
+            const currentYear = currentProfile.year;
+
+            const batchItems: BatchDeductionItem[] = [
+                ...(currentProfile.paysRent && reliefs.rentRelief && parseFloat(reliefs.rentRelief) > 0
+                    ? [{ deductionType: 'rent_relief' as DeductionType, amount: parseFloat(reliefs.rentRelief), documentUrl: documentUrls.rentRelief || undefined }]
+                    : []),
+                ...(currentProfile.hasPension && reliefs.pension && parseFloat(reliefs.pension) > 0
+                    ? [{ deductionType: 'pension' as DeductionType, amount: parseFloat(reliefs.pension), documentUrl: documentUrls.pension || undefined }]
+                    : []),
+                ...(currentProfile.hasHealthInsurance && reliefs.healthInsurance && parseFloat(reliefs.healthInsurance) > 0
+                    ? [{ deductionType: 'nhis' as DeductionType, amount: parseFloat(reliefs.healthInsurance), documentUrl: documentUrls.healthInsurance || undefined }]
+                    : []),
+                ...(currentProfile.paysMortgage && reliefs.mortgage && parseFloat(reliefs.mortgage) > 0
+                    ? [{ deductionType: 'mortgage_interest' as DeductionType, amount: parseFloat(reliefs.mortgage), documentUrl: documentUrls.mortgage || undefined }]
+                    : []),
+            ];
+
+            if (batchItems.length === 0) {
+                toast.warning('Please enter at least one deduction amount before saving.');
+                return;
+            }
+
+            await batchCreateDeductions({ profileId, year: currentYear, deductions: batchItems });
+
+            const deductionRes = await getDeductionList(profileId, currentYear);
+            if (deductionRes.success) {
+                setDeductions(deductionRes.data?.deductions || []);
+            }
+
+            toast.success('Deductions saved successfully!');
+            setDeductionsSaved(true);
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to save deductions');
+        } finally {
+            setSavingReliefs(false);
+        }
+    }, [profileId, currentProfile, reliefs, documentUrls, batchCreateDeductions, getDeductionList, toast]);
 
     useEffect(() => {
         if (user) {
@@ -557,9 +645,6 @@ export default function PITDetails() {
             {taxSummary?.actions && (
                 <div className="mt-4 bg-white border border-gray-100 rounded-[20px] p-5">
                     <div className="flex items-center gap-2 mb-2">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#003787" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                        </svg>
                         <h4 className="text-[13px] font-bold text-[#0C0C0E]">Need expert eyes on your return?</h4>
                     </div>
                     <p className="text-[12px] text-[#6B7280] leading-relaxed font-medium mb-4">
@@ -670,10 +755,6 @@ export default function PITDetails() {
                                 <span className="flex items-center gap-1 text-[12px] font-bold text-[#16A34A]">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                                     Tax Compliant
-                                </span>
-                                <span className="text-[#D1D5DB]">·</span>
-                                <span className="text-[12px] text-[#6B7280] font-medium">
-                                    TCC Valid until Dec 31, {currentProfile?.year || 2026}
                                 </span>
                             </div>
                         </div>
@@ -841,12 +922,12 @@ export default function PITDetails() {
                                             try {
                                                 const normalizedNin = (personalInfo.nin || '').replace(/\D/g, '');
                                                 if (normalizedNin && normalizedNin.length !== 11) {
-                                                    alert('NIN must be exactly 11 digits.');
+                                                    toast.error('NIN must be exactly 11 digits.');
                                                     return;
                                                 }
                                                 const isoDateOfBirth = personalInfo.dateOfBirth ? toIsoDate(personalInfo.dateOfBirth) : undefined;
                                                 if (personalInfo.dateOfBirth && !isoDateOfBirth) {
-                                                    alert('Date of birth must be in YYYY-MM-DD or DD/MM/YYYY format.');
+                                                    toast.error('Date of birth must be in YYYY-MM-DD or DD/MM/YYYY format.');
                                                     return;
                                                 }
                                                 await updatePersonalInfo(profileId, {
@@ -867,7 +948,7 @@ export default function PITDetails() {
                                                 }, 1500);
                                             } catch (err: any) {
                                                 console.error('Failed to save personal info:', err);
-                                                alert(err.message || 'Failed to save personal information');
+                                                toast.error(err.message || 'Failed to save personal information');
                                             } finally {
                                                 setSavingPersonalInfo(false);
                                             }
@@ -1154,57 +1235,45 @@ export default function PITDetails() {
                                                 </div>
                                             )}
 
-                                            <button 
-                                                onClick={async () => {
-                                                    if (!profileId || !currentProfile) return;
-                                                    setSavingReliefs(true);
-                                                    try {
-                                                        const currentYear = currentProfile.year;
-
-                                                        const batchItems: BatchDeductionItem[] = [
-                                                            ...(currentProfile.paysRent && reliefs.rentRelief && parseFloat(reliefs.rentRelief) > 0
-                                                                ? [{ deductionType: 'rent_relief' as DeductionType, amount: parseFloat(reliefs.rentRelief), documentUrl: documentUrls.rentRelief || undefined }]
-                                                                : []),
-                                                            ...(currentProfile.hasPension && reliefs.pension && parseFloat(reliefs.pension) > 0
-                                                                ? [{ deductionType: 'pension' as DeductionType, amount: parseFloat(reliefs.pension), documentUrl: documentUrls.pension || undefined }]
-                                                                : []),
-                                                            ...(currentProfile.hasHealthInsurance && reliefs.healthInsurance && parseFloat(reliefs.healthInsurance) > 0
-                                                                ? [{ deductionType: 'nhis' as DeductionType, amount: parseFloat(reliefs.healthInsurance), documentUrl: documentUrls.healthInsurance || undefined }]
-                                                                : []),
-                                                            ...(currentProfile.paysMortgage && reliefs.mortgage && parseFloat(reliefs.mortgage) > 0
-                                                                ? [{ deductionType: 'mortgage_interest' as DeductionType, amount: parseFloat(reliefs.mortgage), documentUrl: documentUrls.mortgage || undefined }]
-                                                                : []),
-                                                        ];
-
-                                                        if (batchItems.length === 0) {
-                                                            alert('Please enter at least one deduction amount before saving.');
-                                                            return;
-                                                        }
-
-                                                        await batchCreateDeductions({ profileId, year: currentYear, deductions: batchItems });
-
-                                                        const deductionRes = await getDeductionList(profileId, currentYear);
-                                                        if (deductionRes.success) {
-                                                            setDeductions(deductionRes.data?.deductions || []);
-                                                        }
-
-                                                        alert('Deductions saved successfully!');
-                                                    } catch (err: any) {
-                                                        alert(err.message || 'Failed to save deductions');
-                                                    } finally {
-                                                        setSavingReliefs(false);
-                                                    }
-                                                }}
-                                                disabled={savingReliefs}
-                                                className="h-12 px-10 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-all disabled:opacity-50 mt-4"
-                                            >
-                                                {savingReliefs ? 'Saving...' : 'Save Deductions'}
-                                            </button>
+                                            {/* Save action is now in the sticky footer for this step */}
                                         </div>
                                     )}
 
-                                    <div className="flex items-center gap-4 pt-4">
-                                        <button 
+                                    <div className="mt-8 sticky bottom-6 z-10 pt-4">
+                                        <div className="rounded-2xl border border-gray-100 bg-white/80 backdrop-blur px-4 py-4 shadow-sm">
+                                            {periodMode === 'monthly' && (!incomeSaved || !deductionsSaved) && (
+                                                <div className="mb-3 rounded-xl bg-[#FAFAFA] border border-gray-100 px-3 py-2">
+                                                    <p className="text-[12px] font-semibold text-[#0C0C0E]">
+                                                        Complete steps to calculate
+                                                    </p>
+                                                    <div className="mt-1 flex flex-wrap gap-2 text-[12px] font-medium">
+                                                        <span className={`px-2 py-0.5 rounded-full border ${incomeSaved ? 'bg-[#E6F9F3] text-[#047857] border-[#A7F3D0]' : 'bg-[#FFF7ED] text-[#C05621] border-[#FED7AA]'}`}>
+                                                            {incomeSaved ? 'Income saved' : 'Save income'}
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setIncomeSubTab('deductions')}
+                                                            className={`px-2 py-0.5 rounded-full border transition-colors ${deductionsSaved ? 'bg-[#E6F9F3] text-[#047857] border-[#A7F3D0] cursor-default' : 'bg-[#FFF7ED] text-[#C05621] border-[#FED7AA] hover:bg-[#FFEDD5]'}`}
+                                                            disabled={deductionsSaved}
+                                                        >
+                                                            {deductionsSaved ? 'Deductions saved' : 'Save deductions'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+                                                {incomeSubTab === 'deductions' && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleSaveDeductions}
+                                                        disabled={savingReliefs}
+                                                        className="h-11 w-full sm:w-auto px-5 rounded-xl bg-[#003787] text-white text-[13px] font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        {savingReliefs ? 'Saving...' : 'Save deductions'}
+                                                    </button>
+                                                )}
+                                        {incomeSubTab !== 'deductions' && (
+                                        <button
                                             onClick={async () => {
                                                 if (!profileId || !currentProfile) return;
                                                 setSavingMonthlyIncome(true);
@@ -1375,24 +1444,53 @@ export default function PITDetails() {
                                                         }
                                                     }
                                                     
-                                                    alert(periodMode === 'annually' ? `Annual income saved successfully!` : `${activeMonth} income saved successfully!`);
+                                                    toast.success(periodMode === 'annually' ? `Annual income saved successfully!` : `${activeMonth} income saved successfully!`);
+                                                    setIncomeSaved(true);
+
+                                                    // Progress the flow after saving:
+                                                    // - Monthly: go to Deductions if not completed, otherwise next month (or Review on December)
+                                                    // - Annual: go to Deductions
+                                                    if (periodMode === 'monthly') {
+                                                        if (!deductionsSaved) {
+                                                            setIncomeSubTab('deductions');
+                                                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                        } else {
+                                                            const currentMonthIdx = MONTHS.indexOf(activeMonth);
+                                                            const isLastMonth = currentMonthIdx >= MONTHS.length - 1;
+                                                            if (isLastMonth) {
+                                                                setActiveSection('review');
+                                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                            } else {
+                                                                const nextMonth = MONTHS[currentMonthIdx + 1];
+                                                                setActiveMonth(nextMonth);
+                                                                setExpandedMonth(nextMonth);
+                                                                setIncomeSubTab('income');
+                                                                setIncomeSaved(false);
+                                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                            }
+                                                        }
+                                                    } else {
+                                                        setIncomeSubTab('deductions');
+                                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                    }
                                                 } catch (err: any) {
-                                                    alert(err.message || 'Failed to save income');
+                                                    toast.error(err.message || 'Failed to save income');
                                                 } finally {
                                                     setSavingMonthlyIncome(false);
                                                 }
                                             }}
                                             disabled={savingMonthlyIncome}
-                                            className="h-12 px-10 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
+                                            className="h-11 w-full sm:w-auto px-5 rounded-xl bg-[#003787] text-white text-[13px] font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             {periodMode === 'annually' ? 'File annual tax returns' : (savingMonthlyIncome ? 'Saving...' : 'Save & Continue')}
                                         </button>
-                                        {periodMode === 'monthly' && (
-                                            <button 
+                                        )}
+                                        {incomeSubTab !== 'deductions' && periodMode === 'monthly' && MONTHS.indexOf(activeMonth) > 0 && (
+                                            <button
                                                 onClick={() => {
                                                     const currentMonthIdx = MONTHS.indexOf(activeMonth);
                                                     if (currentMonthIdx === 0) {
-                                                        alert("No previous month data available for January.");
+                                                        toast.info('No previous month data available for January.');
                                                         return;
                                                     }
                                                     
@@ -1400,7 +1498,7 @@ export default function PITDetails() {
                                                     const prevMonthData = incomeData && incomeData[prevMonthIndex] ? incomeData[prevMonthIndex] : [];
                                                     
                                                     if (!prevMonthData || prevMonthData.length === 0) {
-                                                        alert(`No records found for ${MONTHS[currentMonthIdx - 1]}.`);
+                                                        toast.info(`No records found for ${MONTHS[currentMonthIdx - 1]}.`);
                                                         return;
                                                     }
                                                     
@@ -1422,13 +1520,13 @@ export default function PITDetails() {
                                                     });
                                                     setCurrentMonthIncome(prevData => ({ ...prevData, ...data }));
                                                 }}
-                                                className="h-12 px-8 border border-gray-100 bg-white text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-all"
+                                                className="h-11 w-full sm:w-auto px-5 rounded-xl border border-gray-200 bg-white text-[#0C0C0E] text-[13px] font-semibold hover:bg-gray-50 transition-colors"
                                             >
                                                 Copy from last month
                                             </button>
                                         )}
                                         
-                                        <button 
+                                        <button
                                             onClick={async () => {
                                                 if (!profileId) return;
                                                 setCalculatingTax(true);
@@ -1437,27 +1535,43 @@ export default function PITDetails() {
                                                         const result = await calculateTaxGet(profileId);
                                                         if (result.success) {
                                                             setCalculatedTax(result.data);
-                                                            alert(`Annual Tax Calculated!\nGross Income: ₦${result.data.calculation?.grossIncome?.toLocaleString() || 0}\nTax Payable: ₦${result.data.calculation?.netTaxPayable?.toLocaleString() || 0}`);
+                                                            toast.success(
+                                                                `Annual tax calculated. Tax payable: ₦${(result.data.calculation?.netTaxPayable ?? 0).toLocaleString()}`,
+                                                                { title: 'Calculated' },
+                                                            );
                                                         }
                                                     } else {
+                                                        if (!canCalculateMonthlyTax) {
+                                                            toast.warning('Complete your income and deductions first, then calculate your monthly tax.');
+                                                            return;
+                                                        }
                                                         const monthNum = MONTHS.indexOf(activeMonth) + 1;
                                                         const result = await calculateTaxByMonth(profileId, monthNum);
                                                         if (result.success) {
                                                             setCalculatedTax(result.data);
-                                                            alert(`${activeMonth} Tax Calculated!\nGross Income: ₦${result.data.calculation?.grossIncome?.toLocaleString() || 0}\nTax Payable: ₦${result.data.calculation?.netTaxPayable?.toLocaleString() || 0}`);
+                                                            toast.success(
+                                                                `${activeMonth} tax calculated. Tax payable: ₦${(result.data.calculation?.netTaxPayable ?? 0).toLocaleString()}`,
+                                                                { title: 'Calculated' },
+                                                            );
                                                         }
                                                     }
                                                 } catch (err: any) {
-                                                    alert(err.message || 'Failed to calculate tax');
+                                                    toast.error(err.message || 'Failed to calculate tax');
                                                 } finally {
                                                     setCalculatingTax(false);
                                                 }
                                             }}
-                                            disabled={calculatingTax}
-                                            className="h-12 px-8 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-all disabled:opacity-50"
+                                            disabled={
+                                                calculatingTax ||
+                                                (periodMode === 'monthly' && !canCalculateMonthlyTax)
+                                            }
+                                            className="h-11 w-full sm:w-auto px-5 rounded-xl bg-[#0C0C0E] text-white text-[13px] font-semibold shadow-sm hover:bg-black transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                         >
                                             {calculatingTax ? 'Calculating...' : (periodMode === 'annually' ? 'Calculate Annual Tax' : 'Calculate Monthly Tax')}
                                         </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                     </div>
                                 </div>
                             </div>
@@ -1607,7 +1721,7 @@ export default function PITDetails() {
                         <button 
                             onClick={async () => {
                                 if (!profileId || !incomeForm.amount) {
-                                    alert('Please enter an amount');
+                                    toast.warning('Please enter an amount');
                                     return;
                                 }
                                 setSavingIncome(true);
@@ -1632,9 +1746,10 @@ export default function PITDetails() {
                                         await addIncome(profileId, data);
                                     }
                                     setIncomeModalOpen(false);
+                                    toast.success(editingIncome ? 'Income updated' : 'Income added');
                                     loadProfileData();
                                 } catch (err: any) {
-                                    alert(err.message || 'Failed to save income');
+                                    toast.error(err.message || 'Failed to save income');
                                 } finally {
                                     setSavingIncome(false);
                                 }
@@ -1711,7 +1826,7 @@ export default function PITDetails() {
                         <button 
                             onClick={async () => {
                                 if (!profileId || !deductionForm.amount) {
-                                    alert('Please enter an amount');
+                                    toast.warning('Please enter an amount');
                                     return;
                                 }
                                 setSavingDeduction(true);
@@ -1739,9 +1854,10 @@ export default function PITDetails() {
                                         });
                                     }
                                     setDeductionModalOpen(false);
+                                    toast.success(editingDeduction ? 'Deduction updated' : 'Deduction added');
                                     loadProfileData();
                                 } catch (err: any) {
-                                    alert(err.message || 'Failed to save deduction');
+                                    toast.error(err.message || 'Failed to save deduction');
                                 } finally {
                                     setSavingDeduction(false);
                                 }

@@ -457,34 +457,6 @@ class TaxableApiService {
     });
     return this.handleResponse<DeleteDeductionResponse>(response);
   }
-
-  async createFilingPaymentLink(token: string, profileId: string, month?: number): Promise<PaymentLinkResponse> {
-    const url = month 
-      ? `${this.baseUrl}${TAXABLE_ENDPOINTS.PAYSTACK.FILING_LINK(profileId, month)}`
-      : `${this.baseUrl}${TAXABLE_ENDPOINTS.PAYSTACK.FILING_LINK(profileId)}`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: this.getHeaders(token),
-    });
-    return this.handleResponse<PaymentLinkResponse>(response);
-  }
-
-  async createTaxAgentPaymentLink(token: string, profileId: string): Promise<PaymentLinkResponse> {
-    const response = await fetch(`${this.baseUrl}${TAXABLE_ENDPOINTS.PAYSTACK.TAX_AGENT_LINK}`, {
-      method: 'POST',
-      headers: this.getHeaders(token),
-      body: JSON.stringify({ profileId }),
-    });
-    return this.handleResponse<PaymentLinkResponse>(response);
-  }
-
-  async getPaymentRecords(token: string, profileId: string): Promise<PaymentRecordsResponse> {
-    const response = await fetch(`${this.baseUrl}${TAXABLE_ENDPOINTS.PAYSTACK.PAYMENTS(profileId)}`, {
-      method: 'GET',
-      headers: this.getHeaders(token),
-    });
-    return this.handleResponse<PaymentRecordsResponse>(response);
-  }
 }
 
 export const taxableApi = new TaxableApiService();

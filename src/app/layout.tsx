@@ -22,6 +22,7 @@ export const metadata: Metadata = {
 
 import { UserProvider } from "@/contexts/UserContext";
 import { ProfileProvider } from "@/contexts/ProfileContext";
+import { ToastProvider } from "@/components/Toast/ToastProvider";
 
 export default function RootLayout({
   children,
@@ -33,11 +34,13 @@ export default function RootLayout({
       <body
         className={`${archivo.variable} antialiased`}
       >
-        <UserProvider>
-          <ProfileProvider>
-            {children}
-          </ProfileProvider>
-        </UserProvider>
+        <ToastProvider>
+          <UserProvider>
+            <ProfileProvider>
+              {children}
+            </ProfileProvider>
+          </UserProvider>
+        </ToastProvider>
       </body>
     </html>
   );

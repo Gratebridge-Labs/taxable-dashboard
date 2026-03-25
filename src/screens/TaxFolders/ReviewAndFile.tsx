@@ -1,6 +1,7 @@
 'use client';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useMemo, useEffect } from 'react';
-import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Info, Calculator, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useTaxableApi } from '@/lib';
@@ -185,7 +186,10 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
     }, [incomeData, filingPreference]);
 
     const totalDeductions = useMemo(() => {
-        return deductions.reduce((sum, d) => sum + (d.amount || 0), 0);
+        return deductions.reduce((sum, d) => {
+            const amount = typeof d.amount === 'string' ? parseFloat(d.amount) : (d.amount || 0);
+            return sum + amount;
+        }, 0);
     }, [deductions]);
 
     const estimatedTax = taxCalculation?.calculation?.netTaxPayable || 0;
@@ -203,6 +207,12 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
     const reviewAndFileAllowed = useMemo(() => now >= reviewWindowStart, [now, reviewWindowStart]);
 
     const monthHasAnyData = (monthNum: number) => {
+        // For annual filing, check incomeData[0]
+        if (filingPreference === 'annual') {
+            const annualIncome = incomeData?.[0];
+            if (Array.isArray(annualIncome) && annualIncome.length > 0) return true;
+        }
+        // For monthly filing, check each month
         const income = incomeData?.[monthNum - 1];
         const hasIncome = Array.isArray(income) && income.length > 0;
         const hasMonthlyDeduction = (deductions || []).some((d: any) => d?.frequency === 'monthly' && d?.month === monthNum);
@@ -389,6 +399,14 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
     }
 
     const hasData = calculatedIncome.totalIncome > 0 || totalDeductions > 0 || estimatedTax > 0;
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-20">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#003787]"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -590,7 +608,7 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
                             <div className="mt-20">
                                 <h3 className="text-base font-extrabold text-taxable-dark mb-4">Apply Tax Brackets</h3>
                                 <p className="text-[13px] text-taxable-gray font-medium leading-relaxed mb-8">
-                                    Nigeria uses progressive tax rates. Here's how your income is taxed across different brackets
+                                    Nigeria uses progressive tax rates. Here&apos;s how your income is taxed across different brackets
                                 </p>
 
                                 {taxCalculation?.calculation?.taxBreakdown && taxCalculation.calculation.taxBreakdown.length > 0 ? (
@@ -626,7 +644,7 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
                                 title="Deductions & Reliefs"
                                 rows={deductions.map((d: any) => ({
                                     label: d.deductionType || 'Deduction',
-                                    value: formatCurrency(d.amount || 0)
+                                    value: formatCurrency(typeof d.amount === 'string' ? parseFloat(d.amount) : (d.amount || 0))
                                 }))}
                                 totalLabel="Total Deductions"
                                 totalValue={formatCurrency(totalDeductions)}

@@ -4,11 +4,15 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useUser } from '@/contexts/UserContext';
 
 export default function DashboardHeader() {
     const pathname = usePathname();
+    const { user } = useUser();
     const [showSupport, setShowSupport] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '';
 
     const navLinks = [
         {
@@ -91,8 +95,13 @@ export default function DashboardHeader() {
                 })}
             </nav>
 
-            {/* Right Section: Support Button */}
-            <div className="flex-1 flex justify-end relative">
+            {/* Right Section: User Name & Support Button */}
+            <div className="flex items-center gap-3 md:gap-4 relative">
+                {userName && (
+                    <span className="text-[13px] md:text-[14px] font-semibold text-taxable-dark hidden sm:block">
+                        {userName}
+                    </span>
+                )}
                 <button
                     onClick={() => setShowSupport(!showSupport)}
                     className="px-3 md:px-5 h-[42px] md:h-[46px] border border-gray-100 rounded-[12px] text-[13px] md:text-[14px] font-bold text-taxable-dark hover:shadow-xs hover:bg-gray-50 transition-all cursor-pointer flex items-center gap-2"

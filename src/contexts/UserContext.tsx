@@ -47,9 +47,10 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                 }
             }
             // Fetch fresh user data if we have a token
-            refreshUser(storedToken);
+            refreshUser(storedToken).finally(() => setLoading(false));
+        } else {
+            setLoading(false);
         }
-        setLoading(false);
     }, []);
 
     const refreshUser = async (currentToken?: string) => {

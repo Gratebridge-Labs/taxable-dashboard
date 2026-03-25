@@ -519,7 +519,7 @@ export default function PITDetails() {
 
     useEffect(() => {
         loadProfileData();
-    }, [loadProfileData]);
+    }, [loadProfileData, authLoading]);
 
     useEffect(() => {
         // If we already have saved data from the API, treat steps as complete.
@@ -532,6 +532,43 @@ export default function PITDetails() {
         if (hasIncomeForMonth) setIncomeSaved(true);
         if ((deductions?.length ?? 0) > 0) setDeductionsSaved(true);
     }, [activeMonth, incomeData, incomeRecords, deductions]);
+
+    useEffect(() => {
+        if (activeSection === 'review' && profileId && !calculatingTax) {
+            const autoCalculate = async () => {
+                setCalculatingTax(true);
+                try {
+                    if (periodMode === 'annually') {
+                        const result = await calculateTaxGet(profileId);
+                        if (result.success) {
+                            setCalculatedTax(result.data);
+                        }
+                    } else {
+                        const monthNum = MONTHS.indexOf(activeMonth) + 1;
+                        if (canCalculateMonthlyTax) {
+                            const result = await calculateTaxByMonth(profileId, monthNum);
+                            if (result.success) {
+                                setCalculatedTax(result.data);
+                                const taxSummaryObj = (result.data as any)?.taxSummary ?? null;
+                                if (taxSummaryObj) {
+                                    setMonthlySummaryByMonth((prev) => ({ ...prev, [monthNum]: taxSummaryObj }));
+                                }
+                                const monthTax = extractMonthlyTax(result.data);
+                                if (monthTax !== null) {
+                                    setMonthlyTaxByMonth((prev) => ({ ...prev, [monthNum]: monthTax }));
+                                }
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error('Auto-calculate failed:', err);
+                } finally {
+                    setCalculatingTax(false);
+                }
+            };
+            autoCalculate();
+        }
+    }, [activeSection]);
 
     const canCalculateMonthlyTax =
         periodMode === 'monthly'
@@ -927,7 +964,24 @@ export default function PITDetails() {
             <DashboardHeader />
 
             <main className="max-w-[1200px] mx-auto px-4 md:px-8 py-6 md:py-8">
-                <div className="flex flex-col gap-4 mb-6 border-b border-gray-100 pb-4 md:pb-6">
+                    <div className="flex flex-col gap-4 mb-6 border-b border-gray-100 pb-4 md:pb-6">
+                    {/* Mobile: Tax Amount at top */}
+                    <div className="md:hidden flex justify-between items-end">
+                        <div>
+                            <h1 className="text-base font-bold text-[#0C0C0E]">{personalInfo.fullName || 'User'}</h1>
+                            <div className="flex items-center gap-2 mt-0.5">
+                                <span className="flex items-center gap-1 text-[11px] font-bold text-[#16A34A]">
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                    Tax Compliant
+                                </span>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <h2 className="text-base font-bold text-[#0C0C0E]">{displayedTaxAmount}</h2>
+                            <p className="text-[11px] text-[#6B7280] font-medium">Est. Tax</p>
+                        </div>
+                    </div>
+
                     {/* Breadcrumb with Process Indicator */}
                     <div className="flex flex-col gap-3">
                         <button onClick={() => router.back()} className="flex items-center gap-1.5 text-[13px] font-bold text-[#0C0C0E] hover:text-[#003787] transition-colors w-fit">
@@ -971,28 +1025,27 @@ export default function PITDetails() {
                     </div>
 
                     <div className="hidden md:flex justify-between items-start">
-                        <div className="flex items-center gap-2 text-[12px] text-[#9CA3AF] font-medium">
-                            <span>{profile.year} Individual Tax</span><span>/</span>
-                            <span className="text-[#6B7280]">{activeLabel}</span>
-                            {activeSection === 'income-deductions' && periodMode === 'monthly' && (
-                                <><span>/</span><span className="text-[#6B7280]">{activeMonth}</span><span>/</span><span className="text-[#6B7280] capitalize">{incomeSubTab}</span></>
-                            )}
-                        </div>
-
                         <div>
-                            <h1 className="text-lg font-bold text-[#0C0C0E] mb-1.5">{personalInfo.fullName || 'User'}, {currentProfile?.year || 2026} Individual Tax</h1>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 text-[12px] text-[#9CA3AF] font-medium mb-2">
+                                <span>{profile.year} Individual Tax</span><span>/</span>
+                                <span className="text-[#6B7280]">{activeLabel}</span>
+                                {activeSection === 'income-deductions' && periodMode === 'monthly' && (
+                                    <><span>/</span><span className="text-[#6B7280]">{activeMonth}</span><span>/</span><span className="text-[#6B7280] capitalize">{incomeSubTab}</span></>
+                                )}
+                            </div>
+                            <h1 className="text-lg font-bold text-[#0C0C0E]">{personalInfo.fullName || 'User'}, {currentProfile?.year || 2026} Individual Tax</h1>
+                            <div className="flex items-center gap-2 mt-1">
                                 <span className="flex items-center gap-1 text-[12px] font-bold text-[#16A34A]">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                                     Tax Compliant
                                 </span>
                             </div>
                         </div>
-                    </div>
 
-                    <div className="text-right">
-                        <h2 className="text-base font-bold text-[#0C0C0E]">{displayedTaxAmount}</h2>
-                        <p className="text-[13px] text-[#6B7280] font-medium">Estimated Net Tax Payable</p>
+                        <div className="text-right">
+                            <h2 className="text-base font-bold text-[#0C0C0E]">{displayedTaxAmount}</h2>
+                            <p className="text-[13px] text-[#6B7280] font-medium">Estimated Net Tax Payable</p>
+                        </div>
                     </div>
                 </div>
 
@@ -1970,7 +2023,25 @@ export default function PITDetails() {
                                                                 `Annual tax calculated. Tax payable: ₦${(result.data.calculation?.netTaxPayable ?? 0).toLocaleString()}`,
                                                                 { title: 'Calculated' },
                                                             );
-                                                        }
+                                                        } else {
+                                                            const missingFields = (result as any)?.data?.missingProfileFields;
+                                                            if (missingFields && missingFields.length > 0) {
+                                                                const fieldLabels: Record<string, string> = {
+                                                                    dob: 'Date of birth',
+                                                                    nin: 'NIN',
+                                                                    fullName: 'Full name',
+                                                                    email: 'Email address',
+                                                                    phone: 'Phone number',
+                                                                    streetAddress: 'Street address',
+                                                                    city: 'City',
+                                                                    state: 'State',
+                                                                };
+                                                            const missingLabels = missingFields.map((f: string) => fieldLabels[f] || f).join(', ');
+                                                        toast.error(`Please complete your profile: ${missingLabels}`);
+                                                    } else {
+                                                        toast.error((result as any).message || 'Failed to calculate annual tax');
+                                                    }
+                                                }
                                                     } else {
                                                         if (!canCalculateMonthlyTax) {
                                                             toast.warning('Complete your income and deductions first, then calculate your monthly tax.');
@@ -1992,10 +2063,44 @@ export default function PITDetails() {
                                                                 `${activeMonth} tax calculated. Tax payable: ₦${((monthTax ?? 0) as number).toLocaleString()}`,
                                                                 { title: 'Calculated' },
                                                             );
+                                                        } else {
+                                                            const missingFields = (result as any)?.data?.missingProfileFields;
+                                                            if (missingFields && missingFields.length > 0) {
+                                                                const fieldLabels: Record<string, string> = {
+                                                                    dob: 'Date of birth',
+                                                                    nin: 'NIN',
+                                                                    fullName: 'Full name',
+                                                                    email: 'Email address',
+                                                                    phone: 'Phone number',
+                                                                    streetAddress: 'Street address',
+                                                                    city: 'City',
+                                                                    state: 'State',
+                                                                };
+                                                                const missingLabels = missingFields.map((f: string) => fieldLabels[f] || f).join(', ');
+                                                                toast.error(`Please complete your profile: ${missingLabels}`);
+                                                            } else {
+                                                                toast.error((result as any).message || 'Failed to calculate monthly tax');
+                                                            }
                                                         }
                                                     }
                                                 } catch (err: any) {
-                                                    toast.error(err.message || 'Failed to calculate tax');
+                                                    const missingFields = (err as any)?.response?.data?.data?.missingProfileFields;
+                                                    if (missingFields && missingFields.length > 0) {
+                                                        const fieldLabels: Record<string, string> = {
+                                                            dob: 'Date of birth',
+                                                            nin: 'NIN',
+                                                            fullName: 'Full name',
+                                                            email: 'Email address',
+                                                            phone: 'Phone number',
+                                                            streetAddress: 'Street address',
+                                                            city: 'City',
+                                                            state: 'State',
+                                                        };
+                                                        const missingLabels = missingFields.map((f: string) => fieldLabels[f] || f).join(', ');
+                                                        toast.error(`Please complete your profile: ${missingLabels}`);
+                                                    } else {
+                                                        toast.error(err.message || 'Failed to calculate tax');
+                                                    }
                                                 } finally {
                                                     setCalculatingTax(false);
                                                 }

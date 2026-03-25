@@ -17,19 +17,16 @@ export default function VerifyOTP() {
     const type = searchParams.get('type') || 'signup';
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [timer, setTimer] = useState(60);
-    const [canResend, setCanResend] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+    const canResend = timer === 0;
+
     useEffect(() => {
-        let interval: NodeJS.Timeout;
-        if (timer > 0) {
-            interval = setInterval(() => {
-                setTimer((prev) => prev - 1);
-            }, 1000);
-        } else {
-            setCanResend(true);
-        }
+        if (timer === 0) return;
+        const interval = setInterval(() => {
+            setTimer((prev) => prev - 1);
+        }, 1000);
         return () => clearInterval(interval);
     }, [timer]);
 
@@ -86,7 +83,6 @@ export default function VerifyOTP() {
         try {
             await post('/auth/resend-otp', { email }, { useToken: false });
             setTimer(60);
-            setCanResend(false);
         } catch (err) {
             console.error("Resend failed:", err);
         }
@@ -96,23 +92,23 @@ export default function VerifyOTP() {
         <>
             <OnboardingLayout>
                 <div className="flex-1 flex flex-col justify-center relative">
-                    <div className="absolute top-0 right-0">
-                        <Link href="/signin" className="px-5 py-2.5 rounded-xl border border-gray-200 text-taxable-dark font-bold hover:bg-gray-50 transition-colors bg-white text-[13px] whitespace-nowrap shadow-xs">
+                    <div className="absolute top-0 right-0 -top-2 md:top-0">
+                        <Link href="/signin" className="px-4 md:px-5 py-2 md:py-2.5 rounded-xl border border-gray-200 text-taxable-dark font-bold hover:bg-gray-50 transition-colors bg-white text-[12px] md:text-[13px] whitespace-nowrap shadow-xs">
                             Log in
                         </Link>
                     </div>
 
-                    <div className="max-w-[480px] w-full mx-auto">
-                        <div className="mb-10">
-                            <h2 className="text-[26px] font-bold text-taxable-dark mb-2.5">Enter Verification Code</h2>
-                            <p className="text-taxable-gray text-[15px] leading-relaxed font-medium">
-                                We've sent a verification code to your mail<br />
+                    <div className="max-w-[480px] w-full mx-auto px-4 md:px-0">
+                        <div className="mb-8 md:mb-10">
+                            <h2 className="text-[22px] md:text-[26px] font-bold text-taxable-dark mb-2 md:mb-2.5">Enter Verification Code</h2>
+                            <p className="text-taxable-gray text-[14px] md:text-[15px] leading-relaxed font-medium">
+                                We&apos;ve sent a verification code to your mail<br />
                                 <span className="text-taxable-dark font-bold">{email}</span>
                             </p>
                         </div>
 
-                        <form onSubmit={handleVerify} className="flex flex-col gap-10">
-                            <div className="flex gap-3 justify-between">
+                        <form onSubmit={handleVerify} className="flex flex-col gap-8 md:gap-10">
+                            <div className="flex gap-2 md:gap-3 justify-between">
                                 {otp.map((digit, index) => (
                                     <input
                                         key={index}
@@ -124,13 +120,13 @@ export default function VerifyOTP() {
                                         value={digit}
                                         onChange={(e) => handleOtpChange(index, e.target.value)}
                                         onKeyDown={(e) => handleKeyDown(index, e)}
-                                        className="w-14 h-14 md:w-16 md:h-16 text-center text-2xl font-bold bg-[#F9FBFC] border border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-taxable-blue/10 focus:border-taxable-blue transition-all"
+                                        className="w-12 h-12 md:w-16 md:h-16 text-center text-xl md:text-2xl font-bold bg-[#F9FBFC] border border-gray-100 rounded-xl md:rounded-2xl focus:outline-none focus:ring-2 focus:ring-taxable-blue/10 focus:border-taxable-blue transition-all"
                                     />
                                 ))}
                             </div>
 
                             {apiError && (
-                                <div className="text-sm text-red-500 font-medium -mt-6">
+                                <div className="text-sm text-red-500 font-medium -mt-4 md:-mt-6">
                                     {apiError}
                                 </div>
                             )}
@@ -138,7 +134,7 @@ export default function VerifyOTP() {
                             <button
                                 type="submit"
                                 disabled={otp.some(d => !d) || isLoading}
-                                className="w-full h-[54px] bg-taxable-blue text-white font-bold rounded-2xl shadow-lg shadow-taxable-blue/10 hover:opacity-95 disabled:opacity-50 transition-all text-[15px] flex items-center justify-center gap-2"
+                                className="w-full h-[48px] md:h-[54px] bg-taxable-blue text-white font-bold rounded-xl md:rounded-2xl shadow-lg shadow-taxable-blue/10 hover:opacity-95 disabled:opacity-50 transition-all text-[14px] md:text-[15px] flex items-center justify-center gap-2"
                             >
                                 {isLoading ? (
                                     <>
@@ -153,7 +149,7 @@ export default function VerifyOTP() {
                                 )}
                             </button>
 
-                            <div className="text-center text-[15px]">
+                            <div className="text-center text-[14px] md:text-[15px]">
                                 <span className="text-taxable-gray font-medium">Did not receive mail? </span>
                                 <button
                                     type="button"

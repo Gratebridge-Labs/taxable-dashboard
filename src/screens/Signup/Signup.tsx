@@ -92,19 +92,24 @@ export default function Signup() {
         <>
             <OnboardingLayout>
                 <div className="max-w-[480px] mx-auto w-full relative">
-                    <div className="flex justify-end mb-6 md:absolute md:top-0 md:right-0 md:-right-4 md:mb-0">
-                        <Link href="/signin" className="h-[44px] px-6 flex items-center justify-center rounded-xl border border-[#f5f5f5] text-taxable-dark font-bold hover:bg-gray-50 transition-colors bg-white text-[13px] whitespace-nowrap shadow-sm">
+                    <div className="flex justify-end mb-5 md:mb-6 md:absolute md:top-0 md:right-0 md:-right-4 md:mb-0">
+                        <Link href="/signin" className="h-[40px] md:h-[44px] px-4 md:px-6 flex items-center justify-center rounded-xl border border-[#f5f5f5] text-taxable-dark font-bold hover:bg-gray-50 transition-colors bg-white text-[12px] md:text-[13px] whitespace-nowrap shadow-sm">
                             Log in
                         </Link>
                     </div>
 
-                    <div className="mb-10 pt-4">
+                    <div className="mb-8 md:mb-10 pt-2 md:pt-4">
                         <h2 className="text-[22px] md:text-[26px] font-bold text-taxable-dark mb-2">Welcome to Taxable</h2>
-                        <p className="text-taxable-gray text-sm md:text-[15px] font-medium leading-relaxed">Let's get your tax compliance sorted in minutes</p>
+                        <p className="text-taxable-gray text-sm md:text-[15px] font-medium leading-relaxed">Let&apos;s get your tax compliance sorted in minutes</p>
                     </div>
 
-                    <form onSubmit={handleSignup} className="flex flex-col gap-6">
-                        <div className="space-y-6">
+                    <div className="mb-10 pt-4">
+                        <h2 className="text-[22px] md:text-[26px] font-bold text-taxable-dark mb-2">Welcome to Taxable</h2>
+                        <p className="text-taxable-gray text-sm md:text-[15px] font-medium leading-relaxed">Let&apos;s get your tax compliance sorted in minutes</p>
+                    </div>
+
+                    <form onSubmit={handleSignup} className="flex flex-col gap-5 md:gap-6">
+                        <div className="space-y-5 md:space-y-6">
                             <InputField
                                 label="First name"
                                 placeholder="Enter your first name"
@@ -135,7 +140,7 @@ export default function Signup() {
                                     placeholder="+234"
                                     value={formData.phone}
                                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                    className="w-full h-12 px-4 rounded-2xl border border-[#f5f5f5] bg-white placeholder:text-gray-200 focus:outline-none focus:ring-1 focus:ring-taxable-blue/10 focus:border-taxable-blue transition-all font-medium text-taxable-dark"
+                                    className="w-full h-11 md:h-12 px-4 rounded-xl md:rounded-2xl border border-[#f5f5f5] bg-white placeholder:text-gray-200 focus:outline-none focus:ring-1 focus:ring-taxable-blue/10 focus:border-taxable-blue transition-all font-medium text-taxable-dark"
                                 />
                                 <div className="flex items-center gap-3 mt-1 cursor-pointer" onClick={() => setFormData({ ...formData, whatsappReminders: !formData.whatsappReminders })}>
                                     <div className={`w-[18px] h-[18px] rounded border flex items-center justify-center transition-colors ${formData.whatsappReminders ? 'bg-[#00388D] border-[#00388D]' : 'border-gray-200'}`}>
@@ -165,15 +170,15 @@ export default function Signup() {
                             </div>
                         )}
 
-                        <div className="mt-2 space-y-5">
+                        <div className="mt-1 md:mt-2 space-y-4 md:space-y-5">
                             <button
                                 type="submit"
-                                className="w-full h-[52px] bg-[#00388D] hover:bg-[#002d70] text-white font-bold rounded-2xl shadow-lg shadow-blue-900/10 transition-all active:scale-[0.98] text-[15px]"
+                                className="w-full h-[48px] md:h-[52px] bg-[#00388D] hover:bg-[#002d70] text-white font-bold rounded-xl md:rounded-2xl shadow-lg shadow-blue-900/10 transition-all active:scale-[0.98] text-[14px] md:text-[15px]"
                             >
                                 Create Account
                             </button>
 
-                            <p className="text-[13px] text-center text-taxable-gray font-medium px-4">
+                            <p className="text-[12px] md:text-[13px] text-center text-taxable-gray font-medium px-2">
                                 By continuing, you agree to our <Link href="#" className="font-bold text-taxable-dark hover:underline">Terms of Service</Link> and <Link href="#" className="font-bold text-taxable-dark hover:underline">Privacy Policy</Link>.
                             </p>
                         </div>

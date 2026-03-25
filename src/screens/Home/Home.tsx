@@ -208,7 +208,7 @@ export default function Home() {
         // For Business profiles, check if setup is complete
         if (profile.profileType === 'Individual') {
             router.push(`/tax-folders/pit?id=${profile.profileId}`);
-        } else if (profile.primaryNIN || profile.primaryIncomeSources?.length > 0) {
+        } else if (profile.nin || (profile.primaryIncomeSources && profile.primaryIncomeSources.length > 0)) {
             router.push(`/tax-folders/business?profileId=${profile.profileId}`);
         } else {
             setResumeProfileId(profile.profileId);

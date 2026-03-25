@@ -246,12 +246,12 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
             // Map life answers to profile fields
             const completeData: any = {
                 primaryIncomeSources,
-                primaryNIN: taxId || undefined,
+                nin: taxId || undefined,
                 residency183Days: lifeAnswers.nigeria_resident === 'yes',
                 paysRent: lifeAnswers.pays_rent === 'yes',
                 hasHealthInsurance: lifeAnswers.health_insurance === 'yes',
                 hasPension: lifeAnswers.pension === 'yes',
-                paysMortgage: lifeAnswers.mortgage === 'yes',
+                hasMortgage: lifeAnswers.mortgage === 'yes',
                 filingPreference: 'monthly',
             };
             

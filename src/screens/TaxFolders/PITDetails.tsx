@@ -350,7 +350,7 @@ export default function PITDetails() {
                 const profileData = profile as any;
                 const profileYear = Number(profileData?.year) || year;
                 
-                console.log('[PITDetails] primaryNIN:', profileData.primaryNIN);
+                console.log('[PITDetails] nin:', profileData.nin);
                 console.log('[PITDetails] dob:', profileData.dob);
                 console.log('[PITDetails] street:', profileData.street);
                 console.log('[PITDetails] city:', profileData.city);
@@ -367,7 +367,7 @@ export default function PITDetails() {
                 };
                 
                 setPersonalInfo({
-                    nin: profileData.nin || profileData.primaryNIN || '',
+                    nin: profileData.nin || '',
                     fullName: profileData.fullName || defaultFullName || '',
                     email: profileData.email || user?.email || '',
                     phone: profileData.phone || user?.phone || '',
@@ -379,7 +379,7 @@ export default function PITDetails() {
                 });
                 
                 console.log('[PITDetails] Set personalInfo with:', {
-                    nin: profileData.nin || profileData.primaryNIN,
+                    nin: profileData.nin,
                     fullName: profileData.fullName || defaultFullName,
                     streetAddress: profileData.streetAddress || profileData.street,
                     city: profileData.city,
@@ -639,7 +639,7 @@ export default function PITDetails() {
                 ...(currentProfile.hasHealthInsurance && reliefs.healthInsurance && parseFloat(reliefs.healthInsurance) > 0
                     ? [{ deductionType: 'insurance' as DeductionType, amount: parseFloat(reliefs.healthInsurance), documentUrl: documentUrls.healthInsurance || undefined, frequency, month: monthToSend }]
                     : []),
-                ...(currentProfile.paysMortgage && reliefs.mortgage && parseFloat(reliefs.mortgage) > 0
+                ...(currentProfile.hasMortgage && reliefs.mortgage && parseFloat(reliefs.mortgage) > 0
                     ? [{ deductionType: 'mortgage' as DeductionType, amount: parseFloat(reliefs.mortgage), documentUrl: documentUrls.mortgage || undefined, frequency, month: monthToSend }]
                     : []),
             ];
@@ -1085,12 +1085,15 @@ export default function PITDetails() {
                                                 
                                                 if (currentProfile) {
                                                     await completeProfile(profileId, {
-                                                        primaryNIN: normalizedNin || undefined,
-                                                        paysMortgage: currentProfile.paysMortgage ?? false,
+                                                        nin: normalizedNin || undefined,
+                                                        hasMortgage: currentProfile.hasMortgage ?? false,
                                                         filingPreference: currentProfile.filingPreference || 'monthly',
                                                         primaryIncomeSources: currentProfile.primaryIncomeSources,
                                                         residency183Days: currentProfile.residency183Days,
-                                                        state: currentProfile.state,
+                                                        state: personalInfo.state || currentProfile.state,
+                                                        city: personalInfo.city || currentProfile.city,
+                                                        street: personalInfo.streetAddress || currentProfile.street,
+                                                        dob: personalInfo.dateOfBirth ? toIsoDate(personalInfo.dateOfBirth) : currentProfile.dob,
                                                         paysRent: currentProfile.paysRent,
                                                         hasHealthInsurance: currentProfile.hasHealthInsurance,
                                                         hasPension: currentProfile.hasPension,
@@ -1408,7 +1411,7 @@ export default function PITDetails() {
                                             )}
 
                                             {/* Mortgage — only shown if user pays mortgage */}
-                                            {currentProfile?.paysMortgage && (
+                                            {currentProfile?.hasMortgage && (
                                                 <div className={`space-y-6 ${(currentProfile?.paysRent || currentProfile?.hasHealthInsurance || currentProfile?.hasPension) ? 'pt-6 border-t border-gray-100' : ''}`}>
                                                     <h3 className="text-[17px] font-extrabold text-[#0C0C0E]">Mortgage Interest Relief</h3>
                                                     {(() => {
@@ -1451,7 +1454,7 @@ export default function PITDetails() {
                                             )}
 
                                             {/* Fallback: if none of the flags are set */}
-                                            {!currentProfile?.paysRent && !currentProfile?.hasHealthInsurance && !currentProfile?.hasPension && !currentProfile?.paysMortgage && (
+                                            {!currentProfile?.paysRent && !currentProfile?.hasHealthInsurance && !currentProfile?.hasPension && !currentProfile?.hasMortgage && (
                                                 <div className="py-12 text-center">
                                                     <p className="text-[14px] text-[#94A3B8] font-medium">No deductions applicable based on your profile.</p>
                                                     <p className="text-[12px] text-[#94A3B8] mt-1">If this seems incorrect, please update your profile settings.</p>

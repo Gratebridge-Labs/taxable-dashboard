@@ -187,7 +187,9 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
 
     const totalDeductions = useMemo(() => {
         return deductions.reduce((sum, d) => {
-            const amount = typeof d.amount === 'string' ? parseFloat(d.amount) : (d.amount || 0);
+            // API returns `value`; legacy/batch shape may use `amount`
+            const raw = d.value ?? d.amount ?? 0;
+            const amount = typeof raw === 'string' ? parseFloat(raw) : (raw || 0);
             return sum + amount;
         }, 0);
     }, [deductions]);
@@ -642,10 +644,18 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
                         <div>
                             <BreakdownTable
                                 title="Deductions & Reliefs"
-                                rows={deductions.map((d: any) => ({
-                                    label: d.deductionType || 'Deduction',
-                                    value: formatCurrency(typeof d.amount === 'string' ? parseFloat(d.amount) : (d.amount || 0))
-                                }))}
+                                rows={deductions.map((d: any) => {
+                                    // API returns `type` + `value`; fallback to legacy `deductionType` + `amount`
+                                    const rawAmount = d.value ?? d.amount ?? 0;
+                                    const amount = typeof rawAmount === 'string' ? parseFloat(rawAmount) : (rawAmount || 0);
+                                    const label = d.description ||
+                                        (d.type === 'rent_relief' ? 'Rent Relief' :
+                                         d.type === 'pension' ? 'Pension' :
+                                         d.type === 'insurance' ? 'Health Insurance' :
+                                         d.type === 'mortgage' || d.type === 'mortgage_interest' ? 'Mortgage Interest' :
+                                         d.deductionType || d.type || 'Deduction');
+                                    return { label, value: formatCurrency(amount) };
+                                })}
                                 totalLabel="Total Deductions"
                                 totalValue={formatCurrency(totalDeductions)}
                             />

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -7,6 +7,7 @@ import SetupSidebar from '@/components/SetupSidebar/SetupSidebar';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
 
 import { useUser } from '@/contexts/UserContext';
+import { useProfile } from '@/contexts/ProfileContext';
 
 const StatusBadge = ({ type, text }: { type: 'complete' | 'progress' | 'none' | 'filed', text: string }) => {
     const styles = {
@@ -163,30 +164,22 @@ const FAQSection = () => {
 
 export default function Home() {
     const { user, isAuthenticated, loading: authLoading } = useUser();
+    const { profiles, loading: profilesLoading, fetchProfiles } = useProfile();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-    // ── Local mock profiles (replace with real API when backend is ready) ──
-    const [profiles, setProfiles] = useState<any[]>([
-        {
-            profileId: 'mock-profile-1',
-            _id: 'mock-profile-1',
-            year: '2026',
-            profileType: 'Individual',
-            title: '2026 Individual Tax',
-            status: 'draft',
-            statusText: 'In progress',
-            baseQuestionsAnswered: true,
-            taxDue: null,
-            description: 'Your individual tax filing for the 2026 tax year.',
-        },
-    ]);
+    useEffect(() => {
+        if (isAuthenticated) {
+            fetchProfiles();
+        }
+    }, [isAuthenticated, fetchProfiles]);
+
     const hasTaxFolders = profiles.length > 0;
-    const isInitialLoading = authLoading;
+    const isInitialLoading = authLoading || profilesLoading;
 
     // Kept so SetupSidebar can notify us of newly created profiles
-    const fetchProfiles = useCallback(() => {
-        // No-op while using mock data — profiles are managed in local state
-    }, []);
+    const handleNewProfileCreated = useCallback(() => {
+        fetchProfiles();
+    }, [fetchProfiles]);
 
     const videos = [
         {
@@ -211,15 +204,19 @@ export default function Home() {
     const [resumeData, setResumeData] = useState<{ year?: string; category?: string } | undefined>(undefined);
 
     const handleFolderClick = (profile: any) => {
-        if (!profile.baseQuestionsAnswered) {
+        // For Individual profiles, go to PITDetails regardless
+        // For Business profiles, check if setup is complete
+        if (profile.profileType === 'Individual') {
+            router.push(`/tax-folders/pit?id=${profile.profileId}`);
+        } else if (profile.primaryNIN || profile.primaryIncomeSources?.length > 0) {
+            router.push(`/tax-folders/business?profileId=${profile.profileId}`);
+        } else {
             setResumeProfileId(profile.profileId);
             setResumeData({
                 year: profile.year,
                 category: profile.profileType
             });
             setIsSidebarOpen(true);
-        } else {
-            router.push(`/tax-folders/pit?id=${profile.profileId}`);
         }
     };
 

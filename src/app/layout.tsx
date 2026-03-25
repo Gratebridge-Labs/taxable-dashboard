@@ -21,6 +21,7 @@ export const metadata: Metadata = {
 };
 
 import { UserProvider } from "@/contexts/UserContext";
+import { ProfileProvider } from "@/contexts/ProfileContext";
 
 export default function RootLayout({
   children,
@@ -33,7 +34,9 @@ export default function RootLayout({
         className={`${archivo.variable} antialiased`}
       >
         <UserProvider>
-          {children}
+          <ProfileProvider>
+            {children}
+          </ProfileProvider>
         </UserProvider>
       </body>
     </html>

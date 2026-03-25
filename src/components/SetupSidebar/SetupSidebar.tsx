@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import LoadingScreen from '@/screens/Onboarding/LoadingScreen';
+import { useTaxableApi } from '@/lib';
+import { useProfile } from '@/contexts/ProfileContext';
 
 interface SetupSidebarProps {
     isOpen: boolean;
@@ -66,12 +68,14 @@ const RadioOption = ({
     label,
     desc,
     selected,
-    onClick
-}: { label: string; desc?: string; selected: boolean; onClick: () => void }) => (
+    onClick,
+    disabled = false
+}: { label: string; desc?: string; selected: boolean; onClick: () => void; disabled?: boolean }) => (
     <button
         type="button"
-        onClick={onClick}
-        className="w-full flex items-start gap-3 py-4 text-left group"
+        onClick={disabled ? undefined : onClick}
+        disabled={disabled}
+        className={`w-full flex items-start gap-3 py-4 text-left group ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
     >
         {/* Circle */}
         <div className={`mt-0.5 w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${selected ? 'border-[#003787]' : 'border-gray-300'}`}>
@@ -116,10 +120,14 @@ const Divider = () => <div className="w-full h-[1px] bg-gray-100" />;
 // ── Main component ────────────────────────────────────────────────────────────
 export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfileId, initialData }: SetupSidebarProps) {
     const router = useRouter();
+    const { createProfile, completeProfile } = useTaxableApi();
+    const { fetchProfiles } = useProfile();
+    
     const [step, setStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
     const [shouldRedirectAfterLoading, setShouldRedirectAfterLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     // Step 0 state
     const [filingType, setFilingType] = useState<'Individual' | 'Business'>('Individual');
@@ -173,7 +181,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
     };
 
     // ── Handle "Get Started" on step 0 → go to step 1 ───────────────────────
-    const handleGetStarted = () => {
+    const handleGetStarted = async () => {
         // Business flow → route to business tax details page
         if (filingType === 'Business') {
             onClose();
@@ -187,9 +195,18 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
             return;
         }
         // Individual tax returns flow → continue through income sources + life questions
-        const newProfileId = `mock-profile-${Date.now()}`;
-        setActiveProfileId(newProfileId);
-        setStep(1);
+        
+        // Create profile via API
+        try {
+            setError(null);
+            const profile = await createProfile(parseInt(taxYear), 'Individual');
+            console.log('[SetupSidebar] Profile created:', profile);
+            setActiveProfileId(profile.profileId);
+            setStep(1);
+        } catch (err: any) {
+            console.error('[SetupSidebar] Failed to create profile:', err);
+            setError(err.message || 'Failed to create profile');
+        }
     };
 
     // ── Handle "Next" on step 1 → go to step 2 ───────────────────────────────
@@ -197,16 +214,64 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
         setStep(2);
     };
 
-    // ── Handle "Proceed" on step 2 → loading then complete ───────────────────
-    const handleProceed = () => {
+    // ── Handle "Proceed" on step 2 → complete profile then redirect ───────────────────
+    const handleProceed = async () => {
+        if (!activeProfileId) {
+            setError('No active profile');
+            return;
+        }
+        
         setShouldRedirectAfterLoading(true);
         setIsSubmitting(true);
+        
+        try {
+            // Map selected income sources to API format
+            const incomeSourceMap: Record<string, string> = {
+                'salary': 'Salary / Employment',
+                'business': 'Business/Self-employment',
+                'freelance': 'Freelance/Consulting',
+                'investment': 'Investment income',
+                'rental': 'Rental income',
+                'crypto': 'Digital Assets/Crypto',
+            };
+            
+            const primaryIncomeSources = selectedSources.map(s => incomeSourceMap[s] || s);
+            
+            // Map life answers to profile fields
+            const completeData: any = {
+                primaryIncomeSources,
+                primaryNIN: taxId || undefined,
+                residency183Days: lifeAnswers.nigeria_resident === 'yes',
+                paysRent: lifeAnswers.pays_rent === 'yes',
+                hasHealthInsurance: lifeAnswers.health_insurance === 'yes',
+                hasPension: lifeAnswers.pension === 'yes',
+                paysMortgage: lifeAnswers.mortgage === 'yes',
+                filingPreference: 'monthly',
+            };
+            
+            console.log('[SetupSidebar] Completing profile with:', completeData);
+            await completeProfile(activeProfileId, completeData);
+            console.log('[SetupSidebar] Profile completed successfully');
+            
+            // Refresh profiles list
+            await fetchProfiles();
+            
+            // Proceed to loading screen then redirect
+            setIsSubmitting(true);
+        } catch (err: any) {
+            console.error('[SetupSidebar] Failed to complete profile:', err);
+            setError(err.message || 'Failed to save profile');
+            setIsSubmitting(false);
+        }
     };
 
     const handleLoadingFinished = () => {
         setIsSubmitting(false);
+        if (activeProfileId) {
+            router.push(`/tax-folders/pit?profileId=${activeProfileId}`);
+        }
         if (onComplete) {
-            onComplete(shouldRedirectAfterLoading, activeProfileId || undefined);
+            onComplete(true, activeProfileId || undefined);
         } else {
             onClose();
         }
@@ -267,6 +332,13 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                     {/* Scrollable body */}
                     <div className="flex-1 overflow-y-auto px-6 py-3 no-scrollbar">
 
+                        {/* Error display */}
+                        {error && (
+                            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
+                                {error}
+                            </div>
+                        )}
+
                         {/* ─── STEP 0: Create filing ─── */}
                         {step === 0 && (
                             <div className="space-y-1">
@@ -284,7 +356,8 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                     label="Businesses & Organizations"
                                     desc="For registered companies (LTD, NGOs, Partnerships) subject to Corporate Income Tax"
                                     selected={filingType === 'Business'}
-                                    onClick={() => setFilingType('Business')}
+                                    onClick={() => {}}
+                                    disabled={true}
                                 />
 
                                 {/* Tax ID — label changes based on filing type */}
@@ -318,7 +391,8 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                         <RadioOption
                                             label="Calculate my monthly PAYE"
                                             selected={filingIntent === 'paye'}
-                                            onClick={() => setFilingIntent('paye')}
+                                            onClick={() => {}}
+                                            disabled={true}
                                         />
                                     </div>
                                 ) : (

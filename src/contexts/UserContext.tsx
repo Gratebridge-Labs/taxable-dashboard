@@ -1,5 +1,6 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { API_BASE_URL } from '@/lib/api-endpoints';
 
 interface User {
     id: string;
@@ -56,7 +57,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         if (!tokenToUse) return;
 
         try {
-            const response = await fetch('/api/proxy/auth/me', {
+            const response = await fetch(`${API_BASE_URL}/auth/me`, {
                 headers: {
                     'Authorization': `Bearer ${tokenToUse}`,
                     'Accept': 'application/json',

@@ -1,6 +1,7 @@
 import React, { ReactNode } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { OnboardingProvider } from '@/contexts/OnboardingContext';
 
 const LogoWhite = () => (
     <Link href="/" className="flex items-center">
@@ -20,30 +21,32 @@ interface OnboardingLayoutProps {
 
 const OnboardingLayout = ({ children }: OnboardingLayoutProps) => {
     return (
-        <div className="min-h-screen md:h-screen w-full flex flex-col md:flex-row bg-white font-sans md:overflow-hidden">
-            {/* Left Panel - Reusable Content */}
-            <div className="w-full md:w-[45%] lg:w-[40%] bg-taxable-blue p-8 md:p-12 lg:p-16 flex flex-col justify-between relative overflow-hidden">
-                <div>
-                    <LogoWhite />
+        <OnboardingProvider>
+            <div className="min-h-screen md:h-screen w-full flex flex-col md:flex-row bg-white font-sans md:overflow-hidden">
+                {/* Left Panel - Reusable Content */}
+                <div className="w-full md:w-[45%] lg:w-[40%] bg-taxable-blue p-8 md:p-12 lg:p-16 flex flex-col justify-between relative overflow-hidden">
+                    <div>
+                        <LogoWhite />
+                    </div>
+
+                    <div className="relative z-10 mt-12 md:mt-0">
+                        <h1 className="text-3xl md:text-5xl lg:text-5xl font-semibold text-taxable-light mb-4 md:mb-6 leading-[1.1] tracking-tight">
+                            Start your stress-free tax journey.
+                        </h1>
+                        <p className="text-taxable-gray text-base md:text-lg font-medium">
+                            Join thousands of Nigerians filing smarter in 10 minutes.
+                        </p>
+                    </div>
                 </div>
 
-                <div className="relative z-10 mt-12 md:mt-0">
-                    <h1 className="text-3xl md:text-5xl lg:text-5xl font-semibold text-taxable-light mb-4 md:mb-6 leading-[1.1] tracking-tight">
-                        Start your stress-free tax journey.
-                    </h1>
-                    <p className="text-taxable-gray text-base md:text-lg font-medium">
-                        Join thousands of Nigerians filing smarter in 10 minutes.
-                    </p>
+                {/* Right Panel - Dynamic Content */}
+                <div className="w-full md:w-[55%] lg:w-[60%] h-auto md:h-full overflow-y-auto bg-[#FAFAFA]">
+                    <div className="min-h-full p-6 md:p-12 lg:p-16 flex flex-col justify-start md:justify-center py-16">
+                        {children}
+                    </div>
                 </div>
             </div>
-
-            {/* Right Panel - Dynamic Content */}
-            <div className="w-full md:w-[55%] lg:w-[60%] h-auto md:h-full overflow-y-auto bg-[#FAFAFA]">
-                <div className="min-h-full p-6 md:p-12 lg:p-16 flex flex-col justify-start md:justify-center py-16">
-                    {children}
-                </div>
-            </div>
-        </div>
+        </OnboardingProvider>
     );
 };
 

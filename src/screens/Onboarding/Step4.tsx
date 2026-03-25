@@ -5,18 +5,64 @@ import OnboardingLayout from '@/components/OnboardingLayout/OnboardingLayout';
 import ProgressBar from '@/components/Onboarding/ProgressBar';
 import OptionCard from '@/components/Onboarding/OptionCard';
 import LoadingScreen from './LoadingScreen';
+import { useOnboarding } from '@/contexts/OnboardingContext';
+import { useProfile } from '@/contexts/ProfileContext';
+import { useTaxableApi } from '@/lib';
+
+const FILING_TYPES: Record<string, 'Individual' | 'Business'> = {
+    'Individual / Freelancer': 'Individual',
+    'Joint Filing (Spousal)': 'Individual',
+    'Corporate Entity (LLC/Ltd)': 'Business',
+    'Registered Enterprise': 'Business',
+    'Tax Practitioner / Accountant': 'Business',
+    'Trust or Estate': 'Business',
+};
 
 export default function Step4() {
     const router = useRouter();
-    const [selections, setSelections] = useState<string[]>(['Monthly']);
+    const { data, setFilingPreference, setYear, clearData } = useOnboarding();
+    const { fetchProfiles } = useProfile();
+    const { createProfile, completeProfile, getAllowedYears } = useTaxableApi();
+    
+    const [selections, setSelections] = useState<string[]>(
+        data.filingPreference ? [data.filingPreference] : ['Monthly']
+    );
+    const [year, setYearLocal] = useState(data.year || new Date().getFullYear());
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const toggleSelection = (option: string) => {
         setSelections([option]);
+        setFilingPreference(option.toLowerCase() as 'monthly' | 'annual');
     };
 
-    const handleGetStarted = () => {
+    const handleGetStarted = async () => {
         setIsLoading(true);
+        setError(null);
+        
+        try {
+            const profileType = FILING_TYPES[data.filingType] || 'Individual';
+            const yearToUse = year || new Date().getFullYear();
+            
+            const createdProfile = await createProfile(yearToUse, profileType);
+            
+            if (createdProfile && createdProfile.profileId) {
+                await completeProfile(createdProfile.profileId, {
+                    primaryIncomeSources: data.incomeSources,
+                    filingPreference: data.filingPreference,
+                });
+                
+                await fetchProfiles();
+                clearData();
+                
+                setTimeout(() => {
+                    router.push('/tax-folders');
+                }, 100);
+            }
+        } catch (err: any) {
+            setError(err.message || 'Failed to create profile');
+            setIsLoading(false);
+        }
     };
 
     const options = [
@@ -57,17 +103,24 @@ export default function Step4() {
                         ))}
                     </div>
 
+                    {error && (
+                        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
+                            {error}
+                        </div>
+                    )}
+
                     <button
                         onClick={handleGetStarted}
-                        className="flex items-center justify-center w-full h-11 bg-taxable-blue hover:opacity-90 text-white font-medium rounded-lg shadow-lg shadow-taxable-blue/10 transition-transform active:scale-[0.99]"
+                        disabled={isLoading}
+                        className="flex items-center justify-center w-full h-11 bg-taxable-blue hover:opacity-90 text-white font-medium rounded-lg shadow-lg shadow-taxable-blue/10 transition-transform active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Get Started
+                        {isLoading ? 'Creating Profile...' : 'Get Started'}
                     </button>
                 </div>
             </OnboardingLayout>
 
             {isLoading && (
-                <LoadingScreen onComplete={() => router.push('/home')} />
+                <LoadingScreen onComplete={() => router.push('/tax-folders')} />
             )}
         </>
     );

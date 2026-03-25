@@ -2,8 +2,9 @@
 import { useState, useCallback } from 'react';
 import { useUser } from '@/contexts/UserContext';
 import { useRouter } from 'next/navigation';
+import { API_BASE_URL } from '@/lib/api-endpoints';
 
-const BASE_URL = '/api/proxy';
+const BASE_URL = API_BASE_URL;
 
 interface ApiConfig extends RequestInit {
     useToken?: boolean;

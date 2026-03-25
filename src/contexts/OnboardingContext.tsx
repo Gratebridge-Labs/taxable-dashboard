@@ -1,0 +1,76 @@
+'use client';
+import React, { createContext, useContext, useState } from 'react';
+
+interface OnboardingData {
+    filingType: string;
+    incomeSources: string[];
+    filingPreference: 'monthly' | 'annual';
+    year: number;
+}
+
+interface OnboardingContextType {
+    data: OnboardingData;
+    setFilingType: (type: string) => void;
+    setIncomeSources: (sources: string[]) => void;
+    setFilingPreference: (pref: 'monthly' | 'annual') => void;
+    setYear: (year: number) => void;
+    clearData: () => void;
+}
+
+const defaultData: OnboardingData = {
+    filingType: '',
+    incomeSources: [],
+    filingPreference: 'monthly',
+    year: new Date().getFullYear(),
+};
+
+const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
+
+export const OnboardingProvider = ({ children }: { children: React.ReactNode }) => {
+    const [data, setData] = useState<OnboardingData>(defaultData);
+
+    const setFilingType = (type: string) => {
+        setData(prev => ({ ...prev, filingType: type }));
+    };
+
+    const setIncomeSources = (sources: string[]) => {
+        setData(prev => ({ ...prev, incomeSources: sources }));
+    };
+
+    const setFilingPreference = (pref: 'monthly' | 'annual') => {
+        setData(prev => ({ ...prev, filingPreference: pref }));
+    };
+
+    const setYear = (year: number) => {
+        setData(prev => ({ ...prev, year }));
+    };
+
+    const clearData = () => {
+        setData(defaultData);
+    };
+
+    return (
+        <OnboardingContext.Provider
+            value={{
+                data,
+                setFilingType,
+                setIncomeSources,
+                setFilingPreference,
+                setYear,
+                clearData,
+            }}
+        >
+            {children}
+        </OnboardingContext.Provider>
+    );
+};
+
+export const useOnboarding = () => {
+    const context = useContext(OnboardingContext);
+    if (context === undefined) {
+        throw new Error('useOnboarding must be used within an OnboardingProvider');
+    }
+    return context;
+};
+
+export default OnboardingContext;

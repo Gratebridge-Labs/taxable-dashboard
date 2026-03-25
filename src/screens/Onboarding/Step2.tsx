@@ -4,9 +4,11 @@ import Link from 'next/link';
 import OnboardingLayout from '@/components/OnboardingLayout/OnboardingLayout';
 import ProgressBar from '@/components/Onboarding/ProgressBar';
 import OptionCard from '@/components/Onboarding/OptionCard';
+import { useOnboarding } from '@/contexts/OnboardingContext';
 
 export default function Step2() {
-    const [selections, setSelections] = useState<string[]>(['Salary / Employment', 'Business/Self-employment']);
+    const { data, setIncomeSources } = useOnboarding();
+    const [selections, setSelections] = useState<string[]>(data.incomeSources);
 
     const toggleSelection = (option: string) => {
         setSelections(prev =>
@@ -14,6 +16,10 @@ export default function Step2() {
                 ? prev.filter(item => item !== option)
                 : [...prev, option]
         );
+    };
+
+    const handleNext = () => {
+        setIncomeSources(selections);
     };
 
     const options = [
@@ -38,10 +44,12 @@ export default function Step2() {
             description: 'Revenue generated from the lease of residential, commercial, or industrial properties.'
         },
         {
-            label: 'Other',
-            description: 'Income from royalties, trust distributions, or foreign-sourced remittances not listed above.'
+            label: 'Digital Assets/Crypto',
+            description: 'Income from trading or investing in cryptocurrencies and other digital assets.'
         }
     ];
+
+    const isValid = selections.length > 0;
 
     return (
         <OnboardingLayout>
@@ -63,7 +71,18 @@ export default function Step2() {
                     ))}
                 </div>
 
-                <Link href="/onboarding/step3" className="flex items-center justify-center w-full h-11 bg-taxable-blue hover:opacity-90 text-white font-medium rounded-lg shadow-lg shadow-taxable-blue/10 transition-transform active:scale-[0.99]">
+                <Link 
+                    href="/onboarding/step3" 
+                    className={`flex items-center justify-center w-full h-11 font-medium rounded-lg shadow-lg transition-transform active:scale-[0.99] ${
+                        isValid 
+                            ? 'bg-taxable-blue hover:opacity-90 text-white shadow-taxable-blue/10' 
+                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    }`}
+                    onClick={(e) => {
+                        if (!isValid) e.preventDefault();
+                        else handleNext();
+                    }}
+                >
                     Next
                 </Link>
             </div>

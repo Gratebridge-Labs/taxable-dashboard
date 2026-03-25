@@ -1,19 +1,29 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import OnboardingLayout from '@/components/OnboardingLayout/OnboardingLayout';
 import ProgressBar from '@/components/Onboarding/ProgressBar';
 import OptionCard from '@/components/Onboarding/OptionCard';
+import { useOnboarding } from '@/contexts/OnboardingContext';
+
+const FILING_TYPES: Record<string, 'Individual' | 'Business'> = {
+    'Individual / Freelancer': 'Individual',
+    'Joint Filing (Spousal)': 'Individual',
+    'Corporate Entity (LLC/Ltd)': 'Business',
+    'Registered Enterprise': 'Business',
+    'Tax Practitioner / Accountant': 'Business',
+    'Trust or Estate': 'Business',
+};
 
 export default function Step1() {
-    const [selections, setSelections] = useState<string[]>(['Individual / Freelancer', 'Joint Filing (Spousal)']);
+    const { data, setFilingType } = useOnboarding();
+    const [selections, setSelections] = useState<string[]>(
+        data.filingType ? [data.filingType] : []
+    );
 
     const toggleSelection = (option: string) => {
-        setSelections(prev =>
-            prev.includes(option)
-                ? prev.filter(item => item !== option)
-                : [...prev, option]
-        );
+        setSelections([option]);
+        setFilingType(option);
     };
 
     const options = [
@@ -43,6 +53,8 @@ export default function Step1() {
         }
     ];
 
+    const isValid = selections.length > 0;
+
     return (
         <OnboardingLayout>
             <div className="max-w-xl mx-auto w-full">
@@ -63,7 +75,15 @@ export default function Step1() {
                     ))}
                 </div>
 
-                <Link href="/onboarding/step2" className="flex items-center justify-center w-full h-11 bg-taxable-blue hover:opacity-90 text-white font-medium rounded-lg shadow-lg shadow-taxable-blue/10 transition-transform active:scale-[0.99]">
+                <Link 
+                    href="/onboarding/step2" 
+                    className={`flex items-center justify-center w-full h-11 font-medium rounded-lg shadow-lg transition-transform active:scale-[0.99] ${
+                        isValid 
+                            ? 'bg-taxable-blue hover:opacity-90 text-white shadow-taxable-blue/10' 
+                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    }`}
+                    onClick={(e) => !isValid && e.preventDefault()}
+                >
                     Next
                 </Link>
             </div>

@@ -107,20 +107,20 @@ export default function Signup() {
                         <div className="space-y-6">
                             <InputField
                                 label="First name"
-                                placeholder="hello@alignui.com"
+                                placeholder="Enter your first name"
                                 value={formData.firstName}
                                 onChange={(val) => setFormData({ ...formData, firstName: val })}
                             />
                             <InputField
                                 label="Last name"
-                                placeholder="hello@alignui.com"
+                                placeholder="Enter your last name"
                                 value={formData.lastName}
                                 onChange={(val) => setFormData({ ...formData, lastName: val })}
                             />
 
                             <InputField
                                 label="Email Address"
-                                placeholder="hello@alignui.com"
+                                placeholder="Enter your email address"
                                 type="email"
                                 value={formData.email}
                                 onChange={(val) => setFormData({ ...formData, email: val })}

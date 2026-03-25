@@ -28,7 +28,7 @@ export interface Profile {
   uploadSession?: UploadSession;
   personalInfo?: PersonalInfoRequest;
   // Additional fields from API response at top level
-  primaryNIN?: string;
+  nin?: string;
   primaryIncomeSources?: string[];
   residency183Days?: boolean;
   paysRent?: boolean;
@@ -40,7 +40,7 @@ export interface Profile {
   hasPension?: boolean;
   pensionAnnualAmount?: number;
   pensionMonthlyAmount?: number;
-  paysMortgage?: boolean;
+  hasMortgage?: boolean;
   dob?: string;
   street?: string;
   city?: string;
@@ -51,7 +51,7 @@ export interface Profile {
 }
 
 export interface ProfileCompleteRequest {
-  primaryNIN?: string;
+  nin?: string;
   primaryIncomeSources?: string[];
   residency183Days?: boolean;
   state?: string;
@@ -64,7 +64,7 @@ export interface ProfileCompleteRequest {
   hasPension?: boolean;
   pensionAnnualAmount?: number;
   pensionMonthlyAmount?: number;
-  paysMortgage?: boolean;
+  hasMortgage?: boolean;
   filingPreference?: FilingPreference;
   dob?: string;
   street?: string;
@@ -278,7 +278,7 @@ export interface CalculateTaxResponse {
       year: number;
       profileType: ProfileType;
       primaryTIN?: string;
-      primaryNIN?: string;
+      nin?: string;
     };
     calculation: CalculationDetails;
     summary: {

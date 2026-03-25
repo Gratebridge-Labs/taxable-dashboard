@@ -181,6 +181,7 @@ export default function PITDetails() {
     const [calculatingTax, setCalculatingTax] = useState(false);
     const [savingPersonalInfo, setSavingPersonalInfo] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
+    const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     
     const [personalInfo, setPersonalInfo] = useState({
         nin: '',
@@ -195,7 +196,7 @@ export default function PITDetails() {
     });
 
     const [activeSection, setActiveSection] = useState<'personal-info' | 'income-deductions' | 'review'>('personal-info');
-    const [periodMode, setPeriodMode] = useState<'monthly' | 'annually'>('monthly');
+    const [periodMode, setPeriodMode] = useState<'monthly' | 'annually'>(year === 2025 ? 'annually' : 'monthly');
     const [activeMonth, setActiveMonth] = useState('January');
     const [incomeSubTab, setIncomeSubTab] = useState<'income' | 'deductions'>('income');
     const [expandedMonth, setExpandedMonth] = useState<string | null>('January');
@@ -663,73 +664,99 @@ export default function PITDetails() {
 
     const profile = currentProfile;
 
+    const SECTIONS = [
+        { key: 'personal-info', label: 'Personal Info', icon: '👤' },
+        { key: 'income-deductions', label: 'Income', icon: '💰' },
+        { key: 'review', label: 'Review', icon: '📋' },
+    ];
+
+    const getCurrentStepIndex = () => {
+        return SECTIONS.findIndex(s => s.key === activeSection);
+    };
+
     const renderSidebar = () => (
-        <div className="w-[240px] flex-shrink-0 flex flex-col gap-6 sticky top-24">
-            <div>
-                <p className="text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-2 px-1">Select</p>
-                <div className="space-y-0.5">
-                    {[
-                        { key: 'personal-info', label: 'Personal Information' },
-                    ].map(sec => (
-                        <button
-                            key={sec.key}
-                            onClick={() => setActiveSection(sec.key as any)}
-                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${activeSection === sec.key ? 'bg-[#F1F5F9] text-[#0C0C0E]' : 'hover:bg-gray-50 text-[#374151]'
-                                }`}
-                        >
-                            <div className="flex items-center gap-3">
-                                <span className={`text-lg leading-none ${activeSection !== sec.key ? 'opacity-60' : ''}`}>📁</span>
-                                <span className="text-[13px] font-semibold">{sec.label}</span>
-                            </div>
-                            <svg className={`w-3.5 h-3.5 flex-shrink-0 ${activeSection === sec.key ? 'text-[#0C0C0E]' : 'text-gray-300'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                            </svg>
-                        </button>
-                    ))}
-                </div>
-            </div>
+        <>
+            {/* Mobile Toggle Button */}
+            <button 
+                onClick={() => setMobileSidebarOpen(true)}
+                className="md:hidden fixed bottom-20 right-4 z-40 w-14 h-14 bg-[#003787] rounded-full shadow-lg flex items-center justify-center text-white"
+            >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
+            </button>
 
-            <div>
-                <p className="text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-2 px-1">Select</p>
-                <div className="space-y-0.5">
-                    {[
-                        { key: 'income-deductions', label: 'Income & Deductions' },
-                        { key: 'review', label: 'Review & File' },
-                    ].map(sec => (
-                        <button
-                            key={sec.key}
-                            onClick={() => setActiveSection(sec.key as any)}
-                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${activeSection === sec.key ? 'bg-[#F1F5F9] text-[#0C0C0E]' : 'hover:bg-gray-50 text-[#374151]'
-                                }`}
-                        >
-                            <div className="flex items-center gap-3">
-                                <span className={`text-lg leading-none ${activeSection !== sec.key ? 'opacity-60' : ''}`}>{sec.key === 'review' ? '📄' : '📁'}</span>
-                                <span className="text-[13px] font-semibold">{sec.label}</span>
-                            </div>
-                            <svg className={`w-3.5 h-3.5 flex-shrink-0 ${activeSection === sec.key ? 'text-[#0C0C0E]' : 'text-gray-300'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                            </svg>
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {taxSummary?.actions && (
-                <div className="mt-4 bg-white border border-gray-100 rounded-[20px] p-5">
-                    <div className="flex items-center gap-2 mb-2">
-                        <h4 className="text-[13px] font-bold text-[#0C0C0E]">Need expert eyes on your return?</h4>
-                    </div>
-                    <p className="text-[12px] text-[#6B7280] leading-relaxed font-medium mb-4">
-                        Get your return reviewed by a certified tax accountant. They'll ensure accuracy, compliance, and file for you.
-                    </p>
-                    {taxSummary.actions.canPayAccountantReview && (
-                        <button className="w-full h-10 border border-gray-200 text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-colors text-[12px]">
-                            Book Accountant (₦30,000)
-                        </button>
-                    )}
-                </div>
+            {/* Mobile Overlay */}
+            {mobileSidebarOpen && (
+                <div 
+                    className="md:hidden fixed inset-0 bg-black/50 z-40"
+                    onClick={() => setMobileSidebarOpen(false)}
+                />
             )}
-        </div>
+
+            {/* Sidebar - Desktop & Mobile */}
+            <div className={`
+                md:w-[240px] md:flex-shrink-0 md:flex md:flex-col md:gap-6 md:sticky md:top-24
+                fixed md:relative inset-y-0 left-0 z-50 bg-white md:bg-transparent
+                transform transition-transform duration-300 ease-in-out
+                ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+                w-[280px] flex flex-col gap-4 p-4 shadow-xl md:shadow-none
+            `}>
+                {/* Mobile Close Button */}
+                <button 
+                    onClick={() => setMobileSidebarOpen(false)}
+                    className="md:hidden absolute top-4 right-4 w-8 h-8 flex items-center justify-center"
+                >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2">
+                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+
+                <div>
+                    <p className="text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-2 px-1 hidden md:block">Select</p>
+                    <div className="space-y-1">
+                        {SECTIONS.map(sec => (
+                            <button
+                                key={sec.key}
+                                onClick={() => {
+                                    setActiveSection(sec.key as any);
+                                    setMobileSidebarOpen(false);
+                                }}
+                                className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all ${activeSection === sec.key ? 'bg-[#003787] text-white' : 'hover:bg-gray-100 text-[#374151]'
+                                    }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <span className="text-lg">{sec.icon}</span>
+                                    <span className="text-[14px] font-semibold">{sec.label}</span>
+                                </div>
+                                {activeSection === sec.key && (
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                    </svg>
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Tax Accountant Section - Hidden on Mobile */}
+                {taxSummary?.actions && (
+                    <div className="hidden md:block mt-4 bg-white border border-gray-100 rounded-[20px] p-5">
+                        <div className="flex items-center gap-2 mb-2">
+                            <h4 className="text-[13px] font-bold text-[#0C0C0E]">Need expert eyes on your return?</h4>
+                        </div>
+                        <p className="text-[12px] text-[#6B7280] leading-relaxed font-medium mb-4">
+                            Get your return reviewed by a certified tax accountant.
+                        </p>
+                        {taxSummary.actions.canPayAccountantReview && (
+                            <button className="w-full h-10 border border-gray-200 text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-colors text-[12px]">
+                                Book Accountant (₦30,000)
+                            </button>
+                        )}
+                    </div>
+                )}
+            </div>
+        </>
     );
 
     const activeLabel = {
@@ -798,27 +825,63 @@ export default function PITDetails() {
         ? `₦${taxSummary.taxSummary.estimatedAnnualTax.toLocaleString()}`
         : '₦0 (no data yet)';
 
+    const currentStepIndex = getCurrentStepIndex();
+
     return (
-        <div className="min-h-screen bg-[#FAFAFA] font-sans pb-20">
+        <div className="min-h-screen bg-[#FAFAFA] font-sans pb-24 md:pb-20">
             <DashboardHeader />
 
-            <main className="max-w-[1200px] mx-auto px-4 md:px-8 py-8">
-                <div className="flex justify-between items-start mb-6 border-b border-gray-100 pb-6">
-                    <div>
-                        <div className="flex items-center gap-2 mb-5">
-                            <button onClick={() => router.back()} className="flex items-center gap-1.5 text-[13px] font-bold text-[#0C0C0E] hover:text-[#003787] transition-colors">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
-                                </svg>
-                                Back
-                            </button>
-                            <div className="flex items-center gap-1.5 text-[12px] text-[#9CA3AF] font-medium">
-                                <span>{profile.year} Individual Tax</span><span>/</span>
-                                <span className="text-[#6B7280]">{activeLabel}</span>
-                                {activeSection === 'income-deductions' && periodMode === 'monthly' && (
-                                    <><span>/</span><span className="text-[#6B7280]">{activeMonth}</span><span>/</span><span className="text-[#6B7280] capitalize">{incomeSubTab}</span></>
-                                )}
-                            </div>
+            <main className="max-w-[1200px] mx-auto px-4 md:px-8 py-6 md:py-8">
+                <div className="flex flex-col gap-4 mb-6 border-b border-gray-100 pb-4 md:pb-6">
+                    {/* Breadcrumb with Process Indicator */}
+                    <div className="flex flex-col gap-3">
+                        <button onClick={() => router.back()} className="flex items-center gap-1.5 text-[13px] font-bold text-[#0C0C0E] hover:text-[#003787] transition-colors w-fit">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
+                            </svg>
+                            Back
+                        </button>
+                        
+                        {/* Process Indicator - Steps */}
+                        <div className="flex items-center gap-2">
+                            {SECTIONS.map((sec, index) => (
+                                <React.Fragment key={sec.key}>
+                                    <button
+                                        onClick={() => setActiveSection(sec.key as any)}
+                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors ${
+                                            activeSection === sec.key 
+                                                ? 'bg-[#003787] text-white' 
+                                                : index < currentStepIndex 
+                                                    ? 'bg-green-100 text-green-700' 
+                                                    : 'bg-gray-100 text-gray-500'
+                                        }`}
+                                    >
+                                        {index < currentStepIndex ? (
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                                <polyline points="20 6 9 17 4 12" />
+                                            </svg>
+                                        ) : (
+                                            <span>{index + 1}</span>
+                                        )}
+                                        <span className="hidden sm:inline">{sec.label}</span>
+                                    </button>
+                                    {index < SECTIONS.length - 1 && (
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth="2">
+                                            <polyline points="9 18 15 12 9 6" />
+                                        </svg>
+                                    )}
+                                </React.Fragment>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="hidden md:flex justify-between items-start">
+                        <div className="flex items-center gap-2 text-[12px] text-[#9CA3AF] font-medium">
+                            <span>{profile.year} Individual Tax</span><span>/</span>
+                            <span className="text-[#6B7280]">{activeLabel}</span>
+                            {activeSection === 'income-deductions' && periodMode === 'monthly' && (
+                                <><span>/</span><span className="text-[#6B7280]">{activeMonth}</span><span>/</span><span className="text-[#6B7280] capitalize">{incomeSubTab}</span></>
+                            )}
                         </div>
 
                         <div>
@@ -832,7 +895,12 @@ export default function PITDetails() {
                         </div>
                     </div>
 
-                    <div className="text-right">
+                    {/* Mobile Header */}
+                    <div className="md:hidden flex flex-col gap-2">
+                        <h1 className="text-base font-bold text-[#0C0C0E]">{personalInfo.fullName || 'User'} - {currentProfile?.year || 2026}</h1>
+                    </div>
+
+                    <div className="hidden md:block text-right">
                         <h2 className="text-base font-bold text-[#0C0C0E]">{taxAmount}</h2>
                         <p className="text-[13px] text-[#6B7280] font-medium">Estimated Net Tax Payable</p>
                     </div>
@@ -843,8 +911,8 @@ export default function PITDetails() {
 
                     <div className="flex-1 min-w-0">
                         {activeSection === 'personal-info' && (
-                            <div className="flex items-start justify-between gap-12">
-                                <div className="flex-1 space-y-7 max-w-[480px]">
+                            <div className="flex flex-col md:flex-row items-start justify-between gap-6 md:gap-12">
+                                <div className="flex-1 space-y-5 md:space-y-7 w-full max-w-[480px]">
                                     <h2 className="text-base font-bold text-[#0C0C0E]">Personal Information</h2>
 
                                     <div>
@@ -878,7 +946,7 @@ export default function PITDetails() {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#374151] mb-2">
                                                 Email Address
@@ -948,7 +1016,7 @@ export default function PITDetails() {
                                             onChange={(e) => setPersonalInfo({...personalInfo, streetAddress: e.target.value})}
                                             className="w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-gray-300 mb-3" 
                                         />
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                             <div className="relative">
                                                 <select 
                                                     className="appearance-none w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all"
@@ -1016,7 +1084,7 @@ export default function PITDetails() {
                                                     await completeProfile(profileId, {
                                                         nin: normalizedNin || undefined,
                                                         hasMortgage: currentProfile.hasMortgage ?? false,
-                                                        filingPreference: currentProfile.filingPreference || 'monthly',
+                                                        filingPreference: currentProfile.year === 2025 ? 'annual' : (currentProfile.filingPreference || 'monthly'),
                                                         primaryIncomeSources: currentProfile.primaryIncomeSources,
                                                         residency183Days: currentProfile.residency183Days,
                                                         state: personalInfo.state || currentProfile.state,
@@ -1050,8 +1118,8 @@ export default function PITDetails() {
                                     </button>
                                 </div>
 
-                                {/* Right Info Sidebar */}
-                                <div className="w-[300px] flex-shrink-0 space-y-6">
+                                {/* Right Info Sidebar - Hidden on Mobile */}
+                                <div className="hidden md:block w-[300px] flex-shrink-0 space-y-6">
                                     <div className="bg-[#F8FAFC] rounded-3xl p-6 border border-gray-100">
                                         <div className="flex items-center gap-2 mb-4 text-[#0C0C0E]">
                                             <Info size={18} className="text-[#003787]" />
@@ -1076,14 +1144,20 @@ export default function PITDetails() {
                         )}
 
                         {activeSection === 'income-deductions' && (
-                            <div className="flex items-start justify-between gap-12">
-                                {/* Sub-navigation Sidebar */}
-                                <div className="w-[240px] flex-shrink-0 space-y-6">
+                            <div className="flex flex-col md:flex-row items-start justify-between gap-6 md:gap-12 w-full">
+                                {/* Sub-navigation Sidebar - Month Selector */}
+                                <div className="w-full md:w-[240px] flex-shrink-0 space-y-4 md:space-y-6 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0">
                                     <div className="flex items-center gap-4 px-1">
                                         <span className={`text-[13px] font-bold transition-colors ${periodMode === 'monthly' ? 'text-[#0C0C0E]' : 'text-[#94A3B8]'}`}>Monthly</span>
                                         <button 
-                                            onClick={() => setPeriodMode(periodMode === 'monthly' ? 'annually' : 'monthly')}
-                                            className="w-10 h-5 bg-[#003787] rounded-full relative p-0.5 transition-all"
+                                            onClick={() => {
+                                                if (year === 2025) {
+                                                    toast.error('Only annual filing is available for the 2025 tax year.');
+                                                    return;
+                                                }
+                                                setPeriodMode(periodMode === 'monthly' ? 'annually' : 'monthly');
+                                            }}
+                                            className={`w-10 h-5 rounded-full relative p-0.5 transition-all ${year === 2025 ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#003787] cursor-pointer'}`}
                                         >
                                             <div className={`w-4 h-4 bg-white rounded-full transition-all ${periodMode === 'annually' ? 'translate-x-5' : 'translate-x-0'}`} />
                                         </button>
@@ -1142,7 +1216,7 @@ export default function PITDetails() {
                                 </div>
 
                                 {/* Main Form Area */}
-                                <div className="flex-1 max-w-[700px] space-y-10">
+                                <div className="flex-1 w-full max-w-[700px] space-y-8 md:space-y-10">
                                         <div className="flex items-center gap-4">
                                             <p className="text-[14px] text-[#64748B] font-medium leading-relaxed">
                                                 {periodMode === 'annually' 
@@ -1733,7 +1807,7 @@ export default function PITDetails() {
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
                                 <label className="text-[13px] font-semibold text-[#374151] mb-2 block">Month</label>
                                 <select 
@@ -1782,7 +1856,7 @@ export default function PITDetails() {
                                         className="w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40"
                                     />
                                 </div>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <div>
                                         <label className="text-[13px] font-semibold text-[#374151] mb-2 block">Bonuses (₦)</label>
                                         <input 

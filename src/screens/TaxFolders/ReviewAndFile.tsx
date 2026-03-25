@@ -14,30 +14,30 @@ interface ReviewAndFileProps {
 }
 
 const SummaryCard = ({ title, income, deductions, onDownload }: { title: string; income: string; deductions: string; onDownload: () => void }) => (
-    <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.04)] min-w-[340px] flex-shrink-0">
-        <div className="flex items-center justify-between mb-8">
-            <h3 className="text-[17px] font-bold text-taxable-dark">{title}</h3>
+    <div className="bg-white rounded-[24px] md:rounded-[32px] p-4 md:p-8 border border-gray-100 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.04)] min-w-[260px] md:min-w-[340px] flex-shrink-0">
+        <div className="flex items-center justify-between mb-4 md:mb-8">
+            <h3 className="text-[15px] md:text-[17px] font-bold text-taxable-dark">{title}</h3>
             <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
                 <Info size={12} />
             </div>
         </div>
 
-        <div className="space-y-4 mb-8">
+        <div className="space-y-3 md:space-y-4 mb-4 md:mb-8">
             <div className="flex items-center justify-between">
-                <span className="text-[14px] text-taxable-gray font-medium">Total Income</span>
-                <span className="text-[14px] text-taxable-dark font-bold">{income}</span>
+                <span className="text-[13px] md:text-[14px] text-taxable-gray font-medium">Total Income</span>
+                <span className="text-[13px] md:text-[14px] text-taxable-dark font-bold">{income}</span>
             </div>
             <div className="flex items-center justify-between">
-                <span className="text-[14px] text-taxable-gray font-medium">Total Deductions & Reliefs</span>
-                <span className="text-[14px] text-taxable-dark font-bold">{deductions}</span>
+                <span className="text-[13px] md:text-[14px] text-taxable-gray font-medium">Total Deductions</span>
+                <span className="text-[13px] md:text-[14px] text-taxable-dark font-bold">{deductions}</span>
             </div>
         </div>
 
         <button
             onClick={onDownload}
-            className="w-full py-4 border border-gray-100 rounded-2xl flex items-center justify-center gap-2 text-[14px] font-bold text-taxable-dark hover:bg-gray-50 transition-all"
+            className="w-full py-3 md:py-4 border border-gray-100 rounded-xl md:rounded-2xl flex items-center justify-center gap-2 text-[13px] md:text-[14px] font-bold text-taxable-dark hover:bg-gray-50 transition-all"
         >
-            <Download size={18} />
+            <Download size={16} />
             Download
         </button>
     </div>
@@ -352,7 +352,7 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
                         />
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-16">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-y-8 lg:gap-x-16">
                         <div>
                             <BreakdownTable
                                 title="Total Income Breakdown"

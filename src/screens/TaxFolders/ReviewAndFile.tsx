@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { Download, Info, ChevronRight, HelpCircle, Calculator } from 'lucide-react';
+import { Info, Calculator, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useTaxableApi } from '@/lib';
 import { useSearchParams } from 'next/navigation';
 import { useToast } from '@/components/Toast/ToastProvider';
@@ -13,10 +13,10 @@ interface ReviewAndFileProps {
     year?: number;
 }
 
-const SummaryCard = ({ title, income, deductions, onDownload }: { title: string; income: string; deductions: string; onDownload: () => void }) => (
-    <div className="bg-white rounded-[24px] md:rounded-[32px] p-4 md:p-8 border border-gray-100 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.04)] min-w-[260px] md:min-w-[340px] flex-shrink-0">
-        <div className="flex items-center justify-between mb-4 md:mb-8">
-            <h3 className="text-[15px] md:text-[17px] font-bold text-taxable-dark">{title}</h3>
+const SummaryCard = ({ title, income, deductions }: { title: string; income: string; deductions: string }) => (
+    <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.04)] min-w-[340px] flex-shrink-0">
+        <div className="flex items-center justify-between mb-8">
+            <h3 className="text-[17px] font-bold text-taxable-dark">{title}</h3>
             <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
                 <Info size={12} />
             </div>
@@ -32,14 +32,6 @@ const SummaryCard = ({ title, income, deductions, onDownload }: { title: string;
                 <span className="text-[13px] md:text-[14px] text-taxable-dark font-bold">{deductions}</span>
             </div>
         </div>
-
-        <button
-            onClick={onDownload}
-            className="w-full py-3 md:py-4 border border-gray-100 rounded-xl md:rounded-2xl flex items-center justify-center gap-2 text-[13px] md:text-[14px] font-bold text-taxable-dark hover:bg-gray-50 transition-all"
-        >
-            <Download size={16} />
-            Download
-        </button>
     </div>
 );
 
@@ -73,7 +65,7 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
     const searchParams = useSearchParams();
     const profileId = propProfileId || searchParams.get('profileId') || searchParams.get('id') || '';
     
-    const { submitProfile, fileTax, createFilingPaymentLink, calculateTaxGet, calculateTaxByMonth, getIncomeData, getDeductionList } = useTaxableApi();
+    const { submitProfile, fileTax, createFilingPaymentLink, calculateTaxGet, calculateTaxByMonth, getIncomeData, getDeductionList, getPaymentRecords } = useTaxableApi();
     const toast = useToast();
     
     const [submitting, setSubmitting] = useState(false);
@@ -86,15 +78,21 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
     const [deductions, setDeductions] = useState<any[]>([]);
     const [taxCalculation, setTaxCalculation] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [paymentsByMonth, setPaymentsByMonth] = useState<Record<number, any>>({});
+    const [paidMonths, setPaidMonths] = useState<Set<number>>(new Set());
+    const [selectedMonths, setSelectedMonths] = useState<Set<number>>(new Set());
+    const [monthTaxes, setMonthTaxes] = useState<Record<number, number>>({});
+    const [calculatingSelectedMonths, setCalculatingSelectedMonths] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
             if (!profileId) return;
             setLoading(true);
             try {
-                const [incomeRes, deductionRes] = await Promise.all([
+                const [incomeRes, deductionRes, paymentsRes] = await Promise.all([
                     getIncomeData(profileId),
-                    getDeductionList(profileId, year)
+                    getDeductionList(profileId, year),
+                    getPaymentRecords(profileId),
                 ]);
                 
                 if (incomeRes.success && incomeRes.data.incomes) {
@@ -102,6 +100,27 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
                 }
                 if (deductionRes.success) {
                     setDeductions(deductionRes.data?.deductions || []);
+                }
+
+                // Payment records: filter to selected tax year and build month map
+                try {
+                    const payments = (paymentsRes as any)?.data?.payments || [];
+                    const byMonth: Record<number, any> = {};
+                    const paid = new Set<number>();
+                    payments
+                        .filter((p: any) => typeof p?.year === 'number' && p.year === year)
+                        .forEach((p: any) => {
+                            const monthVal = typeof p?.month === 'number' ? p.month : undefined;
+                            if (!monthVal) return;
+                            byMonth[monthVal] = p;
+                            const status = String(p?.status || '').toLowerCase();
+                            const isPaid = status.includes('paid') || status.includes('success') || status.includes('completed');
+                            if (isPaid) paid.add(monthVal);
+                        });
+                    setPaymentsByMonth(byMonth);
+                    setPaidMonths(paid);
+                } catch {
+                    // non-blocking
                 }
             } catch (err) {
                 console.error('Failed to fetch data:', err);
@@ -111,7 +130,21 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
         };
         
         fetchData();
-    }, [profileId, year, getIncomeData, getDeductionList]);
+    }, [profileId, year, getIncomeData, getDeductionList, getPaymentRecords]);
+
+    useEffect(() => {
+        // Default selection: months where user entered any data (monthly filing)
+        if (filingPreference !== 'monthly') return;
+        const next = new Set<number>();
+        (incomeData || []).forEach((m: any[], idx: number) => {
+            if (Array.isArray(m) && m.length > 0) next.add(idx + 1);
+        });
+        // Also include months with monthly deductions saved
+        (deductions || []).forEach((d: any) => {
+            if ((d?.frequency === 'monthly') && typeof d?.month === 'number') next.add(d.month);
+        });
+        if (next.size > 0) setSelectedMonths(next);
+    }, [filingPreference, incomeData, deductions]);
 
     const calculatedIncome = useMemo(() => {
         let employmentIncome = 0;
@@ -164,6 +197,32 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
         return `₦${amount.toLocaleString()}`;
     };
 
+    const taxYearEnd = useMemo(() => new Date(year, 11, 31, 23, 59, 59, 999), [year]);
+    const reviewWindowStart = useMemo(() => new Date(taxYearEnd.getTime() - 30 * 24 * 60 * 60 * 1000), [taxYearEnd]);
+    const now = useMemo(() => new Date(), []);
+    const reviewAndFileAllowed = useMemo(() => now >= reviewWindowStart, [now, reviewWindowStart]);
+
+    const monthHasAnyData = (monthNum: number) => {
+        const income = incomeData?.[monthNum - 1];
+        const hasIncome = Array.isArray(income) && income.length > 0;
+        const hasMonthlyDeduction = (deductions || []).some((d: any) => d?.frequency === 'monthly' && d?.month === monthNum);
+        return hasIncome || hasMonthlyDeduction;
+    };
+
+    const totalPaidForYear = useMemo(() => {
+        let sum = 0;
+        paidMonths.forEach((m) => {
+            const p = paymentsByMonth[m];
+            sum += Number(p?.amountNaira ?? 0);
+        });
+        return sum;
+    }, [paidMonths, paymentsByMonth]);
+
+    const taxSoFar = useMemo(() => {
+        const selected = Array.from(selectedMonths);
+        return selected.reduce((sum, m) => sum + (monthTaxes[m] ?? paymentsByMonth[m]?.calculationSnapshot?.monthlyTax ?? 0), 0);
+    }, [selectedMonths, monthTaxes, paymentsByMonth]);
+
     const handleCalculate = async () => {
         if (!profileId) return;
         setCalculating(true);
@@ -174,10 +233,7 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
                     setTaxCalculation(result.data);
                 }
             } else {
-                const result = await calculateTaxByMonth(profileId, 1);
-                if (result.success) {
-                    setTaxCalculation(result.data);
-                }
+                toast.info('Select a month (or months) below, then calculate tax so far.');
             }
         } catch (err: any) {
             toast.error(err.message || 'Failed to calculate tax');
@@ -186,8 +242,41 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
         }
     };
 
+    const handleCalculateSelectedMonths = async () => {
+        if (!profileId) return;
+        const months = Array.from(selectedMonths).sort((a, b) => a - b);
+        if (months.length === 0) {
+            toast.warning('Select at least one month to calculate.');
+            return;
+        }
+        setCalculatingSelectedMonths(true);
+        try {
+            const nextTaxes: Record<number, number> = { ...monthTaxes };
+            for (const monthNum of months) {
+                const result = await calculateTaxByMonth(profileId, monthNum);
+                if (result.success) {
+                    const val =
+                        (result.data as any)?.taxSummary?.monthlyTax ??
+                        (result.data as any)?.taxSummary?.totalTaxAmount ??
+                        (result.data as any)?.calculation?.netTaxPayable;
+                    if (typeof val === 'number') nextTaxes[monthNum] = val;
+                }
+            }
+            setMonthTaxes(nextTaxes);
+            toast.success('Updated tax so far.', { title: 'Calculated' });
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to calculate selected months');
+        } finally {
+            setCalculatingSelectedMonths(false);
+        }
+    };
+
     const handleSubmitProfile = async () => {
         if (!profileId) return;
+        if (!reviewAndFileAllowed) {
+            toast.warning(`You can only review & file within 30 days to the end of ${year} (or after the year ends).`);
+            return;
+        }
         setSubmitting(true);
         try {
             await submitProfile(profileId);
@@ -201,6 +290,10 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
 
     const handleFileTax = async () => {
         if (!profileId) return;
+        if (!reviewAndFileAllowed) {
+            toast.warning(`You can only review & file within 30 days to the end of ${year} (or after the year ends).`);
+            return;
+        }
         setFiling(true);
         try {
             await fileTax(profileId);
@@ -320,7 +413,7 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
                     {hasData && (
                         <button
                             onClick={handleSubmitProfile}
-                            disabled={submitting}
+                            disabled={submitting || !reviewAndFileAllowed}
                             className="h-14 px-8 bg-[#00388D] text-white font-bold rounded-2xl hover:bg-[#002b6d] transition-all shadow-lg shadow-blue-900/10 disabled:opacity-50"
                         >
                             {submitting ? 'Submitting...' : 'Submit Profile'}
@@ -329,6 +422,24 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
                 </div>
             </div>
 
+            {!reviewAndFileAllowed && (
+                <div className="mb-10 rounded-3xl border border-amber-200 bg-amber-50 px-5 py-4">
+                    <div className="flex items-start gap-3">
+                        <div className="mt-0.5 text-amber-700">
+                            <AlertTriangle size={18} />
+                        </div>
+                        <div>
+                            <p className="text-[13px] font-semibold text-taxable-dark">
+                                Review & File is available near year-end
+                            </p>
+                            <p className="mt-0.5 text-[12px] font-medium text-amber-800">
+                                You can only review and file for {year} within 30 days to the end of the tax year (or after the year ends).
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {hasData ? (
                 <>
                     <div className="flex gap-6 overflow-x-auto pb-4 mb-14 no-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0">
@@ -336,23 +447,134 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
                             title="Form A - Personal Income Tax Return"
                             income={formatCurrency(calculatedIncome.totalIncome)}
                             deductions={formatCurrency(totalDeductions)}
-                            onDownload={() => { }}
                         />
                         <SummaryCard
                             title="Employment Income"
                             income={formatCurrency(calculatedIncome.employmentIncome)}
                             deductions={formatCurrency(totalDeductions)}
-                            onDownload={() => { }}
                         />
                         <SummaryCard
                             title="Other Income"
                             income={formatCurrency(calculatedIncome.otherIncome)}
                             deductions="₦0"
-                            onDownload={() => { }}
                         />
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-y-8 lg:gap-x-16">
+                    {filingPreference === 'monthly' && (
+                        <div className="mb-14">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6">
+                                <div>
+                                    <h3 className="text-[17px] font-bold text-taxable-dark">Monthly payments & tax so far</h3>
+                                    <p className="text-[13px] text-taxable-gray font-medium mt-1">
+                                        Select the months you’ve entered data for. Paid months show as paid; unpaid months can be calculated and paid as you go.
+                                        At the end of the year, we’ll submit and file on your behalf.
+                                    </p>
+                                </div>
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedMonths(new Set(Array.from({ length: 12 }, (_, i) => i + 1).filter(monthHasAnyData)))}
+                                        className="h-11 px-5 rounded-2xl border border-gray-200 bg-white text-taxable-dark font-bold text-[13px] hover:bg-gray-50 transition-colors whitespace-nowrap"
+                                    >
+                                        Select months with data
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleCalculateSelectedMonths}
+                                        disabled={calculatingSelectedMonths}
+                                        className="h-11 px-5 rounded-2xl bg-[#0C0C0E] text-white font-bold text-[13px] hover:bg-black transition-colors whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                        {calculatingSelectedMonths ? 'Calculating…' : 'Calculate tax so far'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                <div className="lg:col-span-2 bg-white rounded-[28px] border border-gray-100 p-5">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
+                                            const label = new Date(year, m - 1, 1).toLocaleString(undefined, { month: 'long' });
+                                            const disabled = !monthHasAnyData(m);
+                                            const checked = selectedMonths.has(m);
+                                            const paid = paidMonths.has(m);
+                                            const p = paymentsByMonth[m];
+                                            const paidAmt = Number(p?.amountNaira ?? 0);
+                                            const taxVal = monthTaxes[m] ?? p?.calculationSnapshot?.monthlyTax ?? 0;
+                                            return (
+                                                <button
+                                                    key={m}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (disabled) return;
+                                                        setSelectedMonths((prev) => {
+                                                            const next = new Set(prev);
+                                                            if (next.has(m)) next.delete(m);
+                                                            else next.add(m);
+                                                            return next;
+                                                        });
+                                                    }}
+                                                    className={`rounded-2xl border px-4 py-3 text-left transition-colors ${
+                                                        disabled
+                                                            ? 'border-gray-100 bg-gray-50/50 opacity-60 cursor-not-allowed'
+                                                            : checked
+                                                            ? 'border-[#00388D] bg-[#F5F8FF]'
+                                                            : 'border-gray-100 bg-white hover:bg-gray-50'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div>
+                                                            <p className="text-[13px] font-bold text-taxable-dark">{label}</p>
+                                                            <p className="text-[12px] text-taxable-gray font-medium mt-0.5">
+                                                                {paid ? `Paid ₦${paidAmt.toLocaleString()}` : disabled ? 'No data yet' : 'Unpaid'}
+                                                            </p>
+                                                        </div>
+                                                        {paid && (
+                                                            <div className="text-green-600">
+                                                                <CheckCircle2 size={18} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {!disabled && (
+                                                        <div className="mt-2 flex items-center justify-between">
+                                                            <span className="text-[12px] text-taxable-gray font-medium">Tax</span>
+                                                            <span className="text-[12px] text-taxable-dark font-bold">{formatCurrency(taxVal)}</span>
+                                                        </div>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-[28px] border border-gray-100 p-6">
+                                    <h4 className="text-[14px] font-extrabold text-taxable-dark mb-4">Year-to-date</h4>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[13px] text-taxable-gray font-medium">Selected months</span>
+                                            <span className="text-[13px] text-taxable-dark font-bold">{selectedMonths.size}/12</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[13px] text-taxable-gray font-medium">Paid months</span>
+                                            <span className="text-[13px] text-taxable-dark font-bold">{paidMonths.size}/12</span>
+                                        </div>
+                                        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                                            <span className="text-[13px] text-taxable-gray font-bold">Tax so far</span>
+                                            <span className="text-[14px] text-taxable-dark font-extrabold">{formatCurrency(taxSoFar)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[13px] text-taxable-gray font-bold">Paid so far</span>
+                                            <span className="text-[14px] text-taxable-dark font-extrabold">{formatCurrency(totalPaidForYear)}</span>
+                                        </div>
+                                    </div>
+                                    <p className="mt-4 text-[12px] text-taxable-gray font-medium leading-relaxed">
+                                        Monthly payments are prepayments for that month. At year-end, we submit and file your return for {year} on your behalf.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-16">
                         <div>
                             <BreakdownTable
                                 title="Total Income Breakdown"

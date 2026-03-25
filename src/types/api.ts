@@ -430,6 +430,7 @@ export interface Deduction {
   value?: number;
   frequency?: 'annual' | 'monthly' | string;
   month?: number | null;
+  year?: number;
   period: {
     year: number;
     startDate: string;

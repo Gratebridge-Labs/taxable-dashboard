@@ -127,8 +127,8 @@ const FAQSection = () => {
     ];
 
     return (
-        <div className="mt-24 pb-20">
-            <h2 className="text-2xl font-medium text-taxable-dark mb-8">Common Tax Questions</h2>
+        <div className="mt-12 pb-20">
+            <h2 className="text-xl md:text-2xl font-bold text-taxable-dark mb-8">Common Tax Questions</h2>
 
             <div className="flex gap-10 border-b border-gray-100 mb-8 overflow-x-auto no-scrollbar">
                 {tabs.map((tab) => (
@@ -225,7 +225,7 @@ export default function Home() {
             <DashboardHeader />
 
             {/* Main Content */}
-            <main className="max-w-[1280px] mx-auto px-6 md:px-12 py-8 md:py-16">
+            <main className="max-w-[1280px] mx-auto px-6 md:px-12 py-6 md:py-8">
                 {isInitialLoading || authLoading ? (
                     <div className="flex flex-col gap-8 animate-pulse text-left">
                         <div className="space-y-4">
@@ -276,7 +276,7 @@ export default function Home() {
                     </>
                 ) : (
                     <div className="animate-in fade-in duration-700">
-                        <div className="mb-14 flex flex-col md:flex-row justify-between items-start gap-6">
+                        <div className="mb-8 flex flex-col md:flex-row justify-between items-start gap-6">
                             <div>
                                 <h1 className="text-[22px] md:text-[28px] font-semibold text-taxable-dark mb-2 tracking-tight">
                                     Hello, {user?.firstName}, Welcome back
@@ -313,8 +313,8 @@ export default function Home() {
                                 return acc;
                             }, {})
                         ).sort(([yearA], [yearB]) => Number(yearB) - Number(yearA)).map(([year, yearProfiles]) => (
-                            <section key={year} className="mb-16 last:mb-0">
-                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
+                            <section key={year} className="mb-10 last:mb-0">
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                                     <h2 className="text-xl md:text-2xl font-bold text-taxable-dark">{year} Tax Filings</h2>
                                     <button
                                         onClick={() => setIsSidebarOpen(true)}

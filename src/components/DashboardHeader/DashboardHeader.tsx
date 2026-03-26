@@ -49,7 +49,7 @@ export default function DashboardHeader() {
     ];
 
     return (
-        <header className="w-full h-20 bg-white border-b border-gray-100 flex items-center px-4 md:px-8 sticky top-0 z-50">
+        <header className="w-full h-20 bg-[#F5F5F5] border-b border-[#F5F5F5] flex items-center px-4 md:px-8 sticky top-0 z-50">
             {/* Left Section: Mobile Menu Icon & Logo */}
             <div className="flex-1 flex items-center gap-3">
                 <button
@@ -95,21 +95,16 @@ export default function DashboardHeader() {
                 })}
             </nav>
 
-            {/* Right Section: User Name & Support Button */}
-            <div className="flex items-center gap-3 md:gap-4 relative">
-                {userName && (
-                    <span className="text-[13px] md:text-[14px] font-semibold text-taxable-dark hidden sm:block">
-                        {userName}
-                    </span>
-                )}
+            {/* Right Section: Support Button */}
+            <div className="flex-1 flex items-center justify-end gap-3 md:gap-4 relative">
                 <button
                     onClick={() => setShowSupport(!showSupport)}
-                    className="px-3 md:px-5 h-[42px] md:h-[46px] border border-gray-100 rounded-[12px] text-[13px] md:text-[14px] font-bold text-taxable-dark hover:shadow-xs hover:bg-gray-50 transition-all cursor-pointer flex items-center gap-2"
+                    className="px-3 md:px-5 h-[42px] md:h-[46px] border-none bg-white rounded-[12px] text-[13px] md:text-[14px] font-bold text-taxable-dark hover:bg-gray-50 transition-all cursor-pointer flex items-center gap-2 shadow-sm"
                 >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                     </svg>
-                    <span className="hidden sm:inline">Talk to Accountant</span>
+                    <span className="hidden sm:inline">Contact support</span>
                     <span className="sm:hidden">Help</span>
                 </button>
 

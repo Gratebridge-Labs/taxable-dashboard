@@ -25,9 +25,21 @@ const formatNumberWithCommas = (raw: string) => {
     return `${formattedInt}.${decPart}`;
 };
 
+const FolderIcon = ({ size = 18 }: { size?: number }) => (
+    <svg width={size} height={size * (15/17)} viewBox="0 0 17 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0 1.66667C0 1.22464 0.175595 0.800716 0.488155 0.488155C0.800716 0.175595 1.22464 0 1.66667 0H6.26667C6.51647 3.11647e-05 6.76307 0.0562156 6.98824 0.164399C7.2134 0.272582 7.41137 0.429996 7.5675 0.625L8.73417 2.08333H15C15.442 2.08333 15.8659 2.25893 16.1785 2.57149C16.4911 2.88405 16.6667 3.30797 16.6667 3.75V13.3333C16.6667 13.7754 16.4911 14.1993 16.1785 14.5118C15.8659 14.8244 15.442 15 15 15H1.66667C1.22464 15 0.800716 14.8244 0.488155 14.5118C0.175595 14.1993 0 13.7754 0 13.3333V1.66667Z" fill="url(#paint0_linear_575_957)"/>
+        <defs>
+            <linearGradient id="paint0_linear_575_957" x1="8.33333" y1="0" x2="8.33333" y2="15" gradientUnits="userSpaceOnUse">
+                <stop offset="0.341346" stop-color="#FFBE2C"/>
+                <stop offset="1" stop-color="#DD9900"/>
+            </linearGradient>
+        </defs>
+    </svg>
+);
+
 const IncomeField = ({ label, value, onChange, placeholder = "N0" }: { label: string; value: string; onChange: (val: string) => void; placeholder?: string }) => (
     <div className="space-y-2">
-        <label className="flex items-center gap-1.5 text-[12px] font-semibold text-[#64748B] leading-none uppercase tracking-wide">
+        <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#6B7280] leading-none mb-1">
             {label}
             <span className="w-3.5 h-3.5 rounded-full bg-gray-100 text-[#94A3B8] flex items-center justify-center text-[10px] cursor-help">i</span>
         </label>
@@ -38,7 +50,7 @@ const IncomeField = ({ label, value, onChange, placeholder = "N0" }: { label: st
                 value={formatNumberWithCommas(value)}
                 onChange={(e) => onChange(stripNumberFormatting(e.target.value))}
                 placeholder={placeholder}
-                className="w-full h-12 border border-gray-100 bg-white rounded-2xl pl-8 pr-4 text-[14px] font-bold text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-[#94A3B8]/40" 
+                className="w-full h-12 border border-[#F5F5F5] bg-white rounded-2xl pl-8 pr-4 text-[14px] font-bold text-[#0C0C0E] focus:outline-none focus:ring-1 focus:ring-[#003787]/10 transition-all placeholder:text-[#94A3B8]/40" 
             />
         </div>
     </div>
@@ -97,17 +109,17 @@ const DeductionItem = ({
                     value={formatNumberWithCommas(value)}
                     onChange={(e) => onChange(stripNumberFormatting(e.target.value))}
                     placeholder="NG"
-                    className="w-full h-12 border border-gray-100 bg-white rounded-2xl pl-8 pr-4 text-[14px] font-bold text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-gray-300" 
+                    className="w-full h-12 border border-[#F5F5F5] bg-white rounded-2xl pl-8 pr-4 text-[14px] font-bold text-[#0C0C0E] focus:outline-none focus:ring-1 focus:ring-[#003787]/10 transition-all placeholder:text-gray-300" 
                 />
             </div>
         </div>
 
-        <div className="bg-[#F9FAFB] rounded-2xl p-6 border border-gray-50">
+        <div className="bg-[#FAFAFA] rounded-2xl p-4 border border-[#F5F5F5]">
             <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#374151] mb-4 leading-none">
                 {uploadLabel}
                 <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
             </label>
-            <div className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center justify-between">
+            <div className="bg-[#FAFAFA] border border-[#F5F5F5] rounded-xl p-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -784,14 +796,11 @@ export default function PITDetails() {
 
     const profile = currentProfile;
 
-    const SECTIONS = [
-        { key: 'personal-info', label: 'Personal Info', icon: '👤' },
-        { key: 'income-deductions', label: 'Income', icon: '💰' },
-        { key: 'review', label: 'Review', icon: '📋' },
-    ];
-
     const getCurrentStepIndex = () => {
-        return SECTIONS.findIndex(s => s.key === activeSection);
+        if (activeSection === 'personal-info') return 0;
+        if (activeSection === 'income-deductions') return 1;
+        if (activeSection === 'review') return 2;
+        return 0;
     };
 
     const renderSidebar = () => (
@@ -816,8 +825,8 @@ export default function PITDetails() {
 
             {/* Sidebar - Desktop & Mobile */}
             <div className={`
-                md:w-[240px] md:flex-shrink-0 md:flex md:flex-col md:gap-6 md:sticky md:top-24
-                fixed md:relative inset-y-0 left-0 z-50 bg-white md:bg-transparent
+                md:w-[280px] md:flex-shrink-0 md:flex md:flex-col md:gap-5 md:sticky md:top-24
+                fixed md:relative inset-y-0 left-0 z-50 bg-[#FAFAFA] md:bg-transparent
                 transform transition-transform duration-300 ease-in-out
                 ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
                 w-[280px] flex flex-col gap-4 p-4 shadow-xl md:shadow-none
@@ -825,62 +834,108 @@ export default function PITDetails() {
                 {/* Mobile Close Button */}
                 <button 
                     onClick={() => setMobileSidebarOpen(false)}
-                    className="md:hidden absolute top-4 right-4 w-8 h-8 flex items-center justify-center"
+                    className="md:hidden absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-sm"
                 >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2.5">
                         <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                     </svg>
                 </button>
 
-                <div>
-                    <p className="text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-2 px-1 hidden md:block">Select</p>
+                {/* Group 1: Personal Info */}
+                <div className="bg-white rounded-3xl p-4 border border-[#F5F5F5]">
+                    <p className="text-[13px] font-semibold text-[#94A3B8] mb-2 px-1">Select</p>
                     <div className="space-y-1">
-                        {SECTIONS.map(sec => (
-                            <button
-                                key={sec.key}
-                                onClick={() => {
-                                    setActiveSection(sec.key as any);
-                                    setMobileSidebarOpen(false);
-                                }}
-                                className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all ${activeSection === sec.key ? 'bg-[#003787] text-white' : 'hover:bg-gray-100 text-[#374151]'
-                                    }`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <span className="text-lg">{sec.icon}</span>
-                                    <span className="text-[14px] font-semibold">{sec.label}</span>
-                                </div>
-                                {activeSection === sec.key && (
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                                    </svg>
-                                )}
-                            </button>
-                        ))}
+                        <button
+                            onClick={() => {
+                                setActiveSection('personal-info');
+                                setMobileSidebarOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between px-2.5 py-2.5 rounded-2xl transition-all ${
+                                activeSection === 'personal-info' 
+                                    ? 'bg-[#F8FAFC] text-[#0C0C0E]' 
+                                    : 'hover:bg-gray-50 text-[#64748B]'
+                            }`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <FolderIcon size={20} />
+                                <span className={`text-[14px] ${activeSection === 'personal-info' ? 'font-semibold' : 'font-medium'}`}>Personal Information</span>
+                            </div>
+                            <ChevronRight size={16} className={activeSection === 'personal-info' ? 'text-[#0C0C0E]' : 'text-[#94A3B8]'} />
+                        </button>
                     </div>
                 </div>
 
-                {taxSummary?.actions && (
-                    <div className="mt-4 bg-white border border-gray-100 rounded-[20px] p-5">
-                        <div className="flex items-center gap-2 mb-2">
-                            <h4 className="text-[13px] font-bold text-[#0C0C0E]">Need expert eyes on your return?</h4>
-                        </div>
-                        <p className="text-[12px] text-[#6B7280] leading-relaxed font-medium mb-4">
-                            Get your return reviewed by a certified tax accountant. They&apos;ll ensure accuracy, compliance, and file for you.
-                        </p>
-                        {taxSummary.actions.canPayAccountantReview && (
-                            <button className="w-full h-10 border border-gray-200 text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-colors text-[12px]">
-                                Book Accountant (₦30,000)
-                            </button>
-                        )}
+                {/* Group 2: Income & Review */}
+                <div className="bg-white rounded-3xl p-4 border border-[#F5F5F5]">
+                    <p className="text-[13px] font-semibold text-[#94A3B8] mb-2 px-1">Select</p>
+                    <div className="space-y-1">
+                        <button
+                            onClick={() => {
+                                setActiveSection('income-deductions');
+                                setIncomeSubTab('income');
+                                setMobileSidebarOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between px-2.5 py-2.5 rounded-2xl transition-all ${
+                                activeSection === 'income-deductions' && incomeSubTab === 'income'
+                                    ? 'bg-[#F8FAFC] text-[#0C0C0E]' 
+                                    : 'hover:bg-gray-50 text-[#94A3B8]'
+                            }`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="opacity-40 grayscale"><FolderIcon size={20} /></div>
+                                <span className={`text-[14px] ${activeSection === 'income-deductions' && incomeSubTab === 'income' ? 'font-semibold' : 'font-medium'}`}>Income & Deductions</span>
+                            </div>
+                            <ChevronRight size={16} className={activeSection === 'income-deductions' && incomeSubTab === 'income' ? 'text-[#0C0C0E]' : 'text-gray-200'} />
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                setActiveSection('review');
+                                setMobileSidebarOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between px-2.5 py-2.5 rounded-2xl transition-all ${
+                                activeSection === 'review' 
+                                    ? 'bg-[#F8FAFC] text-[#0C0C0E]' 
+                                    : 'hover:bg-gray-50 text-[#94A3B8]'
+                            }`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="opacity-40 grayscale"><FolderIcon size={20} /></div>
+                                <span className={`text-[14px] ${activeSection === 'review' ? 'font-semibold' : 'font-medium'}`}>Review & File</span>
+                            </div>
+                            <ChevronRight size={16} className={activeSection === 'review' ? 'text-[#0C0C0E]' : 'text-gray-100'} />
+                        </button>
                     </div>
-                )}
+                </div>
+
+                {/* Group 3: Help / Promo */}
+                <div className="bg-white rounded-3xl p-4 border border-[#F5F5F5]">
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="w-6 h-6 flex items-center justify-center text-[#0C0C0E]">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+                                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+                            </svg>
+                        </div>
+                        <h4 className="text-[16px] font-bold text-[#0C0C0E]">Need expert eyes on your return?</h4>
+                    </div>
+                    <p className="text-[13px] text-[#64748B] leading-relaxed font-medium mb-4">
+                        Get your return reviewed by a certified tax accountant. They&apos;ll ensure accuracy, compliance, and file for you.
+                    </p>
+                    <button 
+                        onClick={() => setHelpModalOpen(true)}
+                        className="w-full h-12 bg-white border border-[#E2E8F0] text-[#0C0C0E] font-medium rounded-2xl hover:bg-gray-50 transition-all text-[14px]"
+                    >
+                        Book Accountant (₦15,000)
+                    </button>
+                </div>
             </div>
         </>
     );
 
     const activeLabel = {
         'personal-info': 'Personal Information',
-        'income-deductions': 'Income & Deductions',
+        'income-deductions': incomeSubTab === 'income' ? 'Income & Deductions' : 'Tax Reliefs',
         'review': 'Review & File',
     }[activeSection];
 
@@ -963,7 +1018,7 @@ export default function PITDetails() {
         <div className="min-h-screen bg-[#FAFAFA] font-sans pb-24 md:pb-20">
             <DashboardHeader />
 
-            <main className="max-w-[1200px] mx-auto px-4 md:px-8 py-6 md:py-8">
+            <main className="max-w-[1340px] mx-auto px-4 md:px-8 py-6 md:py-8">
                     <div className="flex flex-col gap-4 mb-6 border-b border-gray-100 pb-4 md:pb-6">
                     {/* Mobile: Tax Amount at top */}
                     <div className="md:hidden flex justify-between items-end">
@@ -990,38 +1045,6 @@ export default function PITDetails() {
                             </svg>
                             Back
                         </button>
-                        
-                        {/* Process Indicator - Steps */}
-                        <div className="flex items-center gap-2">
-                            {SECTIONS.map((sec, index) => (
-                                <React.Fragment key={sec.key}>
-                                    <button
-                                        onClick={() => setActiveSection(sec.key as any)}
-                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors ${
-                                            activeSection === sec.key 
-                                                ? 'bg-[#003787] text-white' 
-                                                : index < currentStepIndex 
-                                                    ? 'bg-green-100 text-green-700' 
-                                                    : 'bg-gray-100 text-gray-500'
-                                        }`}
-                                    >
-                                        {index < currentStepIndex ? (
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                                                <polyline points="20 6 9 17 4 12" />
-                                            </svg>
-                                        ) : (
-                                            <span>{index + 1}</span>
-                                        )}
-                                        <span className="hidden sm:inline">{sec.label}</span>
-                                    </button>
-                                    {index < SECTIONS.length - 1 && (
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth="2">
-                                            <polyline points="9 18 15 12 9 6" />
-                                        </svg>
-                                    )}
-                                </React.Fragment>
-                            ))}
-                        </div>
                     </div>
 
                     <div className="hidden md:flex justify-between items-start">
@@ -1067,7 +1090,7 @@ export default function PITDetails() {
                                                 type="text" 
                                                 value={personalInfo.nin} 
                                                 onChange={(e) => setPersonalInfo({...personalInfo, nin: e.target.value})}
-                                                className="w-full h-11 border border-gray-100 bg-[#F9FAFB] rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all" 
+                                                className="w-full h-11 border border-[#F5F5F5] bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:ring-1 focus:ring-[#003787]/10 transition-all" 
                                             />
                                         <div className="flex items-center gap-1.5 mt-2">
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
@@ -1100,7 +1123,7 @@ export default function PITDetails() {
                                                 placeholder="Enter your email" 
                                                 value={personalInfo.email}
                                                 onChange={(e) => setPersonalInfo({...personalInfo, email: e.target.value})}
-                                                className="w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-gray-300" 
+                                                className="w-full h-11 border border-[#F5F5F5] bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:ring-1 focus:ring-[#003787]/10 transition-all placeholder:text-gray-300" 
                                             />
                                         </div>
                                         <div>
@@ -1113,7 +1136,7 @@ export default function PITDetails() {
                                                 placeholder="Enter your phone" 
                                                 value={personalInfo.phone}
                                                 onChange={(e) => setPersonalInfo({...personalInfo, phone: e.target.value})}
-                                                className="w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-gray-300" 
+                                                className="w-full h-11 border border-[#F5F5F5] bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:ring-1 focus:ring-[#003787]/10 transition-all placeholder:text-gray-300" 
                                             />
                                         </div>
                                     </div>
@@ -1128,7 +1151,7 @@ export default function PITDetails() {
                                             placeholder="Enter your full name" 
                                             value={personalInfo.fullName}
                                             onChange={(e) => setPersonalInfo({...personalInfo, fullName: e.target.value})}
-                                            className="w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-gray-300" 
+                                            className="w-full h-11 border border-[#F5F5F5] bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:ring-1 focus:ring-[#003787]/10 transition-all placeholder:text-gray-300" 
                                         />
                                     </div>
 
@@ -1143,7 +1166,7 @@ export default function PITDetails() {
                                             value={personalInfo.dateOfBirth}
                                             onChange={handleDobChange}
                                             maxLength={14}
-                                            className="w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-gray-300" 
+                                            className="w-full h-11 border border-[#F5F5F5] bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:ring-1 focus:ring-[#003787]/10 transition-all placeholder:text-gray-300" 
                                         />
                                     </div>
 
@@ -1157,12 +1180,12 @@ export default function PITDetails() {
                                             placeholder="Enter" 
                                             value={personalInfo.streetAddress}
                                             onChange={(e) => setPersonalInfo({...personalInfo, streetAddress: e.target.value})}
-                                            className="w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all placeholder:text-gray-300 mb-3" 
+                                            className="w-full h-11 border border-[#F5F5F5] bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:ring-1 focus:ring-[#003787]/10 transition-all placeholder:text-gray-300 mb-3" 
                                         />
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                             <div className="relative">
                                                 <select 
-                                                    className="appearance-none w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all"
+                                                    className="appearance-none w-full h-11 border border-[#F5F5F5] bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:ring-1 focus:ring-[#003787]/10 transition-all"
                                                     value={personalInfo.city}
                                                     onChange={(e) => setPersonalInfo({...personalInfo, city: e.target.value})}
                                                 >
@@ -1176,7 +1199,7 @@ export default function PITDetails() {
                                             </div>
                                             <div className="relative">
                                                 <select 
-                                                    className="appearance-none w-full h-11 border border-gray-200 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:border-[#003787]/40 transition-all"
+                                                    className="appearance-none w-full h-11 border border-[#F5F5F5] bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none focus:ring-1 focus:ring-[#003787]/10 transition-all"
                                                     value={personalInfo.state}
                                                     onChange={(e) => setPersonalInfo({...personalInfo, state: e.target.value})}
                                                 >
@@ -1262,16 +1285,16 @@ export default function PITDetails() {
                                 </div>
 
                                 {/* Right Info Sidebar - Hidden on Mobile */}
-                                <div className="hidden md:block w-[300px] flex-shrink-0 space-y-6">
-                                    <div className="bg-[#F8FAFC] rounded-3xl p-6 border border-gray-100">
+                                <div className="hidden md:block w-[300px] flex-shrink-0 space-y-6 sticky top-8 self-start">
+                                    <div className="bg-[#F5F5F5] rounded-3xl p-6 border border-[#F5F5F5]">
                                         <div className="flex items-center gap-2 mb-4 text-[#0C0C0E]">
-                                            <Info size={18} className="text-[#003787]" />
+                                            <FolderIcon size={18} />
                                             <h3 className="text-sm font-bold">Why we need this</h3>
                                         </div>
                                         <p className="text-[13px] text-[#64748B] leading-relaxed mb-6 font-medium">
                                             Your personal details help us identify you with FIRS and ensure your tax return is filed correctly. All information is encrypted and stored securely. We only share data with FIRS when you choose to file.
                                         </p>
-                                        <div className="space-y-4 pt-4 border-t border-gray-100">
+                                        <div className="space-y-4 pt-4 border-t border-white">
                                             <button className="w-full flex items-center justify-between text-[13px] font-bold text-[#003787] hover:underline">
                                                 How to find your NIN
                                                 <ChevronRight size={14} />
@@ -1287,9 +1310,9 @@ export default function PITDetails() {
                         )}
 
                         {activeSection === 'income-deductions' && (
-                            <div className="flex flex-col md:flex-row items-start justify-between gap-6 md:gap-12 w-full">
+                            <div className="flex flex-col md:flex-row items-start justify-start gap-6 md:gap-4 w-full">
                                 {/* Sub-navigation Sidebar - Month Selector */}
-                                <div className="w-full md:w-[240px] flex-shrink-0 space-y-4 md:space-y-6 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0">
+                                <div className="w-full md:w-[240px] flex-shrink-0 space-y-4 md:space-y-6 pb-2 md:sticky md:top-8 md:self-start">
                                     <div className="flex items-center gap-4 px-1">
                                         <span className={`text-[13px] font-bold transition-colors ${periodMode === 'monthly' ? 'text-[#0C0C0E]' : 'text-[#94A3B8]'}`}>Monthly</span>
                                         <button 
@@ -1310,7 +1333,7 @@ export default function PITDetails() {
                                                             setExpandedMonth(expandedMonth === month ? null : month);
                                                             setActiveMonth(month);
                                                         }}
-                                                        className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all ${activeMonth === month ? 'bg-white' : 'hover:bg-gray-50'}`}
+                                                        className={`w-full flex items-center justify-between px-3 py-3 rounded-2xl transition-all ${activeMonth === month ? 'bg-white' : 'hover:bg-gray-50'}`}
                                                     >
                                                         <div className="flex items-center gap-3">
                                                             {(() => {
@@ -1318,7 +1341,11 @@ export default function PITDetails() {
                                                                 const paid = paidMonths.has(monthNum);
                                                                 if (!paid) {
                                                                     return (
-                                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={activeMonth === month ? "#0C0C0E" : "#94A3B8"} strokeWidth="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                                                        <img 
+                                                                            src={activeMonth === month ? "/icons/calender_fill.svg" : "/icons/calender.svg"} 
+                                                                            alt="calendar" 
+                                                                            className="w-4 h-4" 
+                                                                        />
                                                                     );
                                                                 }
                                                                 return (
@@ -1336,13 +1363,13 @@ export default function PITDetails() {
                                                         <div className="px-4 pb-2 space-y-1 ml-7">
                                                             <button 
                                                                 onClick={() => setIncomeSubTab('income')}
-                                                                className={`w-full text-left px-4 py-2 rounded-xl text-[13px] font-bold transition-colors ${incomeSubTab === 'income' ? 'bg-[#F1F5F9] text-[#0C0C0E]' : 'text-[#64748B] hover:text-[#0C0C0E]'}`}
+                                                                className={`w-full text-left px-3 py-2 rounded-xl text-[13px] font-bold transition-colors ${incomeSubTab === 'income' ? 'bg-[#F1F5F9] text-[#0C0C0E]' : 'text-[#64748B] hover:text-[#0C0C0E]'}`}
                                                             >
                                                                 Income
                                                             </button>
                                                             <button 
                                                                 onClick={() => setIncomeSubTab('deductions')}
-                                                                className={`w-full text-left px-4 py-2 rounded-xl text-[13px] font-bold transition-colors ${incomeSubTab === 'deductions' ? 'bg-[#F1F5F9] text-[#0C0C0E]' : 'text-[#64748B] hover:text-[#0C0C0E]'}`}
+                                                                className={`w-full text-left px-3 py-2 rounded-xl text-[13px] font-bold transition-colors ${incomeSubTab === 'deductions' ? 'bg-[#F1F5F9] text-[#0C0C0E]' : 'text-[#64748B] hover:text-[#0C0C0E]'}`}
                                                             >
                                                                 Deductions
                                                             </button>
@@ -1355,7 +1382,7 @@ export default function PITDetails() {
                                                 <button
                                                     type="button"
                                                     onClick={() => setIncomeSubTab('income')}
-                                                    className={`w-full flex items-center justify-between px-4 py-4 rounded-2xl transition-all ${incomeSubTab === 'income' ? 'bg-white text-[#0C0C0E]' : 'hover:bg-gray-50 text-[#94A3B8]'}`}
+                                                    className={`w-full flex items-center justify-between px-3 py-4 rounded-2xl transition-all ${incomeSubTab === 'income' ? 'bg-white text-[#0C0C0E]' : 'hover:bg-gray-50 text-[#94A3B8]'}`}
                                                 >
                                                     <span className={`text-[13px] font-bold ${incomeSubTab === 'income' ? 'text-[#0C0C0E]' : 'text-[#94A3B8]'}`}>Total Income for {currentProfile?.year || 2026}</span>
                                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={incomeSubTab === 'income' ? "#0C0C0E" : "#94A3B8"} strokeWidth="3"><polyline points="9 18 15 12 9 6"/></svg>
@@ -1363,7 +1390,7 @@ export default function PITDetails() {
                                                 <button
                                                     type="button"
                                                     onClick={() => setIncomeSubTab('deductions')}
-                                                    className={`w-full flex items-center justify-between px-4 py-4 rounded-2xl transition-all ${incomeSubTab === 'deductions' ? 'bg-white text-[#0C0C0E]' : 'hover:bg-gray-50 text-[#94A3B8]'}`}
+                                                    className={`w-full flex items-center justify-between px-3 py-4 rounded-2xl transition-all ${incomeSubTab === 'deductions' ? 'bg-white text-[#0C0C0E]' : 'hover:bg-gray-50 text-[#94A3B8]'}`}
                                                 >
                                                     <span className={`text-[13px] font-bold ${incomeSubTab === 'deductions' ? 'text-[#0C0C0E]' : 'text-[#94A3B8]'}`}>Total deductible for {currentProfile?.year || 2026}</span>
                                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={incomeSubTab === 'deductions' ? "#0C0C0E" : "#94A3B8"} strokeWidth="3"><polyline points="9 18 15 12 9 6"/></svg>
@@ -1374,9 +1401,9 @@ export default function PITDetails() {
                                 </div>
 
                                 {/* Main Form Area */}
-                                <div className="flex-1 max-w-[700px] space-y-10">
-                                        <div className="flex items-center gap-4">
-                                            <p className="text-[14px] text-[#64748B] font-medium leading-relaxed">
+                                <div className="flex-1 max-w-[700px] space-y-6">
+                                    <div className="flex items-center gap-4">
+                                        <p className="text-[14px] text-[#64748B] font-medium leading-relaxed">
                                                 {periodMode === 'annually' 
                                                     ? `Enter your total annual income for ${currentProfile?.year || 2026}. Skip fields that don't apply to you.`
                                                     : `Enter your income for ${activeMonth} ${currentProfile?.year || 2026}. Skip fields that don't apply to you. You can update amounts anytime.`
@@ -1385,214 +1412,226 @@ export default function PITDetails() {
                                         </div>
 
                                     {incomeSubTab === 'income' ? (
-                                        <div className="space-y-8">
+                                        <div className="space-y-10">
                                             <div>
-                                                <h3 className="text-[17px] font-extrabold text-[#0C0C0E] mb-6">Employment Income</h3>
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                                    {periodMode === 'annually' ? (
-                                                        <>
-                                                            <IncomeField label="Annual Gross Salary" value={annualIncome.salary} onChange={(val) => setAnnualIncome({...annualIncome, salary: val})} />
-                                                            <IncomeField label="Annual Bonuses" value={annualIncome.bonuses} onChange={(val) => setAnnualIncome({...annualIncome, bonuses: val})} />
-                                                            <IncomeField label="Annual Commissions" value={annualIncome.commissions} onChange={(val) => setAnnualIncome({...annualIncome, commissions: val})} />
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <IncomeField label="Gross Salary/wages" value={currentMonthIncome.salary} onChange={(val) => setCurrentMonthIncome({...currentMonthIncome, salary: val})} />
-                                                            <IncomeField label="Bonuses" value={currentMonthIncome.bonuses} onChange={(val) => setCurrentMonthIncome({...currentMonthIncome, bonuses: val})} />
-                                                            <IncomeField label="Commissions" value={currentMonthIncome.commissions} onChange={(val) => setCurrentMonthIncome({...currentMonthIncome, commissions: val})} />
-                                                        </>
-                                                    )}
+                                                <h3 className="text-[19px] font-bold text-[#0C0C0E] mb-6">Employment Income</h3>
+                                                <div className="bg-[#F5F5F5] rounded-[24px] p-4">
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+                                                        {periodMode === 'annually' ? (
+                                                            <>
+                                                                <IncomeField label="Annual Gross Salary" value={annualIncome.salary} onChange={(val) => setAnnualIncome({...annualIncome, salary: val})} />
+                                                                <IncomeField label="Annual Bonuses" value={annualIncome.bonuses} onChange={(val) => setAnnualIncome({...annualIncome, bonuses: val})} />
+                                                                <IncomeField label="Annual Commissions" value={annualIncome.commissions} onChange={(val) => setAnnualIncome({...annualIncome, commissions: val})} />
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <IncomeField label="Gross Salary/wages" value={currentMonthIncome.salary} onChange={(val) => setCurrentMonthIncome({...currentMonthIncome, salary: val})} />
+                                                                <IncomeField label="Bonuses" value={currentMonthIncome.bonuses} onChange={(val) => setCurrentMonthIncome({...currentMonthIncome, bonuses: val})} />
+                                                                <IncomeField label="Commissions" value={currentMonthIncome.commissions} onChange={(val) => setCurrentMonthIncome({...currentMonthIncome, commissions: val})} />
+                                                            </>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
 
-                                            <div className="pt-8 border-t border-gray-100">
-                                                <h3 className="text-[17px] font-extrabold text-[#0C0C0E] mb-6">Other Income</h3>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                    {periodMode === 'annually' ? (
-                                                        <>
-                                                            <IncomeField label="Freelance/consulting fees" value={annualIncome.freelance} onChange={(val) => setAnnualIncome({...annualIncome, freelance: val})} />
-                                                            <IncomeField label="Digital Assets/Crypto" value={annualIncome.digitalAssets} onChange={(val) => setAnnualIncome({...annualIncome, digitalAssets: val})} />
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <IncomeField label="Freelance/consulting fees" value={currentMonthIncome.freelance} onChange={(val) => setCurrentMonthIncome({...currentMonthIncome, freelance: val})} />
-                                                            <IncomeField label="Digital Assets/Crypto" value={(currentMonthIncome as any).digitalAssets || ''} onChange={(val) => setCurrentMonthIncome({...currentMonthIncome, digitalAssets: val} as any)} />
-                                                        </>
-                                                    )}
+                                            <div>
+                                                <h3 className="text-[19px] font-bold text-[#0C0C0E] mb-6">Other Income</h3>
+                                                <div className="bg-[#F5F5F5] rounded-[24px] p-4">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                                                        {periodMode === 'annually' ? (
+                                                            <>
+                                                                <IncomeField label="Freelance/consulting fees" value={annualIncome.freelance} onChange={(val) => setAnnualIncome({...annualIncome, freelance: val})} />
+                                                                <IncomeField label="Digital Assets/Crypto" value={annualIncome.digitalAssets} onChange={(val) => setAnnualIncome({...annualIncome, digitalAssets: val})} />
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <IncomeField label="Freelance/consulting fees" value={currentMonthIncome.freelance} onChange={(val) => setCurrentMonthIncome({...currentMonthIncome, freelance: val})} />
+                                                                <IncomeField label="Digital Assets/Crypto" value={(currentMonthIncome as any).digitalAssets || ''} onChange={(val) => setCurrentMonthIncome({...currentMonthIncome, digitalAssets: val} as any)} />
+                                                            </>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="space-y-10">
+                                        <div className="space-y-6">
                                             {/* Rent Relief — annual, only shown in January for monthly mode */}
                                             {currentProfile?.paysRent && (periodMode === 'annually' || activeMonthNum === 1) && (
-                                                <div className="space-y-6">
-                                                    <h3 className="text-[17px] font-extrabold text-[#0C0C0E]">Rent Relief</h3>
-                                                    {(() => {
-                                                        const rentDeduction = (deductions || []).find(d => (d.deductionType as string) === 'rent_relief');
-                                                        const rentStatus = rentDeduction?.verificationStatus;
-                                                        const hasUpload = !!uploadedFileNames.rentRelief || !!documentUrls.rentRelief || !!rentDeduction?.documentUrl;
-                                                        return (
-                                                            <DeductionItem 
-                                                                label="Annual Rent Commitment" 
-                                                                value={reliefs.rentRelief}
-                                                                onChange={(val) => setReliefs({...reliefs, rentRelief: val})}
-                                                                uploadLabel="Upload Tenancy Agreements or Receipt"
-                                                                fileName={
-                                                                    uploadedFileNames.rentRelief ||
-                                                                    (hasUpload ? 'Document uploaded' : (rentDeduction ? `Rent Receipt (₦${Number((rentDeduction as any).amount ?? (rentDeduction as any).value ?? 0).toLocaleString()})` : 'Proof of Rent Required'))
-                                                                }
-                                                                status={
-                                                                    rentStatus === 'verified'
-                                                                        ? 'verified'
-                                                                        : rentStatus === 'pending'
-                                                                        ? 'pending'
-                                                                        : hasUpload
-                                                                        ? 'completed'
-                                                                        : undefined
-                                                                }
-                                                                statusMessage={rentStatus === 'verified' ? 'Verified. Your rent relief has been approved.' : rentStatus === 'pending' ? 'Verification in Progress — Our system is matching your document with NRS records' : undefined}
-                                                                onUpload={async (file) => {
-                                                                    const res = await uploadSimple(file);
-                                                                    setDocumentUrls(p => ({ ...p, rentRelief: res.data.url }));
-                                                                    setUploadedFileNames(p => ({ ...p, rentRelief: file.name }));
-                                                                }}
-                                                                onDeleteFile={() => {
-                                                                    setDocumentUrls(p => ({ ...p, rentRelief: '' }));
-                                                                    setUploadedFileNames(p => ({ ...p, rentRelief: '' }));
-                                                                }}
-                                                            />
-                                                        );
-                                                    })()}
+                                                <div>
+                                                    <h3 className="text-[19px] font-bold text-[#0C0C0E] mb-6">Rent Relief</h3>
+                                                    <div className="bg-[#F5F5F5] rounded-[24px] p-4">
+                                                        {(() => {
+                                                            const rentDeduction = (deductions || []).find(d => (d.deductionType as string) === 'rent_relief');
+                                                            const rentStatus = rentDeduction?.verificationStatus;
+                                                            const hasUpload = !!uploadedFileNames.rentRelief || !!documentUrls.rentRelief || !!rentDeduction?.documentUrl;
+                                                            return (
+                                                                <DeductionItem 
+                                                                    label="Annual Rent Commitment" 
+                                                                    value={reliefs.rentRelief}
+                                                                    onChange={(val) => setReliefs({...reliefs, rentRelief: val})}
+                                                                    uploadLabel="Upload Tenancy Agreements or Receipt"
+                                                                    fileName={
+                                                                        uploadedFileNames.rentRelief ||
+                                                                        (hasUpload ? 'Document uploaded' : (rentDeduction ? `Rent Receipt (₦${Number((rentDeduction as any).amount ?? (rentDeduction as any).value ?? 0).toLocaleString()})` : 'Proof of Rent Required'))
+                                                                    }
+                                                                    status={
+                                                                        rentStatus === 'verified'
+                                                                            ? 'verified'
+                                                                            : rentStatus === 'pending'
+                                                                            ? 'pending'
+                                                                            : hasUpload
+                                                                            ? 'completed'
+                                                                            : undefined
+                                                                    }
+                                                                    statusMessage={rentStatus === 'verified' ? 'Verified. Your rent relief has been approved.' : rentStatus === 'pending' ? 'Verification in Progress — Our system is matching your document with NRS records' : undefined}
+                                                                    onUpload={async (file) => {
+                                                                        const res = await uploadSimple(file);
+                                                                        setDocumentUrls(p => ({ ...p, rentRelief: res.data.url }));
+                                                                        setUploadedFileNames(p => ({ ...p, rentRelief: file.name }));
+                                                                    }}
+                                                                    onDeleteFile={() => {
+                                                                        setDocumentUrls(p => ({ ...p, rentRelief: '' }));
+                                                                        setUploadedFileNames(p => ({ ...p, rentRelief: '' }));
+                                                                    }}
+                                                                />
+                                                            );
+                                                        })()}
+                                                    </div>
                                                 </div>
                                             )}
 
                                             {/* Health Insurance — only shown if user has health insurance */}
                                             {currentProfile?.hasHealthInsurance && (
-                                                <div className={`space-y-6 ${currentProfile?.paysRent ? 'pt-6 border-t border-gray-100' : ''}`}>
-                                                    <h3 className="text-[17px] font-extrabold text-[#0C0C0E]">Health Insurance (NHIS)</h3>
-                                                    {(() => {
-                                                        const nhisDeduction = (monthScopedDeductions || []).find(d => d.type === 'insurance' || d.type === 'nhis' || d.type === 'health_insurance')?.raw;
-                                                        const nhisStatus = nhisDeduction?.verificationStatus;
-                                                        const hasUpload = !!uploadedFileNames.healthInsurance || !!documentUrls.healthInsurance || !!nhisDeduction?.documentUrl;
-                                                        return (
-                                                            <DeductionItem 
-                                                                label="Health Insurance Premium" 
-                                                                value={reliefs.healthInsurance}
-                                                                onChange={(val) => setReliefs({...reliefs, healthInsurance: val})}
-                                                                uploadLabel="Upload Health Insurance Statement"
-                                                                fileName={
-                                                                    uploadedFileNames.healthInsurance ||
-                                                                    (hasUpload ? 'Document uploaded' : (nhisDeduction ? `Insurance Receipt (₦${Number((nhisDeduction as any).amount ?? (nhisDeduction as any).value ?? 0).toLocaleString()})` : 'Upload Insurance Statement'))
-                                                                }
-                                                                status={
-                                                                    nhisStatus === 'verified'
-                                                                        ? 'verified'
-                                                                        : nhisStatus === 'pending'
-                                                                        ? 'pending'
-                                                                        : hasUpload
-                                                                        ? 'completed'
-                                                                        : undefined
-                                                                }
-                                                                statusMessage={nhisStatus === 'verified' ? 'Verified. Your health insurance relief has been applied.' : nhisStatus === 'pending' ? 'Verification in Progress — Our system is matching your document with NRS records' : undefined}
-                                                                onUpload={async (file) => {
-                                                                    const res = await uploadSimple(file);
-                                                                    setDocumentUrls(p => ({ ...p, healthInsurance: res.data.url }));
-                                                                    setUploadedFileNames(p => ({ ...p, healthInsurance: file.name }));
-                                                                }}
-                                                                onDeleteFile={() => {
-                                                                    setDocumentUrls(p => ({ ...p, healthInsurance: '' }));
-                                                                    setUploadedFileNames(p => ({ ...p, healthInsurance: '' }));
-                                                                }}
-                                                            />
-                                                        );
-                                                    })()}
+                                                <div>
+                                                    <h3 className="text-[19px] font-bold text-[#0C0C0E] mb-6">Health Insurance (NHIS)</h3>
+                                                    <div className="bg-[#F5F5F5] rounded-[24px] p-4">
+                                                        {(() => {
+                                                            const nhisDeduction = (monthScopedDeductions || []).find(d => d.type === 'insurance' || d.type === 'nhis' || d.type === 'health_insurance')?.raw;
+                                                            const nhisStatus = nhisDeduction?.verificationStatus;
+                                                            const hasUpload = !!uploadedFileNames.healthInsurance || !!documentUrls.healthInsurance || !!nhisDeduction?.documentUrl;
+                                                            return (
+                                                                <DeductionItem 
+                                                                    label="Health Insurance Premium" 
+                                                                    value={reliefs.healthInsurance}
+                                                                    onChange={(val) => setReliefs({...reliefs, healthInsurance: val})}
+                                                                    uploadLabel="Upload Health Insurance Statement"
+                                                                    fileName={
+                                                                        uploadedFileNames.healthInsurance ||
+                                                                        (hasUpload ? 'Document uploaded' : (nhisDeduction ? `Insurance Receipt (₦${Number((nhisDeduction as any).amount ?? (nhisDeduction as any).value ?? 0).toLocaleString()})` : 'Upload Insurance Statement'))
+                                                                    }
+                                                                    status={
+                                                                        nhisStatus === 'verified'
+                                                                            ? 'verified'
+                                                                            : nhisStatus === 'pending'
+                                                                            ? 'pending'
+                                                                            : hasUpload
+                                                                            ? 'completed'
+                                                                            : undefined
+                                                                    }
+                                                                    statusMessage={nhisStatus === 'verified' ? 'Verified. Your health insurance relief has been applied.' : nhisStatus === 'pending' ? 'Verification in Progress — Our system is matching your document with NRS records' : undefined}
+                                                                    onUpload={async (file) => {
+                                                                        const res = await uploadSimple(file);
+                                                                        setDocumentUrls(p => ({ ...p, healthInsurance: res.data.url }));
+                                                                        setUploadedFileNames(p => ({ ...p, healthInsurance: file.name }));
+                                                                    }}
+                                                                    onDeleteFile={() => {
+                                                                        setDocumentUrls(p => ({ ...p, healthInsurance: '' }));
+                                                                        setUploadedFileNames(p => ({ ...p, healthInsurance: '' }));
+                                                                    }}
+                                                                />
+                                                            );
+                                                        })()}
+                                                    </div>
                                                 </div>
                                             )}
 
                                             {/* Pension — only shown if user has pension */}
                                             {currentProfile?.hasPension && (
-                                                <div className={`space-y-6 ${(currentProfile?.paysRent || currentProfile?.hasHealthInsurance) ? 'pt-6 border-t border-gray-100' : ''}`}>
-                                                    <h3 className="text-[17px] font-extrabold text-[#0C0C0E]">Statutory Deductions</h3>
-                                                    {(() => {
-                                                        const pensionDeduction = (deductions || []).find(d => (d.deductionType as string) === 'pension');
-                                                        const pensionStatus = pensionDeduction?.verificationStatus;
-                                                        const hasUpload = !!uploadedFileNames.pension || !!documentUrls.pension || !!pensionDeduction?.documentUrl;
-                                                        return (
-                                                            <DeductionItem 
-                                                                label="Pension" 
-                                                                value={reliefs.pension}
-                                                                onChange={(val) => setReliefs({...reliefs, pension: val})}
-                                                                uploadLabel="Upload your Pension Statement"
-                                                                fileName={
-                                                                    uploadedFileNames.pension ||
-                                                                    (hasUpload ? 'Document uploaded' : (pensionDeduction ? `Pension Receipt (₦${Number((pensionDeduction as any).amount ?? (pensionDeduction as any).value ?? 0).toLocaleString()})` : 'Upload Pension Statement'))
-                                                                }
-                                                                status={
-                                                                    pensionStatus === 'verified'
-                                                                        ? 'verified'
-                                                                        : pensionStatus === 'pending'
-                                                                        ? 'pending'
-                                                                        : hasUpload
-                                                                        ? 'completed'
-                                                                        : undefined
-                                                                }
-                                                                statusMessage={pensionStatus === 'verified' ? 'Verified. A 5% pension deduction has been applied to your taxable income.' : pensionStatus === 'pending' ? 'Verification in Progress — Our system is matching your document with NRS records' : undefined}
-                                                                onUpload={async (file) => {
-                                                                    const res = await uploadSimple(file);
-                                                                    setDocumentUrls(p => ({ ...p, pension: res.data.url }));
-                                                                    setUploadedFileNames(p => ({ ...p, pension: file.name }));
-                                                                }}
-                                                                onDeleteFile={() => {
-                                                                    setDocumentUrls(p => ({ ...p, pension: '' }));
-                                                                    setUploadedFileNames(p => ({ ...p, pension: '' }));
-                                                                }}
-                                                            />
-                                                        );
-                                                    })()}
+                                                <div>
+                                                    <h3 className="text-[19px] font-bold text-[#0C0C0E] mb-6">Statutory Deductions</h3>
+                                                    <div className="bg-[#F5F5F5] rounded-[24px] p-4">
+                                                        {(() => {
+                                                            const pensionDeduction = (deductions || []).find(d => (d.deductionType as string) === 'pension');
+                                                            const pensionStatus = pensionDeduction?.verificationStatus;
+                                                            const hasUpload = !!uploadedFileNames.pension || !!documentUrls.pension || !!pensionDeduction?.documentUrl;
+                                                            return (
+                                                                <DeductionItem 
+                                                                    label="Pension" 
+                                                                    value={reliefs.pension}
+                                                                    onChange={(val) => setReliefs({...reliefs, pension: val})}
+                                                                    uploadLabel="Upload your Pension Statement"
+                                                                    fileName={
+                                                                        uploadedFileNames.pension ||
+                                                                        (hasUpload ? 'Document uploaded' : (pensionDeduction ? `Pension Receipt (₦${Number((pensionDeduction as any).amount ?? (pensionDeduction as any).value ?? 0).toLocaleString()})` : 'Upload Pension Statement'))
+                                                                    }
+                                                                    status={
+                                                                        pensionStatus === 'verified'
+                                                                            ? 'verified'
+                                                                            : pensionStatus === 'pending'
+                                                                            ? 'pending'
+                                                                            : hasUpload
+                                                                            ? 'completed'
+                                                                            : undefined
+                                                                    }
+                                                                    statusMessage={pensionStatus === 'verified' ? 'Verified. A 5% pension deduction has been applied to your taxable income.' : pensionStatus === 'pending' ? 'Verification in Progress — Our system is matching your document with NRS records' : undefined}
+                                                                    onUpload={async (file) => {
+                                                                        const res = await uploadSimple(file);
+                                                                        setDocumentUrls(p => ({ ...p, pension: res.data.url }));
+                                                                        setUploadedFileNames(p => ({ ...p, pension: file.name }));
+                                                                    }}
+                                                                    onDeleteFile={() => {
+                                                                        setDocumentUrls(p => ({ ...p, pension: '' }));
+                                                                        setUploadedFileNames(p => ({ ...p, pension: '' }));
+                                                                    }}
+                                                                />
+                                                            );
+                                                        })()}
+                                                    </div>
                                                 </div>
                                             )}
 
                                             {/* Mortgage — only shown if user pays mortgage */}
                                             {currentProfile?.hasMortgage && (
-                                                <div className={`space-y-6 ${(currentProfile?.paysRent || currentProfile?.hasHealthInsurance || currentProfile?.hasPension) ? 'pt-6 border-t border-gray-100' : ''}`}>
-                                                    <h3 className="text-[17px] font-extrabold text-[#0C0C0E]">Mortgage Interest Relief</h3>
-                                                    {(() => {
-                                                        const mortgageDeduction = (monthScopedDeductions || []).find(d => d.type === 'mortgage' || d.type === 'mortgage_interest')?.raw;
-                                                        const mortgageStatus = mortgageDeduction?.verificationStatus;
-                                                        const hasUpload = !!uploadedFileNames.mortgage || !!documentUrls.mortgage || !!mortgageDeduction?.documentUrl;
-                                                        return (
-                                                            <DeductionItem 
-                                                                label="Mortgage Interest Paid" 
-                                                                value={reliefs.mortgage}
-                                                                onChange={(val) => setReliefs({...reliefs, mortgage: val})}
-                                                                uploadLabel="Upload Mortgage Statement"
-                                                                fileName={
-                                                                    uploadedFileNames.mortgage ||
-                                                                    (hasUpload ? 'Document uploaded' : (mortgageDeduction ? `Mortgage Statement (₦${Number((mortgageDeduction as any).amount ?? (mortgageDeduction as any).value ?? 0).toLocaleString()})` : 'Upload Mortgage Statement'))
-                                                                }
-                                                                status={
-                                                                    mortgageStatus === 'verified'
-                                                                        ? 'verified'
-                                                                        : mortgageStatus === 'pending'
-                                                                        ? 'pending'
-                                                                        : hasUpload
-                                                                        ? 'completed'
-                                                                        : undefined
-                                                                }
-                                                                statusMessage={mortgageStatus === 'verified' ? 'Verified. Your mortgage interest relief has been applied.' : mortgageStatus === 'pending' ? 'Verification in Progress — Our system is matching your document with NRS records' : undefined}
-                                                                onUpload={async (file) => {
-                                                                    const res = await uploadSimple(file);
-                                                                    setDocumentUrls(p => ({ ...p, mortgage: res.data.url }));
-                                                                    setUploadedFileNames(p => ({ ...p, mortgage: file.name }));
-                                                                }}
-                                                                onDeleteFile={() => {
-                                                                    setDocumentUrls(p => ({ ...p, mortgage: '' }));
-                                                                    setUploadedFileNames(p => ({ ...p, mortgage: '' }));
-                                                                }}
-                                                            />
-                                                        );
-                                                    })()}
+                                                <div>
+                                                    <h3 className="text-[19px] font-bold text-[#0C0C0E] mb-6">Mortgage Interest Relief</h3>
+                                                    <div className="bg-[#F5F5F5] rounded-[24px] p-4">
+                                                        {(() => {
+                                                            const mortgageDeduction = (monthScopedDeductions || []).find(d => d.type === 'mortgage' || d.type === 'mortgage_interest')?.raw;
+                                                            const mortgageStatus = mortgageDeduction?.verificationStatus;
+                                                            const hasUpload = !!uploadedFileNames.mortgage || !!documentUrls.mortgage || !!mortgageDeduction?.documentUrl;
+                                                            return (
+                                                                <DeductionItem 
+                                                                    label="Mortgage Interest Paid" 
+                                                                    value={reliefs.mortgage}
+                                                                    onChange={(val) => setReliefs({...reliefs, mortgage: val})}
+                                                                    uploadLabel="Upload Mortgage Statement"
+                                                                    fileName={
+                                                                        uploadedFileNames.mortgage ||
+                                                                        (hasUpload ? 'Document uploaded' : (mortgageDeduction ? `Mortgage Statement (₦${Number((mortgageDeduction as any).amount ?? (mortgageDeduction as any).value ?? 0).toLocaleString()})` : 'Upload Mortgage Statement'))
+                                                                    }
+                                                                    status={
+                                                                        mortgageStatus === 'verified'
+                                                                            ? 'verified'
+                                                                            : mortgageStatus === 'pending'
+                                                                            ? 'pending'
+                                                                            : hasUpload
+                                                                            ? 'completed'
+                                                                            : undefined
+                                                                    }
+                                                                    statusMessage={mortgageStatus === 'verified' ? 'Verified. Your mortgage interest relief has been applied.' : mortgageStatus === 'pending' ? 'Verification in Progress — Our system is matching your document with NRS records' : undefined}
+                                                                    onUpload={async (file) => {
+                                                                        const res = await uploadSimple(file);
+                                                                        setDocumentUrls(p => ({ ...p, mortgage: res.data.url }));
+                                                                        setUploadedFileNames(p => ({ ...p, mortgage: file.name }));
+                                                                    }}
+                                                                    onDeleteFile={() => {
+                                                                        setDocumentUrls(p => ({ ...p, mortgage: '' }));
+                                                                        setUploadedFileNames(p => ({ ...p, mortgage: '' }));
+                                                                    }}
+                                                                />
+                                                            );
+                                                        })()}
+                                                    </div>
                                                 </div>
                                             )}
 

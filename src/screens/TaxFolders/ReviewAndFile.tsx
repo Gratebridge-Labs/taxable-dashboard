@@ -15,7 +15,7 @@ interface ReviewAndFileProps {
 }
 
 const SummaryCard = ({ title, income, deductions }: { title: string; income: string; deductions: string }) => (
-    <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.04)] min-w-[340px] flex-shrink-0">
+    <div className="bg-white rounded-[32px] p-8 border border-gray-100 min-w-[340px] flex-shrink-0">
         <div className="flex items-center justify-between mb-8">
             <h3 className="text-[17px] font-bold text-taxable-dark">{title}</h3>
             <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
@@ -84,6 +84,8 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
     const [selectedMonths, setSelectedMonths] = useState<Set<number>>(new Set());
     const [monthTaxes, setMonthTaxes] = useState<Record<number, number>>({});
     const [calculatingSelectedMonths, setCalculatingSelectedMonths] = useState(false);
+    const [autoCalculatedAnnual, setAutoCalculatedAnnual] = useState(false);
+    const [autoCalculatedMonthly, setAutoCalculatedMonthly] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -133,6 +135,18 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
         fetchData();
     }, [profileId, year, getIncomeData, getDeductionList, getPaymentRecords]);
 
+    // Auto-calculate annual tax once data is loaded
+    useEffect(() => {
+        if (loading || autoCalculatedAnnual || !profileId) return;
+        if (filingPreference !== 'annual') return;
+        setAutoCalculatedAnnual(true);
+        setCalculating(true);
+        calculateTaxGet(profileId)
+            .then((result) => { if (result.success) setTaxCalculation(result.data); })
+            .catch(() => { /* silent — user can still click Calculate */ })
+            .finally(() => setCalculating(false));
+    }, [loading, autoCalculatedAnnual, profileId, filingPreference, calculateTaxGet]);
+
     useEffect(() => {
         // Default selection: months where user entered any data (monthly filing)
         if (filingPreference !== 'monthly') return;
@@ -146,6 +160,36 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
         });
         if (next.size > 0) setSelectedMonths(next);
     }, [filingPreference, incomeData, deductions]);
+
+    // Auto-calculate monthly taxes once selected months are determined
+    useEffect(() => {
+        if (loading || autoCalculatedMonthly || !profileId) return;
+        if (filingPreference !== 'monthly') return;
+        if (selectedMonths.size === 0) return;
+        setAutoCalculatedMonthly(true);
+        const months = Array.from(selectedMonths).sort((a, b) => a - b);
+        setCalculatingSelectedMonths(true);
+        (async () => {
+            try {
+                const nextTaxes: Record<number, number> = {};
+                for (const monthNum of months) {
+                    const result = await calculateTaxByMonth(profileId, monthNum);
+                    if (result.success) {
+                        const val =
+                            (result.data as any)?.taxSummary?.monthlyTax ??
+                            (result.data as any)?.taxSummary?.totalTaxAmount ??
+                            (result.data as any)?.calculation?.netTaxPayable;
+                        if (typeof val === 'number') nextTaxes[monthNum] = val;
+                    }
+                }
+                setMonthTaxes(nextTaxes);
+            } catch {
+                // silent — user can still click Calculate tax so far
+            } finally {
+                setCalculatingSelectedMonths(false);
+            }
+        })();
+    }, [loading, autoCalculatedMonthly, profileId, filingPreference, selectedMonths, calculateTaxByMonth]);
 
     const calculatedIncome = useMemo(() => {
         let employmentIncome = 0;

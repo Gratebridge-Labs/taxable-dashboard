@@ -12,8 +12,6 @@ export default function DashboardHeader() {
     const [showSupport, setShowSupport] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-    const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '';
-
     const navLinks = [
         {
             name: 'Home',

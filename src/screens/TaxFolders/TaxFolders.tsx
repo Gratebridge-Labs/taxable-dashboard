@@ -55,7 +55,7 @@ const TaxFolderCard = ({ profile, taxAmount, description, status, statusText, is
 
     return (
         <Link href={getHref()} className="group">
-            <div className="w-[322px] h-[323px] bg-white rounded-[34px] border border-gray-100 p-6 shadow-xs hover:shadow-md transition-all flex flex-col">
+            <div className="w-[322px] h-[323px] bg-white rounded-[34px] border border-gray-100 p-6 transition-all flex flex-col shadow-none hover:shadow-none" style={{ boxShadow: 'none' }}>
                 <div className={`w-full h-[145px] rounded-[24px] flex items-center justify-center mb-5 ${isInactive ? 'bg-[#F5F5F5]' : 'bg-[#FAFAFA]'}`}>
                     <Image
                         src={isInactive ? "/icons/inactive_folder.svg" : "/icons/folder.svg"}

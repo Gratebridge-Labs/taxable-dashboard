@@ -204,10 +204,20 @@ export default function Home() {
     const [resumeData, setResumeData] = useState<{ year?: string; category?: string } | undefined>(undefined);
 
     const handleFolderClick = (profile: any) => {
-        // For Individual profiles, go to PITDetails regardless
-        // For Business profiles, check if setup is complete
         if (profile.profileType === 'Individual') {
-            router.push(`/tax-folders/pit?id=${profile.profileId}`);
+            // Determine which section to resume from based on profile progress
+            let section = 'personal-info';
+            const hasIncome = (profile.incomeRecordsCount ?? 0) > 0 || profile.hasIncome;
+            const hasDeductions = (profile.deductionsCount ?? 0) > 0 || profile.hasDeductions;
+            const personalInfoComplete = !!(profile.fullName || profile.nin || profile.dob || profile.street || profile.streetAddress);
+
+            if (personalInfoComplete && (hasIncome || hasDeductions)) {
+                section = 'income-deductions';
+            } else if (personalInfoComplete) {
+                section = 'income-deductions';
+            }
+
+            router.push(`/tax-folders/pit?id=${profile.profileId}&section=${section}`);
         } else if (profile.nin || (profile.primaryIncomeSources && profile.primaryIncomeSources.length > 0)) {
             router.push(`/tax-folders/business?profileId=${profile.profileId}`);
         } else {

@@ -288,6 +288,23 @@ export interface CalculateTaxResponse {
   };
 }
 
+export interface MonthlyTaxResponse {
+  success: boolean;
+  data: {
+    profileId: string;
+    year: number;
+    filingPreference: string;
+    month: number;
+    taxSummary: {
+      totalIncome: number;
+      totalCalculatedRelief: number;
+      taxableIncome: number;
+      totalTaxAmount: number;
+      monthlyTax: number;
+    };
+  };
+}
+
 export interface CalculationHistoryItem {
   calculationId: string;
   calculationType: string;
@@ -420,6 +437,8 @@ export type DeductionType =
   | 'rent_relief'
   | 'transport_allowance'
   | 'other';
+
+export type Income = any; // Alias for now to fix lint, or use IncomeDataItem[]
 
 export interface Deduction {
   _id: string;

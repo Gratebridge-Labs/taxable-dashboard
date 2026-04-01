@@ -128,7 +128,7 @@ export const PITSidebar = ({
                     </div>
                     <h4 className="text-[14px] font-bold text-[#0C0C0E]">Need expert eyes?</h4>
                 </div>
-                <p className="text-[12px] text-[#64748B] leading-relaxed font-medium mb-3">
+                <p className="text-[13px] text-[#737373] mb-3" style={{ fontFamily: 'Archivo', fontWeight: 500, lineHeight: '160%', letterSpacing: '-0.6%' }}>
                     Get your return reviewed by a certified tax accountant. They'll ensure accuracy, compliance, and file for you.
                 </p>
                 <button

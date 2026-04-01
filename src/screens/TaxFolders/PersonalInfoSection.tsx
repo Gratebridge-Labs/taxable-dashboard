@@ -81,6 +81,21 @@ export const PersonalInfoSection = ({
                 </div>
             </div>
 
+            {/* Full Legal Name */}
+            <div>
+                <label className="flex items-center gap-1.5 text-[14px] font-medium text-[#737373] mb-2" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>
+                    Full Legal Name
+                    <InfoTooltip text="Your full legal name as it appears on your NIN. This must match your official identity documents." />
+                </label>
+                <input
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={personalInfo.fullName}
+                    onChange={(e) => setPersonalInfo({ ...personalInfo, fullName: e.target.value })}
+                    className="w-full h-11 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none transition-all placeholder:text-gray-300"
+                />
+            </div>
+
             {/* Email + Phone */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -109,21 +124,6 @@ export const PersonalInfoSection = ({
                         className="w-full h-11 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none transition-all placeholder:text-gray-300"
                     />
                 </div>
-            </div>
-
-            {/* Full Legal Name */}
-            <div>
-                <label className="flex items-center gap-1.5 text-[14px] font-medium text-[#737373] mb-2" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>
-                    Full Legal Name
-                    <InfoTooltip text="Your full legal name as it appears on your NIN. This must match your official identity documents." />
-                </label>
-                <input
-                    type="text"
-                    placeholder="Enter your full name"
-                    value={personalInfo.fullName}
-                    onChange={(e) => setPersonalInfo({ ...personalInfo, fullName: e.target.value })}
-                    className="w-full h-11 bg-white rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] focus:outline-none transition-all placeholder:text-gray-300"
-                />
             </div>
 
             {/* Date of Birth */}
@@ -223,7 +223,7 @@ export const PersonalInfoSection = ({
                 </div>
 
                 {/* Body */}
-                <p className="text-[14px] text-[#6B7280] leading-relaxed font-normal mb-8">
+                <p className="text-[13px] text-[#737373] mb-8" style={{ fontFamily: 'Archivo', fontWeight: 500, lineHeight: '160%', letterSpacing: '-0.6%' }}>
                     Your personal details help us identify you with FIRS and ensure your tax return is filed correctly. All information is encrypted and stored securely. We only share data with FIRS when you choose to file.
                 </p>
 

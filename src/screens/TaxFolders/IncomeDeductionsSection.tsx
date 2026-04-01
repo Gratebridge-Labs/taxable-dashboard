@@ -234,9 +234,9 @@ export const IncomeDeductionsSection = ({
     };
 
     return (
-        <div className="flex flex-col md:flex-row items-start justify-start gap-6 md:gap-4 w-full">
+        <div className="flex flex-col md:flex-row items-start justify-start gap-6 md:gap-8 w-full">
             {/* Sub-navigation Sidebar — Month Selector */}
-            <div className="w-full md:w-[240px] flex-shrink-0 space-y-4 md:space-y-6 pb-2 md:sticky md:top-8 md:self-start">
+            <div className="w-full md:w-[240px] flex-shrink-0 space-y-1 md:pb-2 md:sticky md:top-8 md:self-start">
                 <div className="flex items-center gap-4 px-1">
                     <span className={`text-[13px] font-bold transition-colors ${periodMode === 'monthly' ? 'text-[#0C0C0E]' : 'text-[#94A3B8]'}`}>Monthly</span>
                     <button
@@ -325,13 +325,13 @@ export const IncomeDeductionsSection = ({
                                         <div className="px-4 pb-2 space-y-1 ml-7">
                                             <button
                                                 onClick={() => setIncomeSubTab('income')}
-                                                className={`w-full text-left px-3 py-2 rounded-xl text-[13px] font-bold transition-colors ${incomeSubTab === 'income' ? 'bg-[#F1F5F9] text-[#0C0C0E]' : 'text-[#64748B] hover:text-[#0C0C0E]'}`}
+                                                className={`w-full text-left px-3 py-2 rounded-xl text-[13px] font-bold transition-colors ${incomeSubTab === 'income' ? 'bg-[#F5F5F5] text-[#0C0C0E]' : 'text-[#64748B] hover:text-[#0C0C0E]'}`}
                                             >
                                                 Income
                                             </button>
                                             <button
                                                 onClick={() => setIncomeSubTab('deductions')}
-                                                className={`w-full text-left px-3 py-2 rounded-xl text-[13px] font-bold transition-colors ${incomeSubTab === 'deductions' ? 'bg-[#F1F5F9] text-[#0C0C0E]' : 'text-[#64748B] hover:text-[#0C0C0E]'}`}
+                                                className={`w-full text-left px-3 py-2 rounded-xl text-[13px] font-bold transition-colors ${incomeSubTab === 'deductions' ? 'bg-[#F5F5F5] text-[#0C0C0E]' : 'text-[#64748B] hover:text-[#0C0C0E]'}`}
                                             >
                                                 Deductions
                                             </button>
@@ -345,7 +345,7 @@ export const IncomeDeductionsSection = ({
                             <button
                                 type="button"
                                 onClick={() => setIncomeSubTab('income')}
-                                className={`w-full flex items-center justify-between px-3 py-4 rounded-2xl transition-all ${incomeSubTab === 'income' ? 'bg-white text-[#0C0C0E]' : 'hover:bg-gray-50 text-[#94A3B8]'}`}
+                                className={`w-full flex items-center justify-between px-3 py-4 rounded-2xl transition-all ${incomeSubTab === 'income' ? 'bg-[#F5F5F5] text-[#0C0C0E]' : 'hover:bg-gray-50 text-[#94A3B8]'}`}
                             >
                                 <span className={`text-[13px] font-bold ${incomeSubTab === 'income' ? 'text-[#0C0C0E]' : 'text-[#94A3B8]'}`}>Total Income for {currentProfile?.year || 2026}</span>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={incomeSubTab === 'income' ? '#0C0C0E' : '#94A3B8'} strokeWidth="3"><polyline points="9 18 15 12 9 6" /></svg>
@@ -353,7 +353,7 @@ export const IncomeDeductionsSection = ({
                             <button
                                 type="button"
                                 onClick={() => setIncomeSubTab('deductions')}
-                                className={`w-full flex items-center justify-between px-3 py-4 rounded-2xl transition-all ${incomeSubTab === 'deductions' ? 'bg-white text-[#0C0C0E]' : 'hover:bg-gray-50 text-[#94A3B8]'}`}
+                                className={`w-full flex items-center justify-between px-3 py-4 rounded-2xl transition-all ${incomeSubTab === 'deductions' ? 'bg-[#F5F5F5] text-[#0C0C0E]' : 'hover:bg-gray-50 text-[#94A3B8]'}`}
                             >
                                 <span className={`text-[13px] font-bold ${incomeSubTab === 'deductions' ? 'text-[#0C0C0E]' : 'text-[#94A3B8]'}`}>Total deductible for {currentProfile?.year || 2026}</span>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={incomeSubTab === 'deductions' ? '#0C0C0E' : '#94A3B8'} strokeWidth="3"><polyline points="9 18 15 12 9 6" /></svg>
@@ -366,7 +366,7 @@ export const IncomeDeductionsSection = ({
             {/* Main Form Area */}
             <div className="flex-1 max-w-[700px] space-y-6">
                 <div className="flex items-center gap-4">
-                    <p className="text-[14px] text-[#64748B] font-medium leading-relaxed">
+                    <p className="text-[15px] text-[#737373]" style={{ fontFamily: 'Archivo', fontWeight: 500, lineHeight: '160%', letterSpacing: '0%' }}>
                         {periodMode === 'annually'
                             ? `Enter your total annual income for ${currentProfile?.year || 2026}. Skip fields that don't apply to you.`
                             : `Enter your income for ${activeMonth} ${currentProfile?.year || 2026}. Skip fields that don't apply to you. You can update amounts anytime.`
@@ -440,7 +440,7 @@ export const IncomeDeductionsSection = ({
                     </div>
                 ) : (
                     /* ── Deductions sub-tab ── */
-                    <div className="space-y-6">
+                    <div className="space-y-8">
                         {/* Rent Relief */}
                         {currentProfile?.paysRent && (
                             <div>

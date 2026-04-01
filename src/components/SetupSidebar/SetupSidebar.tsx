@@ -82,8 +82,20 @@ const RadioOption = ({
             {selected && <div className="w-[9px] h-[9px] rounded-full bg-[#003787]" />}
         </div>
         <div>
-            <p className={`text-[15px] font-medium leading-snug ${selected ? 'text-[#0C0C0E]' : 'text-[#0C0C0E]'}`}>{label}</p>
-            {desc && <p className="text-[13px] text-gray-400 mt-0.5">{desc}</p>}
+            <p 
+                className="text-[15px] font-medium leading-4" 
+                style={{ fontFamily: 'Archivo', color: '#262626', letterSpacing: '0%', lineHeight: '16px' }}
+            >
+                {label}
+            </p>
+            {desc && (
+                <p 
+                    className="text-[13px] font-normal mt-1" 
+                    style={{ fontFamily: 'Archivo', color: '#737373', lineHeight: '160%' }}
+                >
+                    {desc}
+                </p>
+            )}
         </div>
     </button>
 );
@@ -108,8 +120,20 @@ const CheckboxOption = ({
             )}
         </div>
         <div>
-            <p className="text-[15px] font-medium text-[#0C0C0E] leading-snug">{label}</p>
-            {desc && <p className="text-[13px] text-gray-400 mt-0.5">{desc}</p>}
+            <p 
+                className="text-[15px] font-medium" 
+                style={{ fontFamily: 'Archivo', color: '#262626', lineHeight: '16px' }}
+            >
+                {label}
+            </p>
+            {desc && (
+                <p 
+                    className="text-[13px] font-normal mt-1" 
+                    style={{ fontFamily: 'Archivo', color: '#737373', lineHeight: '160%' }}
+                >
+                    {desc}
+                </p>
+            )}
         </div>
     </button>
 );
@@ -131,7 +155,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
     const [error, setError] = useState<string | null>(null);
 
     // Step 0 state
-    const [filingType, setFilingType] = useState<'Individual' | 'Business'>('Individual');
+    const [filingType, setFilingType] = useState<'Individual' | 'Business' | null>(null);
     const [taxId, setTaxId] = useState('');
     const [filingIntent, setFilingIntent] = useState<'returns' | 'paye'>('returns');
     const [taxYear, setTaxYear] = useState<'2026' | '2025'>('2026');
@@ -154,7 +178,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                 if (initialData?.category) setFilingType(initialData.category as 'Individual' | 'Business');
             } else {
                 setStep(0);
-                setFilingType('Individual');
+                setFilingType(null);
                 setTaxId('');
                 setFilingIntent('returns');
                 setTaxYear('2026');
@@ -303,17 +327,17 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
     return (
         <>
             {/* Backdrop */}
-            <div className="fixed inset-0 z-[100] flex items-center justify-end pr-6">
+            <div className="fixed inset-0 z-[100] flex justify-end">
                 <div
                     className="absolute inset-0 bg-black/25 backdrop-blur-[3px]"
                     onClick={onClose}
                 />
 
-                {/* Modal card */}
-                <div className="relative w-full max-w-[480px] h-[720px] bg-white rounded-[24px] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right-8 fade-in duration-300 z-10">
+                {/* Sidebar - Full height, slides from right */}
+                <div className="relative w-full sm:w-[400px] h-[calc(100%-32px)] sm:h-[calc(100%-24px)] md:h-[calc(100%-32px)] my-4 sm:my-3 md:my-4 bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right-8 fade-in duration-300 z-10 mr-2 sm:mr-3 md:mr-4">
 
                     {/* Header */}
-                    <div className="flex items-center gap-4 px-6 pt-4 pb-3 flex-shrink-0">
+                    <div className="flex items-center gap-3 px-4 md:px-6 pt-4 pb-3 flex-shrink-0">
                         <button
                             onClick={handleBack}
                             className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
@@ -324,19 +348,22 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                             </svg>
                         </button>
                         <div className="flex-1 text-center">
-                            <h2 className="text-[19px] font-semibold text-[#0C0C0E] leading-tight">{getTitle()}</h2>
+                            <h2 
+                                className="text-base md:text-[19px] font-semibold" 
+                                style={{ fontFamily: 'Archivo', color: '#262626', lineHeight: '32px', letterSpacing: '0%' }}
+                            >
+                                {getTitle()}
+                            </h2>
                             {getSubtitle() && (
-                                <p className="text-[13px] text-gray-400 font-normal mt-0.5">{getSubtitle()}</p>
+                                <p className="text-xs md:text-[13px] font-normal mt-0.5" style={{ fontFamily: 'Archivo', color: '#737373' }}>{getSubtitle()}</p>
                             )}
                         </div>
                         {/* Spacer to balance the back button */}
                         <div className="w-8 flex-shrink-0" />
                     </div>
 
-
-
                     {/* Scrollable body */}
-                    <div className="flex-1 overflow-y-auto px-6 py-3 no-scrollbar">
+                    <div className="flex-1 overflow-y-auto px-4 md:px-6 py-3 no-scrollbar">
 
                         {/* Error display */}
                         {error && (
@@ -348,7 +375,10 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                         {/* ─── STEP 0: Create filing ─── */}
                         {step === 0 && (
                             <div className="space-y-1">
-                                <p className="text-[15px] font-medium text-[#0C0C0E] mb-2">
+                                <p 
+                                    className="text-[14px] sm:text-[15px] font-medium mb-3 sm:mb-2"
+                                    style={{ fontFamily: 'Archivo', color: '#737373', lineHeight: '20px', letterSpacing: '-0.6%' }}
+                                >
                                     What type of tax do you want to file today?
                                 </p>
 
@@ -367,27 +397,34 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                 />
 
                                 {/* Tax ID — label changes based on filing type */}
-                                <div className="pt-5">
-                                    <label className="block text-[15px] font-medium text-[#0C0C0E] mb-1.5">
-                                        {filingType === 'Business' ? 'Tax ID (RC/BN)' : 'Tax ID (Your NIN)'}{' '}
-                                        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-gray-300 text-[10px] text-gray-400 font-bold ml-0.5 cursor-help">?</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        placeholder={filingType === 'Business' ? 'Enter your business registration number' : 'Enter your NIN'}
-                                        value={taxId}
-                                        onChange={e => setTaxId(e.target.value)}
-                                        className="w-full h-11 border border-gray-200 rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#003787]/20 focus:border-[#003787]/40 transition-all"
-                                    />
-                                    <p className="text-[13px] text-gray-400 mt-1.5">
-                                        {/* NIN/RC/BN help text removed */}
-                                    </p>
-                                </div>
+                                {filingType && (
+                                    <div className="pt-4 sm:pt-5">
+                                        <label 
+                                            className="block text-[14px] font-medium mb-2"
+                                            style={{ fontFamily: 'Archivo', color: '#737373', lineHeight: '20px', letterSpacing: '-0.6%' }}
+                                        >
+                                            {filingType === 'Business' ? 'Tax ID (RC/BN)' : 'Tax ID (Your NIN)'}{' '}
+                                            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-gray-300 text-[10px] text-gray-400 font-bold ml-0.5 cursor-help">?</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            placeholder={filingType === 'Business' ? 'Enter your business registration number' : 'Enter your NIN'}
+                                            value={taxId}
+                                            onChange={e => setTaxId(e.target.value)}
+                                            className="w-full h-11 border border-gray-200 rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#003787]/20 focus:border-[#003787]/40 transition-all"
+                                        />
+                                    </div>
+                                )}
 
                                 {/* What to do — Individual gets radio buttons, Business gets checkboxes */}
-                                {filingType === 'Individual' ? (
+                                {filingType === 'Individual' && (
                                     <div className="pt-4">
-                                        <p className="text-[15px] font-medium text-[#0C0C0E] mb-1">What would you like to do?</p>
+                                        <p 
+                                            className="text-[14px] sm:text-[15px] font-medium mb-2 sm:mb-1"
+                                            style={{ fontFamily: 'Archivo', color: '#737373', lineHeight: '20px', letterSpacing: '-0.6%' }}
+                                        >
+                                            What would you like to do?
+                                        </p>
                                         <RadioOption
                                             label="File my tax returns"
                                             selected={filingIntent === 'returns'}
@@ -400,50 +437,33 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                             disabled={true}
                                         />
                                     </div>
-                                ) : (
-                                    <div className="pt-4">
-                                        <p className="text-[15px] font-medium text-[#0C0C0E] mb-2">What do you need to do?</p>
-                                        {[
-                                            { id: 'paye', label: 'PAYE (Pay As You Earn)', desc: 'File monthly tax for employees and annual reconciliation. Required if you have staff.' },
-                                            { id: 'vat', label: 'VAT/WHT (Value Added Tax & Withholding Tax)', desc: 'File monthly VAT returns and remit WHT deductions. Required if turnover > ₦25M.' },
-                                            { id: 'cit', label: 'CIT (Company Income Tax)', desc: 'File your annual corporate income tax return. Required for all registered companies.' },
-                                        ].map(svc => (
-                                            <CheckboxOption
-                                                key={svc.id}
-                                                label={svc.label}
-                                                desc={svc.desc}
-                                                selected={businessServices.includes(svc.id)}
-                                                onClick={() => setBusinessServices(prev =>
-                                                    prev.includes(svc.id) ? prev.filter(s => s !== svc.id) : [...prev, svc.id]
-                                                )}
-                                            />
-                                        ))}
-                                    </div>
                                 )}
 
                                 {/* Tax year */}
-                                <div className="pt-4">
-                                    <p className="text-[15px] font-medium text-[#0C0C0E] mb-1">Which tax year are you filing for?</p>
-                                    <div className="flex items-center gap-6 pt-2">
-                                        <RadioOption
-                                            label="2026 (Current year)"
-                                            selected={taxYear === '2026'}
-                                            onClick={() => setTaxYear('2026')}
-                                        />
-                                        <RadioOption
-                                            label="2025"
-                                            selected={taxYear === '2025'}
-                                            onClick={() => setTaxYear('2025')}
-                                        />
+                                {filingType && (
+                                    <div className="pt-4">
+                                        <p className="text-[14px] sm:text-[15px] font-medium text-[#0C0C0E] mb-2 sm:mb-1">Which tax year are you filing for?</p>
+                                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 pt-1 sm:pt-2">
+                                            <RadioOption
+                                                label="2026 (Current year)"
+                                                selected={taxYear === '2026'}
+                                                onClick={() => setTaxYear('2026')}
+                                            />
+                                            <RadioOption
+                                                label="2025"
+                                                selected={taxYear === '2025'}
+                                                onClick={() => setTaxYear('2025')}
+                                            />
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         )}
 
                         {/* ─── STEP 1: Income sources ─── */}
                         {step === 1 && (
                             <div>
-                                <p className="text-[15px] font-medium text-[#0C0C0E] mb-3">
+                                <p className="text-[14px] sm:text-[15px] font-medium text-[#0C0C0E] mb-3">
                                     What's your primary income source?
                                 </p>
                                 <div className="space-y-0">
@@ -462,11 +482,11 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
 
                         {/* ─── STEP 2: Life questions ─── */}
                         {step === 2 && (
-                            <div className="space-y-6">
+                            <div className="space-y-5 sm:space-y-6">
                                 {LIFE_QUESTIONS.map((q) => (
                                     <div key={q.id}>
-                                        <p className="text-[15px] font-medium text-[#0C0C0E] mb-2">{q.question}</p>
-                                        <div className="flex gap-6">
+                                        <p className="text-[14px] sm:text-[15px] font-medium text-[#0C0C0E] mb-2">{q.question}</p>
+                                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
                                             {q.options.map(opt => (
                                                 <RadioOption
                                                     key={opt.value}
@@ -477,7 +497,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                             ))}
                                         </div>
                                         {q.hint && (
-                                            <p className="text-[13px] text-gray-400 font-normal mt-1 leading-relaxed">
+                                            <p className="text-[12px] sm:text-[13px] text-gray-400 font-normal mt-2 sm:mt-1 leading-relaxed">
                                                 {q.hint}
                                             </p>
                                         )}
@@ -488,19 +508,19 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                     </div>
 
                     {/* Footer buttons */}
-                    <div className="px-6 py-4 flex-shrink-0 border-t border-gray-100">
+                    <div className="px-4 md:px-6 py-4 flex-shrink-0 border-t border-gray-100">
                         {step === 0 && (
                             <div className="flex gap-3">
                                 <button
                                     onClick={onClose}
-                                    className="flex-1 h-12 border border-gray-200 text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-colors text-[15px]"
+                                    className="flex-1 h-11 sm:h-12 border border-gray-200 text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-colors text-[14px] sm:text-[15px]"
                                 >
                                     Back
                                 </button>
                                 <button
                                     onClick={handleGetStarted}
-                                    disabled={loadingStep === 0}
-                                    className="flex-1 h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[15px] disabled:opacity-70 flex items-center justify-center gap-2"
+                                    disabled={!filingType || loadingStep === 0}
+                                    className="flex-1 h-11 sm:h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[14px] sm:text-[15px] disabled:opacity-70 flex items-center justify-center gap-2"
                                 >
                                     {loadingStep === 0 ? (
                                         <>
@@ -520,14 +540,14 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                 <button
                                     onClick={() => setStep(0)}
                                     disabled={loadingStep === 1}
-                                    className="flex-1 h-12 border border-gray-200 text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-colors text-[15px] disabled:opacity-50"
+                                    className="flex-1 h-11 sm:h-12 border border-gray-200 text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-colors text-[14px] sm:text-[15px] disabled:opacity-50"
                                 >
                                     Back
                                 </button>
                                 <button
                                     onClick={handleNextFromSources}
                                     disabled={selectedSources.length === 0 || loadingStep === 1}
-                                    className="flex-1 h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[15px] disabled:opacity-40 flex items-center justify-center gap-2"
+                                    className="flex-1 h-11 sm:h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[14px] sm:text-[15px] disabled:opacity-40 flex items-center justify-center gap-2"
                                 >
                                     {loadingStep === 1 ? (
                                         <>
@@ -547,14 +567,14 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                 <button
                                     onClick={() => setStep(1)}
                                     disabled={isSubmitting}
-                                    className="flex-1 h-12 border border-gray-200 text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-colors text-[15px] disabled:opacity-50"
+                                    className="flex-1 h-11 sm:h-12 border border-gray-200 text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-colors text-[14px] sm:text-[15px] disabled:opacity-50"
                                 >
                                     Back
                                 </button>
                                 <button
                                     onClick={handleProceed}
                                     disabled={isSubmitting}
-                                    className="flex-1 h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[15px] disabled:opacity-70 flex items-center justify-center gap-2"
+                                    className="flex-1 h-11 sm:h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[14px] sm:text-[15px] disabled:opacity-70 flex items-center justify-center gap-2"
                                 >
                                     {isSubmitting ? (
                                         <>

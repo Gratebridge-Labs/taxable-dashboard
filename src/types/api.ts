@@ -75,7 +75,7 @@ export interface PersonalInfoRequest {
   nin?: string;
   residencyStatus?: string;
   fullName?: string;
-  dateOfBirth?: string;
+  dob?: string;
   streetAddress?: string;
   city?: string;
   state?: string;

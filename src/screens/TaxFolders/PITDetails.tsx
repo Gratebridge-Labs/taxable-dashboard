@@ -40,6 +40,7 @@ export default function PITDetails() {
         fullName: '',
         email: '',
         phone: '',
+        dob: '',
         streetAddress: '',
         city: '',
         state: '',
@@ -106,12 +107,39 @@ export default function PITDetails() {
     const [pendingPeriodMode, setPendingPeriodMode] = useState<'monthly' | 'annually' | null>(null);
     const [switchingFilingPref, setSwitchingFilingPref] = useState(false);
 
+    // Section completion status
+    const personalInfoComplete = useMemo(() => {
+        return !!(
+            personalInfo.fullName && 
+            personalInfo.nin && 
+            currentProfile?.dob && 
+            currentProfile?.street && 
+            currentProfile?.city && 
+            currentProfile?.state
+        );
+    }, [personalInfo.fullName, personalInfo.nin, currentProfile?.dob, currentProfile?.street, currentProfile?.city, currentProfile?.state]);
+
+    const incomeDeductionsComplete = useMemo(() => {
+        if (!incomeData || incomeData.length === 0) return false;
+        const hasIncome = incomeData.some((m: any[]) => Array.isArray(m) && m.length > 0);
+        return hasIncome;
+    }, [incomeData]);
+
+    const reviewComplete = useMemo(() => {
+        return incomeDeductionsComplete;
+    }, [incomeDeductionsComplete]);
+
     // ─── Data Loading ─────────────────────────────────────────────────────
     const loadProfileData = useCallback(async () => {
         if (!profileId) return;
         
         // Wait for auth to be ready (avoid race condition on reload)
-        if (authLoading || !isAuthenticated) return;
+        if (authLoading || !isAuthenticated) {
+            // Reset loading states - auth is still loading, don't show stuck loading
+            setProfileLoading(false);
+            setLoading(false);
+            return;
+        }
         
         setProfileLoading(true);
         try {
@@ -124,6 +152,7 @@ export default function PITDetails() {
                     fullName: profile.fullName || user?.firstName || user?.name || 'User',
                     email: user?.email || '',
                     phone: user?.phone || '',
+                    dob: profile.dob || '',
                     streetAddress: profile.street || '',
                     city: profile.city || '',
                     state: profile.state || '',
@@ -200,7 +229,14 @@ export default function PITDetails() {
 
     useEffect(() => {
         loadProfileData();
-    }, [loadProfileData]);
+    }, [loadProfileData, authLoading, isAuthenticated]);
+
+    // Fallback: if profileLoading is stuck true and auth is ready, try loading
+    useEffect(() => {
+        if (!authLoading && isAuthenticated && profileLoading && !profileId) {
+            // ProfileId not ready yet, will be picked up when it changes
+        }
+    }, [authLoading, isAuthenticated, profileLoading, profileId]);
 
     const handleUpdateProfileProp = async (prop: string, val: any) => {
         if (!profileId || !currentProfile) return;
@@ -231,7 +267,7 @@ export default function PITDetails() {
         if (periodMode !== 'monthly') return list;
         return list.filter(d => {
             if (d.frequency === 'monthly') return d.month === activeMonthNum;
-            if (d.type === 'rent_relief') return activeMonthNum === 1;
+            if (d.type === 'rent_relief') return true;
             return false;
         });
     }, [deductions, normalizeDeduction, periodMode, activeMonthNum]);
@@ -281,6 +317,19 @@ export default function PITDetails() {
 
     const handleSaveDeductions = useCallback(async () => {
         if (!profileId || !currentProfile) return;
+        
+        const missingFields: string[] = [];
+        if (!currentProfile.dob) missingFields.push('Date of Birth');
+        if (!currentProfile.street) missingFields.push('Street Address');
+        if (!currentProfile.city) missingFields.push('City');
+        if (!currentProfile.state) missingFields.push('State');
+        
+        if (missingFields.length > 0) {
+            toast.error(`Please complete your Personal Information first. Missing: ${missingFields.join(', ')}`);
+            setActiveSection('personal-info');
+            return;
+        }
+        
         setSavingReliefs(true);
         try {
             const isMonthly = periodMode === 'monthly';
@@ -388,6 +437,7 @@ export default function PITDetails() {
             await api.updatePersonalInfo(profileId, {
                 nin: normalizedNin || undefined,
                 fullName: personalInfo.fullName,
+                dob: personalInfo.dob,
                 streetAddress: personalInfo.streetAddress,
                 city: personalInfo.city,
                 state: personalInfo.state,
@@ -399,7 +449,7 @@ export default function PITDetails() {
                     ...currentProfile,
                     nin: normalizedNin || undefined,
                     street: personalInfo.streetAddress || currentProfile.street || undefined,
-                    dob: currentProfile.dob || undefined,
+                    dob: personalInfo.dob || currentProfile.dob || undefined,
                 } as any);
             }
             
@@ -425,15 +475,43 @@ export default function PITDetails() {
 
     const displayedTaxAmount = useMemo(() => {
         if (periodMode === 'monthly') {
-            // Calculate cumulative total of all calculated monthly taxes
-            const totalTax = Object.values(monthlyTaxByMonth).reduce((sum: number, tax: number) => {
-                return sum + (typeof tax === 'number' ? tax : 0);
-            }, 0);
-            return `₦${totalTax.toLocaleString()}`;
+            // Get the most recent calculated month's tax (as an estimated annual liability)
+            const months = Object.entries(monthlyTaxByMonth);
+            if (months.length === 0) return '₦0';
+            
+            // Sort by month number and get the most recent
+            const sortedMonths = months.sort((a, b) => Number(a[0]) - Number(b[0]));
+            const mostRecentTax = sortedMonths[sortedMonths.length - 1]?.[1] || 0;
+            
+            // For display, show the most recent month's tax as the estimated liability
+            return `₦${mostRecentTax.toLocaleString()}`;
         }
         const annual = taxSummary?.taxSummary?.estimatedAnnualTax;
         return annual ? `₦${annual.toLocaleString()}` : '₦0';
     }, [periodMode, monthlyTaxByMonth, taxSummary, taxUpdateTrigger]);
+
+    // Header stats
+    const headerTotalIncome = useMemo(() => {
+        let total = 0;
+        const source = periodMode === 'annually' ? [incomeData[0] || []] : incomeData;
+        source.forEach((monthData: any) => {
+            (Array.isArray(monthData) ? monthData : []).forEach((item: any) => {
+                if (item.type === 'employment') {
+                    total += (item.grossSalary || 0) + (item.bonuses || 0) + (item.commissions || 0);
+                } else if (item.type === 'freelance' || item.type === 'digital_assets') {
+                    total += item.value || 0;
+                }
+            });
+        });
+        return total;
+    }, [incomeData, periodMode]);
+
+    const headerTotalDeductible = useMemo(() => {
+        return (deductions as any[]).reduce((sum: number, d: any) => {
+            const raw = d.value ?? d.amount ?? 0;
+            return sum + (typeof raw === 'string' ? parseFloat(raw) : raw || 0);
+        }, 0);
+    }, [deductions]);
 
     // Show loading while authentication is being checked
     if (authLoading) {
@@ -475,33 +553,56 @@ export default function PITDetails() {
             <DashboardHeader />
 
             <main className="max-w-[1340px] mx-auto px-4 md:px-8 py-6 md:py-8">
-                <div className="flex flex-col gap-4 mb-6 border-b border-gray-100 pb-4 md:pb-6">
+                <div className="flex flex-col gap-2 mb-6 border-b border-gray-100 pb-4 md:pb-6">
+                    {/* Back button */}
+                    <button onClick={() => router.back()} className="flex items-center gap-1.5 text-[13px] font-bold text-[#0C0C0E] hover:text-[#003787] transition-colors w-fit mb-1">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
+                        Back
+                    </button>
+
+                    {/* Mobile header */}
                     <div className="md:hidden flex justify-between items-end">
                         <h1 className="text-base font-bold text-[#0C0C0E]">{personalInfo.fullName || 'User'}</h1>
                         <div className="text-right">
                             <h2 className="text-base font-bold text-[#0C0C0E]">{displayedTaxAmount}</h2>
-                            <p className="text-[11px] text-[#6B7280] font-medium">Est. Tax</p>
+                            <p className="text-[11px] text-[#6B7280] font-medium">Net Tax Payable</p>
                         </div>
                     </div>
 
-                    <div className="flex flex-col gap-3">
-                        <button onClick={() => router.back()} className="flex items-center gap-1.5 text-[13px] font-bold text-[#0C0C0E] hover:text-[#003787] transition-colors w-fit">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
-                            Back
-                        </button>
-                    </div>
-
-                    <div className="hidden md:flex justify-between items-start">
+                    {/* Desktop header */}
+                    <div className="hidden md:flex justify-between items-end gap-6">
+                        {/* Left: name + status */}
                         <div>
-                            <div className="flex items-center gap-2 text-[12px] text-[#9CA3AF] font-medium mb-2">
-                                <span>{currentProfile.year} Individual Tax</span><span>/</span>
-                                <span className="text-[#6B7280]">{activeSection === 'personal-info' ? 'Personal Information' : activeSection === 'review' ? 'Review & File' : incomeSubTab === 'income' ? 'Income' : 'Deductions'}</span>
+                            <h1 className="text-[20px] font-bold text-[#0C0C0E] leading-snug">
+                                {personalInfo.fullName || 'User'}, {currentProfile.year} Individual Tax
+                            </h1>
+                            <div className="flex items-center gap-2 mt-1.5">
+                                {incomeDeductionsComplete && (
+                                    <span className="flex items-center gap-1 text-[12px] font-semibold text-[#16A34A]">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                        Tax Compliant
+                                    </span>
+                                )}
+                                {incomeDeductionsComplete && <span className="text-[#D1D5DB] text-[12px]">•</span>}
+                                <span className="text-[12px] font-medium text-[#6B7280]">
+                                    {headerTotalIncome > 0 ? `Total income` : 'No income data yet'}
+                                </span>
                             </div>
-                            <h1 className="text-lg font-bold text-[#0C0C0E]">{personalInfo.fullName || 'User'}, {currentProfile.year} Individual Tax</h1>
                         </div>
-                        <div className="text-right">
-                            <h2 className="text-base font-bold text-[#0C0C0E]">{displayedTaxAmount}</h2>
-                            <p className="text-[13px] text-[#6B7280] font-medium">Estimated Net Tax Payable</p>
+
+                        {/* Right: tax amount + breakdown */}
+                        <div className="text-right flex-shrink-0">
+                            <p className="text-[12px] text-[#9CA3AF] font-medium mb-0.5">Net Tax Payable</p>
+                            <h2 className="text-[22px] font-extrabold text-[#0C0C0E] leading-tight">{displayedTaxAmount}</h2>
+                            <div className="flex items-center justify-end gap-3 mt-1">
+                                <span className="text-[12px] text-[#9CA3AF] font-medium">
+                                    Total income: <span className="font-bold text-[#374151]">₦{headerTotalIncome.toLocaleString()}</span>
+                                </span>
+                                <span className="text-[#E5E7EB]">|</span>
+                                <span className="text-[12px] text-[#9CA3AF] font-medium">
+                                    Total deductible: <span className="font-bold text-[#374151]">₦{headerTotalDeductible.toLocaleString()}</span>
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -515,6 +616,9 @@ export default function PITDetails() {
                         mobileSidebarOpen={mobileSidebarOpen}
                         setMobileSidebarOpen={setMobileSidebarOpen}
                         setHelpModalOpen={setHelpModalOpen}
+                        personalInfoComplete={personalInfoComplete}
+                        incomeDeductionsComplete={incomeDeductionsComplete}
+                        reviewComplete={reviewComplete}
                     />
 
                     <div className="flex-1 min-w-0">
@@ -570,6 +674,7 @@ export default function PITDetails() {
                                 profileId={profileId!} 
                                 filingPreference={periodMode === 'annually' ? 'annual' : 'monthly'} 
                                 year={currentProfile.year} 
+                                monthlyTaxByMonth={monthlyTaxByMonth}
                                 onEdit={(section, tab) => {
                                     setActiveSection(section);
                                     if (tab) setIncomeSubTab(tab);

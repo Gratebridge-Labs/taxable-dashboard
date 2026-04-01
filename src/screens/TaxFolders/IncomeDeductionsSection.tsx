@@ -377,55 +377,74 @@ export const IncomeDeductionsSection = ({
                 {/* ── Income sub-tab ── */}
                 {incomeSubTab === 'income' ? (
                     <div className="space-y-10">
-                        {/* Employment Income */}
-                        <div>
-                            <h3 className="text-[19px] font-bold text-[#0C0C0E] mb-6">Employment Income</h3>
-                            <div className="bg-[#F5F5F5] rounded-[24px] p-4">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-                                    {periodMode === 'annually' ? (
-                                        <>
-                                            <IncomeField label="Annual Gross Salary" value={annualIncome.salary} onChange={(val) => setAnnualIncome({ ...annualIncome, salary: val })} />
-                                            <IncomeField label="Annual Bonuses" value={annualIncome.bonuses} onChange={(val) => setAnnualIncome({ ...annualIncome, bonuses: val })} />
-                                            <IncomeField label="Annual Commissions" value={annualIncome.commissions} onChange={(val) => setAnnualIncome({ ...annualIncome, commissions: val })} />
-                                        </>
-                                    ) : (
-                                        <>
-                                            <IncomeField label="Gross Salary/wages" value={currentMonthIncome.salary} onChange={(val) => setCurrentMonthIncome({ ...currentMonthIncome, salary: val })} />
-                                            <IncomeField label="Bonuses" value={currentMonthIncome.bonuses} onChange={(val) => setCurrentMonthIncome({ ...currentMonthIncome, bonuses: val })} />
-                                            <IncomeField label="Commissions" value={currentMonthIncome.commissions} onChange={(val) => setCurrentMonthIncome({ ...currentMonthIncome, commissions: val })} />
-                                        </>
-                                    )}
+                        {/* Employment Income - Only show if Salary/Employment is selected */}
+                        {currentProfile?.primaryIncomeSources?.some((s: string) => s.toLowerCase().includes('salary') || s.toLowerCase().includes('employment')) && (
+                            <div>
+                                <h3 className="text-[19px] font-medium text-[#262626] mb-6" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>Employment Income</h3>
+                                <div className="bg-[#F5F5F5] rounded-[24px] p-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+                                        {periodMode === 'annually' ? (
+                                            <>
+                                                <IncomeField label="Annual Gross Salary" value={annualIncome.salary} onChange={(val) => setAnnualIncome({ ...annualIncome, salary: val })} helpText="Your total annual basic salary before any deductions. This is the fixed regular payment from your employer." />
+                                                <IncomeField label="Annual Bonuses" value={annualIncome.bonuses} onChange={(val) => setAnnualIncome({ ...annualIncome, bonuses: val })} helpText="Any performance bonuses, 13th month pay, or holiday bonuses received during the year." />
+                                                <IncomeField label="Annual Commissions" value={annualIncome.commissions} onChange={(val) => setAnnualIncome({ ...annualIncome, commissions: val })} helpText="Sales commissions or service-based earnings paid by your employer or clients." />
+                                            </>
+                                        ) : (
+                                            <>
+                                                <IncomeField label="Gross Salary/wages" value={currentMonthIncome.salary} onChange={(val) => setCurrentMonthIncome({ ...currentMonthIncome, salary: val })} helpText="Your monthly basic salary before any deductions. This is the fixed regular payment from your employer." />
+                                                <IncomeField label="Bonuses" value={currentMonthIncome.bonuses} onChange={(val) => setCurrentMonthIncome({ ...currentMonthIncome, bonuses: val })} helpText="Performance bonuses, 13th month pay, or holiday bonuses received this month." />
+                                                <IncomeField label="Commissions" value={currentMonthIncome.commissions} onChange={(val) => setCurrentMonthIncome({ ...currentMonthIncome, commissions: val })} helpText="Sales commissions or service-based earnings paid this month." />
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
 
-                        {/* Other Income */}
-                        <div>
-                            <h3 className="text-[19px] font-bold text-[#0C0C0E] mb-6">Other Income</h3>
-                            <div className="bg-[#F5F5F5] rounded-[24px] p-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                                    {periodMode === 'annually' ? (
-                                        <>
-                                            <IncomeField label="Freelance/consulting fees" value={annualIncome.freelance} onChange={(val) => setAnnualIncome({ ...annualIncome, freelance: val })} />
-                                            <IncomeField label="Digital Assets/Crypto" value={annualIncome.digitalAssets} onChange={(val) => setAnnualIncome({ ...annualIncome, digitalAssets: val })} />
-                                        </>
-                                    ) : (
-                                        <>
-                                            <IncomeField label="Freelance/consulting fees" value={currentMonthIncome.freelance} onChange={(val) => setCurrentMonthIncome({ ...currentMonthIncome, freelance: val })} />
-                                            <IncomeField label="Digital Assets/Crypto" value={(currentMonthIncome as any).digitalAssets || ''} onChange={(val) => setCurrentMonthIncome({ ...currentMonthIncome, digitalAssets: val } as any)} />
-                                        </>
-                                    )}
+                        {/* Other Income - Only show if Freelance, Digital Assets, or Investment is selected */}
+                        {currentProfile?.primaryIncomeSources?.some((s: string) => 
+                            s.toLowerCase().includes('freelance') || 
+                            s.toLowerCase().includes('consulting') ||
+                            s.toLowerCase().includes('digital') ||
+                            s.toLowerCase().includes('crypto') ||
+                            s.toLowerCase().includes('investment') ||
+                            s.toLowerCase().includes('rental')
+                        ) && (
+                            <div>
+                                <h3 className="text-[19px] font-medium text-[#262626] mb-6" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>Other Income</h3>
+                                <div className="bg-[#F5F5F5] rounded-[24px] p-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                                        {periodMode === 'annually' ? (
+                                            <>
+                                                {currentProfile.primaryIncomeSources.some((s: string) => s.toLowerCase().includes('freelance') || s.toLowerCase().includes('consulting')) && (
+                                                    <IncomeField label="Freelance/consulting fees" value={annualIncome.freelance} onChange={(val) => setAnnualIncome({ ...annualIncome, freelance: val })} helpText="Income from freelance work, consulting, or any self-employment activities outside your main job." />
+                                                )}
+                                                {currentProfile.primaryIncomeSources.some((s: string) => s.toLowerCase().includes('digital') || s.toLowerCase().includes('crypto') || s.toLowerCase().includes('investment')) && (
+                                                    <IncomeField label="Digital Assets/Crypto" value={annualIncome.digitalAssets} onChange={(val) => setAnnualIncome({ ...annualIncome, digitalAssets: val })} helpText="Income from cryptocurrency transactions, NFT sales, or digital asset investments." />
+                                                )}
+                                            </>
+                                        ) : (
+                                            <>
+                                                {currentProfile.primaryIncomeSources.some((s: string) => s.toLowerCase().includes('freelance') || s.toLowerCase().includes('consulting')) && (
+                                                    <IncomeField label="Freelance/consulting fees" value={currentMonthIncome.freelance} onChange={(val) => setCurrentMonthIncome({ ...currentMonthIncome, freelance: val })} helpText="Income from freelance work, consulting, or any self-employment activities this month." />
+                                                )}
+                                                {currentProfile.primaryIncomeSources.some((s: string) => s.toLowerCase().includes('digital') || s.toLowerCase().includes('crypto') || s.toLowerCase().includes('investment')) && (
+                                                    <IncomeField label="Digital Assets/Crypto" value={(currentMonthIncome as any).digitalAssets || ''} onChange={(val) => setCurrentMonthIncome({ ...currentMonthIncome, digitalAssets: val } as any)} helpText="Income from cryptocurrency transactions, NFT sales, or digital asset investments this month." />
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 ) : (
                     /* ── Deductions sub-tab ── */
                     <div className="space-y-6">
                         {/* Rent Relief */}
-                        {currentProfile?.paysRent && (periodMode === 'annually' || activeMonthNum === 1) && (
+                        {currentProfile?.paysRent && (
                             <div>
-                                <h3 className="text-[19px] font-bold text-[#0C0C0E] mb-6">Rent Relief</h3>
+                                <h3 className="text-[19px] font-medium text-[#262626] mb-6" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>Rent Relief</h3>
                                 <div className="bg-[#F5F5F5] rounded-[24px] p-4">
                                     {(() => {
                                         const rentDeduction = (deductions || []).find(d => (d.deductionType as string) === 'rent_relief');
@@ -449,6 +468,8 @@ export const IncomeDeductionsSection = ({
                                                     setDocumentUrls(p => ({ ...p, rentRelief: '' }));
                                                     setUploadedFileNames(p => ({ ...p, rentRelief: '' }));
                                                 }}
+                                                helpText="Your total annual rent payment. This qualifies you for rent relief of up to 10% of your gross income."
+                                                uploadHelpText="Upload your tenancy agreement or rent receipts as proof of your rent commitment."
                                             />
                                         );
                                     })()}
@@ -459,7 +480,7 @@ export const IncomeDeductionsSection = ({
                         {/* Health Insurance */}
                         {currentProfile?.hasHealthInsurance && (
                             <div>
-                                <h3 className="text-[19px] font-bold text-[#0C0C0E] mb-6">Health Insurance (NHIS)</h3>
+                                <h3 className="text-[19px] font-medium text-[#262626] mb-6" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>Health Insurance (NHIS)</h3>
                                 <div className="bg-[#F5F5F5] rounded-[24px] p-4">
                                     {(() => {
                                         const nhisDeduction = (monthScopedDeductions || []).find(d => d.type === 'insurance' || d.type === 'nhis' || d.type === 'health_insurance')?.raw;
@@ -483,6 +504,8 @@ export const IncomeDeductionsSection = ({
                                                     setDocumentUrls(p => ({ ...p, healthInsurance: '' }));
                                                     setUploadedFileNames(p => ({ ...p, healthInsurance: '' }));
                                                 }}
+                                                helpText="Your annual National Health Insurance Scheme (NHIS) contribution. This qualifies for a 5% tax relief on your taxable income."
+                                                uploadHelpText="Upload your NHIS payment receipt or insurance statement as proof of your health insurance contributions."
                                             />
                                         );
                                     })()}
@@ -493,7 +516,7 @@ export const IncomeDeductionsSection = ({
                         {/* Pension */}
                         {currentProfile?.hasPension && (
                             <div>
-                                <h3 className="text-[19px] font-bold text-[#0C0C0E] mb-6">Statutory Deductions</h3>
+                                <h3 className="text-[19px] font-medium text-[#262626] mb-6" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>Statutory Deductions</h3>
                                 <div className="bg-[#F5F5F5] rounded-[24px] p-4">
                                     {(() => {
                                         const pensionDeduction = (deductions || []).find(d => (d.deductionType as string) === 'pension');
@@ -517,6 +540,8 @@ export const IncomeDeductionsSection = ({
                                                     setDocumentUrls(p => ({ ...p, pension: '' }));
                                                     setUploadedFileNames(p => ({ ...p, pension: '' }));
                                                 }}
+                                                helpText="Your annual pension contribution to a registered pension fund. Qualifies for 8% tax relief on your gross income."
+                                                uploadHelpText="Upload your pension statement or payslip showing pension deductions as proof of your contributions."
                                             />
                                         );
                                     })()}
@@ -525,9 +550,9 @@ export const IncomeDeductionsSection = ({
                         )}
 
                         {/* Mortgage */}
-                        {currentProfile?.hasMortgage && (
+                        {currentProfile?.paysMortgage && (
                             <div>
-                                <h3 className="text-[19px] font-bold text-[#0C0C0E] mb-6">Mortgage Interest Relief</h3>
+                                <h3 className="text-[19px] font-medium text-[#262626] mb-6" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>Mortgage Interest Relief</h3>
                                 <div className="bg-[#F5F5F5] rounded-[24px] p-4">
                                     {(() => {
                                         const mortgageDeduction = (monthScopedDeductions || []).find(d => d.type === 'mortgage' || d.type === 'mortgage_interest')?.raw;
@@ -551,6 +576,8 @@ export const IncomeDeductionsSection = ({
                                                     setDocumentUrls(p => ({ ...p, mortgage: '' }));
                                                     setUploadedFileNames(p => ({ ...p, mortgage: '' }));
                                                 }}
+                                                helpText="The interest portion of your mortgage payments made during the year. Qualifies for mortgage interest relief on your taxable income."
+                                                uploadHelpText="Upload your mortgage statement or loan amortization schedule showing the interest paid."
                                             />
                                         );
                                     })()}
@@ -559,7 +586,7 @@ export const IncomeDeductionsSection = ({
                         )}
 
                         {/* Fallback */}
-                        {!currentProfile?.paysRent && !currentProfile?.hasHealthInsurance && !currentProfile?.hasPension && !currentProfile?.hasMortgage && (
+                        {!currentProfile?.paysRent && !currentProfile?.hasHealthInsurance && !currentProfile?.hasPension && !currentProfile?.paysMortgage && (
                             <div className="py-12 text-center">
                                 <p className="text-[14px] text-[#94A3B8] font-medium">No deductions applicable based on your profile.</p>
                                 <p className="text-[12px] text-[#94A3B8] mt-1">If this seems incorrect, please update your profile settings.</p>

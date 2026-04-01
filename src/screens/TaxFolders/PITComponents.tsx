@@ -24,16 +24,26 @@ export const IncomeField = ({
     value,
     onChange,
     placeholder = 'N0',
+    helpText,
 }: {
     label: string;
     value: string;
     onChange: (val: string) => void;
     placeholder?: string;
+    helpText?: string;
 }) => (
     <div className="space-y-2">
-        <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#6B7280] leading-none mb-1">
+        <label className="flex items-center gap-1.5 text-[14px] font-medium text-[#737373] mb-1" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>
             {label}
-            <span className="w-3.5 h-3.5 rounded-full bg-gray-100 text-[#94A3B8] flex items-center justify-center text-[10px] cursor-help">i</span>
+            {helpText && (
+                <div className="relative group">
+                    <span className="w-3.5 h-3.5 rounded-full bg-gray-100 text-[#94A3B8] flex items-center justify-center text-[10px] cursor-help">i</span>
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#0C0C0E] text-white text-[11px] rounded-lg w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 whitespace-normal">
+                        {helpText}
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#0C0C0E]"></div>
+                    </div>
+                </div>
+            )}
         </label>
         <div className="relative">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] font-medium text-[#94A3B8]">₦</span>
@@ -59,7 +69,19 @@ export interface DeductionItemProps {
     statusMessage?: string;
     fileName?: string;
     onDeleteFile?: () => void;
+    helpText?: string;
+    uploadHelpText?: string;
 }
+
+const InfoTooltip = ({ text }: { text: string }) => (
+    <div className="relative group inline-block">
+        <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#0C0C0E] text-white text-[11px] rounded-lg w-52 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 whitespace-normal">
+            {text}
+            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#0C0C0E]"></div>
+        </div>
+    </div>
+);
 
 export const DeductionItem = ({
     label,
@@ -71,6 +93,8 @@ export const DeductionItem = ({
     statusMessage,
     fileName,
     onDeleteFile = () => {},
+    helpText,
+    uploadHelpText,
 }: DeductionItemProps) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [uploading, setUploading] = useState(false);
@@ -92,9 +116,9 @@ export const DeductionItem = ({
     return (
         <div className="space-y-4">
             <div>
-                <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#374151] mb-2 leading-none">
+                <label className="flex items-center gap-1.5 text-[14px] font-medium text-[#737373] mb-2" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>
                     {label}
-                    <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                    {helpText && <InfoTooltip text={helpText} />}
                 </label>
                 <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] font-medium text-[#6B7280]">₦</span>
@@ -109,9 +133,9 @@ export const DeductionItem = ({
             </div>
 
             <div className="bg-[#FAFAFA] rounded-2xl p-4 border border-[#F5F5F5]">
-                <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#374151] mb-4 leading-none">
+                <label className="flex items-center gap-1.5 text-[14px] font-medium text-[#737373] mb-4" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>
                     {uploadLabel}
-                    <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+                    {uploadHelpText && <InfoTooltip text={uploadHelpText} />}
                 </label>
                 <div className="bg-[#FAFAFA] border border-[#F5F5F5] rounded-xl p-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">

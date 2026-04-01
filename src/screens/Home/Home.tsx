@@ -45,7 +45,7 @@ const TaxFolderCard = ({
         onClick={onClick}
         className={`group cursor-pointer ${isInactive ? 'pointer-events-none opacity-80' : ''}`}
     >
-        <div className="w-full h-[323px] bg-white rounded-[34px] border border-gray-100 p-6 shadow-xs hover:shadow-md transition-all flex flex-col">
+        <div className="w-full h-[323px] bg-white rounded-[34px] p-6 transition-all flex flex-col">
             {/* Icon Container */}
             <div className={`w-full h-[145px] rounded-[24px] flex items-center justify-center mb-5 ${isInactive ? 'bg-[#F5F5F5]' : 'bg-[#FAFAFA]'}`}>
                 <Image
@@ -295,23 +295,6 @@ export default function Home() {
                                     You have {profiles.length} tax filing{profiles.length !== 1 ? 's' : ''} ready for 2026. Click any card to begin.
                                 </p>
                             </div>
-
-                            <Link href="/educational-resources" className="flex items-center gap-4 text-left group">
-                                <Image
-                                    src="/icons/docs.svg"
-                                    alt="educational resources"
-                                    width={42}
-                                    height={33}
-                                />
-                                <span className="text-[17px] font-bold text-taxable-dark group-hover:text-taxable-blue transition-colors">Educational resources</span>
-                                <svg
-                                    width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                    stroke="#737373" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"
-                                    className="group-hover:translate-x-1 transition-transform group-hover:stroke-taxable-blue"
-                                >
-                                    <polyline points="9 18 15 12 9 6" />
-                                </svg>
-                            </Link>
                         </div>
 
                         {/* Dynamic Tax Filings Sections */}
@@ -322,16 +305,25 @@ export default function Home() {
                                 acc[year].push(profile);
                                 return acc;
                             }, {})
-                        ).sort(([yearA], [yearB]) => Number(yearB) - Number(yearA)).map(([year, yearProfiles]) => (
+                        ).sort(([yearA], [yearB]) => Number(yearB) - Number(yearA)).map(([year, yearProfiles], index) => (
                             <section key={year} className="mb-10 last:mb-0">
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                                     <h2 className="text-xl md:text-2xl font-bold text-taxable-dark">{year} Tax Filings</h2>
-                                    <button
-                                        onClick={() => setIsSidebarOpen(true)}
-                                        className="h-12 px-6 bg-[#003787] hover:opacity-90 text-white font-semibold rounded-xl transition-all w-full sm:w-auto text-center"
-                                    >
-                                        Create another tax filing
-                                    </button>
+                                    {index === 0 ? (
+                                        <button
+                                            onClick={() => setIsSidebarOpen(true)}
+                                            className="h-11 px-6 bg-[#003787] hover:opacity-90 text-white text-[14px] font-bold rounded-xl transition-all w-full sm:w-auto text-center"
+                                        >
+                                            Create another tax filing
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => setIsSidebarOpen(true)}
+                                            className="text-[14px] font-medium text-taxable-gray hover:text-taxable-dark transition-colors"
+                                        >
+                                            Add another tax type
+                                        </button>
+                                    )}
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

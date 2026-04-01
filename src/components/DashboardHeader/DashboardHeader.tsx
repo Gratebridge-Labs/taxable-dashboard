@@ -47,7 +47,7 @@ export default function DashboardHeader() {
     ];
 
     return (
-        <header className="w-full h-20 bg-[#F5F5F5] border-b border-[#F5F5F5] sticky top-0 z-50">
+        <header className="w-full h-16 bg-[#F5F5F5] border-b border-[#F5F5F5] sticky top-0 z-50">
             <div className="max-w-[1400px] mx-auto w-full h-full flex items-center px-4 md:px-8">
                 {/* Left Section: Mobile Menu Icon & Logo */}
                 <div className="flex-1 flex items-center gap-3">
@@ -65,9 +65,9 @@ export default function DashboardHeader() {
                         <Image
                             src="/logo_blue.svg"
                             alt="Taxable"
-                            width={90}
-                            height={55}
-                            className="md:w-[86px] md:h-[52px] w-[66px] h-[40px]"
+                            width={80}
+                            height={48}
+                            className="md:w-[76px] md:h-[46px] w-[60px] h-[36px]"
                             priority
                         />
                     </Link>
@@ -157,8 +157,8 @@ export default function DashboardHeader() {
                                 <Image
                                     src="/logo_blue.svg"
                                     alt="Taxable"
-                                    width={90}
-                                    height={55}
+                                    width={80}
+                                    height={48}
                                 />
                                 <button
                                     onClick={() => setIsMenuOpen(false)}

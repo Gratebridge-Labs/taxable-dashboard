@@ -2,94 +2,111 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useMemo, useEffect } from 'react';
-import { Info, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { useTaxableApi } from '@/lib';
 import { useSearchParams } from 'next/navigation';
 import { useToast } from '@/components/Toast/ToastProvider';
+
+const InfoTooltip = ({ text }: { text: string }) => (
+    <div className="relative group inline-flex ml-1">
+        <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#0C0C0E] text-white text-[11px] rounded-lg w-52 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 whitespace-normal">
+            {text}
+            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#0C0C0E]"></div>
+        </div>
+    </div>
+);
 
 interface ReviewAndFileProps {
     profileId?: string;
     filingPreference?: 'monthly' | 'annual';
     year?: number;
     onEdit?: (section: 'personal-info' | 'income-deductions', tab?: 'income' | 'deductions') => void;
+    monthlyTaxByMonth?: Record<number, number>;
 }
 
-const SummaryCard = ({ title, income, deductions, onEdit }: { title: string; income: string; deductions: string; onEdit?: () => void }) => (
-    <div className="bg-white rounded-[32px] p-8 border border-gray-100 min-w-[340px] flex-shrink-0 relative group">
-        <div className="flex items-center justify-between mb-8">
-            <h3 className="text-[17px] font-bold text-taxable-dark">{title}</h3>
-            {onEdit && (
-                <button 
-                    onClick={onEdit}
-                    className="text-[12px] font-bold text-[#003787] opacity-0 group-hover:opacity-100 transition-opacity hover:underline"
-                >
-                    Edit
-                </button>
-            )}
-            {!onEdit && (
-                <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
-                    <Info size={12} />
-                </div>
-            )}
-        </div>
+// ── Tax Bracket helpers ──────────────────────────────────────────────────────
+const TAX_BRACKETS = [
+    { label: 'First ₦300,000', limit: 300_000, rate: 0.07 },
+    { label: 'Next ₦300,000', limit: 300_000, rate: 0.11 },
+    { label: 'Next ₦500,000', limit: 500_000, rate: 0.19 },
+    { label: 'Next ₦500,000', limit: 500_000, rate: 0.21 },
+    { label: 'Remaining', limit: Infinity, rate: 0.24 },
+];
 
-        <div className="space-y-3 md:space-y-4 mb-4 md:mb-8">
-            <div className="flex items-center justify-between">
-                <span className="text-[13px] md:text-[14px] text-taxable-gray font-medium">Total Income</span>
-                <span className="text-[13px] md:text-[14px] text-taxable-dark font-bold">{income}</span>
-            </div>
-            <div className="flex items-center justify-between">
-                <span className="text-[13px] md:text-[14px] text-taxable-gray font-medium">Total Deductions</span>
-                <span className="text-[13px] md:text-[14px] text-taxable-dark font-bold">{deductions}</span>
-            </div>
-        </div>
+function computeBrackets(taxableIncome: number) {
+    let remaining = Math.max(0, taxableIncome);
+    return TAX_BRACKETS.map((b) => {
+        const chunk = Math.min(remaining, b.limit);
+        remaining -= chunk;
+        return { label: b.label, rate: `${(b.rate * 100).toFixed(0)}%`, tax: chunk * b.rate };
+    });
+}
+
+function computeCRA(grossIncome: number) {
+    // CRA = Higher of: 1% of gross OR ₦200,000 + 20% of gross
+    const option1 = grossIncome * 0.01;
+    const option2 = 200_000 + grossIncome * 0.2;
+    return Math.max(option1, option2);
+}
+
+const fmt = (n: number) => (n === 0 ? '₦0' : `₦${n.toLocaleString()}`);
+
+// ── Sub-components ───────────────────────────────────────────────────────────
+
+const StatCard = ({ label, value }: { label: string; value: string }) => (
+    <div className="flex-1 min-w-0">
+        <p className="text-[12px] text-[#6B7280] font-medium mb-1">{label}</p>
+        <p className="text-[18px] md:text-[22px] font-extrabold text-[#0C0C0E] leading-tight truncate">{value}</p>
     </div>
 );
 
-const BreakdownTable = ({ title, rows, totalLabel, totalValue }: { title: string; rows: { label: string; value: string }[]; totalLabel: string; totalValue: string }) => (
-    <div className="mb-14">
-        <h3 className="text-[17px] font-bold text-taxable-dark mb-6">{title}</h3>
-        <div className="space-y-5">
-            {rows.map((row, i) => (
-                <div key={i} className="flex items-center justify-between pb-1">
-                    <span className="text-[14px] text-taxable-gray font-medium">{row.label}</span>
-                    <span className="text-[14px] text-taxable-dark font-bold">{row.value}</span>
-                </div>
-            ))}
-            <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
-                <span className="text-[15px] text-taxable-gray font-bold">{totalLabel}</span>
-                <span className="text-base text-taxable-dark font-extrabold">{totalValue}</span>
-            </div>
-        </div>
+const SectionDivider = () => <div className="border-t border-gray-100 my-10" />;
+
+const BracketRow = ({
+    label,
+    rate,
+    value,
+    bold,
+}: {
+    label: string;
+    rate?: string;
+    value: string;
+    bold?: boolean;
+}) => (
+    <div className={`flex items-center justify-between py-3 border-b border-gray-50 last:border-b-0 ${bold ? 'border-t border-gray-200 mt-2 pt-4' : ''}`}>
+        <span className={`text-[14px] ${bold ? 'font-bold text-[#0C0C0E]' : 'font-medium text-[#6B7280]'}`}>{label}</span>
+        {rate && <span className="text-[14px] font-medium text-[#6B7280] w-16 text-center">{rate}</span>}
+        <span className={`text-[14px] ${bold ? 'font-extrabold text-[#0C0C0E]' : 'font-bold text-[#0C0C0E]'}`}>{value}</span>
     </div>
 );
 
-const TaxBracketRow = ({ label, rate, value }: { label: string; rate: string; value: string }) => (
-    <div className="grid grid-cols-3 py-4 border-b border-gray-50 last:border-b-0">
-        <span className="text-[14px] text-taxable-dark font-bold">{label}</span>
-        <span className="text-[14px] text-taxable-gray font-medium">{rate}</span>
-        <span className="text-[14px] text-taxable-dark font-bold text-right">{value}</span>
-    </div>
-);
+// ── Main component ───────────────────────────────────────────────────────────
 
-export default function ReviewAndFile({ profileId: propProfileId, filingPreference = 'annual', year = 2026, onEdit }: ReviewAndFileProps) {
+export default function ReviewAndFile({
+    profileId: propProfileId,
+    filingPreference = 'annual',
+    year = 2026,
+    onEdit,
+    monthlyTaxByMonth = {},
+}: ReviewAndFileProps) {
     const searchParams = useSearchParams();
     const profileId = propProfileId || searchParams.get('profileId') || searchParams.get('id') || '';
-    
+
     const { submitProfile, fileTax, createFilingPaymentLink, getIncomeData, getDeductionList, getPaymentRecords } = useTaxableApi();
     const toast = useToast();
-    
+
     const [submitting, setSubmitting] = useState(false);
     const [filing, setFiling] = useState(false);
     const [processingPayment, setProcessingPayment] = useState(false);
     const [currentStep, setCurrentStep] = useState<'review' | 'submit' | 'file' | 'pay'>('review');
-    
+    const [showBreakdown, setShowBreakdown] = useState(true);
+
     const [incomeData, setIncomeData] = useState<any[][]>([]);
     const [deductions, setDeductions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [paymentsByMonth, setPaymentsByMonth] = useState<Record<number, any>>({});
     const [paidMonths, setPaidMonths] = useState<Set<number>>(new Set());
-    const [selectedMonths, setSelectedMonths] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         const fetchData = async () => {
@@ -101,7 +118,7 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
                     getDeductionList(profileId, year),
                     getPaymentRecords(profileId),
                 ]);
-                
+
                 if (incomeRes.success && incomeRes.data.incomes) {
                     setIncomeData(incomeRes.data.incomes);
                 }
@@ -109,7 +126,6 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
                     setDeductions(deductionRes.data?.deductions || []);
                 }
 
-                // Payment records: filter to selected tax year and build month map
                 try {
                     const payments = (paymentsRes as any)?.data?.payments || [];
                     const byMonth: Record<number, any> = {};
@@ -135,30 +151,16 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
                 setLoading(false);
             }
         };
-        
+
         fetchData();
     }, [profileId, year, getIncomeData, getDeductionList, getPaymentRecords]);
 
-    useEffect(() => {
-        // Default selection: months where user entered substantial income data (monthly filing)
-        if (filingPreference !== 'monthly') return;
-        const next = new Set<number>();
-        (incomeData || []).forEach((m: any[], idx: number) => {
-            if (Array.isArray(m) && m.length > 0) {
-                next.add(idx + 1);
-            }
-        });
-        (deductions || []).forEach((d: any) => {
-            if ((d?.frequency === 'monthly') && typeof d?.month === 'number') next.add(d.month);
-        });
-        if (next.size > 0) setSelectedMonths(next);
-    }, [filingPreference, incomeData, deductions]);
-
+    // ── Calculated values ──────────────────────────────────────────────────
     const calculatedIncome = useMemo(() => {
         let employmentIncome = 0;
         let freelanceIncome = 0;
         let digitalAssetsIncome = 0;
-        
+
         if (filingPreference === 'annual' && incomeData[0]) {
             incomeData[0].forEach((item: any) => {
                 if (item.type === 'employment') {
@@ -171,7 +173,7 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
             });
         } else {
             incomeData.forEach((monthData: any[]) => {
-                monthData.forEach((item: any) => {
+                (monthData || []).forEach((item: any) => {
                     if (item.type === 'employment') {
                         employmentIncome += (item.grossSalary || 0) + (item.bonuses || 0) + (item.commissions || 0);
                     } else if (item.type === 'freelance') {
@@ -182,63 +184,41 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
                 });
             });
         }
-        
+
         return {
             employmentIncome,
             freelanceIncome,
             digitalAssetsIncome,
-            otherIncome: freelanceIncome + digitalAssetsIncome,
-            totalIncome: employmentIncome + freelanceIncome + digitalAssetsIncome
+            totalIncome: employmentIncome + freelanceIncome + digitalAssetsIncome,
         };
     }, [incomeData, filingPreference]);
 
     const totalDeductions = useMemo(() => {
         return deductions.reduce((sum, d) => {
             const raw = d.value ?? d.amount ?? 0;
-            const amount = typeof raw === 'string' ? parseFloat(raw) : (raw || 0);
+            const amount = typeof raw === 'string' ? parseFloat(raw) : raw || 0;
             return sum + amount;
         }, 0);
     }, [deductions]);
 
-    const formatCurrency = (amount: number) => {
-        if (amount === 0 || amount === undefined || amount === null) return '₦0';
-        return `₦${amount.toLocaleString()}`;
-    };
+    const cra = useMemo(() => computeCRA(calculatedIncome.totalIncome), [calculatedIncome.totalIncome]);
 
+    const taxableIncome = useMemo(
+        () => Math.max(0, calculatedIncome.totalIncome - totalDeductions - cra),
+        [calculatedIncome.totalIncome, totalDeductions, cra]
+    );
+
+    const brackets = useMemo(() => computeBrackets(taxableIncome), [taxableIncome]);
+
+    const grossTax = useMemo(() => brackets.reduce((s, b) => s + b.tax, 0), [brackets]);
+
+    // ── Year-end window ────────────────────────────────────────────────────
     const taxYearEnd = useMemo(() => new Date(year, 11, 31, 23, 59, 59, 999), [year]);
     const reviewWindowStart = useMemo(() => new Date(taxYearEnd.getTime() - 30 * 24 * 60 * 60 * 1000), [taxYearEnd]);
     const now = useMemo(() => new Date(), []);
     const reviewAndFileAllowed = useMemo(() => now >= reviewWindowStart, [now, reviewWindowStart]);
 
-    const monthHasAnyData = (monthNum: number) => {
-        if (filingPreference === 'annual') {
-            const annualIncome = incomeData?.[0];
-            if (Array.isArray(annualIncome) && annualIncome.length > 0) return true;
-        }
-        const income = incomeData?.[monthNum - 1];
-        const hasIncome = Array.isArray(income) && income.length > 0;
-        const hasMonthlyDeduction = (deductions || []).some((d: any) => d?.frequency === 'monthly' && d?.month === monthNum);
-        return hasIncome || hasMonthlyDeduction;
-    };
-
-    const totalPaidForYear = useMemo(() => {
-        let sum = 0;
-        paidMonths.forEach((m) => {
-            const p = paymentsByMonth[m];
-            sum += Number(p?.amountNaira ?? 0);
-        });
-        return sum;
-    }, [paidMonths, paymentsByMonth]);
-
-    const taxSoFar = useMemo(() => {
-        let sum = 0;
-        selectedMonths.forEach((m) => {
-            const p = paymentsByMonth[m];
-            sum += Number(p?.calculationSnapshot?.monthlyTax ?? p?.amountNaira ?? 0);
-        });
-        return sum;
-    }, [selectedMonths, paymentsByMonth]);
-
+    // ── Handlers ───────────────────────────────────────────────────────────
     const handleSubmitProfile = async () => {
         if (!profileId) return;
         if (!reviewAndFileAllowed) {
@@ -290,6 +270,7 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
         }
     };
 
+    // ── Step screens ───────────────────────────────────────────────────────
     if (currentStep === 'submit') {
         return (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -299,9 +280,9 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
                             <polyline points="20 6 9 17 4 12" />
                         </svg>
                     </div>
-                    <h2 className="text-xl font-bold text-taxable-dark mb-2">Profile Submitted!</h2>
-                    <p className="text-taxable-gray mb-6">Your profile has been submitted successfully.</p>
-                    <button 
+                    <h2 className="text-xl font-bold text-[#0C0C0E] mb-2">Profile Submitted!</h2>
+                    <p className="text-[#6B7280] mb-6">Your profile has been submitted successfully.</p>
+                    <button
                         onClick={handleFileTax}
                         disabled={filing}
                         className="h-14 px-8 bg-[#00388D] text-white font-bold rounded-2xl hover:bg-[#002b6d] transition-all shadow-lg shadow-blue-900/10 disabled:opacity-50"
@@ -325,9 +306,9 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
                             <line x1="16" y1="17" x2="8" y2="17" />
                         </svg>
                     </div>
-                    <h2 className="text-xl font-bold text-taxable-dark mb-2">Tax Filed!</h2>
-                    <p className="text-taxable-gray mb-6">Your tax return has been filed successfully.</p>
-                    <button 
+                    <h2 className="text-xl font-bold text-[#0C0C0E] mb-2">Tax Filed!</h2>
+                    <p className="text-[#6B7280] mb-6">Your tax return has been filed successfully.</p>
+                    <button
                         onClick={handlePayment}
                         disabled={processingPayment}
                         className="h-14 px-8 bg-[#16A34A] text-white font-bold rounded-2xl hover:bg-[#15803d] transition-all shadow-lg shadow-green-900/10 disabled:opacity-50"
@@ -348,59 +329,66 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
                             <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                         </svg>
                     </div>
-                    <h2 className="text-xl font-bold text-taxable-dark mb-2">Payment Complete!</h2>
-                    <p className="text-taxable-gray">Your tax payment has been processed.</p>
+                    <h2 className="text-xl font-bold text-[#0C0C0E] mb-2">Payment Complete!</h2>
+                    <p className="text-[#6B7280]">Your tax payment has been processed.</p>
                 </div>
+            </div>
+        );
+    }
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-20">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#003787]" />
             </div>
         );
     }
 
     const hasData = calculatedIncome.totalIncome > 0 || totalDeductions > 0;
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center py-20">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#003787]"></div>
-            </div>
-        );
-    }
-
+    // ── Main review UI ─────────────────────────────────────────────────────
     return (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 mb-10">
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[680px]">
+
+            {/* ── Header row ── */}
+            <div className="flex items-start justify-between gap-4 mb-8">
                 <div>
-                    <h2 className="text-lg font-extrabold text-taxable-dark mb-1">
+                    <h2 className="text-[17px] font-extrabold text-[#0C0C0E] mb-1">
                         {hasData ? 'Your Tax Filings Is Ready' : 'Review Your Tax Details'}
                     </h2>
-                    <p className="text-[14px] text-taxable-gray font-medium">
-                        {hasData ? 'Based on the information you provided, you need to file:' : 'Add income and deductions to see your tax summary.'}
-                    </p>
-                </div>
-                <div className="flex gap-3">
                     {hasData && (
                         <button
-                            onClick={handleSubmitProfile}
-                            disabled={submitting || !reviewAndFileAllowed}
-                            className="h-14 px-8 bg-[#00388D] text-white font-bold rounded-2xl hover:bg-[#002b6d] transition-all shadow-lg shadow-blue-900/10 disabled:opacity-50"
+                            onClick={() => setShowBreakdown((v) => !v)}
+                            className="text-[13px] font-semibold text-[#003787] hover:underline"
                         >
-                            {submitting ? 'Submitting...' : 'Submit Profile'}
+                            {showBreakdown ? 'Hide calculation breakdown' : 'View calculation breakdown'}
                         </button>
                     )}
                 </div>
+
+                {hasData && (
+                    <button
+                        onClick={handleSubmitProfile}
+                        disabled={submitting || !reviewAndFileAllowed}
+                        className="flex-shrink-0 h-11 px-6 bg-[#00388D] text-white text-[13px] font-bold rounded-2xl hover:bg-[#002b6d] transition-all shadow-md shadow-blue-900/20 disabled:opacity-50"
+                    >
+                        {submitting ? 'Submitting...' : 'File my annual returns'}
+                    </button>
+                )}
             </div>
 
+            {/* ── Year-end warning ── */}
             {!reviewAndFileAllowed && (
-                <div className="mb-10 rounded-3xl border border-amber-200 bg-amber-50 px-5 py-4">
+                <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
                     <div className="flex items-start gap-3">
                         <div className="mt-0.5 text-amber-700">
-                            <AlertTriangle size={18} />
+                            <AlertTriangle size={16} />
                         </div>
                         <div>
-                            <p className="text-[13px] font-semibold text-taxable-dark">
-                                Review & File is available near year-end
-                            </p>
+                            <p className="text-[13px] font-semibold text-[#0C0C0E]">Review & File is available near year-end</p>
                             <p className="mt-0.5 text-[12px] font-medium text-amber-800">
-                                You can only review and file for {year} within 30 days to the end of the tax year (or after the year ends).
+                                You can only review and file for {year} within 30 days to the end of the tax year (or after
+                                the year ends).
                             </p>
                         </div>
                     </div>
@@ -409,198 +397,225 @@ export default function ReviewAndFile({ profileId: propProfileId, filingPreferen
 
             {hasData ? (
                 <>
-                    <div className="flex gap-6 overflow-x-auto pb-4 mb-14 no-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0">
-                        <SummaryCard
-                            title="Form A - Personal Income Tax Return"
-                            income={formatCurrency(calculatedIncome.totalIncome)}
-                            deductions={formatCurrency(totalDeductions)}
-                            onEdit={() => onEdit?.('personal-info')}
-                        />
-                        <SummaryCard
-                            title="Employment Income"
-                            income={formatCurrency(calculatedIncome.employmentIncome)}
-                            deductions={formatCurrency(totalDeductions)}
-                            onEdit={() => onEdit?.('income-deductions', 'income')}
-                        />
-                        <SummaryCard
-                            title="Other Income"
-                            income={formatCurrency(calculatedIncome.otherIncome)}
-                            deductions="₦0"
-                            onEdit={() => onEdit?.('income-deductions', 'income')}
-                        />
+                    {/* ── Stats bar ── */}
+                    <div className="flex flex-wrap gap-x-10 gap-y-6 mb-10 pb-10 border-b border-gray-100">
+                        <StatCard label="Total Income" value={fmt(calculatedIncome.totalIncome)} />
+                        <StatCard label="Total deduction" value={fmt(totalDeductions)} />
+                        <StatCard label="Taxable income" value={fmt(taxableIncome)} />
+                        <StatCard label="Tax Due" value={fmt(grossTax)} />
                     </div>
 
-                    {filingPreference === 'monthly' && (
-                        <div className="mb-14">
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6">
-                                <div>
-                                    <h3 className="text-[17px] font-bold text-taxable-dark">Monthly payments summary</h3>
-                                    <p className="text-[13px] text-taxable-gray font-medium mt-1">
-                                        Your monthly tax payments for {year}. Tax is calculated when you enter income and deductions.
-                                    </p>
+                    {showBreakdown && (
+                        <>
+                            {/* ── Employment section ── */}
+                            <section className="mb-10">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h3 className="text-[16px] font-bold text-[#0C0C0E]">Employment</h3>
+                                    {onEdit && (
+                                        <button
+                                            onClick={() => onEdit('income-deductions', 'income')}
+                                            className="text-[12px] font-bold text-[#003787] hover:underline"
+                                        >
+                                            Edit
+                                        </button>
+                                    )}
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setSelectedMonths(new Set(Array.from({ length: 12 }, (_, i) => i + 1).filter(monthHasAnyData)))}
-                                    className="h-11 px-5 rounded-2xl border border-gray-200 bg-white text-taxable-dark font-bold text-[13px] hover:bg-gray-50 transition-colors whitespace-nowrap"
-                                >
-                                    Select months with data
-                                </button>
-                            </div>
-
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                <div className="lg:col-span-2 bg-white rounded-[28px] border border-gray-100 p-5">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
-                                            const label = new Date(year, m - 1, 1).toLocaleString(undefined, { month: 'long' });
-                                            const checked = selectedMonths.has(m);
-                                            const paid = paidMonths.has(m);
-                                            const p = paymentsByMonth[m];
-                                            const paidAmt = Number(p?.amountNaira ?? 0);
-                                            const taxVal = p?.calculationSnapshot?.monthlyTax ?? 0;
-                                            return (
-                                                <button
-                                                    key={m}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setSelectedMonths((prev) => {
-                                                            const next = new Set(prev);
-                                                            if (next.has(m)) next.delete(m);
-                                                            else next.add(m);
-                                                            return next;
-                                                        });
-                                                    }}
-                                                    className={`rounded-2xl border px-4 py-3 text-left transition-colors ${
-                                                        checked
-                                                            ? 'border-[#00388D] bg-[#F5F8FF]'
-                                                            : 'border-gray-100 bg-white hover:bg-gray-50'
-                                                    }`}
-                                                >
-                                                    <div className="flex items-start justify-between gap-3">
-                                                        <div>
-                                                            <p className="text-[13px] font-bold text-taxable-dark">{label}</p>
-                                                            <p className="text-[12px] text-taxable-gray font-medium mt-0.5">
-                                                                {paid ? `Paid ₦${paidAmt.toLocaleString()}` : 'Unpaid'}
-                                                            </p>
-                                                        </div>
-                                                        {paid && (
-                                                            <div className="text-green-600">
-                                                                <CheckCircle2 size={18} />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    {checked && (
-                                                        <div className="mt-2 flex items-center justify-between">
-                                                            <span className="text-[12px] text-taxable-gray font-medium">Tax</span>
-                                                            <span className="text-[12px] text-taxable-dark font-bold">{formatCurrency(taxVal)}</span>
-                                                        </div>
-                                                    )}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                <div className="bg-white rounded-[28px] border border-gray-100 p-6">
-                                    <h4 className="text-[14px] font-extrabold text-taxable-dark mb-4">Year-to-date</h4>
-                                    <div className="space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[13px] text-taxable-gray font-medium">Selected months</span>
-                                            <span className="text-[13px] text-taxable-dark font-bold">{selectedMonths.size}/12</span>
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[13px] text-taxable-gray font-medium">Paid months</span>
-                                            <span className="text-[13px] text-taxable-dark font-bold">{paidMonths.size}/12</span>
-                                        </div>
-                                        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                                            <span className="text-[13px] text-taxable-gray font-bold">Paid so far</span>
-                                            <span className="text-[14px] text-taxable-dark font-extrabold">{formatCurrency(totalPaidForYear)}</span>
-                                        </div>
-                                    </div>
-                                    <p className="mt-4 text-[12px] text-taxable-gray font-medium leading-relaxed">
-                                        Monthly payments are prepayments for that month. At year-end, we submit and file your return for {year} on your behalf.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-16">
-                        <div>
-                            <BreakdownTable
-                                title="Total Income Breakdown"
-                                rows={[
-                                    { label: 'Employment income', value: formatCurrency(calculatedIncome.employmentIncome) },
-                                    { label: 'Freelance income', value: formatCurrency(calculatedIncome.freelanceIncome) },
-                                    { label: 'Digital Assets/Crypto', value: formatCurrency(calculatedIncome.digitalAssetsIncome) },
-                                ]}
-                                totalLabel="Total Income"
-                                totalValue={formatCurrency(calculatedIncome.totalIncome)}
-                            />
-
-                            <div className="mt-20">
-                                <h3 className="text-base font-extrabold text-taxable-dark mb-4">Tax Brackets Reference</h3>
-                                <p className="text-[13px] text-taxable-gray font-medium leading-relaxed mb-8">
-                                    Nigeria uses progressive tax rates. Here&apos;s how income is taxed across different brackets
+                                <p className="text-[13px] text-[#6B7280] font-medium mb-6">
+                                    Total Income: {fmt(calculatedIncome.employmentIncome)}
                                 </p>
 
-                                <div className="mb-6">
-                                    <TaxBracketRow label="First ₦300,000" rate="7%" value="..." />
-                                    <TaxBracketRow label="Next ₦300,000" rate="11%" value="..." />
-                                    <TaxBracketRow label="Next ₦500,000" rate="19%" value="..." />
-                                    <TaxBracketRow label="Next ₦500,000" rate="21%" value="..." />
-                                    <TaxBracketRow label="Remaining" rate="24%" value="..." />
+                                <div className="rounded-[16px] overflow-hidden">
+                                    {/* Header */}
+                                    <div className="grid grid-cols-3 px-5 py-3 bg-[#F9FAFB]">
+                                        <span className="text-[12px] font-bold text-[#9CA3AF] uppercase tracking-wide">Bracket</span>
+                                        <span className="text-[12px] font-bold text-[#9CA3AF] uppercase tracking-wide text-center">Rate</span>
+                                        <span className="text-[12px] font-bold text-[#9CA3AF] uppercase tracking-wide text-right">Tax</span>
+                                    </div>
+                                    <div className="px-5 divide-y divide-gray-50">
+                                        {brackets.map((b, i) => (
+                                            <div key={i} className="grid grid-cols-3 py-3">
+                                                <span className="text-[14px] font-medium text-[#374151]">{b.label}</span>
+                                                <span className="text-[14px] font-medium text-[#6B7280] text-center">{b.rate}</span>
+                                                <span className="text-[14px] font-bold text-[#0C0C0E] text-right">{fmt(b.tax)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="flex items-center justify-between px-5 py-4 bg-[#F9FAFB]">
+                                        <span className="text-[14px] font-bold text-[#374151]">Taxable income</span>
+                                        <span className="text-[15px] font-extrabold text-[#0C0C0E]">{fmt(taxableIncome)}</span>
+                                    </div>
                                 </div>
+                            </section>
 
-                                <div className="flex items-center justify-between py-6 border-t border-gray-100">
-                                    <span className="text-[15px] text-taxable-gray font-bold">Net Tax Payable</span>
-                                    <span className="text-base text-taxable-dark font-extrabold">See PIT Details</span>
+                            <SectionDivider />
+
+                            {/* ── Deductions section ── */}
+                            <section className="mb-10">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h3 className="text-[16px] font-bold text-[#0C0C0E]">Deductions</h3>
+                                    {onEdit && (
+                                        <button
+                                            onClick={() => onEdit('income-deductions', 'deductions')}
+                                            className="text-[12px] font-bold text-[#003787] hover:underline"
+                                        >
+                                            Edit
+                                        </button>
+                                    )}
                                 </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <BreakdownTable
-                                title="Deductions & Reliefs"
-                                rows={deductions.map((d: any) => {
-                                    const rawAmount = d.value ?? d.amount ?? 0;
-                                    const amount = typeof rawAmount === 'string' ? parseFloat(rawAmount) : (rawAmount || 0);
-                                    const label = d.description ||
-                                        (d.type === 'rent_relief' ? 'Rent Relief' :
-                                         d.type === 'pension' ? 'Pension' :
-                                         d.type === 'insurance' ? 'Health Insurance' :
-                                         d.type === 'mortgage' || d.type === 'mortgage_interest' ? 'Mortgage Interest' :
-                                         d.deductionType || d.type || 'Deduction');
-                                    return { label, value: formatCurrency(amount) };
-                                })}
-                                totalLabel="Total Deductions"
-                                totalValue={formatCurrency(totalDeductions)}
-                            />
-
-                            <div className="mt-20">
-                                <h3 className="text-base font-extrabold text-taxable-dark mb-4">Personal Reliefs</h3>
-                                <p className="text-[13px] text-taxable-gray font-medium leading-relaxed mb-6">
+                                <p className="text-[13px] text-[#6B7280] font-medium mb-1">
                                     Consolidated Relief Allowance (CRA) Higher of: 1% of gross income OR ₦200,000 + 20% of gross income
                                 </p>
+                                <p className="text-[13px] font-semibold text-[#374151] mb-6">
+                                    Your CRA &ndash; {fmt(cra)}
+                                    <span className="text-[12px] text-[#9CA3AF] font-medium ml-2">
+                                        (₦200,000 + 20% of {fmt(calculatedIncome.totalIncome)}; But capped at 20% of gross income &ndash; {fmt(calculatedIncome.totalIncome * 0.2)})
+                                    </span>
+                                </p>
 
-                                <div className="bg-white/50 border border-gray-50 rounded-2xl p-6 mb-8">
-                                    <div className="flex flex-col gap-3">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[14px] text-taxable-dark font-bold">Tax calculations</span>
-                                            <span className="text-[14px] text-taxable-dark font-bold">See PIT Details</span>
-                                        </div>
-                                        <p className="text-[12px] text-taxable-gray font-medium italic">
-                                            View detailed tax calculations in the Income & Deductions section
-                                        </p>
+                                <div className="rounded-[16px] overflow-hidden">
+                                    <div className="grid grid-cols-3 px-5 py-3 bg-[#F9FAFB]">
+                                        <span className="text-[12px] font-bold text-[#9CA3AF] uppercase tracking-wide">Bracket</span>
+                                        <span className="text-[12px] font-bold text-[#9CA3AF] uppercase tracking-wide text-center">Rate</span>
+                                        <span className="text-[12px] font-bold text-[#9CA3AF] uppercase tracking-wide text-right">Tax</span>
+                                    </div>
+                                    <div className="px-5 divide-y divide-gray-50">
+                                        {brackets.map((b, i) => (
+                                            <div key={i} className="grid grid-cols-3 py-3">
+                                                <span className="text-[14px] font-medium text-[#374151]">{b.label}</span>
+                                                <span className="text-[14px] font-medium text-[#6B7280] text-center">{b.rate}</span>
+                                                <span className="text-[14px] font-bold text-[#0C0C0E] text-right">{fmt(b.tax)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="flex items-center justify-between px-5 py-4 bg-[#F9FAFB]">
+                                        <span className="text-[14px] font-bold text-[#374151]">Gross Tax</span>
+                                        <span className="text-[15px] font-extrabold text-[#0C0C0E]">{fmt(grossTax)}</span>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
+
+                                {/* Itemised deductions list */}
+                                {deductions.length > 0 && (
+                                    <div className="mt-6 space-y-2">
+                                        {deductions.map((d: any, i) => {
+                                            const raw = d.value ?? d.amount ?? 0;
+                                            const amount = typeof raw === 'string' ? parseFloat(raw) : raw || 0;
+                                            const label =
+                                                d.description ||
+                                                (d.type === 'rent_relief' || d.deductionType === 'rent_relief' ? 'Rent Relief' :
+                                                 d.type === 'pension' || d.deductionType === 'pension' ? 'Pension' :
+                                                 d.type === 'health_insurance' || d.type === 'insurance' || d.deductionType === 'insurance' ? 'Health Insurance' :
+                                                 d.type === 'life_insurance' || d.deductionType === 'life_insurance' ? 'Life Insurance' :
+                                                 d.type === 'mortgage' || d.type === 'mortgage_interest' || d.deductionType === 'mortgage' ? 'Mortgage Interest' :
+                                                 d.type === 'nhis' ? 'NHIS' :
+                                                 d.type === 'gratuity' ? 'Gratuity' :
+                                                 d.type === 'annuity' ? 'Annuity' :
+                                                 d.type === 'long_term_insurance' ? 'Long Term Insurance' :
+                                                 d.deductionType || d.type || 'Deduction');
+                                            return (
+                                                <div key={i} className="flex items-center justify-between py-2">
+                                                    <span className="text-[14px] font-medium text-[#6B7280]">{label}</span>
+                                                    <span className="text-[14px] font-bold text-[#0C0C0E]">{fmt(amount)}</span>
+                                                </div>
+                                            );
+                                        })}
+                                        <div className="flex items-center justify-between py-3 mt-2">
+                                            <span className="text-[14px] font-bold text-[#374151]">Total Deductions</span>
+                                            <span className="text-[15px] font-extrabold text-[#0C0C0E]">{fmt(totalDeductions)}</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </section>
+
+                            <SectionDivider />
+
+                            {/* ── Calculations section ── */}
+                            <section className="mb-10">
+                                <h3 className="text-[16px] font-bold text-[#0C0C0E] mb-2">Calculations</h3>
+                                <p className="text-[13px] text-[#6B7280] font-medium mb-1 flex items-center">
+                                    Consolidated Relief Allowance (CRA)
+                                    <InfoTooltip text="The CRA is a mandatory tax relief in Nigeria. It's the higher of 1% of gross income OR ₦200,000 plus 20% of gross income. This reduces your taxable income." />
+                                </p>
+                                <p className="text-[13px] font-semibold text-[#374151] mb-6 flex items-center">
+                                    Your CRA &ndash; {fmt(cra)}
+                                    <InfoTooltip text="This is calculated as the higher of: (a) 1% of gross income, or (b) ₦200,000 + 20% of gross income. The result is capped at 20% of your gross income." />
+                                </p>
+
+                                <div className="rounded-[16px] overflow-hidden">
+                                    <div className="grid grid-cols-3 px-5 py-3 bg-[#F9FAFB]">
+                                        <span className="text-[12px] font-bold text-[#9CA3AF] uppercase tracking-wide">Bracket</span>
+                                        <span className="text-[12px] font-bold text-[#9CA3AF] uppercase tracking-wide text-center">Rate</span>
+                                        <span className="text-[12px] font-bold text-[#9CA3AF] uppercase tracking-wide text-right">Tax</span>
+                                    </div>
+                                    <div className="px-5 divide-y divide-gray-50">
+                                        {brackets.map((b, i) => (
+                                            <div key={i} className="grid grid-cols-3 py-3">
+                                                <span className="text-[14px] font-medium text-[#374151]">{b.label}</span>
+                                                <span className="text-[14px] font-medium text-[#6B7280] text-center">{b.rate}</span>
+                                                <span className="text-[14px] font-bold text-[#0C0C0E] text-right">{fmt(b.tax)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="flex items-center justify-between px-5 py-4 bg-[#F9FAFB]">
+                                        <span className="text-[14px] font-bold text-[#374151]">Gross Tax</span>
+                                        <span className="text-[15px] font-extrabold text-[#0C0C0E]">{fmt(grossTax)}</span>
+                                    </div>
+                                </div>
+
+                                {/* Summary rows */}
+                                <div className="mt-6 space-y-0 divide-y divide-gray-50 rounded-[16px] overflow-hidden">
+                                    <div className="flex items-center justify-between px-5 py-4">
+                                        <span className="text-[14px] font-medium text-[#6B7280] flex items-center">
+                                            Total Income
+                                            <InfoTooltip text="The sum of all your income sources including salary, bonuses, commissions, freelance income, and other earnings before any deductions." />
+                                        </span>
+                                        <span className="text-[14px] font-bold text-[#0C0C0E]">{fmt(calculatedIncome.totalIncome)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between px-5 py-4">
+                                        <span className="text-[14px] font-medium text-[#6B7280] flex items-center">
+                                            Total Deductions
+                                            <InfoTooltip text="Approved deductions from your income such as pension contributions (8%), NHIS (5%), rent relief, and mortgage interest relief." />
+                                        </span>
+                                        <span className="text-[14px] font-bold text-[#0C0C0E]">{fmt(totalDeductions)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between px-5 py-4">
+                                        <span className="text-[14px] font-medium text-[#6B7280] flex items-center">
+                                            CRA
+                                            <InfoTooltip text="Consolidated Relief Allowance - a mandatory tax relief given to all Nigerian taxpayers, calculated as the higher of 1% of gross income or ₦200,000 + 20% of gross income." />
+                                        </span>
+                                        <span className="text-[14px] font-bold text-[#0C0C0E]">{fmt(cra)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between px-5 py-4">
+                                        <span className="text-[14px] font-medium text-[#6B7280] flex items-center">
+                                            Taxable Income
+                                            <InfoTooltip text="Your total income minus all deductions and CRA. This is the amount used to calculate your tax liability." />
+                                        </span>
+                                        <span className="text-[14px] font-bold text-[#0C0C0E]">{fmt(taxableIncome)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between px-5 py-4 bg-[#F9FAFB]">
+                                        <span className="text-[15px] font-extrabold text-[#0C0C0E] flex items-center">
+                                            Net Tax Due
+                                            <InfoTooltip text="The final amount of tax you owe based on Nigeria's progressive tax brackets. This is calculated by applying the tax rates to your taxable income." />
+                                        </span>
+                                        <span className="text-[16px] font-extrabold text-[#003787]">{fmt(grossTax)}</span>
+                                    </div>
+                                </div>
+                            </section>
+                        </>
+                    )}
                 </>
             ) : (
-                <div className="text-center py-12">
-                    <p className="text-[14px] text-taxable-gray">No tax data available yet. Add income and deductions to see your summary.</p>
+                <div className="text-center py-16">
+                    <p className="text-[14px] text-[#9CA3AF]">
+                        No tax data available yet. Add income and deductions to see your summary.
+                    </p>
+                    {onEdit && (
+                        <button
+                            onClick={() => onEdit('income-deductions', 'income')}
+                            className="mt-4 h-11 px-6 bg-[#003787] text-white text-[13px] font-bold rounded-2xl hover:bg-[#002b6d] transition-all"
+                        >
+                            Add Income & Deductions
+                        </button>
+                    )}
                 </div>
             )}
         </div>

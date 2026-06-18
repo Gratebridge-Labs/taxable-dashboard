@@ -308,7 +308,7 @@ export function BusinessCITContent({
                     const nextUnpaid = quarters.findIndex((_, i) => !paidQuarters.has(i) && !deferredQuarters.has(i));
 
                     return (
-                        <div className="max-w-[620px]">
+                        <div className="w-full max-w-[500px] mx-auto">
                             {/* Defer confirmation modal */}
                             {showDeferModal && deferModalQuarter !== null && (
                                 <div className="fixed inset-0 z-[200] flex items-center justify-center">
@@ -340,8 +340,9 @@ export function BusinessCITContent({
                             <h2 className="text-base font-bold text-[#0C0C0E] mb-1">Quarterly Assessments (2026)</h2>
                             <p className="text-[13px] text-[#6B7280] font-medium mb-6">Pay your estimated CIT in quarterly installments</p>
 
+                            <div className="space-y-10">
                             {/* Summary */}
-                            <div className="mb-5 space-y-2">
+                            <div className="space-y-2">
                                 <div className="flex items-center justify-between text-[13px]">
                                     <span className="text-[#6B7280] font-medium">Estimated annual profit</span>
                                     <span className="font-semibold text-[#0C0C0E]">{qFmt(profitNum)}</span>
@@ -357,7 +358,7 @@ export function BusinessCITContent({
                             </div>
 
                             {editingEstimate ? (
-                                <div className="flex items-center gap-3 mb-6">
+                                <div className="flex items-center gap-3">
                                     <input type="text" value={editEstimateVal}
                                         onChange={e => setEditEstimateVal(e.target.value.replace(/[^0-9.]/g, ''))}
                                         placeholder="Enter estimated profit"
@@ -369,19 +370,20 @@ export function BusinessCITContent({
                                 </div>
                             ) : (
                                 <button onClick={() => { setEditEstimateVal(estimatedProfit); setEditingEstimate(true); }}
-                                    className="flex items-center gap-1.5 text-[13px] font-bold text-[#003787] hover:opacity-80 mb-6">
+                                    className="flex items-center gap-1.5 text-[13px] font-bold text-[#003787] hover:opacity-80">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
                                     Edit Estimate
                                 </button>
                             )}
 
                             {/* Quarters table */}
-                            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden mb-6">
+                            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                                <div className="overflow-x-auto">
                                 <table className="w-full text-left text-[13px]">
                                     <thead className="bg-[#F9FAFB] border-b border-gray-100">
                                         <tr>
                                             {['Quarter', 'Due Date', 'Amount', 'Status'].map(h => (
-                                                <th key={h} className="px-5 py-3 font-bold text-[#6B7280] whitespace-nowrap">{h}</th>
+                                                <th key={h} className="px-5 py-3.5 font-semibold text-[#6B7280] whitespace-nowrap">{h}</th>
                                             ))}
                                         </tr>
                                     </thead>
@@ -391,10 +393,10 @@ export function BusinessCITContent({
                                             const isDeferred = deferredQuarters.has(i);
                                             const isPayable = i === nextUnpaid;
                                             return (
-                                                <tr key={q.label} className="hover:bg-[#FAFAFA] transition-colors">
-                                                    <td className="px-5 py-3.5 font-semibold text-[#0C0C0E]">{q.label}</td>
-                                                    <td className="px-5 py-3.5 text-[#6B7280]">{q.due}</td>
-                                                    <td className="px-5 py-3.5 font-semibold text-[#0C0C0E]">{qFmt(perQuarter)}</td>
+                                                <tr key={q.label} className="hover:bg-[#FAFAFA] cursor-pointer transition-colors">
+                                                    <td className="px-5 py-3.5 font-semibold text-[#0C0C0E] whitespace-nowrap">{q.label}</td>
+                                                    <td className="px-5 py-3.5 text-[#6B7280] whitespace-nowrap">{q.due}</td>
+                                                    <td className="px-5 py-3.5 font-medium text-[#374151] whitespace-nowrap">{qFmt(perQuarter)}</td>
                                                     <td className="px-5 py-3.5">
                                                         {isPaid ? (
                                                             <span className="flex items-center gap-1.5 text-[#16A34A] font-bold text-[12px]">
@@ -430,10 +432,11 @@ export function BusinessCITContent({
                                         })}
                                     </tbody>
                                 </table>
+                                </div>
                             </div>
 
                             {/* Totals */}
-                            <div className="grid grid-cols-2 gap-8 mb-4">
+                            <div className="grid grid-cols-2 gap-8">
                                 <div>
                                     <p className="text-[12px] font-semibold text-[#6B7280] mb-1">Total paid ({paidPct}%)</p>
                                     <p className="text-[26px] font-bold text-[#0C0C0E]">{qFmt(totalPaid)}</p>
@@ -442,6 +445,7 @@ export function BusinessCITContent({
                                     <p className="text-[12px] font-semibold text-[#6B7280] mb-1">Remaining</p>
                                     <p className="text-[26px] font-bold text-[#0C0C0E]">{qFmt(remaining)}</p>
                                 </div>
+                            </div>
                             </div>
 
                             {/* Bottom notice + CTA */}
@@ -510,20 +514,24 @@ export function BusinessCITContent({
 
                 {/* ── Step 2: Financial Inputs ── */}
                 {subSection === 'file-returns' && step === 'form' && (
-                    <div className="max-w-[720px]">
+                    <div className="w-full max-w-[500px] mx-auto">
+                        <div className="space-y-10">
                         {/* Revenue */}
+                        <div>
                         <h2 className="text-sm font-bold text-[#0C0C0E] mb-4">Revenue</h2>
-                        <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-6">
+                        <div className="bg-white border border-gray-200 rounded-2xl p-[12px]">
                             <div className="grid grid-cols-3 gap-4">
                                 <Field label="Total revenue" tip="All revenue earned from your main business activities." value={totalRevenue} onChange={setTotalRevenue} />
                                 <Field label="Other income" tip="Non-operating income e.g. interest earned, dividend received." value={otherIncome} onChange={setOtherIncome} />
                                 <Field label="Total Revenue" tip="Automatically calculated: Total revenue + Other income." value={totalRev > 0 ? fmt(totalRev) : ''} readOnly placeholder="N0" />
                             </div>
                         </div>
+                        </div>
 
                         {/* Expenses */}
+                        <div>
                         <h2 className="text-sm font-bold text-[#0C0C0E] mb-4">Expenses</h2>
-                        <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-6">
+                        <div className="bg-white border border-gray-200 rounded-2xl p-[12px]">
                             <div className="grid grid-cols-2 gap-4">
                                 <Field label="Cost of goods sold (COGS)" tip="Direct costs of producing goods/services sold." value={cogs} onChange={setCogs} />
                                 <Field label="Operating expenses" tip="Day-to-day running costs: salaries, rent, utilities." value={opex} onChange={setOpex} />
@@ -532,10 +540,12 @@ export function BusinessCITContent({
                                 <Field label="Other expenses" tip="Any other allowable business expenses not listed above." value={otherExpenses} onChange={setOtherExpenses} />
                             </div>
                         </div>
+                        </div>
 
                         {/* Financial statements */}
+                        <div>
                         <h2 className="text-sm font-bold text-[#0C0C0E] mb-4">Financial statements</h2>
-                        <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-7">
+                        <div className="bg-white border border-gray-200 rounded-2xl p-[12px]">
                             <div className="flex items-center justify-between gap-4 p-3 border border-dashed border-gray-200 rounded-xl">
                                 <div className="flex items-center gap-2.5">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2">
@@ -549,6 +559,8 @@ export function BusinessCITContent({
                                 <button className="h-8 px-4 border border-gray-300 rounded-lg text-[12px] font-bold text-[#0C0C0E] hover:bg-gray-50 transition-colors">Upload</button>
                             </div>
                         </div>
+                        </div>
+                        </div>
 
                         <button onClick={() => setSubSection('tax-adjustment')} className="h-12 px-8 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[14px]">
                             Continue to Tax Adjustments
@@ -558,16 +570,17 @@ export function BusinessCITContent({
 
                 {/* ── Tax Adjustment ── */}
                 {subSection === 'tax-adjustment' && (
-                    <div className="max-w-[620px]">
+                    <div className="w-full max-w-[500px] mx-auto">
                         <h2 className="text-base font-bold text-[#0C0C0E] mb-1">Tax Adjustments</h2>
                         <p className="text-[13px] text-[#6B7280] font-medium mb-6">Adjust your accounting profit to get taxable profit</p>
 
-                        <div className="mb-4">
+                        <div className="space-y-10">
+                        <div>
                             <p className="text-[12px] font-semibold text-[#6B7280] mb-1">Accounting Profit</p>
                             <p className="text-[28px] font-bold text-[#0C0C0E]">{fmt(accountingProfit)}</p>
                         </div>
 
-                        <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-6 space-y-5">
+                        <div className="bg-white border border-gray-200 rounded-2xl p-[12px] space-y-5">
                             {/* Add back */}
                             <div>
                                 <p className="text-[13px] font-bold text-[#0C0C0E] mb-3">Add back</p>
@@ -602,9 +615,10 @@ export function BusinessCITContent({
                             </div>
                         </div>
 
-                        <div className="mb-7">
+                        <div>
                             <p className="text-[12px] font-semibold text-[#6B7280] mb-1">Taxable Profit</p>
                             <p className="text-[28px] font-bold text-[#0C0C0E]">{fmt(taxableProfit)}</p>
+                        </div>
                         </div>
 
                         <button onClick={() => setSubSection('wht-credits')} className="h-12 px-8 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[14px]">
@@ -615,16 +629,19 @@ export function BusinessCITContent({
 
                 {/* ── WHT Credits ── */}
                 {subSection === 'wht-credits' && (
-                    <div className="max-w-[620px]">
+                    <div className="w-full max-w-[500px] mx-auto">
                         <h2 className="text-base font-bold text-[#0C0C0E] mb-1">WHT Credits</h2>
                         <p className="text-[13px] text-[#6B7280] font-medium leading-relaxed mb-6">
                             WHT is tax your clients already paid to FIRS on your behalf.<br />
                             You can deduct this from your final tax bill.
                         </p>
+
+                        <div className="space-y-10">
+                        <div>
                         <p className="text-[13px] font-bold text-[#0C0C0E] mb-3">Upload your WHT credit notes</p>
 
                         {whtCredits.map((credit, idx) => (
-                            <div key={idx} className="bg-white border border-gray-200 rounded-2xl p-5 mb-4">
+                            <div key={idx} className="bg-white border border-gray-200 rounded-2xl p-[12px] mb-4">
                                 <div className="space-y-3">
                                     {/* Credit Note Number */}
                                     <div className="flex items-center justify-between gap-4">
@@ -740,10 +757,12 @@ export function BusinessCITContent({
 
                         <button
                             onClick={() => setWhtCredits(prev => [...prev, { creditNoteNo: '', issuerName: '', issuerTIN: '', whtType: 'Select', whtRate: 'Select', grossAmount: '', whtAmount: '', dateIssued: '', paymentRef: '' }])}
-                            className="flex items-center gap-1.5 text-[13px] font-bold text-[#003787] hover:opacity-80 transition-opacity mb-7">
+                            className="flex items-center gap-1.5 text-[13px] font-bold text-[#003787] hover:opacity-80 transition-opacity">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
                             Upload Another WHT Credit Note
                         </button>
+                        </div>
+                        </div>
 
                         <button onClick={() => setSubSection('review')} className="h-12 px-8 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[14px]">
                             Continue to Review
@@ -753,10 +772,11 @@ export function BusinessCITContent({
 
                 {/* ── Review ── */}
                 {subSection === 'review' && (
-                    <div className="max-w-[560px]">
+                    <div className="w-full max-w-[500px] mx-auto">
                         <h2 className="text-base font-bold text-[#0C0C0E] mb-6">Your CIT calculation for 2025</h2>
 
-                        <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
+                        <div className="space-y-10">
+                        <div className="bg-white border border-gray-200 rounded-2xl p-[12px]">
                             <LedgerRow label="Revenue" value={fmt(totalRev)} />
                             <LedgerRow label="Expenses" value={`-${fmt(totalExp)}`} />
                             <LedgerRow label="NHF (2.5%)" value={`-${fmt(nhf)}`} />
@@ -775,6 +795,7 @@ export function BusinessCITContent({
                             <LedgerRow label="WHT Credits" value={`-${fmt(totalWHTCredits)}`} indent />
                             <LedgerRow label="Quarterly payments" value={`-₦0`} indent />
                             <LedgerRow label="Net Tax Payable" value={fmt(netTaxPayable)} bold />
+                        </div>
                         </div>
 
                         <div className="flex gap-3">

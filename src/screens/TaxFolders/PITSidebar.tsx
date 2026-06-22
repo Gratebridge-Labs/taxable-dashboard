@@ -70,50 +70,51 @@ export const PITSidebar = ({
             </button>
 
             {/* Sidebar Navigation Container */}
-            <div className="bg-white rounded-3xl p-4 border border-[#F5F5F5] space-y-1">
+            <div className="bg-white rounded-[20px] p-[8px] border-[0.6px] border-neutral-100 flex flex-col     gap-[2px]">
+                <span className="text-[13px] font-medium text-neutral-400 px-[8px] pt-[4px] pb-[4px]">Select</span>
                 <button
                     onClick={() => { setActiveSection('personal-info'); setMobileSidebarOpen(false); }}
-                    className={`w-full flex items-center justify-between px-2.5 py-2.5 rounded-2xl transition-all ${
-                        activeSection === 'personal-info' ? 'bg-[#F8FAFC]' : 'hover:bg-gray-50'
+                    className={`w-full flex items-center justify-between px-[8px] py-[12px] rounded-[10px] transition-all ${
+                        activeSection === 'personal-info' ? 'bg-neutral-50' : 'hover:bg-gray-50'
                     }`}
                 >
                     <div className="flex items-center gap-3">
                         <div className={personalInfoComplete || activeSection === 'personal-info' ? '' : 'opacity-40 grayscale'}>
                             <FolderIcon size={20} />
                         </div>
-                        <span className={`text-[15px] font-semibold ${activeSection === 'personal-info' || personalInfoComplete ? 'text-[#262626]' : 'text-[#737373]'}`} style={{ fontFamily: 'Archivo' }}>Personal Information</span>
+                        <span className={`text-[13px] ${activeSection === 'personal-info' ? 'font-semibold' : 'font-medium'} ${activeSection === 'personal-info' || personalInfoComplete ? 'text-neutral-800' : 'text-neutral-400'}`}>Personal Information</span>
                     </div>
-                    <ChevronRight size={16} className={activeSection === 'personal-info' ? 'text-[#262626]' : 'text-[#737373]'} />
+                    {activeSection === 'personal-info' && <ChevronRight size={16} className="text-neutral-800" />}
                 </button>
 
                 <button
                     onClick={() => { setActiveSection('income-deductions'); setIncomeSubTab(incomeSubTab); setMobileSidebarOpen(false); }}
-                    className={`w-full flex items-center justify-between px-2.5 py-2.5 rounded-2xl transition-all ${
-                        activeSection === 'income-deductions' ? 'bg-[#F8FAFC]' : 'hover:bg-gray-50'
+                    className={`w-full flex items-center justify-between px-[8px] py-[12px] rounded-[10px] transition-all ${
+                        activeSection === 'income-deductions' ? 'bg-neutral-50' : 'hover:bg-gray-50'
                     }`}
                 >
                     <div className="flex items-center gap-3">
                         <div className={incomeDeductionsComplete || activeSection === 'income-deductions' ? '' : 'opacity-40 grayscale'}>
                             <FolderIcon size={20} />
                         </div>
-                        <span className={`text-[15px] font-semibold ${activeSection === 'income-deductions' || incomeDeductionsComplete ? 'text-[#262626]' : 'text-[#737373]'}`} style={{ fontFamily: 'Archivo' }}>Income &amp; Deductions</span>
+                        <span className={`text-[13px] ${activeSection === 'income-deductions' ? 'font-semibold' : 'font-medium'} ${activeSection === 'income-deductions' || incomeDeductionsComplete ? 'text-neutral-800' : 'text-neutral-400'}`}>Income &amp; Deductions</span>
                     </div>
-                    <ChevronRight size={16} className={activeSection === 'income-deductions' ? 'text-[#262626]' : 'text-[#737373]'} />
+                    {activeSection === 'income-deductions' && <ChevronRight size={16} className="text-neutral-800" />}
                 </button>
 
                 <button
                     onClick={() => { setActiveSection('review'); setMobileSidebarOpen(false); }}
-                    className={`w-full flex items-center justify-between px-2.5 py-2.5 rounded-2xl transition-all ${
-                        activeSection === 'review' ? 'bg-[#F8FAFC]' : 'hover:bg-gray-50'
+                    className={`w-full flex items-center justify-between px-[8px] py-[12px] rounded-[10px] transition-all ${
+                        activeSection === 'review' ? 'bg-neutral-50' : 'hover:bg-gray-50'
                     }`}
                 >
                     <div className="flex items-center gap-3">
                         <div className={reviewComplete || activeSection === 'review' ? '' : 'opacity-40 grayscale'}>
                             <FolderIcon size={20} />
                         </div>
-                        <span className={`text-[15px] font-semibold ${activeSection === 'review' || reviewComplete ? 'text-[#262626]' : 'text-[#737373]'}`} style={{ fontFamily: 'Archivo' }}>Review &amp; File</span>
+                        <span className={`text-[13px] ${activeSection === 'review' ? 'font-semibold' : 'font-medium'} ${activeSection === 'review' || reviewComplete ? 'text-neutral-800' : 'text-neutral-400'}`}>Review &amp; File</span>
                     </div>
-                    <ChevronRight size={16} className={activeSection === 'review' ? 'text-[#262626]' : 'text-[#737373]'} />
+                    {activeSection === 'review' && <ChevronRight size={16} className="text-neutral-800" />}
                 </button>
             </div>
 

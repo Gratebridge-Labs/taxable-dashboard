@@ -1,6 +1,7 @@
 'use client';
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useTaxableApi } from '@/lib';
+import { useUser } from '@/contexts/UserContext';
 import type { Profile } from '@/types/api';
 
 interface ProfileContextType {
@@ -24,6 +25,7 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
     const [error, setError] = useState<string | null>(null);
 
     const { getProfileList, getProfile } = useTaxableApi();
+    const { token } = useUser();
 
     const clearError = useCallback(() => setError(null), []);
 
@@ -31,54 +33,52 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
         setLoading(true);
         setError(null);
         try {
-            console.log('[ProfileContext] Fetching profiles...');
             const response = await getProfileList();
-            console.log('[ProfileContext] Profile list response:', response);
-            
-            // "Profile not found" means no profiles exist - not an error
+
             if (response.success && response.data.profiles) {
-                console.log('[ProfileContext] Profiles loaded:', response.data.profiles.length);
                 setProfiles(response.data.profiles);
             } else if (response.message === 'Profile not found') {
-                console.log('[ProfileContext] No profiles exist for this user');
                 setProfiles([]);
-            } else {
-                console.log('[ProfileContext] No profiles or failed response');
-                setProfiles([]);
-            }
-        } catch (err: any) {
-            // Only set error if it's not a "no profiles" situation
-            if (err.message !== 'Profile not found') {
-                setError(err.message || 'Failed to fetch profiles');
             } else {
                 setProfiles([]);
             }
-            console.error('[ProfileContext] Error:', err);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Failed to fetch profiles';
+            if (message !== 'Profile not found') {
+                setError(message);
+            } else {
+                setProfiles([]);
+            }
+            console.error('[ProfileContext] Error:', err instanceof Error ? err.message : 'Unknown error');
         } finally {
             setLoading(false);
         }
     }, [getProfileList]);
 
     const fetchProfile = useCallback(async (profileId: string): Promise<Profile | null> => {
-        console.log('[ProfileContext] fetchProfile called with:', profileId);
         setLoading(true);
         setError(null);
         try {
             const profile = await getProfile(profileId);
-            console.log('[ProfileContext] getProfile returned:', profile);
             if (profile) {
                 setCurrentProfile(profile);
                 return profile;
             }
             return null;
-        } catch (err: any) {
-            setError(err.message || 'Failed to fetch profile');
-            console.error('[ProfileContext] Failed to fetch profile:', err);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Failed to fetch profile');
+            console.error('[ProfileContext] Failed to fetch profile:', err instanceof Error ? err.message : 'Unknown error');
             return null;
         } finally {
             setLoading(false);
         }
     }, [getProfile]);
+
+    useEffect(() => {
+        if (token) {
+            fetchProfiles();
+        }
+    }, [token, fetchProfiles]);
 
     return (
         <ProfileContext.Provider

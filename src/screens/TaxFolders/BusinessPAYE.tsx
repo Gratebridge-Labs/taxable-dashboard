@@ -96,7 +96,7 @@ const AddStaffModal = ({ onClose, onAdd }: { onClose: () => void; onAdd: (s: Sta
 
 // ── Filing Modal ──────────────────────────────────────────────────────────────
 const FilingModal = ({
-    month, onClose, onFile,
+    month: _month, onClose, onFile,
 }: { month: string; onClose: () => void; onFile: () => void }) => {
     const [method, setMethod] = useState<'download' | 'taxable' | 'accountant'>('download');
 

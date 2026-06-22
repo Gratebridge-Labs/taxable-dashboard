@@ -1,6 +1,5 @@
 'use client';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
 import { ChevronRight } from 'lucide-react';
 import { FolderIcon } from './PITComponents';

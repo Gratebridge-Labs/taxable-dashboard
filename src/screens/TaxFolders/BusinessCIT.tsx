@@ -268,19 +268,13 @@ export function BusinessCITContent({
         { id: 'software' as const, label: 'Connect accounting software (QuickBooks, Xero, Zoho)' },
     ];
 
-    const breadcrumb = subSection === 'quarterly' ? 'Quarterly Assessments'
-        : subSection === 'file-returns' ? 'File Annual Returns'
-            : subSection === 'tax-adjustment' ? 'Tax Adjustment'
-                : subSection === 'wht-credits' ? 'WHT Credits'
-                    : 'Review';
-
     return (
         <div className="flex items-start gap-8 w-full">
             {showFilingModal && <FilingModal onClose={() => setShowFilingModal(false)} onFile={() => setShowFilingModal(false)} />}
             {!activeSubMenu && (
                 <LeftSidebar
                     activeSubSection={subSection}
-                    onSubSection={s => setSubSection(s as any)}
+                    onSubSection={s => setSubSection(s as 'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review')}
                     router={router}
                 />
             )}
@@ -795,7 +789,6 @@ export function BusinessCITContent({
 
 // ── Standalone page wrapper (keeps old route working) ───────────────────
 export default function BusinessCIT() {
-    const router = useRouter();
     return (
         <div className="min-h-screen bg-[#FAFAFA] font-sans pb-20">
             <DashboardHeader />

@@ -1,13 +1,12 @@
 "use client";
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import OnboardingLayout from '@/components/OnboardingLayout/OnboardingLayout';
 import LoadingScreen from '@/screens/Onboarding/LoadingScreen';
 import { useApi } from '@/hooks/useApi';
 
-const InputField = ({ label, placeholder, type = "password", value, onChange }: { label: string; placeholder: string; type?: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => {
+const InputField = ({ label, placeholder, type: _type = "password", value, onChange }: { label: string; placeholder: string; type?: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => {
     const [showPassword, setShowPassword] = useState(false);
 
     return (

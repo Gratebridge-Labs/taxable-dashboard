@@ -1,4 +1,3 @@
-'use client';
 import { API_BASE_URL, TAXABLE_ENDPOINTS } from './api-endpoints';
 import type {
   Profile,
@@ -13,9 +12,8 @@ import type {
   TaxSummaryResponse,
   CalculateTaxResponse,
   CalculationHistoryResponse,
-  CreatePaymentLinkRequest,
-  CreatePaymentLinkResponse,
   CreateSubscriptionLinkRequest,
+  CreatePaymentLinkResponse,
   SubscriptionStatusResponse,
   VerifyDeductionRequest,
   DeductionVerificationResponse,
@@ -55,22 +53,21 @@ class TaxableApiService {
 
   private async handleResponse<T>(response: Response): Promise<T> {
     const data = await response.json();
-    
-    // For "Profile not found" - treat as empty list, not error
+
     if (data.message === 'Profile not found') {
       return { success: true, data: { profiles: [] }, message: 'Profile not found' } as unknown as T;
     }
-    
+
     if (!response.ok || !data.success) {
       const errorMessage = data.message || `Request failed with status ${response.status}`;
       console.error('[TaxableApi] Request failed:', {
         status: response.status,
         message: data.message,
-        errors: data.errors // Some APIs return specific validation errors here
+        errors: data.errors,
       });
       throw new Error(errorMessage);
     }
-    
+
     return data;
   }
 
@@ -153,7 +150,7 @@ class TaxableApiService {
     if (params?.month) queryParams.set('month', params.month.toString());
     if (params?.incomeType) queryParams.set('incomeType', params.incomeType);
     if (params?.category) queryParams.set('category', params.category);
-    
+
     const url = `${this.baseUrl}${TAXABLE_ENDPOINTS.INCOME.LIST(profileId)}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
     const response = await fetch(url, {
       method: 'GET',
@@ -185,7 +182,7 @@ class TaxableApiService {
       method: 'DELETE',
       headers: this.getHeaders(token),
     });
-    return this.handleResponse<any>(response);
+    return this.handleResponse<{ success: boolean; message: string; data: { deletedRecord: { id: string; incomeType: string; amount: number; period: { year: number; month: number } } } }>(response);
   }
 
   async getIncomeSummary(token: string, profileId: string): Promise<IncomeSummaryResponse> {
@@ -197,7 +194,7 @@ class TaxableApiService {
   }
 
   async getTaxSummary(token: string, profileId: string, year?: number): Promise<TaxSummaryResponse> {
-    const url = year 
+    const url = year
       ? `${this.baseUrl}${TAXABLE_ENDPOINTS.CALCULATIONS.SUMMARY(profileId)}?year=${year}`
       : `${this.baseUrl}${TAXABLE_ENDPOINTS.CALCULATIONS.SUMMARY(profileId)}`;
     const response = await fetch(url, {
@@ -271,7 +268,7 @@ class TaxableApiService {
   }
 
   async getCalculationBreakdown(token: string, profileId: string, year?: number): Promise<CalculateTaxResponse> {
-    const url = year 
+    const url = year
       ? `${this.baseUrl}${TAXABLE_ENDPOINTS.CALCULATIONS.BREAKDOWN(profileId)}?year=${year}`
       : `${this.baseUrl}${TAXABLE_ENDPOINTS.CALCULATIONS.BREAKDOWN(profileId)}`;
     const response = await fetch(url, {
@@ -345,26 +342,19 @@ class TaxableApiService {
   }
 
   async getProfileList(token: string): Promise<ProfileListResponse> {
-    console.log('[TaxableApi] getProfileList called');
-    console.log('[TaxableApi] Token:', token ? 'present' : 'MISSING');
-    console.log('[TaxableApi] Full URL:', `${this.baseUrl}${TAXABLE_ENDPOINTS.PROFILE.LIST}`);
     const response = await fetch(`${this.baseUrl}${TAXABLE_ENDPOINTS.PROFILE.LIST}`, {
       method: 'GET',
       headers: this.getHeaders(token),
     });
-    console.log('[TaxableApi] Response status:', response.status);
     return this.handleResponse<ProfileListResponse>(response);
   }
 
   async getProfile(token: string, profileId: string): Promise<Profile> {
-    console.log('[TaxableApi] getProfile called with profileId:', profileId);
-    console.log('[TaxableApi] Full URL:', `${this.baseUrl}${TAXABLE_ENDPOINTS.PROFILE.GET(profileId)}`);
     const response = await fetch(`${this.baseUrl}${TAXABLE_ENDPOINTS.PROFILE.GET(profileId)}`, {
       method: 'GET',
       headers: this.getHeaders(token),
     });
     const result = await this.handleResponse<{ success: boolean; data: { profile: Profile } }>(response);
-    console.log('[TaxableApi] getProfile result:', JSON.stringify(result, null, 2));
     return result.data.profile;
   }
 
@@ -382,13 +372,10 @@ class TaxableApiService {
       method: 'GET',
       headers: this.getHeaders(token),
     });
-    const result = await this.handleResponse<any>(response);
+    const result = await this.handleResponse<Record<string, unknown> & { success: boolean; data?: Deduction[] | Record<string, unknown>; count?: number }>(response);
 
-    // Backend may return either:
-    // A) { success: true, data: Deduction[], count: number }
-    // B) { success: true, data: { deductions: Deduction[], ... } }
     if (result?.success && Array.isArray(result.data)) {
-      const deductions: Deduction[] = result.data;
+      const deductions: Deduction[] = result.data as Deduction[];
       const y = typeof year === 'number' ? year : deductions[0]?.year;
       return {
         success: true,
@@ -404,14 +391,12 @@ class TaxableApiService {
       } as DeductionListResponse;
     }
 
-    return result as DeductionListResponse;
+    return result as unknown as DeductionListResponse;
   }
 
   async uploadFile(token: string, profileId: string, file: File, category?: string, description?: string): Promise<UploadResponse> {
-    // Step 1: get an uploadId from the upload-session endpoint
     const session = await this.createUploadSession(token, profileId);
 
-    // Step 2: upload the file with the uploadId
     const formData = new FormData();
     formData.append('file', file);
     formData.append('uploadId', session.uploadId);
@@ -420,7 +405,7 @@ class TaxableApiService {
 
     const response = await fetch(`${this.baseUrl}${TAXABLE_ENDPOINTS.UPLOAD}`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` }, // no Content-Type — browser sets multipart boundary
+      headers: { 'Authorization': `Bearer ${token}` },
       body: formData,
     });
     return this.handleResponse<UploadResponse>(response);
@@ -428,8 +413,7 @@ class TaxableApiService {
 
   async batchCreateDeductions(token: string, data: BatchDeductionRequest): Promise<BatchDeductionResponse> {
     const results: Deduction[] = [];
-    
-    // Since the batch endpoint is not available, we loop through individual creations
+
     for (const item of data.deductions) {
       const mappedType =
         item.deductionType === 'rent_relief' ? 'rent_relief'
@@ -459,7 +443,7 @@ class TaxableApiService {
           documentUrl: item.documentUrl
         }),
       });
-      
+
       const result = await this.handleResponse<{ success: boolean; data: Deduction }>(response);
       if (result.success && result.data) {
         results.push(result.data);

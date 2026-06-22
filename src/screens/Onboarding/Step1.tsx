@@ -1,19 +1,10 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import OnboardingLayout from '@/components/OnboardingLayout/OnboardingLayout';
 import ProgressBar from '@/components/Onboarding/ProgressBar';
 import OptionCard from '@/components/Onboarding/OptionCard';
 import { useOnboarding } from '@/contexts/OnboardingContext';
-
-const FILING_TYPES: Record<string, 'Individual' | 'Business'> = {
-    'Individual / Freelancer': 'Individual',
-    'Joint Filing (Spousal)': 'Individual',
-    'Corporate Entity (LLC/Ltd)': 'Business',
-    'Registered Enterprise': 'Business',
-    'Tax Practitioner / Accountant': 'Business',
-    'Trust or Estate': 'Business',
-};
 
 export default function Step1() {
     const { data, setFilingType } = useOnboarding();

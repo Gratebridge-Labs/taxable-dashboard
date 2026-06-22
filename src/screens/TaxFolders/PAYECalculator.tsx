@@ -3,15 +3,6 @@ import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
 
-// ── Nigerian PAYE Tax Bands (2026 Reform) ────────────────────────────────────
-// Annual thresholds
-const TAX_BANDS = [
-    { upTo: 800_000, rate: 0.00, label: 'First ₦800k/year (₦66,667/month): 0%' },
-    { upTo: 2_200_000, rate: 0.15, label: 'Next ₦2.2M: 15%' },
-    { upTo: 9_000_000, rate: 0.18, label: 'Next ₦9M: 18%' },
-    { upTo: Infinity, rate: 0.25, label: 'Above ₦12M: 25%' },
-];
-
 // Actually use Old rates which match the screenshot better
 const PAYE_BANDS = [
     { limit: 800_000, rate: 0.00 },
@@ -34,7 +25,6 @@ function calcPAYE(annualTaxable: number): {
         const slice = Math.min(remaining, band.limit - prevLimit);
         const tax = slice * band.rate;
         total += tax;
-        const monthlySlice = (band.limit - prevLimit) / 12;
         const monthlyLimit = prevLimit === 0
             ? `First ₦${fmtShort(band.limit / 12)}/month: ${(band.rate * 100).toFixed(0)}%`
             : `Next portion: ${(band.rate * 100).toFixed(0)}%`;
@@ -57,38 +47,6 @@ function fmtN(n: number): string {
     return `₦${Math.round(n).toLocaleString()}`;
 }
 
-// ── Input field ──────────────────────────────────────────────────────────────
-const AmountInput = ({
-    placeholder = '₦0',
-    value,
-    onChange,
-    suffix,
-    disabled,
-}: {
-    placeholder?: string;
-    value: string;
-    onChange: (v: string) => void;
-    suffix?: string;
-    disabled?: boolean;
-}) => {
-    return (
-        <div className="flex items-center gap-2">
-            <input
-                type="text"
-                placeholder={placeholder}
-                value={value}
-                disabled={disabled}
-                onChange={e => {
-                    const raw = e.target.value.replace(/[^0-9.]/g, '');
-                    onChange(raw);
-                }}
-                className={`flex-1 h-10 bg-transparent text-[14px] font-bold text-[#0C0C0E] placeholder:text-[#9CA3AF] border-none outline-none ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
-            />
-            {suffix && <span className="text-[12px] font-medium text-[#9CA3AF] flex-shrink-0">{suffix}</span>}
-        </div>
-    );
-};
-
 // ── Deduction row ─────────────────────────────────────────────────────────────
 const DeductionRow = ({
     label,
@@ -98,7 +56,7 @@ const DeductionRow = ({
     amount,
     onAmountChange,
     suffix,
-    disabled,
+    disabled: _disabled,
     autoCalc,
 }: {
     label: string;
@@ -186,8 +144,6 @@ export default function PAYECalculator() {
     const gross = parseFloat(grossSalary.replace(/,/g, '')) || 0;
     const bonus = parseFloat(bonuses.replace(/,/g, '')) || 0;
     const monthlyGross = gross + bonus;
-    const annualGross = monthlyGross * 12;
-
     const pensionAmt = pensionOn ? Math.round(monthlyGross * 0.08) : 0;
     const nhfAmt = nhfOn ? Math.round(monthlyGross * 0.025) : 0;
     const lifeAmt = lifeInsOn ? (parseFloat(lifeInsAmt.replace(/,/g, '')) || 0) : 0;

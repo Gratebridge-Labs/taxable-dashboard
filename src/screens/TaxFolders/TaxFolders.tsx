@@ -86,7 +86,7 @@ export default function TaxFolders() {
     const { user } = useUser();
     const { profiles, loading: profilesLoading, fetchProfiles } = useProfile();
     const { getTaxSummary } = useTaxableApi();
-    const [taxSummaries, setTaxSummaries] = useState<Record<string, any>>({});
+    const [taxSummaries, setTaxSummaries] = useState<Record<string, unknown>>({});
     const [summariesLoading, setSummariesLoading] = useState(false);
 
     useEffect(() => {
@@ -98,7 +98,7 @@ export default function TaxFolders() {
             if (profiles.length === 0) return;
             
             setSummariesLoading(true);
-            const summaries: Record<string, any> = {};
+            const summaries: Record<string, unknown> = {};
             
             for (const profile of profiles) {
                 try {
@@ -140,7 +140,7 @@ export default function TaxFolders() {
         return statusMap[filingStatus] || 'none';
     };
 
-    const getStatusText = (profile: Profile, summary: any) => {
+    const getStatusText = (profile: Profile, _summary: unknown) => {
         if (profile.filingStatus === 'filed') {
             return 'Tax Filed';
         }
@@ -156,6 +156,7 @@ export default function TaxFolders() {
         return 'Not started';
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const formatTaxAmount = (profile: Profile, summary: any) => {
         if (!summary?.taxSummary) return 'Calculating...';
         const { estimatedAnnualTax, isRefund } = summary.taxSummary;

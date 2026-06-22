@@ -63,24 +63,6 @@ const StatCard = ({ label, value }: { label: string; value: string }) => (
 
 const SectionDivider = () => <div className="border-t border-gray-100 my-10" />;
 
-const BracketRow = ({
-    label,
-    rate,
-    value,
-    bold,
-}: {
-    label: string;
-    rate?: string;
-    value: string;
-    bold?: boolean;
-}) => (
-    <div className={`flex items-center justify-between py-3 border-b border-gray-50 last:border-b-0 ${bold ? 'border-t border-gray-200 mt-2 pt-4' : ''}`}>
-        <span className={`text-[14px] ${bold ? 'font-bold text-[#0C0C0E]' : 'font-medium text-[#6B7280]'}`}>{label}</span>
-        {rate && <span className="text-[14px] font-medium text-[#6B7280] w-16 text-center">{rate}</span>}
-        <span className={`text-[14px] ${bold ? 'font-extrabold text-[#0C0C0E]' : 'font-bold text-[#0C0C0E]'}`}>{value}</span>
-    </div>
-);
-
 // ── Main component ───────────────────────────────────────────────────────────
 
 export default function ReviewAndFile({
@@ -88,7 +70,7 @@ export default function ReviewAndFile({
     filingPreference = 'annual',
     year = 2026,
     onEdit,
-    monthlyTaxByMonth = {},
+    monthlyTaxByMonth: _monthlyTaxByMonth = {},
 }: ReviewAndFileProps) {
     const searchParams = useSearchParams();
     const profileId = propProfileId || searchParams.get('profileId') || searchParams.get('id') || '';
@@ -105,8 +87,8 @@ export default function ReviewAndFile({
     const [incomeData, setIncomeData] = useState<any[][]>([]);
     const [deductions, setDeductions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [paymentsByMonth, setPaymentsByMonth] = useState<Record<number, any>>({});
-    const [paidMonths, setPaidMonths] = useState<Set<number>>(new Set());
+    const [, setPaymentsByMonth] = useState<Record<number, any>>({});
+    const [, setPaidMonths] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         const fetchData = async () => {

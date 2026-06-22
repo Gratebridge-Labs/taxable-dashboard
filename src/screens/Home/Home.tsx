@@ -177,7 +177,7 @@ export default function Home() {
     const isInitialLoading = authLoading || profilesLoading;
 
     // Kept so SetupSidebar can notify us of newly created profiles
-    const handleNewProfileCreated = useCallback(() => {
+    const _handleNewProfileCreated = useCallback(() => {
         fetchProfiles();
     }, [fetchProfiles]);
 
@@ -203,6 +203,7 @@ export default function Home() {
     const [resumeProfileId, setResumeProfileId] = useState<string | null>(null);
     const [resumeData, setResumeData] = useState<{ year?: string; category?: string } | undefined>(undefined);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleFolderClick = (profile: any) => {
         if (profile.profileType === 'Individual') {
             // Determine which section to resume from based on profile progress
@@ -299,6 +300,7 @@ export default function Home() {
 
                         {/* Dynamic Tax Filings Sections */}
                         {Object.entries(
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             profiles.reduce((acc: Record<string, any[]>, profile) => {
                                 const year = profile.year || '2026';
                                 if (!acc[year]) acc[year] = [];

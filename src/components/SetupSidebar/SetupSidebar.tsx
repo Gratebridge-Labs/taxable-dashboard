@@ -1,10 +1,10 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import LoadingScreen from '@/screens/Onboarding/LoadingScreen';
 import { useTaxableApi } from '@/lib';
 import { useProfile } from '@/contexts/ProfileContext';
+import type { ProfileCompleteRequest } from '@/types/api';
 
 interface SetupSidebarProps {
     isOpen: boolean;
@@ -139,7 +139,7 @@ const CheckboxOption = ({
 );
 
 // ── Divider ──────────────────────────────────────────────────────────────────
-const Divider = () => <div className="w-full h-[1px] bg-gray-100" />;
+const _Divider = () => <div className="w-full h-[1px] bg-gray-100" />;
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfileId, initialData }: SetupSidebarProps) {
@@ -151,7 +151,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [loadingStep, setLoadingStep] = useState<0 | 1 | 2 | null>(null);
     const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
-    const [shouldRedirectAfterLoading, setShouldRedirectAfterLoading] = useState(true);
+    const [_shouldRedirectAfterLoading, setShouldRedirectAfterLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     // Step 0 state
@@ -160,7 +160,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
     const [filingIntent, setFilingIntent] = useState<'returns' | 'paye'>('returns');
     const [taxYear, setTaxYear] = useState<'2026' | '2025'>('2026');
     // Business-specific: which services they need
-    const [businessServices, setBusinessServices] = useState<string[]>([]);
+    const [_businessServices, setBusinessServices] = useState<string[]>([]);
 
     // Step 1 state — income sources
     const [selectedSources, setSelectedSources] = useState<string[]>([]);
@@ -229,9 +229,9 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
             console.log('[SetupSidebar] Profile created:', profile);
             setActiveProfileId(profile.profileId);
             setStep(1);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('[SetupSidebar] Failed to create profile:', err);
-            setError(err.message || 'Failed to create profile');
+            setError(err instanceof Error ? err.message : 'Failed to create profile');
         } finally {
             setLoadingStep(null);
         }
@@ -268,7 +268,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
             const primaryIncomeSources = selectedSources.map(s => incomeSourceMap[s] || s);
             
             // Map life answers to profile fields
-            const completeData: any = {
+            const completeData: ProfileCompleteRequest = {
                 primaryIncomeSources,
                 nin: taxId || undefined,
                 residency183Days: lifeAnswers.nigeria_resident === 'yes',
@@ -288,9 +288,9 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
             
             // Proceed to loading screen then redirect
             setIsSubmitting(true);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('[SetupSidebar] Failed to complete profile:', err);
-            setError(err.message || 'Failed to save profile');
+            setError(err instanceof Error ? err.message : 'Failed to save profile');
             setIsSubmitting(false);
         }
     };

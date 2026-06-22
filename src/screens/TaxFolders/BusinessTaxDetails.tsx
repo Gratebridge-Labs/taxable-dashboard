@@ -141,8 +141,8 @@ export default function BusinessTaxDetails() {
     const [activeMonth, setActiveMonth] = React.useState('January');
     const [payeStep, setPayeStep] = React.useState<Record<string, 'method' | 'table'>>({});
     const [payeMethod, setPayeMethod] = React.useState<Record<string, string>>({});
-    const [filedMonths, setFiledMonths] = React.useState<Set<string>>(new Set());
-    const [showPayeFilingModal, setShowPayeFilingModal] = React.useState(false);
+    const [filedMonths] = React.useState<Set<string>>(new Set());
+    const [, setShowPayeFilingModal] = React.useState(false);
     const [showBreakdown, setShowBreakdown] = React.useState(false);
     const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const PAYE_SAMPLE_STAFF = [
@@ -156,9 +156,6 @@ export default function BusinessTaxDetails() {
     ];
 
     // CIT fields
-    const [annualRevenue, setAnnualRevenue] = React.useState('');
-    const [taxableProfit, setTaxableProfit] = React.useState('');
-
     React.useEffect(() => {
         const isNew = searchParams.get('new');
         if (isNew === 'workspace') {
@@ -278,7 +275,7 @@ export default function BusinessTaxDetails() {
                                                     { id: 'wht-balance', label: 'WHT Credit Notes' },
                                                 ].map(sub => (
                                                     <button key={sub.id}
-                                                        onClick={() => setVatWhtSubSection(sub.id as any)}
+                                                        onClick={() => setVatWhtSubSection(sub.id as 'file-vat' | 'remit-wht' | 'wht-balance')}
                                                         className={`w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-semibold transition-colors mb-0.5 ${vatWhtSubSection === sub.id ? 'text-[#0C0C0E] bg-[#F1F5F9]' : 'text-[#6B7280] hover:text-[#374151] hover:bg-gray-50'
                                                             }`}>
                                                         {sub.label}
@@ -297,7 +294,7 @@ export default function BusinessTaxDetails() {
                                                     { id: 'review', label: 'Review' },
                                                 ].map(sub => (
                                                     <button key={sub.id}
-                                                        onClick={() => setCitSubSection(sub.id as any)}
+                                                        onClick={() => setCitSubSection(sub.id as 'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review')}
                                                         className={`w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-semibold transition-colors mb-0.5 ${citSubSection === sub.id ? 'text-[#0C0C0E] bg-[#F1F5F9]' : 'text-[#6B7280] hover:text-[#374151] hover:bg-gray-50'
                                                             }`}>
                                                         {sub.label}

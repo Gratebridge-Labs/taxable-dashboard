@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import OnboardingLayout from '@/components/OnboardingLayout/OnboardingLayout';
 import LoadingScreen from '@/screens/Onboarding/LoadingScreen';
@@ -84,11 +83,11 @@ export default function SignIn() {
             } else {
                 setIsLoading(false);
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Login failed:", err);
 
             // If the backend says 2FA is required via error
-            if (err.message === "Two-factor authentication code is required") {
+            if (err instanceof Error && err.message === "Two-factor authentication code is required") {
                 sessionStorage.setItem('taxable_temp_email', email);
                 sessionStorage.setItem('taxable_temp_password', password);
                 router.push(`/verify-2fa?email=${encodeURIComponent(email)}`);

@@ -10,7 +10,7 @@ import { useTaxableApi } from '@/hooks/useTaxableApi';
 import type { Profile, Income, Deduction, DeductionType } from '@/types/api';
 
 // Sub-components and Shared Utilities
-import { MONTHS, fromIsoDate, toIsoDate } from './PITShared';
+import { MONTHS } from './PITShared';
 import { PITSidebar } from './PITSidebar';
 import { PersonalInfoSection, PersonalInfo } from './PersonalInfoSection';
 import { IncomeDeductionsSection } from './IncomeDeductionsSection';
@@ -98,7 +98,7 @@ export default function PITDetails() {
 
     // Summaries
     const [monthlyTaxByMonth, setMonthlyTaxByMonth] = useState<Record<number, number>>({});
-    const [paidMonths, setPaidMonths] = useState<Set<number>>(new Set());
+    const [paidMonths] = useState<Set<number>>(new Set());
 
     // Modal States
     const [helpModalOpen, setHelpModalOpen] = useState(false);
@@ -276,8 +276,6 @@ export default function PITDetails() {
         const index = periodMode === 'annually' ? 0 : activeMonthNum - 1;
         const monthItems = (incomeData[index] as any) || [];
 
-        const empty = { salary: '', bonuses: '', commissions: '', freelance: '', digitalAssets: '' };
-        
         const salary = monthItems.find((i: any) => i.type === 'employment')?.grossSalary?.toString() || '';
         const bonuses = monthItems.find((i: any) => i.type === 'employment')?.bonuses?.toString() || '';
         const commissions = monthItems.find((i: any) => i.type === 'employment')?.commissions?.toString() || '';

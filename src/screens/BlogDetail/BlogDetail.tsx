@@ -2,10 +2,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useParams } from 'next/navigation';
+import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
-import { MoveLeft, Calendar, User, Share2, ArrowRight, MessageSquare } from 'lucide-react';
+import { MoveLeft, Calendar, Share2, ArrowRight, MessageSquare } from 'lucide-react';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
 import { useApi } from '@/hooks/useApi';
 
@@ -27,7 +27,6 @@ interface Blog {
 
 export default function BlogDetail() {
     const { slug } = useParams();
-    const router = useRouter();
     const { get } = useApi();
     const [blog, setBlog] = useState<Blog | null>(null);
     const [loading, setLoading] = useState(true);
@@ -44,7 +43,7 @@ export default function BlogDetail() {
 
             if (response?.success) {
                 const blogData = response.data?.blogs || (Array.isArray(response.data) ? response.data : []);
-                const foundBlog = blogData.find((b: any) => b.slug === slug);
+                const foundBlog = blogData.find((b: Blog) => b.slug === slug);
 
                 if (foundBlog) {
                     setBlog(foundBlog);
@@ -59,9 +58,9 @@ export default function BlogDetail() {
             } else {
                 setError("Blog post not found");
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Failed to fetch blog:", err);
-            setError(err.message || "Failed to load blog post");
+            setError(err instanceof Error ? err.message : "Failed to load blog post");
         } finally {
             setLoading(false);
         }

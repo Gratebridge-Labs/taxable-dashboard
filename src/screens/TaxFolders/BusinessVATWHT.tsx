@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
 
@@ -419,7 +419,7 @@ const WHTRemittance = () => {
             <div className="flex-1 min-w-0">
                 {showForm || editId !== null ? (
                     <WHTDeductionForm
-                        initial={editId !== null ? (() => { const d = deductions.find(x => x.id === editId)!; const { id, ...rest } = d; return rest; })() : undefined}
+                        initial={editId !== null ? (() => { const d = deductions.find(x => x.id === editId)!; const { id: _id, ...rest } = d; return rest; })() : undefined}
                         onSave={handleSave}
                         onCancel={() => { setShowForm(false); setEditId(null); }}
                     />
@@ -473,7 +473,7 @@ const WHTCreditBalance = () => {
     const [showForm, setShowForm] = useState(false);
     const [editId, setEditId] = useState<number | null>(null);
     const [activeMonth, setActiveMonth] = useState(0);
-    const [filedMonths, setFiledMonths] = useState<Set<number>>(new Set());
+    const [filedMonths] = useState<Set<number>>(new Set());
 
     const total = credits.reduce((s, d) => s + (Number(d.whtDeducted) || 0), 0);
 
@@ -494,7 +494,7 @@ const WHTCreditBalance = () => {
             <div className="flex-1 min-w-0">
                 {(showForm || editId !== null) ? (
                     <WHTDeductionForm
-                        initial={editId !== null ? (() => { const d = credits.find(x => x.id === editId)!; const { id, ...rest } = d; return rest; })() : undefined}
+                        initial={editId !== null ? (() => { const d = credits.find(x => x.id === editId)!; const { id: _id, ...rest } = d; return rest; })() : undefined}
                         onSave={handleSave}
                         onCancel={() => { setShowForm(false); setEditId(null); }}
                     />
@@ -569,7 +569,7 @@ export function BusinessVATWHTContent({
     const [activeMonth, setActiveMonth] = useState(0);
     const [filedMonths, setFiledMonths] = useState<Set<number>>(new Set());
     const [monthData, setMonthData] = useState<Record<number, MonthVATData>>({});
-    const [showFilingModal, setShowFilingModal] = useState(false);
+    const [, setShowFilingModal] = useState(false);
 
     const data = monthData[activeMonth] ?? defaultMonth();
 
@@ -585,18 +585,6 @@ export function BusinessVATWHTContent({
 
     const dueDate = MONTHS_SHORT[(activeMonth + 1) % 12].slice(0, 3) + ' 21, 2026';
 
-    const handleFile = () => {
-        setFiledMonths(prev => new Set([...prev, activeMonth]));
-        setShowFilingModal(false);
-        if (activeMonth < 11) setActiveMonth(m => m + 1);
-    };
-
-    const breadcrumb = subSection === 'file-vat'
-        ? 'File Monthly VAT Return'
-        : subSection === 'remit-wht'
-            ? 'Remit Monthly WHT'
-            : 'WHT Credit Balance';
-
     const ENTRY_OPTIONS = [
         { id: 'manual' as const, label: 'Manual entry' },
         { id: 'csv' as const, label: 'Upload sales & purchase ledgers (CSV/Excel)' },
@@ -606,7 +594,7 @@ export function BusinessVATWHTContent({
     return (
         <div className="flex items-start gap-8 w-full">
             {!activeSubMenu && (
-                <LeftSidebar activeSubSection={subSection} onSubSection={s => setSubSection(s as any)} router={router} />
+                <LeftSidebar activeSubSection={subSection} onSubSection={s => setSubSection(s as 'file-vat' | 'remit-wht' | 'wht-balance')} router={router} />
             )}
             <div className="flex-1 min-w-0">
 
@@ -869,7 +857,6 @@ export function BusinessVATWHTContent({
 
 // ── Standalone page wrapper (keeps the old route working) ──────────────────
 export default function BusinessVATWHT() {
-    const router = useRouter();
     return (
         <div className="min-h-screen bg-[#FAFAFA] font-sans pb-20">
             <DashboardHeader />

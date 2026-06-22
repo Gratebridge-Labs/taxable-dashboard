@@ -1,5 +1,5 @@
 'use client';
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { API_BASE_URL } from '@/lib/api-endpoints';
 
 interface User {
@@ -10,7 +10,9 @@ interface User {
     phone?: string;
     emailVerified?: boolean;
     twoFactorEnabled?: boolean;
-    [key: string]: any;
+    tin?: string;
+    whatsappReminders?: boolean;
+    name?: string;
 }
 
 interface UserContextType {
@@ -31,29 +33,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     const [token, setToken] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        // Initialize auth state from localStorage
-        const storedToken = localStorage.getItem('taxable_token');
-        const storedUser = localStorage.getItem('taxable_user');
-
-        if (storedToken) {
-            setToken(storedToken);
-
-            if (storedUser && storedUser !== 'undefined' && storedUser !== 'null') {
-                try {
-                    setUser(JSON.parse(storedUser));
-                } catch (err) {
-                    console.error('Failed to parse stored user:', err);
-                }
-            }
-            // Fetch fresh user data if we have a token
-            refreshUser(storedToken).finally(() => setLoading(false));
-        } else {
-            setLoading(false);
-        }
-    }, []);
-
-    const refreshUser = async (currentToken?: string) => {
+    const refreshUser = useCallback(async (currentToken?: string) => {
         const tokenToUse = currentToken || token;
         if (!tokenToUse) return;
 
@@ -72,32 +52,52 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                     localStorage.setItem('taxable_user', JSON.stringify(result.data.user));
                 }
             }
-        } catch (err) {
-            console.error('Failed to refresh user data:', err);
-        }
-    };
-
-    useEffect(() => {
-        if (token) {
-            console.log('🔑 Auth Token:', token);
+        } catch (err: unknown) {
+            console.error('Failed to refresh user data:', err instanceof Error ? err.message : 'Unknown error');
         }
     }, [token]);
 
-    const login = (newToken: string, userData: User) => {
+    useEffect(() => {
+        const storedToken = localStorage.getItem('taxable_token');
+        const storedUser = localStorage.getItem('taxable_user');
+
+        if (storedToken) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setToken(storedToken);
+
+            if (storedUser && storedUser !== 'undefined' && storedUser !== 'null') {
+                try {
+                    setUser(JSON.parse(storedUser));
+                } catch (err: unknown) {
+                    console.error('Failed to parse stored user:', err instanceof Error ? err.message : 'Unknown error');
+                    localStorage.removeItem('taxable_user');
+                }
+            }
+            refreshUser(storedToken).finally(() => setLoading(false));
+        } else {
+            setLoading(false);
+        }
+    }, [refreshUser]);
+
+    const login = useCallback((newToken: string, userData: User) => {
         setToken(newToken);
         setUser(userData);
         localStorage.setItem('taxable_token', newToken);
         if (userData) {
             localStorage.setItem('taxable_user', JSON.stringify(userData));
         }
-    };
+    }, []);
 
-    const logout = () => {
+    const logout = useCallback(() => {
         setToken(null);
         setUser(null);
         localStorage.removeItem('taxable_token');
         localStorage.removeItem('taxable_user');
-    };
+    }, []);
+
+    const setUserCallback = useCallback((userData: User) => {
+        setUser(userData);
+    }, []);
 
     return (
         <UserContext.Provider
@@ -106,9 +106,9 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                 token,
                 login,
                 logout,
-                setUser,
+                setUser: setUserCallback,
                 refreshUser,
-                isAuthenticated: !!token,
+                isAuthenticated: !!(token && user),
                 loading,
             }}
         >

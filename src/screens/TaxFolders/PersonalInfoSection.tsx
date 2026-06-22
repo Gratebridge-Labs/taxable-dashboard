@@ -2,8 +2,6 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { Dispatch, SetStateAction } from 'react';
-import { ChevronRight } from 'lucide-react';
-import { FolderIcon } from './PITComponents';
 
 const InfoTooltip = ({ text }: { text: string }) => (
     <div className="relative group inline-flex">
@@ -43,8 +41,8 @@ export const PersonalInfoSection = ({
     saveSuccess,
     savingPersonalInfo,
     onSave,
-    currentProfile,
-    onUpdateProfileProp,
+    currentProfile: _currentProfile,
+    onUpdateProfileProp: _onUpdateProfileProp,
 }: PersonalInfoSectionProps) => (
     <div className="flex flex-col md:flex-row items-start justify-between gap-6 md:gap-12 font-sans">
         {/* Left — Form */}

@@ -20,14 +20,14 @@ const FILING_TYPES: Record<string, 'Individual' | 'Business'> = {
 
 export default function Step4() {
     const router = useRouter();
-    const { data, setFilingPreference, setYear, clearData } = useOnboarding();
+    const { data, setFilingPreference, clearData } = useOnboarding();
     const { fetchProfiles } = useProfile();
-    const { createProfile, completeProfile, getAllowedYears } = useTaxableApi();
+    const { createProfile, completeProfile } = useTaxableApi();
     
     const [selections, setSelections] = useState<string[]>(
         data.year === 2025 ? ['Annually'] : (data.filingPreference ? [data.filingPreference.charAt(0).toUpperCase() + data.filingPreference.slice(1)] : ['Monthly'])
     );
-    const [yearToUse, setYearToUse] = useState(data.year || new Date().getFullYear());
+    const [yearToUse] = useState(data.year || new Date().getFullYear());
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -58,8 +58,8 @@ export default function Step4() {
                     router.push('/tax-folders');
                 }, 100);
             }
-        } catch (err: any) {
-            setError(err.message || 'Failed to create profile');
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Failed to create profile');
             setIsLoading(false);
         }
     };

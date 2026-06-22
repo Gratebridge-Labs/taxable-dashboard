@@ -8,7 +8,7 @@ import { useUser } from '@/contexts/UserContext';
 
 export default function DashboardHeader() {
     const pathname = usePathname();
-    const { user } = useUser();
+    const { user: _user } = useUser();
     const [showSupport, setShowSupport] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 

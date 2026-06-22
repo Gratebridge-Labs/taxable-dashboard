@@ -2,7 +2,7 @@
 
 import React, { use, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
-import { ShieldCheck, EyeOff, Lock, ChevronDown, Search, Check, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, EyeOff, Lock, ChevronDown, Search, CheckCircle2 } from 'lucide-react';
 
 const API_BASE_URL = 'https://api.gettaxable.com/api';
 
@@ -106,7 +106,7 @@ export default function UploadPage({ params }: PageProps) {
         if (!isMounted) return;
 
         setSession(data.data);
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!isMounted) return;
 
         if (err instanceof Error) {
@@ -138,7 +138,7 @@ export default function UploadPage({ params }: PageProps) {
     return map;
   }, [session]);
 
-  const filteredBanks = useMemo(() => {
+  const _filteredBanks = useMemo(() => {
     if (!session?.banks) return [];
     const q = bankSearchQuery.trim().toLowerCase();
     if (!q) return session.banks;
@@ -157,7 +157,7 @@ export default function UploadPage({ params }: PageProps) {
     }
   }, [bankDropdownOpen]);
 
-  const handleToggleBank = async (bankId: string) => {
+  const _handleToggleBank = async (bankId: string) => {
     if (!session) return;
 
     const isSelected = session.selectedBanks.includes(bankId);
@@ -247,8 +247,8 @@ export default function UploadPage({ params }: PageProps) {
 
         setSession(refreshed.data);
         setUploadMessage('File uploaded successfully.');
-      } catch (err: any) {
-        setUploadMessage(err.message || 'Upload failed. Please try again.');
+      } catch (err: unknown) {
+        setUploadMessage(err instanceof Error ? err.message : 'Upload failed. Please try again.');
       } finally {
         setUploadingFileId(null);
       }

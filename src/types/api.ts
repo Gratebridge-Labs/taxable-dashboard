@@ -20,7 +20,7 @@ export interface Profile {
   id: string;
   year: number;
   profileType: ProfileType;
-  status: string;
+  status: FilingStatus | 'draft';
   filingStatus: FilingStatus;
   filingPreference?: FilingPreference;
   createdAt: string;
@@ -438,7 +438,7 @@ export type DeductionType =
   | 'transport_allowance'
   | 'other';
 
-export type Income = any; // Alias for now to fix lint, or use IncomeDataItem[]
+export type Income = IncomeDataItem[];
 
 export interface Deduction {
   _id: string;

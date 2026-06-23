@@ -44,23 +44,23 @@ const OnboardingLayout = ({ children }: OnboardingLayoutProps) => {
         <OnboardingProvider>
             <div className="min-h-screen md:h-screen w-full flex flex-col md:flex-row bg-white md:overflow-hidden">
                 {/* Left Panel - Reusable Content */}
-                <div className="w-full md:w-[45%] lg:w-[40%] bg-taxable-blue p-8 md:p-12 lg:p-16 flex flex-col justify-between relative overflow-hidden">
+                <div className="w-full md:w-[45%] lg:w-[40%] bg-taxable-blue p-8 md:p-10 flex flex-col justify-between relative overflow-hidden">
                     <div>
                         <LogoWhite />
                     </div>
 
                     <div className="relative z-10 mt-12 md:mt-0">
-                        <h1 className="text-3xl md:text-5xl lg:text-5xl font-semibold text-taxable-light mb-4 md:mb-6 leading-[1.1] tracking-tight">
+                        <h1 className="text-3xl md:text-5xl lg:text-5xl font-semibold text-taxable-light mb-4 md:mb-6 leading-[1.1] tracking-[-0.02em]">
                             Start your stress-free tax journey.
                         </h1>
-                        <p className="text-taxable-gray text-base md:text-lg font-medium">
+                        <p className="text-neutral-50 text-2 font-medium tracking-[-0.01em]">
                             Join thousands of Nigerians filing smarter in 10 minutes.
                         </p>
                     </div>
                 </div>
 
                 {/* Right Panel - Dynamic Content */}
-                <div className="w-full md:w-[55%] lg:w-[60%] h-auto md:h-full overflow-y-auto bg-taxable-light">
+                <div data-lenis-prevent className="w-full md:w-[55%] lg:w-[60%] h-auto md:h-full overflow-y-auto bg-white">
                     <div className="min-h-full p-6 md:p-12 lg:p-16 flex flex-col justify-start md:justify-center py-16">
                         {children}
                     </div>

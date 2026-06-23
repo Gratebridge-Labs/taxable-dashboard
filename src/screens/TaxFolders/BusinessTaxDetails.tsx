@@ -39,7 +39,7 @@ const BUSINESS_SECTIONS = [
 // ── Helper ────────────────────────────────────────────────────────────────────
 const HintIcon = ({ tip }: { tip: string }) => (
     <div className="relative group inline-flex items-center ml-1">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-400" strokeWidth="2">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2">
             <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
         </svg>
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2 bg-neutral-800 text-white text-[11px] leading-snug rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 font-medium">
@@ -55,18 +55,18 @@ const SidebarItem = ({
 }) => (
     <button
         onClick={onClick}
-        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all mb-0.5 ${active ? 'bg-slate-100' : 'hover:bg-neutral-50'}`}
+        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all mb-0.5 ${active ? 'bg-neutral-100' : 'hover:bg-neutral-50'}`}
     >
         <div className="flex items-center gap-3 text-left">
             <span className={`text-lg leading-none ${locked ? 'opacity-40' : ''}`}>
                 {locked ? '🗂️' : '📁'}
             </span>
             <div className="flex items-center gap-2">
-                <span className={`text-2 font-semibold ${locked ? 'text-neutral-400' : active ? 'text-neutral-800' : 'text-neutral-700'}`}>
+                <span className={`text-[13px] font-semibold ${locked ? 'text-neutral-400' : active ? 'text-neutral-800' : 'text-neutral-700'}`}>
                     {label}
                 </span>
                 {completed && (
-                    <div className="w-4 h-4 bg-emerald-500 rounded-sm flex items-center justify-center">
+                    <div className="w-4 h-4 bg-[#10B981] rounded-[3px] flex items-center justify-center">
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="20 6 9 17 4 12" />
                         </svg>
@@ -74,7 +74,7 @@ const SidebarItem = ({
                 )}
             </div>
         </div>
-        <svg className={`w-3.5 h-3.5 flex-shrink-0 ${locked ? 'text-neutral-200' : active ? 'text-neutral-800' : 'text-neutral-300'}`}
+        <svg className={`w-3.5 h-3.5 flex-shrink-0 ${locked ? 'text-gray-200' : active ? 'text-neutral-800' : 'placeholder:text-neutral-300'}`}
             fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
@@ -88,7 +88,7 @@ const WelcomeModal = ({ onClose }: { onClose: () => void }) => (
         <div className="relative bg-white rounded-[20px] w-full max-w-[380px] p-7 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
             {/* Icon */}
             <div className="w-12 h-12 rounded-full border-2 border-neutral-200 flex items-center justify-center mb-5">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-800" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0C0C0E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12" />
                 </svg>
             </div>
@@ -103,7 +103,7 @@ const WelcomeModal = ({ onClose }: { onClose: () => void }) => (
             </p>
             <button
                 onClick={onClose}
-                className="w-full h-12 bg-taxable-blue text-white text-3 font-bold rounded-xl hover:opacity-90 transition-opacity"
+                className="w-full h-12 bg-taxable-blue text-white text-[15px] font-bold rounded-xl hover:opacity-90 transition-opacity"
             >
                 Got it
             </button>
@@ -141,8 +141,9 @@ export default function BusinessTaxDetails() {
     const [activeMonth, setActiveMonth] = React.useState('January');
     const [payeStep, setPayeStep] = React.useState<Record<string, 'method' | 'table'>>({});
     const [payeMethod, setPayeMethod] = React.useState<Record<string, string>>({});
-    const [filedMonths] = React.useState<Set<string>>(new Set());
-    const [, setShowPayeFilingModal] = React.useState(false);
+    const [filedMonths, _setFiledMonths] = React.useState<Set<string>>(new Set());
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [showPayeFilingModal, setShowPayeFilingModal] = React.useState(false);
     const [showBreakdown, setShowBreakdown] = React.useState(false);
     const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const PAYE_SAMPLE_STAFF = [
@@ -156,6 +157,9 @@ export default function BusinessTaxDetails() {
     ];
 
     // CIT fields
+    const [_annualRevenue, _setAnnualRevenue] = React.useState('');
+    const [_taxableProfit, _setTaxableProfit] = React.useState('');
+
     React.useEffect(() => {
         const isNew = searchParams.get('new');
         if (isNew === 'workspace') {
@@ -179,7 +183,7 @@ export default function BusinessTaxDetails() {
     const companyDisplayName = companyName || 'ABC Ventures Ltd';
 
     return (
-        <div className="min-h-screen bg-taxable-light pb-20">
+        <div className="min-h-screen bg-neutral-100 font-sans pb-20">
             <DashboardHeader />
 
             {showWelcomeModal && <WelcomeModal onClose={() => setShowWelcomeModal(false)} />}
@@ -189,14 +193,14 @@ export default function BusinessTaxDetails() {
                 <div className="flex items-center gap-3 mb-6">
                     <button
                         onClick={() => router.back()}
-                        className="flex items-center gap-1.5 text-2 font-bold text-neutral-800 hover:text-taxable-blue transition-colors shrink-0"
+                        className="flex items-center gap-1.5 text-[13px] font-bold text-neutral-800 hover:text-taxable-blue transition-colors shrink-0"
                     >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                             <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
                         </svg>
                         Back
                     </button>
-                    <div className="flex items-center gap-1.5 text-1 text-neutral-400 font-medium">
+                    <div className="flex items-center gap-1.5 text-[12px] text-neutral-400 font-medium">
                         <span>{taxYear} Individual Tax</span>
                         <span>/</span>
                         <span className="text-neutral-500">
@@ -212,11 +216,11 @@ export default function BusinessTaxDetails() {
                     </h1>
                     {/* Outstanding badge */}
                     <div className="inline-flex items-center gap-1.5">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-amber-600" strokeWidth="2.5">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2.5">
                             <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                             <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
                         </svg>
-                        <span className="text-2 font-bold text-amber-600">Outstanding: ₦145,000</span>
+                        <span className="text-[13px] font-bold text-amber-600">Outstanding: ₦145,000</span>
                     </div>
                 </div>
 
@@ -254,12 +258,12 @@ export default function BusinessTaxDetails() {
                                                 {(['monthly-filing', 'annual-returns'] as const).map(sub => (
                                                     <button key={sub}
                                                         onClick={() => setPayeSubSection(sub)}
-                                                        className={`w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-semibold transition-colors mb-0.5 ${payeSubSection === sub ? 'text-neutral-800 bg-slate-100' : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50'
+                                                        className={`w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-semibold transition-colors mb-0.5 ${payeSubSection === sub ? 'text-neutral-800 bg-neutral-100' : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50'
                                                             }`}>
                                                         <span className="flex items-center justify-between">
                                                             {sub === 'monthly-filing' ? 'Monthly Filing' : 'Annual Returns'}
                                                             {sub === 'monthly-filing' && (
-                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-green-600" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                                                             )}
                                                         </span>
                                                     </button>
@@ -276,7 +280,7 @@ export default function BusinessTaxDetails() {
                                                 ].map(sub => (
                                                     <button key={sub.id}
                                                         onClick={() => setVatWhtSubSection(sub.id as 'file-vat' | 'remit-wht' | 'wht-balance')}
-                                                        className={`w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-semibold transition-colors mb-0.5 ${vatWhtSubSection === sub.id ? 'text-neutral-800 bg-slate-100' : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50'
+                                                        className={`w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-semibold transition-colors mb-0.5 ${vatWhtSubSection === sub.id ? 'text-neutral-800 bg-neutral-100' : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50'
                                                             }`}>
                                                         {sub.label}
                                                     </button>
@@ -295,7 +299,7 @@ export default function BusinessTaxDetails() {
                                                 ].map(sub => (
                                                     <button key={sub.id}
                                                         onClick={() => setCitSubSection(sub.id as 'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review')}
-                                                        className={`w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-semibold transition-colors mb-0.5 ${citSubSection === sub.id ? 'text-neutral-800 bg-slate-100' : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50'
+                                                        className={`w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-semibold transition-colors mb-0.5 ${citSubSection === sub.id ? 'text-neutral-800 bg-neutral-100' : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50'
                                                             }`}>
                                                         {sub.label}
                                                     </button>
@@ -320,17 +324,17 @@ export default function BusinessTaxDetails() {
                         </div>
 
                         {/* Book accountant CTA */}
-                        <div className="bg-white rounded-2xl p-5 border border-neutral-100 shadow-sm">
+                        <div className="bg-white rounded-[16px] p-5 border border-neutral-100 shadow-sm">
                             <div className="flex items-center gap-2 mb-2">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-blue-600" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
                                 </svg>
-                                <h4 className="text-2 font-bold text-neutral-800">Need expert eyes on your return?</h4>
+                                <h4 className="text-[13px] font-bold text-neutral-800">Need expert eyes on your return?</h4>
                             </div>
-                            <p className="text-1 text-neutral-500 font-medium leading-relaxed mb-4">
+                            <p className="text-[12px] text-neutral-500 font-medium leading-relaxed mb-4">
                                 Get your return reviewed by a certified tax accountant. They'll ensure accuracy, compliance, and file for you.
                             </p>
-                            <button className="w-full py-2.5 bg-white border border-neutral-200 rounded-xl text-1 font-bold text-neutral-800 hover:bg-neutral-50 transition-all">
+                            <button className="w-full py-2.5 bg-white border border-neutral-200 rounded-xl text-[12px] font-bold text-neutral-800 hover:bg-neutral-50 transition-all">
                                 Book Accountant (₦15,000)
                             </button>
                         </div>
@@ -346,7 +350,7 @@ export default function BusinessTaxDetails() {
                                 <div className="space-y-6 max-w-[480px]">
                                     {/* RC/BN number */}
                                     <div>
-                                        <label className="block text-2 font-semibold text-neutral-700 mb-2">
+                                        <label className="block text-[13px] font-semibold text-neutral-700 mb-2">
                                             RC/BN number
                                             <HintIcon tip="Your Companies Registration Number (RC) or Business Name (BN) from CAC." />
                                         </label>
@@ -354,19 +358,19 @@ export default function BusinessTaxDetails() {
                                             type="text"
                                             value={rcbn}
                                             onChange={e => setRcbn(e.target.value)}
-                                            className="w-full h-11 border border-neutral-200 bg-neutral-50 rounded-xl px-4 text-[14px] font-medium text-neutral-800 focus:outline-none focus:border-taxable-blue/40 transition-all"
+                                            className="w-full h-11 border border-neutral-200 bg-neutral-100 rounded-xl px-4 text-[14px] font-medium text-neutral-800 focus:outline-none focus:border-taxable-blue/40 transition-all"
                                         />
                                         <div className="flex items-center gap-1.5 mt-1.5">
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-green-600" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                                 <polyline points="20 6 9 17 4 12" />
                                             </svg>
-                                            <span className="text-1 font-bold text-green-600">Verified</span>
+                                            <span className="text-[12px] font-bold text-green-600">Verified</span>
                                         </div>
                                     </div>
 
                                     {/* Company name */}
                                     <div>
-                                        <label className="block text-2 font-semibold text-neutral-700 mb-2">
+                                        <label className="block text-[13px] font-semibold text-neutral-700 mb-2">
                                             Company name
                                             <HintIcon tip="The registered name of your company as it appears in the CAC certificate." />
                                         </label>
@@ -375,14 +379,14 @@ export default function BusinessTaxDetails() {
                                             placeholder="e.g. ABC Ventures Ltd"
                                             value={companyName}
                                             onChange={e => setCompanyName(e.target.value)}
-                                            className="w-full h-11 border border-neutral-200 bg-neutral-50 rounded-xl px-4 text-[14px] font-medium text-neutral-800 placeholder:text-neutral-300 focus:outline-none focus:border-taxable-blue/40 transition-all"
+                                            className="w-full h-11 border border-neutral-200 bg-neutral-100 rounded-xl px-4 text-[14px] font-medium text-neutral-800 placeholder:placeholder:text-neutral-300 focus:outline-none focus:border-taxable-blue/40 transition-all"
                                         />
                                     </div>
 
                                     {/* Industry + Date of incorporation (2-column) */}
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-2 font-semibold text-neutral-700 mb-2">
+                                            <label className="block text-[13px] font-semibold text-neutral-700 mb-2">
                                                 Industry/sector
                                                 <HintIcon tip="The primary industry your company operates in." />
                                             </label>
@@ -390,7 +394,7 @@ export default function BusinessTaxDetails() {
                                                 <select
                                                     value={industry}
                                                     onChange={e => setIndustry(e.target.value)}
-                                                    className="w-full h-11 border border-neutral-200 bg-neutral-50 rounded-xl px-4 text-[14px] font-medium text-neutral-800 focus:outline-none focus:border-taxable-blue/40 transition-all appearance-none"
+                                                    className="w-full h-11 border border-neutral-200 bg-neutral-100 rounded-xl px-4 text-[14px] font-medium text-neutral-800 focus:outline-none focus:border-taxable-blue/40 transition-all appearance-none"
                                                 >
                                                     <option value="" disabled>Select</option>
                                                     {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
@@ -401,7 +405,7 @@ export default function BusinessTaxDetails() {
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-2 font-semibold text-neutral-700 mb-2">
+                                            <label className="block text-[13px] font-semibold text-neutral-700 mb-2">
                                                 Date of incorporation
                                                 <HintIcon tip="Found on your CAC certificate of incorporation." />
                                             </label>
@@ -410,14 +414,14 @@ export default function BusinessTaxDetails() {
                                                 placeholder="DD / MM / YYYY"
                                                 value={incorporationDate}
                                                 onChange={e => setIncorporationDate(e.target.value)}
-                                                className="w-full h-11 border border-neutral-200 bg-neutral-50 rounded-xl px-4 text-[14px] font-medium text-neutral-800 placeholder:text-neutral-300 focus:outline-none focus:border-taxable-blue/40 transition-all"
+                                                className="w-full h-11 border border-neutral-200 bg-neutral-100 rounded-xl px-4 text-[14px] font-medium text-neutral-800 placeholder:placeholder:text-neutral-300 focus:outline-none focus:border-taxable-blue/40 transition-all"
                                             />
                                         </div>
                                     </div>
 
                                     {/* Registered office address */}
                                     <div>
-                                        <label className="block text-2 font-semibold text-neutral-700 mb-2">
+                                        <label className="block text-[13px] font-semibold text-neutral-700 mb-2">
                                             Registered office address
                                             <HintIcon tip="The address registered with CAC for your business." />
                                         </label>
@@ -426,12 +430,12 @@ export default function BusinessTaxDetails() {
                                             placeholder="Address"
                                             value={address}
                                             onChange={e => setAddress(e.target.value)}
-                                            className="w-full h-11 border border-neutral-200 bg-neutral-50 rounded-xl px-4 text-[14px] font-medium text-neutral-800 placeholder:text-neutral-300 focus:outline-none focus:border-taxable-blue/40 transition-all mb-3"
+                                            className="w-full h-11 border border-neutral-200 bg-neutral-100 rounded-xl px-4 text-[14px] font-medium text-neutral-800 placeholder:placeholder:text-neutral-300 focus:outline-none focus:border-taxable-blue/40 transition-all mb-3"
                                         />
                                         <div className="grid grid-cols-2 gap-3">
                                             <div className="relative">
                                                 <select value={city} onChange={e => setCity(e.target.value)}
-                                                    className="w-full h-11 border border-neutral-200 bg-neutral-50 rounded-xl px-4 text-[14px] font-medium text-neutral-800 focus:outline-none focus:border-taxable-blue/40 transition-all appearance-none">
+                                                    className="w-full h-11 border border-neutral-200 bg-neutral-100 rounded-xl px-4 text-[14px] font-medium text-neutral-800 focus:outline-none focus:border-taxable-blue/40 transition-all appearance-none">
                                                     <option value="" disabled>City</option>
                                                     {NIGERIA_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                                                 </select>
@@ -441,7 +445,7 @@ export default function BusinessTaxDetails() {
                                             </div>
                                             <div className="relative">
                                                 <select value={state} onChange={e => setState(e.target.value)}
-                                                    className="w-full h-11 border border-neutral-200 bg-neutral-50 rounded-xl px-4 text-[14px] font-medium text-neutral-800 focus:outline-none focus:border-taxable-blue/40 transition-all appearance-none">
+                                                    className="w-full h-11 border border-neutral-200 bg-neutral-100 rounded-xl px-4 text-[14px] font-medium text-neutral-800 focus:outline-none focus:border-taxable-blue/40 transition-all appearance-none">
                                                     <option value="" disabled>State</option>
                                                     {NIGERIA_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                                                 </select>
@@ -465,7 +469,7 @@ export default function BusinessTaxDetails() {
                                                 </svg>
                                             )}
                                         </div>
-                                        <span className="text-2 font-semibold text-neutral-700 group-hover:text-neutral-800 transition-colors">
+                                        <span className="text-[13px] font-semibold text-neutral-700 group-hover:text-neutral-800 transition-colors">
                                             Pay CIT in quarterly installments
                                         </span>
                                         <HintIcon tip="Pay your annual CIT liability in 4 equal installments throughout the year." />
@@ -480,7 +484,7 @@ export default function BusinessTaxDetails() {
                                         return (
                                             <div className="space-y-4">
                                                 <div>
-                                                    <label className="flex items-center text-2 font-semibold text-neutral-700 mb-2">
+                                                    <label className="flex items-center text-[13px] font-semibold text-neutral-700 mb-2">
                                                         What's your estimated annual profit for 2026?
                                                         <HintIcon tip="Enter your projected profit before tax. We'll use this to calculate quarterly installments." />
                                                     </label>
@@ -489,7 +493,7 @@ export default function BusinessTaxDetails() {
                                                         placeholder="N0"
                                                         value={estimatedAnnualProfit}
                                                         onChange={e => setEstimatedAnnualProfit(e.target.value.replace(/[^0-9.]/g, ''))}
-                                                        className="w-full h-11 border border-neutral-200 bg-neutral-50 rounded-xl px-4 text-[14px] font-medium text-neutral-800 placeholder:text-neutral-300 focus:outline-none focus:border-taxable-blue/40 transition-all"
+                                                        className="w-full h-11 border border-neutral-200 bg-neutral-100 rounded-xl px-4 text-[14px] font-medium text-neutral-800 placeholder:placeholder:text-neutral-300 focus:outline-none focus:border-taxable-blue/40 transition-all"
                                                     />
                                                 </div>
                                                 {profitNum > 0 && (
@@ -504,7 +508,7 @@ export default function BusinessTaxDetails() {
                                                                 <p className="text-base font-bold text-neutral-800">{qFmt(quarterlyPayment)}</p>
                                                             </div>
                                                         </div>
-                                                        <p className="text-1 font-medium text-neutral-500">
+                                                        <p className="text-[12px] font-medium text-neutral-500">
                                                             You'll pay {qFmt(quarterlyPayment)} on Mar 31, Jun 30, Sep 30, Dec 31.
                                                         </p>
                                                     </div>
@@ -517,7 +521,7 @@ export default function BusinessTaxDetails() {
                                     <button
                                         onClick={handleSaveAndContinue}
                                         disabled={submitting}
-                                        className="h-12 px-8 bg-taxable-blue text-white font-bold rounded-xl hover:bg-taxable-blue transition-colors disabled:opacity-50 text-[14px]"
+                                        className="h-12 px-8 bg-taxable-blue text-white font-bold rounded-xl hover:bg-taxable-blue/80 transition-colors disabled:opacity-50 text-[14px]"
                                     >
                                         {submitting ? 'Saving...' : 'Save & Continue'}
                                     </button>
@@ -557,7 +561,7 @@ export default function BusinessTaxDetails() {
                             const methodContent = (
                                 <div className="max-w-[480px] mx-auto">
                                     <h2 className="text-base font-bold text-neutral-800 mb-1">How do you want to add payroll data?</h2>
-                                    <p className="text-2 text-neutral-500 font-medium mb-6">Upload or enter your payroll for this month</p>
+                                    <p className="text-[13px] text-neutral-500 font-medium mb-6">Upload or enter your payroll for this month</p>
                                     <div className="mb-8">
                                         {MONTH_METHODS.map(opt => (
                                             <button key={opt.id} onClick={() => setPayeMethod(p => ({ ...p, [activeMonth]: opt.id }))}
@@ -581,14 +585,14 @@ export default function BusinessTaxDetails() {
                                 <div className="w-full">
                                     {/* Table top bar */}
                                     <div className="flex items-center justify-between mb-3">
-                                        <h2 className="text-3 font-bold text-neutral-800">Staff Payroll ({activeMonth} 2026)</h2>
+                                        <h2 className="text-[15px] font-bold text-neutral-800">Staff Payroll ({activeMonth} 2026)</h2>
                                         <div className="flex items-center gap-3">
-                                            <button className="flex items-center gap-1.5 text-1 font-bold text-taxable-blue hover:opacity-80">
+                                            <button className="flex items-center gap-1.5 text-[12px] font-bold text-taxable-blue hover:opacity-80">
                                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
                                                 Add staff
                                             </button>
                                             {isFiled && (
-                                                <button className="flex items-center gap-1.5 text-1 font-bold text-neutral-500 hover:opacity-80">
+                                                <button className="flex items-center gap-1.5 text-[12px] font-bold text-neutral-500 hover:opacity-80">
                                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                                                     Edit staff
                                                 </button>
@@ -597,8 +601,8 @@ export default function BusinessTaxDetails() {
                                     </div>
                                     {/* Payroll table */}
                                     <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white mb-6">
-                                        <table className="w-full text-left text-1">
-                                            <thead className="bg-neutral-50 border-b border-neutral-100">
+                                        <table className="w-full text-left text-[12px]">
+                                            <thead className="bg-neutral-100 border-b border-neutral-100">
                                                 <tr>
                                                     <th className="px-4 py-3 font-bold text-neutral-500">Staff Name</th>
                                                     <th className="px-4 py-3 font-bold text-neutral-500">Tax ID (NIN)</th>
@@ -629,7 +633,7 @@ export default function BusinessTaxDetails() {
                                             </thead>
                                             <tbody className="divide-y divide-neutral-50">
                                                 {PAYE_SAMPLE_STAFF.map((st, i) => (
-                                                    <tr key={i} className="hover:bg-taxable-light transition-colors">
+                                                    <tr key={i} className="hover:bg-neutral-100 transition-colors">
                                                         <td className="px-4 py-3 font-semibold text-neutral-800">{st.name}</td>
                                                         <td className="px-4 py-3 text-neutral-500">{st.tin}</td>
                                                         <td className="px-4 py-3 font-semibold text-neutral-800">{fmt(st.gross)}</td>
@@ -639,9 +643,9 @@ export default function BusinessTaxDetails() {
                                                     </tr>
                                                 ))}
                                                 <tr className="bg-white">
-                                                    <td className="px-4 py-3"><input placeholder="Enter name" className="w-full text-1 text-neutral-400 bg-transparent focus:outline-none" /></td>
-                                                    <td className="px-4 py-3"><input placeholder="Enter NIN" className="w-full text-1 text-neutral-400 bg-transparent focus:outline-none" /></td>
-                                                    <td className="px-4 py-3"><input placeholder="Enter salary" className="w-full text-1 text-neutral-400 bg-transparent focus:outline-none" /></td>
+                                                    <td className="px-4 py-3"><input placeholder="Enter name" className="w-full text-[12px] text-neutral-400 bg-transparent focus:outline-none" /></td>
+                                                    <td className="px-4 py-3"><input placeholder="Enter NIN" className="w-full text-[12px] text-neutral-400 bg-transparent focus:outline-none" /></td>
+                                                    <td className="px-4 py-3"><input placeholder="Enter salary" className="w-full text-[12px] text-neutral-400 bg-transparent focus:outline-none" /></td>
                                                     <td colSpan={3} />
                                                 </tr>
                                             </tbody>
@@ -650,18 +654,18 @@ export default function BusinessTaxDetails() {
                                     {/* Footer */}
                                     <div className="flex items-end justify-between">
                                         <div>
-                                            <p className="text-1 font-semibold text-neutral-500 mb-1">Total PAYE due this month</p>
-                                            <p className="text-7 font-bold text-neutral-800">₦{totalPAYE.toLocaleString()}</p>
+                                            <p className="text-[12px] font-semibold text-neutral-500 mb-1">Total PAYE due this month</p>
+                                            <p className="text-[24px] font-bold text-neutral-800">₦{totalPAYE.toLocaleString()}</p>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             {isFiled && (
-                                                <button className="h-11 px-6 border border-neutral-300 text-neutral-800 font-bold rounded-xl hover:bg-neutral-50 transition-colors text-2">
+                                                <button className="h-11 px-6 border border-neutral-300 text-neutral-800 font-bold rounded-xl hover:bg-neutral-50 transition-colors text-[13px]">
                                                     Download Return
                                                 </button>
                                             )}
                                             <button
                                                 onClick={() => setShowPayeFilingModal(true)}
-                                                className="h-11 px-6 bg-taxable-blue text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-2">
+                                                className="h-11 px-6 bg-taxable-blue text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[13px]">
                                                 {isFiled ? 'File & Pay' : `File ${activeMonth} PAYE`}
                                             </button>
                                         </div>
@@ -677,31 +681,31 @@ export default function BusinessTaxDetails() {
                                             const isActive = m === activeMonth;
                                             return (
                                                 <button key={m} onClick={() => setActiveMonth(m)}
-                                                    className={`w-full flex items-center gap-2.5 px-3 py-[9px] rounded-xl mb-0.5 text-left text-2 transition-all ${isActive
-                                                        ? 'bg-neutral-100 text-neutral-900 font-bold'
+                                                    className={`w-full flex items-center gap-2.5 px-3 py-[9px] rounded-xl mb-0.5 text-left text-[13px] transition-all ${isActive
+                                                        ? 'bg-[#F3F4F6] text-[#111827] font-bold'
                                                         : 'text-neutral-400 font-medium hover:bg-neutral-50'
                                                         }`}>
                                                     {isActive ? (
                                                         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                            <rect x="2" y="4" width="20" height="18" rx="2.5" fill="currentColor" className="text-neutral-900" />
+                                                            <rect x="2" y="4" width="20" height="18" rx="2.5" fill="#111827" />
                                                             <circle cx="7.5" cy="14" r="1.3" fill="white" />
                                                             <circle cx="12" cy="14" r="1.3" fill="white" />
                                                             <circle cx="16.5" cy="14" r="1.3" fill="white" />
                                                             <circle cx="7.5" cy="18.5" r="1.3" fill="white" />
                                                             <circle cx="12" cy="18.5" r="1.3" fill="white" />
-                                                            <rect x="7" y="1" width="2" height="5" rx="1" fill="currentColor" className="text-neutral-900" />
-                                                            <rect x="15" y="1" width="2" height="5" rx="1" fill="currentColor" className="text-neutral-900" />
+                                                            <rect x="7" y="1" width="2" height="5" rx="1" fill="#111827" />
+                                                            <rect x="15" y="1" width="2" height="5" rx="1" fill="#111827" />
                                                         </svg>
                                                     ) : (
-                                                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-300" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                                                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#C9CDD6" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                                                             <rect x="2" y="4" width="20" height="18" rx="2.5" />
                                                             <line x1="2" y1="10" x2="22" y2="10" />
                                                             <line x1="8" y1="1" x2="8" y2="6" />
                                                             <line x1="16" y1="1" x2="16" y2="6" />
-                                                            <circle cx="7.5" cy="14" r="0.8" fill="currentColor" className="text-neutral-300" stroke="none" />
-                                                            <circle cx="12" cy="14" r="0.8" fill="currentColor" className="text-neutral-300" stroke="none" />
-                                                            <circle cx="16.5" cy="14" r="0.8" fill="currentColor" className="text-neutral-300" stroke="none" />
-                                                            <circle cx="7.5" cy="18.5" r="0.8" fill="currentColor" className="text-neutral-300" stroke="none" />
+                                                            <circle cx="7.5" cy="14" r="0.8" fill="#C9CDD6" stroke="none" />
+                                                            <circle cx="12" cy="14" r="0.8" fill="#C9CDD6" stroke="none" />
+                                                            <circle cx="16.5" cy="14" r="0.8" fill="#C9CDD6" stroke="none" />
+                                                            <circle cx="7.5" cy="18.5" r="0.8" fill="#C9CDD6" stroke="none" />
                                                         </svg>
                                                     )}
                                                     {m}
@@ -748,13 +752,13 @@ export default function BusinessTaxDetails() {
                             return (
                                 <div className="max-w-[620px] mx-auto animate-in fade-in duration-300">
                                     <h2 className="text-base font-bold text-neutral-800 mb-1">PAYE · Annual Returns (2026)</h2>
-                                    <p className="text-2 text-neutral-500 font-medium mb-6">Your annual PAYE reconciliation</p>
+                                    <p className="text-[13px] text-neutral-500 font-medium mb-6">Your annual PAYE reconciliation</p>
 
                                     {/* Status check list */}
                                     <div className="space-y-3 mb-7">
                                         {CHECKS.map(c => (
                                             <div key={c} className="flex items-center gap-3">
-                                                <div className="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
+                                                <div className="w-6 h-6 rounded-full bg-[#16A34A] flex items-center justify-center flex-shrink-0">
                                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                                                 </div>
                                                 <span className="text-[14px] font-semibold text-neutral-800">{c}</span>
@@ -764,10 +768,10 @@ export default function BusinessTaxDetails() {
 
                                     {/* Action buttons */}
                                     <div className="flex items-center gap-3 mb-6">
-                                        <button className="h-11 px-6 border border-neutral-300 text-neutral-800 font-bold rounded-xl hover:bg-neutral-50 transition-colors text-2">
+                                        <button className="h-11 px-6 border border-neutral-300 text-neutral-800 font-bold rounded-xl hover:bg-neutral-50 transition-colors text-[13px]">
                                             Download Return
                                         </button>
-                                        <button className="h-11 px-6 bg-taxable-blue text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-2">
+                                        <button className="h-11 px-6 bg-taxable-blue text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[13px]">
                                             Submit Annual Return
                                         </button>
                                     </div>
@@ -775,7 +779,7 @@ export default function BusinessTaxDetails() {
                                     {/* Breakdown toggle */}
                                     <button
                                         onClick={() => setShowBreakdown(b => !b)}
-                                        className="flex items-center gap-1.5 text-2 font-bold text-taxable-blue hover:opacity-80 transition-opacity mb-4">
+                                        className="flex items-center gap-1.5 text-[13px] font-bold text-taxable-blue hover:opacity-80 transition-opacity mb-4">
                                         View Breakdown
                                         <svg
                                             width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -788,8 +792,8 @@ export default function BusinessTaxDetails() {
                                     {/* Breakdown table */}
                                     {showBreakdown && (
                                         <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden">
-                                            <table className="w-full text-left text-2">
-                                                <thead className="bg-neutral-50 border-b border-neutral-100">
+                                            <table className="w-full text-left text-[13px]">
+                                                <thead className="bg-neutral-100 border-b border-neutral-100">
                                                     <tr>
                                                         <th className="px-5 py-3 font-bold text-neutral-500">Month</th>
                                                         <th className="px-5 py-3 font-bold text-neutral-500">PAYE Deducted</th>
@@ -798,14 +802,14 @@ export default function BusinessTaxDetails() {
                                                 </thead>
                                                 <tbody className="divide-y divide-neutral-50">
                                                     {ANNUAL_DATA.map(row => (
-                                                        <tr key={row.month} className="hover:bg-taxable-light transition-colors">
+                                                        <tr key={row.month} className="hover:bg-neutral-100 transition-colors">
                                                             <td className="px-5 py-3 font-medium text-neutral-700">{row.month}</td>
                                                             <td className="px-5 py-3 font-semibold text-neutral-800">{fmtN(row.deducted)}</td>
                                                             <td className="px-5 py-3 font-semibold text-neutral-800">{fmtN(row.remitted)}</td>
                                                         </tr>
                                                     ))}
                                                 </tbody>
-                                                <tfoot className="border-t border-neutral-200 bg-neutral-50">
+                                                <tfoot className="border-t border-neutral-200 bg-neutral-100">
                                                     <tr>
                                                         <td className="px-5 py-3">
                                                             <p className="text-[11px] font-semibold text-neutral-500 mb-0.5">Total PAYE Deducted</p>
@@ -819,12 +823,12 @@ export default function BusinessTaxDetails() {
                                                     <tr>
                                                         <td colSpan={3} className="px-5 pb-4">
                                                             <div className="flex items-center gap-4">
-                                                                <span className="flex items-center gap-1.5 text-1 font-bold text-green-600">
+                                                                <span className="flex items-center gap-1.5 text-[12px] font-bold text-green-600">
                                                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                                                                     All months filed and paid
                                                                 </span>
-                                                                <span className="text-neutral-300">·</span>
-                                                                <span className="flex items-center gap-1.5 text-1 font-bold text-green-600">
+                                                                <span className="text-[#D1D5DB]">·</span>
+                                                                <span className="flex items-center gap-1.5 text-[12px] font-bold text-green-600">
                                                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                                                                     No discrepancies
                                                                 </span>
@@ -863,7 +867,7 @@ export default function BusinessTaxDetails() {
                         {activeSection === 'review' && (
                             <div className="animate-in fade-in duration-300 bg-white rounded-2xl border border-neutral-100 p-8 text-center">
                                 <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-green-600" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                         <polyline points="20 6 9 17 4 12" />
                                     </svg>
                                 </div>
@@ -873,7 +877,7 @@ export default function BusinessTaxDetails() {
                                 </p>
                                 <button
                                     onClick={() => router.push('/home')}
-                                    className="h-12 px-10 bg-taxable-blue text-white font-bold rounded-xl hover:bg-taxable-blue transition-colors text-[14px]"
+                                    className="h-12 px-10 bg-taxable-blue text-white font-bold rounded-xl hover:bg-taxable-blue/80 transition-colors text-[14px]"
                                 >
                                     Submit Tax Return
                                 </button>

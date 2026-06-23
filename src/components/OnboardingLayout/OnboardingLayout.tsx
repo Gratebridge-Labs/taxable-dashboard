@@ -24,6 +24,7 @@ interface OnboardingLayoutProps {
 const OnboardingLayout = ({ children }: OnboardingLayoutProps) => {
     useEffect(() => {
         const lenis = new Lenis({ lerp: 0.1 });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (window as any).__lenis = lenis;
 
         function raf(time: number) {
@@ -34,6 +35,7 @@ const OnboardingLayout = ({ children }: OnboardingLayoutProps) => {
 
         return () => {
             lenis.destroy();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (window as any).__lenis = undefined;
         };
     }, []);

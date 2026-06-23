@@ -51,7 +51,7 @@ export const PITSidebar = ({
         <div
             className={`
                 md:w-[300px] md:flex-shrink-0 md:flex md:flex-col md:gap-5 md:sticky md:top-24
-                fixed md:relative inset-y-0 left-0 z-50 bg-taxable-light md:bg-transparent
+                fixed md:relative inset-y-0 left-0 z-50 bg-neutral-100 md:bg-transparent
                 transform transition-transform duration-300 ease-in-out
                 ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
                 w-[300px] flex flex-col gap-4 p-4 shadow-xl md:shadow-none font-sans
@@ -62,62 +62,63 @@ export const PITSidebar = ({
                 onClick={() => setMobileSidebarOpen(false)}
                 className="md:hidden absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-sm"
             >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-500" strokeWidth="2.5">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2.5">
                     <line x1="18" y1="6" x2="6" y2="18" />
                     <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
             </button>
 
             {/* Sidebar Navigation Container */}
-            <div className="bg-white rounded-3xl p-4 border border-neutral-100 space-y-1">
+            <div className="bg-white rounded-[20px] p-[8px] border-[0.6px] border-neutral-100 flex flex-col     gap-[2px]">
+                <span className="text-[13px] font-medium text-neutral-400 px-[8px] pt-[4px] pb-[4px]">Select</span>
                 <button
                     onClick={() => { setActiveSection('personal-info'); setMobileSidebarOpen(false); }}
-                    className={`w-full flex items-center justify-between px-2.5 py-2.5 rounded-2xl transition-all ${
-                        activeSection === 'personal-info' ? 'bg-slate-50' : 'hover:bg-neutral-50'
+                    className={`w-full flex items-center justify-between px-[8px] py-[12px] rounded-[10px] transition-all ${
+                        activeSection === 'personal-info' ? 'bg-neutral-50' : 'hover:bg-neutral-50'
                     }`}
                 >
                     <div className="flex items-center gap-3">
                         <div className={personalInfoComplete || activeSection === 'personal-info' ? '' : 'opacity-40 grayscale'}>
                             <FolderIcon size={20} />
                         </div>
-                        <span className={`text-3 font-semibold ${activeSection === 'personal-info' || personalInfoComplete ? 'text-taxable-dark' : 'text-taxable-gray'}`} style={{ fontFamily: 'Archivo' }}>Personal Information</span>
+                        <span className={`text-[13px] ${activeSection === 'personal-info' ? 'font-semibold' : 'font-medium'} ${activeSection === 'personal-info' || personalInfoComplete ? 'text-neutral-800' : 'text-neutral-400'}`}>Personal Information</span>
                     </div>
-                    <ChevronRight size={16} className={activeSection === 'personal-info' ? 'text-taxable-dark' : 'text-taxable-gray'} />
+                    {activeSection === 'personal-info' && <ChevronRight size={16} className="text-neutral-800" />}
                 </button>
 
                 <button
                     onClick={() => { setActiveSection('income-deductions'); setIncomeSubTab(incomeSubTab); setMobileSidebarOpen(false); }}
-                    className={`w-full flex items-center justify-between px-2.5 py-2.5 rounded-2xl transition-all ${
-                        activeSection === 'income-deductions' ? 'bg-slate-50' : 'hover:bg-neutral-50'
+                    className={`w-full flex items-center justify-between px-[8px] py-[12px] rounded-[10px] transition-all ${
+                        activeSection === 'income-deductions' ? 'bg-neutral-50' : 'hover:bg-neutral-50'
                     }`}
                 >
                     <div className="flex items-center gap-3">
                         <div className={incomeDeductionsComplete || activeSection === 'income-deductions' ? '' : 'opacity-40 grayscale'}>
                             <FolderIcon size={20} />
                         </div>
-                        <span className={`text-3 font-semibold ${activeSection === 'income-deductions' || incomeDeductionsComplete ? 'text-taxable-dark' : 'text-taxable-gray'}`} style={{ fontFamily: 'Archivo' }}>Income &amp; Deductions</span>
+                        <span className={`text-[13px] ${activeSection === 'income-deductions' ? 'font-semibold' : 'font-medium'} ${activeSection === 'income-deductions' || incomeDeductionsComplete ? 'text-neutral-800' : 'text-neutral-400'}`}>Income &amp; Deductions</span>
                     </div>
-                    <ChevronRight size={16} className={activeSection === 'income-deductions' ? 'text-taxable-dark' : 'text-taxable-gray'} />
+                    {activeSection === 'income-deductions' && <ChevronRight size={16} className="text-neutral-800" />}
                 </button>
 
                 <button
                     onClick={() => { setActiveSection('review'); setMobileSidebarOpen(false); }}
-                    className={`w-full flex items-center justify-between px-2.5 py-2.5 rounded-2xl transition-all ${
-                        activeSection === 'review' ? 'bg-slate-50' : 'hover:bg-neutral-50'
+                    className={`w-full flex items-center justify-between px-[8px] py-[12px] rounded-[10px] transition-all ${
+                        activeSection === 'review' ? 'bg-neutral-50' : 'hover:bg-neutral-50'
                     }`}
                 >
                     <div className="flex items-center gap-3">
                         <div className={reviewComplete || activeSection === 'review' ? '' : 'opacity-40 grayscale'}>
                             <FolderIcon size={20} />
                         </div>
-                        <span className={`text-3 font-semibold ${activeSection === 'review' || reviewComplete ? 'text-taxable-dark' : 'text-taxable-gray'}`} style={{ fontFamily: 'Archivo' }}>Review &amp; File</span>
+                        <span className={`text-[13px] ${activeSection === 'review' ? 'font-semibold' : 'font-medium'} ${activeSection === 'review' || reviewComplete ? 'text-neutral-800' : 'text-neutral-400'}`}>Review &amp; File</span>
                     </div>
-                    <ChevronRight size={16} className={activeSection === 'review' ? 'text-taxable-dark' : 'text-taxable-gray'} />
+                    {activeSection === 'review' && <ChevronRight size={16} className="text-neutral-800" />}
                 </button>
             </div>
 
             {/* Expert Review Promo - Separated */}
-            <div className="bg-taxable-light rounded-3xl p-4 border border-slate-200">
+            <div className="bg-neutral-100 rounded-3xl p-4 border border-neutral-200">
                 <div className="flex items-center gap-2 mb-2">
                     <div className="w-6 h-6 flex items-center justify-center text-neutral-800">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -127,12 +128,12 @@ export const PITSidebar = ({
                     </div>
                     <h4 className="text-[14px] font-bold text-neutral-800">Need expert eyes?</h4>
                 </div>
-                <p className="text-2 text-taxable-gray mb-3" style={{ fontFamily: 'Archivo', fontWeight: 500, lineHeight: '160%', letterSpacing: '-0.6%' }}>
+                <p className="text-[13px] text-neutral-500 mb-3" style={{ fontFamily: 'Archivo', fontWeight: 500, lineHeight: '160%', letterSpacing: '-0.6%' }}>
                     Get your return reviewed by a certified tax accountant. They'll ensure accuracy, compliance, and file for you.
                 </p>
                 <button
                     onClick={() => setHelpModalOpen(true)}
-                    className="w-full h-11 bg-white border border-slate-200 text-neutral-800 font-bold rounded-2xl hover:bg-neutral-50 transition-all text-2"
+                    className="w-full h-11 bg-white border border-neutral-200 text-neutral-800 font-bold rounded-2xl hover:bg-neutral-50 transition-all text-[13px]"
                 >
                     Book Accountant (₦15,000)
                 </button>

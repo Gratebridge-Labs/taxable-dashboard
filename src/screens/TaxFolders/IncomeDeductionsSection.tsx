@@ -135,6 +135,10 @@ export const IncomeDeductionsSection = ({
     onIncomeSaved,
 }: IncomeDeductionsSectionProps) => {
 
+    const incomeForPeriod = periodMode === 'annually' ? annualIncome : currentMonthIncome;
+    const _hasAnyIncome = Object.values(incomeForPeriod).some(v => parseFloat(v) > 0);
+    const hasAnyDeduction = Object.values(reliefs).some(v => parseFloat(v) > 0);
+
     const handleCopyFromLastMonth = () => {
         const currentIndex = MONTHS.indexOf(activeMonth as any);
         if (currentIndex <= 0) return;
@@ -605,7 +609,7 @@ export const IncomeDeductionsSection = ({
                                 setActiveSection('review');
                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                             }}
-                            disabled={savingReliefs}
+                            disabled={savingReliefs || !hasAnyDeduction}
                             className="h-11 px-6 rounded-xl bg-taxable-blue text-white text-2 font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {savingReliefs ? 'Saving...' : 'File annual tax returns'}

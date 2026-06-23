@@ -93,7 +93,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className="rounded-2xl border border-gray-100 bg-white shadow-lg px-4 py-3"
+            className="rounded-2xl border border-neutral-100 bg-white shadow-lg px-4 py-3"
             role="status"
             aria-live="polite"
           >
@@ -103,18 +103,18 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               </div>
               <div className="min-w-0 flex-1">
                 {t.title && (
-                  <p className="text-[13px] font-semibold text-[#0C0C0E] leading-snug">
+                  <p className="text-2 font-semibold text-neutral-800 leading-snug">
                     {t.title}
                   </p>
                 )}
-                <p className="text-[12px] text-[#6B7280] font-medium leading-relaxed break-words">
+                <p className="text-1 text-neutral-500 font-medium leading-relaxed break-words">
                   {t.message}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => remove(t.id)}
-                className="shrink-0 rounded-lg p-1 text-[#9CA3AF] hover:text-[#0C0C0E] hover:bg-gray-50 transition-colors"
+                className="shrink-0 rounded-lg p-1 text-neutral-400 hover:text-neutral-800 hover:bg-neutral-50 transition-colors"
                 aria-label="Dismiss notification"
               >
                 <X className="h-4 w-4" strokeWidth={2.5} />

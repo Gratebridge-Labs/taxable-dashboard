@@ -71,7 +71,7 @@ export default function Step1() {
                     className={`flex items-center justify-center w-full h-11 font-medium rounded-lg shadow-lg transition-transform active:scale-[0.99] ${
                         isValid 
                             ? 'bg-taxable-blue hover:opacity-90 text-white shadow-taxable-blue/10' 
-                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                            : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
                     }`}
                     onClick={(e) => !isValid && e.preventDefault()}
                 >

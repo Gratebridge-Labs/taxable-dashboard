@@ -514,8 +514,8 @@ export default function PITDetails() {
     // Show loading while authentication is being checked
     if (authLoading) {
         return (
-            <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003787]"></div>
+            <div className="min-h-screen bg-taxable-light flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-taxable-blue"></div>
             </div>
         );
     }
@@ -529,41 +529,41 @@ export default function PITDetails() {
     // Show loading while profile data is being fetched
     if (loading || profileLoading) {
         return (
-            <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003787]"></div>
+            <div className="min-h-screen bg-taxable-light flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-taxable-blue"></div>
             </div>
         );
     }
 
     if (error || !currentProfile) {
         return (
-            <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center p-4">
+            <div className="min-h-screen bg-taxable-light flex items-center justify-center p-4">
                 <div className="text-center max-w-md">
-                    <h3 className="text-lg font-bold text-[#0C0C0E] mb-2">{error || 'Profile not found'}</h3>
-                    <button onClick={() => router.push('/tax-folders')} className="px-4 py-2 bg-[#003787] text-white rounded-xl">Back to Tax Folders</button>
+                    <h3 className="text-lg font-bold text-neutral-800 mb-2">{error || 'Profile not found'}</h3>
+                    <button onClick={() => router.push('/tax-folders')} className="px-4 py-2 bg-taxable-blue text-white rounded-xl">Back to Tax Folders</button>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#FAFAFA] font-sans pb-24 md:pb-20">
+        <div className="min-h-screen bg-taxable-light pb-24 md:pb-20">
             <DashboardHeader />
 
             <main className="max-w-[1340px] mx-auto px-4 md:px-8 py-6 md:py-8">
-                <div className="flex flex-col gap-2 mb-6 border-b border-gray-100 pb-4 md:pb-6">
+                <div className="flex flex-col gap-2 mb-6 border-b border-neutral-100 pb-4 md:pb-6">
                     {/* Back button */}
-                    <button onClick={() => router.back()} className="flex items-center gap-1.5 text-[13px] font-bold text-[#0C0C0E] hover:text-[#003787] transition-colors w-fit mb-1">
+                    <button onClick={() => router.back()} className="flex items-center gap-1.5 text-2 font-bold text-neutral-800 hover:text-taxable-blue transition-colors w-fit mb-1">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
                         Back
                     </button>
 
                     {/* Mobile header */}
                     <div className="md:hidden flex justify-between items-end">
-                        <h1 className="text-base font-bold text-[#0C0C0E]">{personalInfo.fullName || 'User'}</h1>
+                        <h1 className="text-base font-bold text-neutral-800">{personalInfo.fullName || 'User'}</h1>
                         <div className="text-right">
-                            <h2 className="text-base font-bold text-[#0C0C0E]">{displayedTaxAmount}</h2>
-                            <p className="text-[11px] text-[#6B7280] font-medium">Net Tax Payable</p>
+                            <h2 className="text-base font-bold text-neutral-800">{displayedTaxAmount}</h2>
+                            <p className="text-[11px] text-neutral-500 font-medium">Net Tax Payable</p>
                         </div>
                     </div>
 
@@ -571,18 +571,18 @@ export default function PITDetails() {
                     <div className="hidden md:flex justify-between items-end gap-6">
                         {/* Left: name + status */}
                         <div>
-                            <h1 className="text-[20px] font-bold text-[#0C0C0E] leading-snug">
+                            <h1 className="text-[20px] font-bold text-neutral-800 leading-snug">
                                 {personalInfo.fullName || 'User'}, {currentProfile.year} Individual Tax
                             </h1>
                             <div className="flex items-center gap-2 mt-1.5">
                                 {incomeDeductionsComplete && (
-                                    <span className="flex items-center gap-1 text-[12px] font-semibold text-[#16A34A]">
+                                    <span className="flex items-center gap-1 text-1 font-semibold text-green-600">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                                         Tax Compliant
                                     </span>
                                 )}
-                                {incomeDeductionsComplete && <span className="text-[#D1D5DB] text-[12px]">•</span>}
-                                <span className="text-[12px] font-medium text-[#6B7280]">
+                                {incomeDeductionsComplete && <span className="text-neutral-300 text-1">•</span>}
+                                <span className="text-1 font-medium text-neutral-500">
                                     {headerTotalIncome > 0 ? `Total income` : 'No income data yet'}
                                 </span>
                             </div>
@@ -590,15 +590,15 @@ export default function PITDetails() {
 
                         {/* Right: tax amount + breakdown */}
                         <div className="text-right flex-shrink-0">
-                            <p className="text-[12px] text-[#9CA3AF] font-medium mb-0.5">Net Tax Payable</p>
-                            <h2 className="text-[22px] font-extrabold text-[#0C0C0E] leading-tight">{displayedTaxAmount}</h2>
+                            <p className="text-1 text-neutral-400 font-medium mb-0.5">Net Tax Payable</p>
+                            <h2 className="text-[22px] font-extrabold text-neutral-800 leading-tight">{displayedTaxAmount}</h2>
                             <div className="flex items-center justify-end gap-3 mt-1">
-                                <span className="text-[12px] text-[#9CA3AF] font-medium">
-                                    Total income: <span className="font-bold text-[#374151]">₦{headerTotalIncome.toLocaleString()}</span>
+                                <span className="text-1 text-neutral-400 font-medium">
+                                    Total income: <span className="font-bold text-neutral-700">₦{headerTotalIncome.toLocaleString()}</span>
                                 </span>
-                                <span className="text-[#E5E7EB]">|</span>
-                                <span className="text-[12px] text-[#9CA3AF] font-medium">
-                                    Total deductible: <span className="font-bold text-[#374151]">₦{headerTotalDeductible.toLocaleString()}</span>
+                                <span className="text-neutral-200">|</span>
+                                <span className="text-1 text-neutral-400 font-medium">
+                                    Total deductible: <span className="font-bold text-neutral-700">₦{headerTotalDeductible.toLocaleString()}</span>
                                 </span>
                             </div>
                         </div>

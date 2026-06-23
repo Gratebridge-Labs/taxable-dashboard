@@ -8,7 +8,7 @@ import { useTaxableApi } from '@/lib';
 import type { Profile } from '@/types/api';
 
 const NavItem = ({ iconSrc, label, active = false, href = "#" }: { iconSrc: string; label: string; active?: boolean; href?: string }) => (
-    <Link href={href} className={`flex items-center gap-2 px-3 py-2 text-[15px] font-medium transition-all group whitespace-nowrap ${active ? 'text-taxable-dark' : 'text-taxable-gray hover:text-taxable-dark'}`}>
+    <Link href={href} className={`flex items-center gap-2 px-3 py-2 text-3 font-medium transition-all group whitespace-nowrap ${active ? 'text-taxable-dark' : 'text-taxable-gray hover:text-taxable-dark'}`}>
         <Image src={iconSrc} alt={label} width={18} height={18} className={`${active ? 'opacity-100' : 'opacity-60'} group-hover:opacity-100 transition-opacity`} />
         <span>{label}</span>
     </Link>
@@ -16,14 +16,14 @@ const NavItem = ({ iconSrc, label, active = false, href = "#" }: { iconSrc: stri
 
 const StatusBadge = ({ type, text }: { type: 'complete' | 'progress' | 'none' | 'filed', text: string }) => {
     const styles = {
-        complete: 'bg-[#E6F9F3] text-[#10B981]',
-        progress: 'bg-[#FFF7ED] text-[#F97316]',
-        none: 'bg-gray-100 text-taxable-gray',
-        filed: 'bg-[#EFF6FF] text-[#2563EB]'
+        complete: 'bg-emerald-50 text-emerald-500',
+        progress: 'bg-orange-50 text-orange-500',
+        none: 'bg-neutral-100 text-taxable-gray',
+        filed: 'bg-blue-50 text-blue-600'
     };
 
     return (
-        <span className={`text-[13px] font-semibold px-2.5 py-1 rounded-full ${styles[type]}`}>
+        <span className={`text-2 font-semibold px-2.5 py-1 rounded-full ${styles[type]}`}>
             {text}
         </span>
     );
@@ -55,8 +55,8 @@ const TaxFolderCard = ({ profile, taxAmount, description, status, statusText, is
 
     return (
         <Link href={getHref()} className="group">
-            <div className="w-[322px] h-[323px] bg-white rounded-[34px] border border-gray-100 p-6 transition-all flex flex-col shadow-none hover:shadow-none" style={{ boxShadow: 'none' }}>
-                <div className={`w-full h-[145px] rounded-[24px] flex items-center justify-center mb-5 ${isInactive ? 'bg-[#F5F5F5]' : 'bg-[#FAFAFA]'}`}>
+            <div className="w-[322px] h-[323px] bg-white rounded-[34px] border border-neutral-100 p-6 transition-all flex flex-col shadow-none hover:shadow-none" style={{ boxShadow: 'none' }}>
+                <div className={`w-full h-[145px] rounded-3xl flex items-center justify-center mb-5 ${isInactive ? 'bg-neutral-100' : 'bg-taxable-light'}`}>
                     <Image
                         src={isInactive ? "/icons/inactive_folder.svg" : "/icons/folder.svg"}
                         alt="folder"
@@ -67,9 +67,9 @@ const TaxFolderCard = ({ profile, taxAmount, description, status, statusText, is
                 </div>
 
                 <div className="flex-1 flex flex-col items-start text-left">
-                    <h3 className="text-[19px] font-bold text-taxable-dark mb-1.5">{title}</h3>
+                    <h3 className="text-5 font-bold text-taxable-dark mb-1.5">{title}</h3>
                     <p className="text-sm font-semibold text-taxable-dark mb-1">{taxAmount || 'Calculating...'}</p>
-                    <p className="text-[13px] text-taxable-gray font-medium leading-relaxed mb-4 truncate w-full">
+                    <p className="text-2 text-taxable-gray font-medium leading-relaxed mb-4 truncate w-full">
                         {description || defaultDescription}
                     </p>
 
@@ -170,8 +170,8 @@ export default function TaxFolders() {
     const hasProfiles = profiles.length > 0;
 
     return (
-        <div className="min-h-screen bg-[#FAFAFA] font-sans">
-            <header className="w-full h-24 bg-white border-b border-gray-100 flex items-center px-12 sticky top-0 z-50">
+        <div className="min-h-screen bg-taxable-light">
+            <header className="w-full h-24 bg-white border-b border-neutral-100 flex items-center px-12 sticky top-0 z-50">
                 <div className="flex-1 flex items-center">
                     <Link href="/home">
                         <Image src="/logo_blue.svg" alt="Taxable" width={100} height={61} priority />
@@ -185,9 +185,9 @@ export default function TaxFolders() {
                 </nav>
 
                 <div className="flex-1 flex justify-end items-center">
-                    <div className="w-11 h-11 rounded-full bg-gray-100 overflow-hidden cursor-pointer hover:ring-2 hover:ring-taxable-blue/20 transition-all">
+                    <div className="w-11 h-11 rounded-full bg-neutral-100 overflow-hidden cursor-pointer hover:ring-2 hover:ring-taxable-blue/20 transition-all">
                         <Link href="/profile">
-                            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                            <div className="w-full h-full bg-neutral-200 flex items-center justify-center">
                                 <Image src="/icons/profile.svg" alt="Profile" width={28} height={28} className="opacity-40" />
                             </div>
                         </Link>
@@ -213,7 +213,7 @@ export default function TaxFolders() {
 
                 {profilesLoading || summariesLoading ? (
                     <div className="flex items-center justify-center py-20">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003787]"></div>
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-taxable-blue"></div>
                     </div>
                 ) : hasProfiles ? (
                     <>
@@ -221,7 +221,7 @@ export default function TaxFolders() {
                             <section className="mb-16">
                                 <div className="flex justify-between items-center mb-10">
                                     <h2 className="text-2xl font-bold text-taxable-dark">{new Date().getFullYear()} Tax Filings</h2>
-                                    <button className="h-12 px-6 bg-[#003787] hover:opacity-90 text-white font-semibold rounded-xl transition-all">
+                                    <button className="h-12 px-6 bg-taxable-blue hover:opacity-90 text-white font-semibold rounded-xl transition-all">
                                         Create another tax filing
                                     </button>
                                 </div>
@@ -244,7 +244,7 @@ export default function TaxFolders() {
                             <section>
                                 <div className="flex justify-between items-center mb-10">
                                     <h2 className="text-2xl font-bold text-taxable-dark">Previous Years</h2>
-                                    <button className="h-12 px-6 bg-white border border-gray-200 hover:bg-gray-50 text-taxable-dark font-semibold rounded-xl transition-all">
+                                    <button className="h-12 px-6 bg-white border border-neutral-200 hover:bg-neutral-50 text-taxable-dark font-semibold rounded-xl transition-all">
                                         Add another tax type
                                     </button>
                                 </div>
@@ -266,13 +266,13 @@ export default function TaxFolders() {
                     </>
                 ) : (
                     <div className="text-center py-20">
-                        <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+                        <div className="w-24 h-24 mx-auto mb-6 bg-neutral-100 rounded-full flex items-center justify-center">
                             <Image src="/icons/folder.svg" alt="No filings" width={48} height={48} className="opacity-40" />
                         </div>
                         <h3 className="text-xl font-semibold text-taxable-dark mb-2">No Tax Filings Yet</h3>
                         <p className="text-taxable-gray mb-6">Create your first tax filing to get started</p>
                         <Link href="/onboarding/step1">
-                            <button className="h-12 px-6 bg-[#003787] hover:opacity-90 text-white font-semibold rounded-xl transition-all">
+                            <button className="h-12 px-6 bg-taxable-blue hover:opacity-90 text-white font-semibold rounded-xl transition-all">
                                 Create Tax Filing
                             </button>
                         </Link>

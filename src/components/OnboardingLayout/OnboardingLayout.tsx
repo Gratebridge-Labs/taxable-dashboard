@@ -22,7 +22,7 @@ interface OnboardingLayoutProps {
 const OnboardingLayout = ({ children }: OnboardingLayoutProps) => {
     return (
         <OnboardingProvider>
-            <div className="min-h-screen md:h-screen w-full flex flex-col md:flex-row bg-white font-sans md:overflow-hidden">
+            <div className="min-h-screen md:h-screen w-full flex flex-col md:flex-row bg-white md:overflow-hidden">
                 {/* Left Panel - Reusable Content */}
                 <div className="w-full md:w-[45%] lg:w-[40%] bg-taxable-blue p-8 md:p-12 lg:p-16 flex flex-col justify-between relative overflow-hidden">
                     <div>
@@ -40,7 +40,7 @@ const OnboardingLayout = ({ children }: OnboardingLayoutProps) => {
                 </div>
 
                 {/* Right Panel - Dynamic Content */}
-                <div className="w-full md:w-[55%] lg:w-[60%] h-auto md:h-full overflow-y-auto bg-[#FAFAFA]">
+                <div className="w-full md:w-[55%] lg:w-[60%] h-auto md:h-full overflow-y-auto bg-taxable-light">
                     <div className="min-h-full p-6 md:p-12 lg:p-16 flex flex-col justify-start md:justify-center py-16">
                         {children}
                     </div>

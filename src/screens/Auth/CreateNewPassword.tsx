@@ -11,7 +11,7 @@ const InputField = ({ label, placeholder, type: _type = "password", value, onCha
 
     return (
         <div className="flex flex-col gap-3 w-full">
-            <label className="text-[15px] font-bold text-taxable-dark">
+            <label className="text-3 font-bold text-taxable-dark">
                 {label}
             </label>
             <div className="relative">
@@ -20,12 +20,12 @@ const InputField = ({ label, placeholder, type: _type = "password", value, onCha
                     value={value}
                     onChange={onChange}
                     placeholder={placeholder}
-                    className="w-full h-14 px-4 pr-12 rounded-[12px] border border-gray-100 bg-white placeholder:text-gray-300 focus:outline-none focus:ring-1 focus:ring-taxable-blue/20 focus:border-taxable-blue/20 transition-all font-medium"
+                    className="w-full h-14 px-4 pr-12 rounded-[12px] border border-neutral-100 bg-white placeholder:text-neutral-300 focus:outline-none focus:ring-1 focus:ring-taxable-blue/20 focus:border-taxable-blue/20 transition-all font-medium"
                 />
                 <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A3A3A3] hover:text-gray-600 transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors"
                 >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         {showPassword ? (
@@ -78,7 +78,7 @@ export default function CreateNewPassword() {
                 <div className="max-w-[440px] mx-auto w-full px-4">
                     <div className="mb-10 text-left">
                         <h2 className="text-2xl font-medium text-taxable-dark mb-3">Create a new password</h2>
-                        <p className="text-taxable-gray text-[15px] font-medium">Choose a strong password for your account.</p>
+                        <p className="text-taxable-gray text-3 font-medium">Choose a strong password for your account.</p>
                     </div>
 
                     <form className="space-y-8" onSubmit={handleSubmit}>
@@ -89,8 +89,8 @@ export default function CreateNewPassword() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                             />
-                            <div className="flex items-center gap-2 text-[13px] text-taxable-gray font-medium">
-                                <div className="w-4 h-4 rounded-full bg-[#A3A3A3] flex items-center justify-center">
+                            <div className="flex items-center gap-2 text-2 text-taxable-gray font-medium">
+                                <div className="w-4 h-4 rounded-full bg-neutral-400 flex items-center justify-center">
                                     <span className="text-[10px] text-white font-bold italic">i</span>
                                 </div>
                                 <span>At least 8 characters. Make it strong!</span>
@@ -111,7 +111,7 @@ export default function CreateNewPassword() {
                         <button
                             type="submit"
                             disabled={!password || password !== confirmPassword || isLoading}
-                            className="w-full h-14 bg-[#003787] text-white font-bold rounded-[14px] shadow-lg shadow-[#003787]/10 hover:opacity-95 disabled:opacity-50 transition-all mt-6"
+                            className="w-full h-14 bg-taxable-blue text-white font-bold rounded-xl shadow-lg shadow-taxable-blue/10 hover:opacity-95 disabled:opacity-50 transition-all mt-6"
                         >
                             Reset Password
                         </button>

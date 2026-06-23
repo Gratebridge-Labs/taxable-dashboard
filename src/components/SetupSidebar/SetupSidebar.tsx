@@ -78,20 +78,18 @@ const RadioOption = ({
         className={`w-full flex items-start gap-3 py-4 text-left group ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
     >
         {/* Circle */}
-        <div className={`mt-0.5 w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${selected ? 'border-[#003787]' : 'border-gray-300'}`}>
-            {selected && <div className="w-[9px] h-[9px] rounded-full bg-[#003787]" />}
+        <div className={`mt-0.5 w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${selected ? 'border-taxable-blue' : 'border-neutral-300'}`}>
+            {selected && <div className="w-[9px] h-[9px] rounded-full bg-taxable-blue" />}
         </div>
         <div>
             <p 
-                className="text-[15px] font-medium leading-4" 
-                style={{ fontFamily: 'Archivo', color: '#262626', letterSpacing: '0%', lineHeight: '16px' }}
+                className="text-3 font-medium leading-4 text-taxable-dark"
             >
                 {label}
             </p>
             {desc && (
                 <p 
-                    className="text-[13px] font-normal mt-1" 
-                    style={{ fontFamily: 'Archivo', color: '#737373', lineHeight: '160%' }}
+                    className="text-2 font-normal mt-1 text-taxable-gray"
                 >
                     {desc}
                 </p>
@@ -112,7 +110,7 @@ const CheckboxOption = ({
         onClick={onClick}
         className="w-full flex items-start gap-3 py-3.5 text-left"
     >
-        <div className={`mt-0.5 w-[18px] h-[18px] rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${selected ? 'border-[#003787] bg-[#003787]' : 'border-gray-300 bg-white'}`}>
+        <div className={`mt-0.5 w-[18px] h-[18px] rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${selected ? 'border-taxable-blue bg-taxable-blue' : 'border-neutral-300 bg-white'}`}>
             {selected && (
                 <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
                     <path d="M2 6L5 9L10 3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -121,15 +119,13 @@ const CheckboxOption = ({
         </div>
         <div>
             <p 
-                className="text-[15px] font-medium" 
-                style={{ fontFamily: 'Archivo', color: '#262626', lineHeight: '16px' }}
+                className="text-3 font-medium text-taxable-dark"
             >
                 {label}
             </p>
             {desc && (
                 <p 
-                    className="text-[13px] font-normal mt-1" 
-                    style={{ fontFamily: 'Archivo', color: '#737373', lineHeight: '160%' }}
+                    className="text-2 font-normal mt-1 text-taxable-gray"
                 >
                     {desc}
                 </p>
@@ -139,7 +135,7 @@ const CheckboxOption = ({
 );
 
 // ── Divider ──────────────────────────────────────────────────────────────────
-const _Divider = () => <div className="w-full h-[1px] bg-gray-100" />;
+const _Divider = () => <div className="w-full h-[1px] bg-neutral-100" />;
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfileId, initialData }: SetupSidebarProps) {
@@ -340,22 +336,21 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                     <div className="flex items-center gap-3 px-4 md:px-6 pt-4 pb-3 flex-shrink-0">
                         <button
                             onClick={handleBack}
-                            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
+                            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors flex-shrink-0"
                         >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0C0C0E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-800" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <line x1="19" y1="12" x2="5" y2="12" />
                                 <polyline points="12 19 5 12 12 5" />
                             </svg>
                         </button>
                         <div className="flex-1 text-center">
                             <h2 
-                                className="text-base md:text-[19px] font-semibold" 
-                                style={{ fontFamily: 'Archivo', color: '#262626', lineHeight: '32px', letterSpacing: '0%' }}
+                                className="text-base md:text-5 font-semibold text-taxable-dark"
                             >
                                 {getTitle()}
                             </h2>
                             {getSubtitle() && (
-                                <p className="text-xs md:text-[13px] font-normal mt-0.5" style={{ fontFamily: 'Archivo', color: '#737373' }}>{getSubtitle()}</p>
+                                <p className="text-xs md:text-2 font-normal mt-0.5 text-taxable-gray">{getSubtitle()}</p>
                             )}
                         </div>
                         {/* Spacer to balance the back button */}
@@ -376,8 +371,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                         {step === 0 && (
                             <div className="space-y-1">
                                 <p 
-                                    className="text-[14px] sm:text-[15px] font-medium mb-3 sm:mb-2"
-                                    style={{ fontFamily: 'Archivo', color: '#737373', lineHeight: '20px', letterSpacing: '-0.6%' }}
+                                    className="text-[14px] sm:text-3 font-medium mb-3 sm:mb-2 text-taxable-gray"
                                 >
                                     What type of tax do you want to file today?
                                 </p>
@@ -400,18 +394,17 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                 {filingType && (
                                     <div className="pt-4 sm:pt-5">
                                         <label 
-                                            className="block text-[14px] font-medium mb-2"
-                                            style={{ fontFamily: 'Archivo', color: '#737373', lineHeight: '20px', letterSpacing: '-0.6%' }}
+                                            className="block text-[14px] font-medium mb-2 text-taxable-gray"
                                         >
                                             {filingType === 'Business' ? 'Tax ID (RC/BN)' : 'Tax ID (Your NIN)'}{' '}
-                                            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-gray-300 text-[10px] text-gray-400 font-bold ml-0.5 cursor-help">?</span>
+                                            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-neutral-300 text-[10px] text-neutral-400 font-bold ml-0.5 cursor-help">?</span>
                                         </label>
                                         <input
                                             type="text"
                                             placeholder={filingType === 'Business' ? 'Enter your business registration number' : 'Enter your NIN'}
                                             value={taxId}
                                             onChange={e => setTaxId(e.target.value)}
-                                            className="w-full h-11 border border-gray-200 rounded-xl px-4 text-[14px] font-medium text-[#0C0C0E] placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#003787]/20 focus:border-[#003787]/40 transition-all"
+                                            className="w-full h-11 border border-neutral-200 rounded-xl px-4 text-[14px] font-medium text-neutral-800 placeholder:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-taxable-blue/20 focus:border-taxable-blue/40 transition-all"
                                         />
                                     </div>
                                 )}
@@ -420,8 +413,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                 {filingType === 'Individual' && (
                                     <div className="pt-4">
                                         <p 
-                                            className="text-[14px] sm:text-[15px] font-medium mb-2 sm:mb-1"
-                                            style={{ fontFamily: 'Archivo', color: '#737373', lineHeight: '20px', letterSpacing: '-0.6%' }}
+                                            className="text-[14px] sm:text-3 font-medium mb-2 sm:mb-1 text-taxable-gray"
                                         >
                                             What would you like to do?
                                         </p>
@@ -442,7 +434,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                 {/* Tax year */}
                                 {filingType && (
                                     <div className="pt-4">
-                                        <p className="text-[14px] sm:text-[15px] font-medium text-[#0C0C0E] mb-2 sm:mb-1">Which tax year are you filing for?</p>
+                                        <p className="text-[14px] sm:text-3 font-medium text-neutral-800 mb-2 sm:mb-1">Which tax year are you filing for?</p>
                                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 pt-1 sm:pt-2">
                                             <RadioOption
                                                 label="2026 (Current year)"
@@ -463,7 +455,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                         {/* ─── STEP 1: Income sources ─── */}
                         {step === 1 && (
                             <div>
-                                <p className="text-[14px] sm:text-[15px] font-medium text-[#0C0C0E] mb-3">
+                                <p className="text-[14px] sm:text-3 font-medium text-neutral-800 mb-3">
                                     What's your primary income source?
                                 </p>
                                 <div className="space-y-0">
@@ -485,7 +477,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                             <div className="space-y-5 sm:space-y-6">
                                 {LIFE_QUESTIONS.map((q) => (
                                     <div key={q.id}>
-                                        <p className="text-[14px] sm:text-[15px] font-medium text-[#0C0C0E] mb-2">{q.question}</p>
+                                        <p className="text-[14px] sm:text-3 font-medium text-neutral-800 mb-2">{q.question}</p>
                                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
                                             {q.options.map(opt => (
                                                 <RadioOption
@@ -497,7 +489,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                             ))}
                                         </div>
                                         {q.hint && (
-                                            <p className="text-[12px] sm:text-[13px] text-gray-400 font-normal mt-2 sm:mt-1 leading-relaxed">
+                                            <p className="text-1 sm:text-2 text-neutral-400 font-normal mt-2 sm:mt-1 leading-relaxed">
                                                 {q.hint}
                                             </p>
                                         )}
@@ -508,19 +500,19 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                     </div>
 
                     {/* Footer buttons */}
-                    <div className="px-4 md:px-6 py-4 flex-shrink-0 border-t border-gray-100">
+                    <div className="px-4 md:px-6 py-4 flex-shrink-0 border-t border-neutral-100">
                         {step === 0 && (
                             <div className="flex gap-3">
                                 <button
                                     onClick={onClose}
-                                    className="flex-1 h-11 sm:h-12 border border-gray-200 text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-colors text-[14px] sm:text-[15px]"
+                                    className="flex-1 h-11 sm:h-12 border border-neutral-200 text-neutral-800 font-bold rounded-xl hover:bg-neutral-50 transition-colors text-[14px] sm:text-3"
                                 >
                                     Back
                                 </button>
                                 <button
                                     onClick={handleGetStarted}
                                     disabled={!filingType || loadingStep === 0}
-                                    className="flex-1 h-11 sm:h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[14px] sm:text-[15px] disabled:opacity-70 flex items-center justify-center gap-2"
+                                    className="flex-1 h-11 sm:h-12 bg-taxable-blue text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[14px] sm:text-3 disabled:opacity-70 flex items-center justify-center gap-2"
                                 >
                                     {loadingStep === 0 ? (
                                         <>
@@ -540,14 +532,14 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                 <button
                                     onClick={() => setStep(0)}
                                     disabled={loadingStep === 1}
-                                    className="flex-1 h-11 sm:h-12 border border-gray-200 text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-colors text-[14px] sm:text-[15px] disabled:opacity-50"
+                                    className="flex-1 h-11 sm:h-12 border border-neutral-200 text-neutral-800 font-bold rounded-xl hover:bg-neutral-50 transition-colors text-[14px] sm:text-3 disabled:opacity-50"
                                 >
                                     Back
                                 </button>
                                 <button
                                     onClick={handleNextFromSources}
                                     disabled={selectedSources.length === 0 || loadingStep === 1}
-                                    className="flex-1 h-11 sm:h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[14px] sm:text-[15px] disabled:opacity-40 flex items-center justify-center gap-2"
+                                    className="flex-1 h-11 sm:h-12 bg-taxable-blue text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[14px] sm:text-3 disabled:opacity-40 flex items-center justify-center gap-2"
                                 >
                                     {loadingStep === 1 ? (
                                         <>
@@ -567,14 +559,14 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                 <button
                                     onClick={() => setStep(1)}
                                     disabled={isSubmitting}
-                                    className="flex-1 h-11 sm:h-12 border border-gray-200 text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-colors text-[14px] sm:text-[15px] disabled:opacity-50"
+                                    className="flex-1 h-11 sm:h-12 border border-neutral-200 text-neutral-800 font-bold rounded-xl hover:bg-neutral-50 transition-colors text-[14px] sm:text-3 disabled:opacity-50"
                                 >
                                     Back
                                 </button>
                                 <button
                                     onClick={handleProceed}
                                     disabled={isSubmitting}
-                                    className="flex-1 h-11 sm:h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[14px] sm:text-[15px] disabled:opacity-70 flex items-center justify-center gap-2"
+                                    className="flex-1 h-11 sm:h-12 bg-taxable-blue text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[14px] sm:text-3 disabled:opacity-70 flex items-center justify-center gap-2"
                                 >
                                     {isSubmitting ? (
                                         <>

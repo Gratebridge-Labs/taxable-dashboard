@@ -77,7 +77,7 @@ export default function Verify2FA() {
                     <div className="max-w-[480px] w-full mx-auto">
                         <div className="mb-10">
                             <h2 className="text-[26px] font-bold text-taxable-dark mb-2.5">Two-Factor Authentication</h2>
-                            <p className="text-taxable-gray text-[15px] leading-relaxed font-medium">
+                            <p className="text-taxable-gray text-3 leading-relaxed font-medium">
                                 Please enter the 6-digit code from your authenticator app to secure your account.
                             </p>
                         </div>
@@ -95,7 +95,7 @@ export default function Verify2FA() {
                                         value={digit}
                                         onChange={(e) => handleOtpChange(index, e.target.value)}
                                         onKeyDown={(e) => handleKeyDown(index, e)}
-                                        className="w-14 h-14 md:w-16 md:h-16 text-center text-2xl font-bold bg-[#F9FBFC] border border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-taxable-blue/10 focus:border-taxable-blue transition-all"
+                                        className="w-14 h-14 md:w-16 md:h-16 text-center text-2xl font-bold bg-slate-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-taxable-blue/10 focus:border-taxable-blue transition-all"
                                     />
                                 ))}
                             </div>
@@ -109,7 +109,7 @@ export default function Verify2FA() {
                             <button
                                 type="submit"
                                 disabled={otp.some(d => !d) || isLoading}
-                                className="w-full h-[54px] bg-taxable-blue text-white font-bold rounded-2xl shadow-lg shadow-taxable-blue/10 hover:opacity-95 disabled:opacity-50 transition-all text-[15px] flex items-center justify-center gap-2"
+                                className="w-full h-[54px] bg-taxable-blue text-white font-bold rounded-2xl shadow-lg shadow-taxable-blue/10 hover:opacity-95 disabled:opacity-50 transition-all text-3 flex items-center justify-center gap-2"
                             >
                                 {isLoading ? (
                                     <>
@@ -124,7 +124,7 @@ export default function Verify2FA() {
                                 )}
                             </button>
 
-                            <div className="text-center text-[15px]">
+                            <div className="text-center text-3">
                                 <Link href="/signin" className="text-taxable-blue font-bold hover:underline">
                                     Back to Login
                                 </Link>

@@ -11,14 +11,14 @@ import { useProfile } from '@/contexts/ProfileContext';
 
 const StatusBadge = ({ type, text }: { type: 'complete' | 'progress' | 'none' | 'filed', text: string }) => {
     const styles = {
-        complete: 'bg-[#E6F9F3] text-[#10B981]',
-        progress: 'bg-[#FFF7ED] text-[#F97316]',
-        none: 'bg-gray-100 text-taxable-gray',
-        filed: 'bg-[#EFF6FF] text-[#2563EB]'
+        complete: 'bg-emerald-50 text-emerald-500',
+        progress: 'bg-orange-50 text-orange-500',
+        none: 'bg-neutral-100 text-taxable-gray',
+        filed: 'bg-blue-50 text-blue-600'
     };
 
     return (
-        <span className={`text-[13px] font-semibold px-2.5 py-1 rounded-full ${styles[type]}`}>
+        <span className={`text-2 font-semibold px-2.5 py-1 rounded-full ${styles[type]}`}>
             {text}
         </span>
     );
@@ -47,7 +47,7 @@ const TaxFolderCard = ({
     >
         <div className="w-full h-[323px] bg-white rounded-[34px] p-6 transition-all flex flex-col">
             {/* Icon Container */}
-            <div className={`w-full h-[145px] rounded-[24px] flex items-center justify-center mb-5 ${isInactive ? 'bg-[#F5F5F5]' : 'bg-[#FAFAFA]'}`}>
+            <div className={`w-full h-[145px] rounded-3xl flex items-center justify-center mb-5 ${isInactive ? 'bg-neutral-100' : 'bg-taxable-light'}`}>
                 <Image
                     src={isInactive ? "/icons/inactive_folder.svg" : "/icons/folder.svg"}
                     alt="folder"
@@ -59,10 +59,10 @@ const TaxFolderCard = ({
 
             {/* Content */}
             <div className="flex-1 flex flex-col items-start text-left">
-                <h3 className="text-[19px] font-bold text-taxable-dark mb-1.5">{title}</h3>
+                <h3 className="text-5 font-bold text-taxable-dark mb-1.5">{title}</h3>
                 <p className="text-sm font-semibold text-taxable-dark mb-1">{valueText}</p>
                 <div className="relative w-full">
-                    <p className="text-[13px] text-taxable-gray font-medium leading-relaxed mb-4 line-clamp-2">
+                    <p className="text-2 text-taxable-gray font-medium leading-relaxed mb-4 line-clamp-2">
                         {description}
                     </p>
                 </div>
@@ -77,7 +77,7 @@ const TaxFolderCard = ({
 
 const VideoCard = ({ thumbnail, title, duration }: { thumbnail: string; title: string; duration: string }) => (
     <div className="group cursor-pointer">
-        <div className="relative aspect-[16/10] w-full rounded-[24px] overflow-hidden mb-4 shadow-xs group-hover:shadow-md transition-all duration-300">
+        <div className="relative aspect-[16/10] w-full rounded-3xl overflow-hidden mb-4 shadow-xs group-hover:shadow-md transition-all duration-300">
             <Image
                 src={thumbnail}
                 alt={title}
@@ -87,22 +87,22 @@ const VideoCard = ({ thumbnail, title, duration }: { thumbnail: string; title: s
             />
             <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                 <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="#003787" className="ml-0.5">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5 text-taxable-blue">
                         <path d="M5 3L19 12L5 21V3Z" />
                     </svg>
                 </div>
             </div>
         </div>
         <div className="text-left px-0.5">
-            <h3 className="text-[17px] font-semibold text-taxable-dark mb-1 leading-tight">{title}</h3>
+            <h3 className="text-4 font-semibold text-taxable-dark mb-1 leading-tight">{title}</h3>
             <p className="text-sm text-taxable-gray font-medium">{duration}</p>
         </div>
     </div>
 );
 
 const FAQItem = ({ question, answer }: { question: string; answer: string }) => (
-    <div className="w-full bg-taxable-lightgray2 rounded-[18px] p-6 mb-3 cursor-pointer">
-        <h4 className="text-[15px] font-medium text-taxable-dark mb-1.5">{question}</h4>
+    <div className="w-full bg-taxable-lightgray2 rounded-2xl p-6 mb-3 cursor-pointer">
+        <h4 className="text-3 font-medium text-taxable-dark mb-1.5">{question}</h4>
         <p className="text-[14px] text-taxable-gray font-medium leading-relaxed">{answer}</p>
     </div>
 );
@@ -130,23 +130,23 @@ const FAQSection = () => {
         <div className="mt-12 pb-20">
             <h2 className="text-xl md:text-2xl font-bold text-taxable-dark mb-8">Common Tax Questions</h2>
 
-            <div className="flex gap-10 border-b border-gray-100 mb-8 overflow-x-auto no-scrollbar">
+            <div className="flex gap-10 border-b border-neutral-100 mb-8 overflow-x-auto no-scrollbar">
                 {tabs.map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
-                        className={`pb-4 text-[15px] font-bold transition-all relative whitespace-nowrap ${activeTab === tab ? 'text-[#003787]' : 'text-taxable-gray'
+                        className={`pb-4 text-3 font-bold transition-all relative whitespace-nowrap ${activeTab === tab ? 'text-taxable-blue' : 'text-taxable-gray'
                             }`}
                     >
                         {tab}
                         {activeTab === tab && (
-                            <div className="absolute bottom-0 left-0 w-full h-[3px] bg-[#003787] rounded-full" />
+                            <div className="absolute bottom-0 left-0 w-full h-[3px] bg-taxable-blue rounded-full" />
                         )}
                     </button>
                 ))}
             </div>
 
-            <div className="max-w-[760px] flex flex-col gap-3 text-[17px] font-medium text-taxable-gray">
+            <div className="max-w-[760px] flex flex-col gap-3 text-4 font-medium text-taxable-gray">
                 {activeTab === 'FAQs' ? (
                     faqs.map((faq, index) => (
                         <FAQItem key={index} {...faq} />
@@ -232,7 +232,7 @@ export default function Home() {
     };
 
     return (
-        <div className="min-h-screen bg-[#FAFAFA] font-sans">
+        <div className="min-h-screen bg-taxable-light">
             <DashboardHeader />
 
             {/* Main Content */}
@@ -240,12 +240,12 @@ export default function Home() {
                 {isInitialLoading || authLoading ? (
                     <div className="flex flex-col gap-8 animate-pulse text-left">
                         <div className="space-y-4">
-                            <div className="h-10 bg-gray-200 rounded-lg w-1/3"></div>
-                            <div className="h-6 bg-gray-200 rounded-lg w-1/2"></div>
+                            <div className="h-10 bg-neutral-200 rounded-lg w-1/3"></div>
+                            <div className="h-6 bg-neutral-200 rounded-lg w-1/2"></div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             {[1, 2, 3].map(i => (
-                                <div key={i} className="aspect-[16/10] bg-gray-200 rounded-[24px]"></div>
+                                <div key={i} className="aspect-[16/10] bg-neutral-200 rounded-3xl"></div>
                             ))}
                         </div>
                     </div>
@@ -253,10 +253,10 @@ export default function Home() {
                     <>
                         <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-12">
                             <div>
-                                <h1 className="text-[24px] md:text-[32px] font-bold text-taxable-dark mb-2 tracking-tight">
+                                <h1 className="text-7 md:text-[32px] font-bold text-taxable-dark mb-2 tracking-tight">
                                     Hello, {user?.firstName}. Welcome to Taxable
                                 </h1>
-                                <p className="text-[15px] md:text-[17px] text-taxable-gray font-medium leading-relaxed max-w-xl">
+                                <p className="text-3 md:text-4 text-taxable-gray font-medium leading-relaxed max-w-xl">
                                     The 2026 tax cycle is currently active. Let's make sure you're compliant.
                                 </p>
                             </div>
@@ -264,13 +264,13 @@ export default function Home() {
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
                                 <button
                                     onClick={() => setIsSidebarOpen(true)}
-                                    className="h-12 px-6 bg-[#003787] hover:opacity-90 text-white font-bold rounded-xl transition-all shadow-sm whitespace-nowrap"
+                                    className="h-12 px-6 bg-taxable-blue hover:opacity-90 text-white font-bold rounded-xl transition-all shadow-sm whitespace-nowrap"
                                 >
                                     Get started
                                 </button>
                                 <Link
                                     href="/educational-resources"
-                                    className="h-12 px-6 bg-white border border-gray-100 hover:bg-gray-50 text-taxable-dark font-bold rounded-xl transition-all shadow-sm flex items-center justify-center whitespace-nowrap"
+                                    className="h-12 px-6 bg-white border border-neutral-100 hover:bg-neutral-50 text-taxable-dark font-bold rounded-xl transition-all shadow-sm flex items-center justify-center whitespace-nowrap"
                                 >
                                     Watch more guides
                                 </Link>
@@ -314,7 +314,7 @@ export default function Home() {
                                     {index === 0 ? (
                                         <button
                                             onClick={() => setIsSidebarOpen(true)}
-                                            className="h-11 px-6 bg-[#003787] hover:opacity-90 text-white text-[14px] font-bold rounded-xl transition-all w-full sm:w-auto text-center"
+                                            className="h-11 px-6 bg-taxable-blue hover:opacity-90 text-white text-[14px] font-bold rounded-xl transition-all w-full sm:w-auto text-center"
                                         >
                                             Create another tax filing
                                         </button>

@@ -8,11 +8,11 @@ import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
 const TaxCard = ({ title, description, badge = "Not started", buttonLabel = "Start filing", href = "#" }: { title: string; description: string; badge?: string; buttonLabel?: string; href?: string }) => (
     <div className="flex flex-col w-[303px] min-h-[398px] h-full">
         {/* Card Header Illustration Placeholder */}
-        <div className="w-full aspect-[4/3] bg-[#F1F5F9] rounded-[32px] mb-8 flex items-center justify-center">
+        <div className="w-full aspect-[4/3] bg-slate-100 rounded-4xl mb-8 flex items-center justify-center">
             <div className="w-full px-14 space-y-4">
-                <div className="h-2.5 w-1/3 bg-[#E2E8F0] rounded-full" />
-                <div className="h-2.5 w-3/4 bg-[#E2E8F0] rounded-full opacity-60" />
-                <div className="h-2.5 w-1/2 bg-[#E2E8F0] rounded-full opacity-60" />
+                <div className="h-2.5 w-1/3 bg-slate-200 rounded-full" />
+                <div className="h-2.5 w-3/4 bg-slate-200 rounded-full opacity-60" />
+                <div className="h-2.5 w-1/2 bg-slate-200 rounded-full opacity-60" />
             </div>
         </div>
 
@@ -22,13 +22,13 @@ const TaxCard = ({ title, description, badge = "Not started", buttonLabel = "Sta
         </p>
 
         <div className="mt-auto">
-            <div className="inline-flex px-3 py-1 bg-taxable-lightgray text-taxable-dark text-[13px] font-medium rounded-full w-fit mb-6 uppercase tracking-wider">
+            <div className="inline-flex px-3 py-1 bg-taxable-lightgray text-taxable-dark text-2 font-medium rounded-full w-fit mb-6 uppercase tracking-wider">
                 {badge}
             </div>
 
             <Link
                 href={href}
-                className="w-fit h-12 px-8 flex items-center justify-center bg-taxable-blue text-taxable-light font-bold rounded-xl hover:bg-[#002b6d] transition-all"
+                className="w-fit h-12 px-8 flex items-center justify-center bg-taxable-blue text-taxable-light font-bold rounded-xl hover:bg-taxable-blue transition-all"
             >
                 {buttonLabel}
             </Link>
@@ -39,7 +39,7 @@ const TaxCard = ({ title, description, badge = "Not started", buttonLabel = "Sta
 export default function TaxRequirements() {
     const router = useRouter();
     return (
-        <div className="min-h-screen bg-[#FAFAFA] font-sans pb-20">
+        <div className="min-h-screen bg-taxable-light pb-20">
             <DashboardHeader />
 
             <main className="max-w-[1280px] mx-auto px-12 py-8">
@@ -54,15 +54,15 @@ export default function TaxRequirements() {
                 </button>
 
                 {/* Breadcrumbs */}
-                <div className="flex items-center gap-2 text-[13px] text-[#94A3B8] font-medium mb-12">
+                <div className="flex items-center gap-2 text-2 text-slate-400 font-medium mb-12">
                     <span>Home</span>
                     <span>/</span>
-                    <span className="text-[#64748B]">Personal Income tax</span>
+                    <span className="text-slate-500">Personal Income tax</span>
                 </div>
 
                 <div className="mb-12">
                     <h1 className="text-2xl font-medium text-taxable-dark mb-3">Your 2026 Tax Filing Requirements</h1>
-                    <p className="text-[15px] text-[#64748B] font-medium">Based on the information you provided, these are the taxes you're <br /> required to file</p>
+                    <p className="text-3 text-slate-500 font-medium">Based on the information you provided, these are the taxes you're <br /> required to file</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
@@ -82,10 +82,10 @@ export default function TaxRequirements() {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <button className="h-14 px-8 bg-[#00388D] text-white font-bold rounded-2xl hover:bg-[#002b6d] transition-all">
+                    <button className="h-14 px-8 bg-taxable-blue text-white font-bold rounded-2xl hover:bg-taxable-blue transition-all">
                         Get started
                     </button>
-                    <button className="h-14 px-8 bg-white border border-gray-100 text-taxable-dark font-bold rounded-2xl hover:bg-gray-50 transition-all">
+                    <button className="h-14 px-8 bg-white border border-neutral-100 text-taxable-dark font-bold rounded-2xl hover:bg-neutral-50 transition-all">
                         Watch more guides
                     </button>
                 </div>

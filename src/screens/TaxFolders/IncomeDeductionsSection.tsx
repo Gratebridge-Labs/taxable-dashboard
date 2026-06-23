@@ -238,17 +238,17 @@ export const IncomeDeductionsSection = ({
             {/* Sub-navigation Sidebar — Month Selector */}
             <div className="w-full md:w-[240px] flex-shrink-0 space-y-1 md:pb-2 md:sticky md:top-8 md:self-start">
                 <div className="flex items-center gap-4 px-1">
-                    <span className={`text-[13px] font-bold transition-colors ${periodMode === 'monthly' ? 'text-[#0C0C0E]' : 'text-[#94A3B8]'}`}>Monthly</span>
+                    <span className={`text-2 font-bold transition-colors ${periodMode === 'monthly' ? 'text-neutral-800' : 'text-slate-400'}`}>Monthly</span>
                     <button
                         onClick={() => setPeriodMode(periodMode === 'monthly' ? 'annually' : 'monthly')}
-                        className="w-10 h-5 bg-[#003787] rounded-full relative p-0.5 transition-all"
+                        className="w-10 h-5 bg-taxable-blue rounded-full relative p-0.5 transition-all"
                     >
                         <div className={`w-4 h-4 bg-white rounded-full transition-all ${periodMode === 'annually' ? 'translate-x-5' : 'translate-x-0'}`} />
                     </button>
-                    <span className={`text-[13px] font-bold transition-colors ${periodMode === 'annually' ? 'text-[#0C0C0E]' : 'text-[#94A3B8]'}`}>Annually</span>
+                    <span className={`text-2 font-bold transition-colors ${periodMode === 'annually' ? 'text-neutral-800' : 'text-slate-400'}`}>Annually</span>
                 </div>
 
-                <div className="bg-[#F8FAFC]/50 rounded-3xl p-1 space-y-1">
+                <div className="bg-slate-50/50 rounded-3xl p-1 space-y-1">
                     {periodMode === 'monthly' ? (() => {
                         const filledMonthsSet = new Set<number>();
                         const completedMonthsSet = new Set<number>();
@@ -289,7 +289,7 @@ export const IncomeDeductionsSection = ({
                                             setExpandedMonth(expandedMonth === month ? null : month);
                                             setActiveMonth(month);
                                         }}
-                                        className={`w-full flex items-center justify-between px-3 py-3 rounded-2xl transition-all ${isHighlighted ? 'bg-white' : 'hover:bg-gray-50'}`}
+                                        className={`w-full flex items-center justify-between px-3 py-3 rounded-2xl transition-all ${isHighlighted ? 'bg-white' : 'hover:bg-neutral-50'}`}
                                     >
                                         <div className="flex items-center gap-3">
                                             {(() => {
@@ -304,18 +304,18 @@ export const IncomeDeductionsSection = ({
                                                     );
                                                 }
                                                 return (
-                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.8">
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-green-600" strokeWidth="2.8">
                                                         <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
                                                     </svg>
                                                 );
                                             })()}
-                                            <span className={`text-[13px] font-bold ${isHighlighted ? 'text-[#0C0C0E]' : 'text-[#94A3B8]'}`}>{month}</span>
+                                            <span className={`text-2 font-bold ${isHighlighted ? 'text-neutral-800' : 'text-slate-400'}`}>{month}</span>
                                         </div>
                                         <svg
                                             width="12" height="12" viewBox="0 0 24 24" fill="none"
-                                            stroke={isHighlighted ? '#0C0C0E' : '#94A3B8'}
+                                            stroke="currentColor"
                                             strokeWidth="3"
-                                            className={`transition-transform ${expandedMonth === month ? 'rotate-180' : ''}`}
+                                            className={`${isHighlighted ? 'text-neutral-800' : 'text-slate-400'} transition-transform ${expandedMonth === month ? 'rotate-180' : ''}`}
                                         >
                                             <polyline points="6 9 12 15 18 9" />
                                         </svg>
@@ -325,13 +325,13 @@ export const IncomeDeductionsSection = ({
                                         <div className="px-4 pb-2 space-y-1 ml-7">
                                             <button
                                                 onClick={() => setIncomeSubTab('income')}
-                                                className={`w-full text-left px-3 py-2 rounded-xl text-[13px] font-bold transition-colors ${incomeSubTab === 'income' ? 'bg-[#F5F5F5] text-[#0C0C0E]' : 'text-[#64748B] hover:text-[#0C0C0E]'}`}
+                                                className={`w-full text-left px-3 py-2 rounded-xl text-2 font-bold transition-colors ${incomeSubTab === 'income' ? 'bg-neutral-100 text-neutral-800' : 'text-slate-500 hover:text-neutral-800'}`}
                                             >
                                                 Income
                                             </button>
                                             <button
                                                 onClick={() => setIncomeSubTab('deductions')}
-                                                className={`w-full text-left px-3 py-2 rounded-xl text-[13px] font-bold transition-colors ${incomeSubTab === 'deductions' ? 'bg-[#F5F5F5] text-[#0C0C0E]' : 'text-[#64748B] hover:text-[#0C0C0E]'}`}
+                                                className={`w-full text-left px-3 py-2 rounded-xl text-2 font-bold transition-colors ${incomeSubTab === 'deductions' ? 'bg-neutral-100 text-neutral-800' : 'text-slate-500 hover:text-neutral-800'}`}
                                             >
                                                 Deductions
                                             </button>
@@ -345,18 +345,18 @@ export const IncomeDeductionsSection = ({
                             <button
                                 type="button"
                                 onClick={() => setIncomeSubTab('income')}
-                                className={`w-full flex items-center justify-between px-3 py-4 rounded-2xl transition-all ${incomeSubTab === 'income' ? 'bg-[#F5F5F5] text-[#0C0C0E]' : 'hover:bg-gray-50 text-[#94A3B8]'}`}
+                                className={`w-full flex items-center justify-between px-3 py-4 rounded-2xl transition-all ${incomeSubTab === 'income' ? 'bg-neutral-100 text-neutral-800' : 'hover:bg-neutral-50 text-slate-400'}`}
                             >
-                                <span className={`text-[13px] font-bold ${incomeSubTab === 'income' ? 'text-[#0C0C0E]' : 'text-[#94A3B8]'}`}>Total Income for {currentProfile?.year || 2026}</span>
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={incomeSubTab === 'income' ? '#0C0C0E' : '#94A3B8'} strokeWidth="3"><polyline points="9 18 15 12 9 6" /></svg>
+                                <span className={`text-2 font-bold ${incomeSubTab === 'income' ? 'text-neutral-800' : 'text-slate-400'}`}>Total Income for {currentProfile?.year || 2026}</span>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" className={incomeSubTab === 'income' ? 'text-neutral-800' : 'text-slate-400'} strokeWidth="3"><polyline points="9 18 15 12 9 6" /></svg>
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setIncomeSubTab('deductions')}
-                                className={`w-full flex items-center justify-between px-3 py-4 rounded-2xl transition-all ${incomeSubTab === 'deductions' ? 'bg-[#F5F5F5] text-[#0C0C0E]' : 'hover:bg-gray-50 text-[#94A3B8]'}`}
+                                className={`w-full flex items-center justify-between px-3 py-4 rounded-2xl transition-all ${incomeSubTab === 'deductions' ? 'bg-neutral-100 text-neutral-800' : 'hover:bg-neutral-50 text-slate-400'}`}
                             >
-                                <span className={`text-[13px] font-bold ${incomeSubTab === 'deductions' ? 'text-[#0C0C0E]' : 'text-[#94A3B8]'}`}>Total deductible for {currentProfile?.year || 2026}</span>
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={incomeSubTab === 'deductions' ? '#0C0C0E' : '#94A3B8'} strokeWidth="3"><polyline points="9 18 15 12 9 6" /></svg>
+                                <span className={`text-2 font-bold ${incomeSubTab === 'deductions' ? 'text-neutral-800' : 'text-slate-400'}`}>Total deductible for {currentProfile?.year || 2026}</span>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" className={incomeSubTab === 'deductions' ? 'text-neutral-800' : 'text-slate-400'} strokeWidth="3"><polyline points="9 18 15 12 9 6" /></svg>
                             </button>
                         </>
                     )}
@@ -366,7 +366,7 @@ export const IncomeDeductionsSection = ({
             {/* Main Form Area */}
             <div className="flex-1 max-w-[700px] space-y-6">
                 <div className="flex items-center gap-4">
-                    <p className="text-[15px] text-[#737373]" style={{ fontFamily: 'Archivo', fontWeight: 500, lineHeight: '160%', letterSpacing: '0%' }}>
+                    <p className="text-3 text-taxable-gray" style={{ fontFamily: 'Archivo', fontWeight: 500, lineHeight: '160%', letterSpacing: '0%' }}>
                         {periodMode === 'annually'
                             ? `Enter your total annual income for ${currentProfile?.year || 2026}. Skip fields that don't apply to you.`
                             : `Enter your income for ${activeMonth} ${currentProfile?.year || 2026}. Skip fields that don't apply to you. You can update amounts anytime.`
@@ -380,8 +380,8 @@ export const IncomeDeductionsSection = ({
                         {/* Employment Income - Only show if Salary/Employment is selected */}
                         {currentProfile?.primaryIncomeSources?.some((s: string) => s.toLowerCase().includes('salary') || s.toLowerCase().includes('employment')) && (
                             <div>
-                                <h3 className="text-[19px] font-medium text-[#262626] mb-6" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>Employment Income</h3>
-                                <div className="bg-[#F5F5F5] rounded-[24px] p-4">
+                                <h3 className="text-5 font-medium text-taxable-dark mb-6" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>Employment Income</h3>
+                                <div className="bg-neutral-100 rounded-3xl p-4">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
                                         {periodMode === 'annually' ? (
                                             <>
@@ -411,8 +411,8 @@ export const IncomeDeductionsSection = ({
                             s.toLowerCase().includes('rental')
                         ) && (
                             <div>
-                                <h3 className="text-[19px] font-medium text-[#262626] mb-6" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>Other Income</h3>
-                                <div className="bg-[#F5F5F5] rounded-[24px] p-4">
+                                <h3 className="text-5 font-medium text-taxable-dark mb-6" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>Other Income</h3>
+                                <div className="bg-neutral-100 rounded-3xl p-4">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                                         {periodMode === 'annually' ? (
                                             <>
@@ -444,8 +444,8 @@ export const IncomeDeductionsSection = ({
                         {/* Rent Relief */}
                         {currentProfile?.paysRent && (
                             <div>
-                                <h3 className="text-[19px] font-medium text-[#262626] mb-6" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>Rent Relief</h3>
-                                <div className="bg-[#F5F5F5] rounded-[24px] p-4">
+                                <h3 className="text-5 font-medium text-taxable-dark mb-6" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>Rent Relief</h3>
+                                <div className="bg-neutral-100 rounded-3xl p-4">
                                     {(() => {
                                         const rentDeduction = (deductions || []).find(d => (d.deductionType as string) === 'rent_relief');
                                         const rentStatus = rentDeduction?.verificationStatus;
@@ -480,8 +480,8 @@ export const IncomeDeductionsSection = ({
                         {/* Health Insurance */}
                         {currentProfile?.hasHealthInsurance && (
                             <div>
-                                <h3 className="text-[19px] font-medium text-[#262626] mb-6" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>Health Insurance (NHIS)</h3>
-                                <div className="bg-[#F5F5F5] rounded-[24px] p-4">
+                                <h3 className="text-5 font-medium text-taxable-dark mb-6" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>Health Insurance (NHIS)</h3>
+                                <div className="bg-neutral-100 rounded-3xl p-4">
                                     {(() => {
                                         const nhisDeduction = (monthScopedDeductions || []).find(d => d.type === 'insurance' || d.type === 'nhis' || d.type === 'health_insurance')?.raw;
                                         const nhisStatus = nhisDeduction?.verificationStatus;
@@ -516,8 +516,8 @@ export const IncomeDeductionsSection = ({
                         {/* Pension */}
                         {currentProfile?.hasPension && (
                             <div>
-                                <h3 className="text-[19px] font-medium text-[#262626] mb-6" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>Statutory Deductions</h3>
-                                <div className="bg-[#F5F5F5] rounded-[24px] p-4">
+                                <h3 className="text-5 font-medium text-taxable-dark mb-6" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>Statutory Deductions</h3>
+                                <div className="bg-neutral-100 rounded-3xl p-4">
                                     {(() => {
                                         const pensionDeduction = (deductions || []).find(d => (d.deductionType as string) === 'pension');
                                         const pensionStatus = pensionDeduction?.verificationStatus;
@@ -552,8 +552,8 @@ export const IncomeDeductionsSection = ({
                         {/* Mortgage */}
                         {currentProfile?.paysMortgage && (
                             <div>
-                                <h3 className="text-[19px] font-medium text-[#262626] mb-6" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>Mortgage Interest Relief</h3>
-                                <div className="bg-[#F5F5F5] rounded-[24px] p-4">
+                                <h3 className="text-5 font-medium text-taxable-dark mb-6" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>Mortgage Interest Relief</h3>
+                                <div className="bg-neutral-100 rounded-3xl p-4">
                                     {(() => {
                                         const mortgageDeduction = (monthScopedDeductions || []).find(d => d.type === 'mortgage' || d.type === 'mortgage_interest')?.raw;
                                         const mortgageStatus = mortgageDeduction?.verificationStatus;
@@ -588,8 +588,8 @@ export const IncomeDeductionsSection = ({
                         {/* Fallback */}
                         {!currentProfile?.paysRent && !currentProfile?.hasHealthInsurance && !currentProfile?.hasPension && !currentProfile?.paysMortgage && (
                             <div className="py-12 text-center">
-                                <p className="text-[14px] text-[#94A3B8] font-medium">No deductions applicable based on your profile.</p>
-                                <p className="text-[12px] text-[#94A3B8] mt-1">If this seems incorrect, please update your profile settings.</p>
+                                <p className="text-[14px] text-slate-400 font-medium">No deductions applicable based on your profile.</p>
+                                <p className="text-1 text-slate-400 mt-1">If this seems incorrect, please update your profile settings.</p>
                             </div>
                         )}
                     </div>
@@ -606,7 +606,7 @@ export const IncomeDeductionsSection = ({
                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                             }}
                             disabled={savingReliefs}
-                            className="h-11 px-6 rounded-xl bg-[#003787] text-white text-[13px] font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="h-11 px-6 rounded-xl bg-taxable-blue text-white text-2 font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {savingReliefs ? 'Saving...' : 'File annual tax returns'}
                         </button>
@@ -618,7 +618,7 @@ export const IncomeDeductionsSection = ({
                                 type="button"
                                 onClick={handleSaveDeductions}
                                 disabled={savingReliefs}
-                                className="h-11 px-6 rounded-xl bg-[#003787] text-white text-[13px] font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="h-11 px-6 rounded-xl bg-taxable-blue text-white text-2 font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {savingReliefs ? 'Saving...' : 'Save Deductions'}
                             </button>
@@ -628,7 +628,7 @@ export const IncomeDeductionsSection = ({
                                     <button
                                         type="button"
                                         onClick={handleCopyFromLastMonth}
-                                        className="h-11 px-4 rounded-xl bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#003787] text-[13px] font-semibold transition-colors flex items-center gap-2"
+                                        className="h-11 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-taxable-blue text-2 font-semibold transition-colors flex items-center gap-2"
                                     >
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
@@ -640,7 +640,7 @@ export const IncomeDeductionsSection = ({
                                 <button
                                     onClick={handleSaveIncome}
                                     disabled={savingMonthlyIncome}
-                                    className="h-11 px-6 rounded-xl bg-[#003787] text-white text-[13px] font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="h-11 px-6 rounded-xl bg-taxable-blue text-white text-2 font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {savingMonthlyIncome ? 'Saving...' : 'Save & Continue'}
                                 </button>

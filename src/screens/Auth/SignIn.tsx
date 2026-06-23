@@ -22,13 +22,13 @@ const InputField = ({ label, placeholder, type = "text", value, onChange }: { la
                     value={value}
                     onChange={onChange}
                     placeholder={placeholder}
-                    className="w-full h-12 px-4 rounded-2xl border border-[#f5f5f5] bg-white placeholder:text-gray-300 focus:outline-none focus:ring-1 focus:ring-taxable-blue/10 focus:border-taxable-blue transition-all font-medium text-taxable-dark"
+                    className="w-full h-12 px-4 rounded-2xl border border-neutral-100 bg-white placeholder:text-neutral-300 focus:outline-none focus:ring-1 focus:ring-taxable-blue/10 focus:border-taxable-blue transition-all font-medium text-taxable-dark"
                 />
                 {isPassword && (
                     <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 focus:outline-none"
                     >
                         {showPassword ? (
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -124,7 +124,7 @@ export default function SignIn() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                             />
-                            <div className="text-[13px] text-taxable-gray font-medium">
+                            <div className="text-2 text-taxable-gray font-medium">
                                 Forgot your password? <Link href="/forgot-password" size-text="[13px]" className="text-taxable-blue font-semibold hover:underline">Reset it here</Link>
                             </div>
                         </div>

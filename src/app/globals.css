@@ -1,6 +1,16 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+@custom-variant data-open { &:where([data-state="open"]), &:where([data-open]:not([data-open="false"])) { @slot; } }
+@custom-variant data-closed { &:where([data-state="closed"]), &:where([data-closed]:not([data-closed="false"])) { @slot; } }
+@custom-variant data-checked { &:where([data-state="checked"]), &:where([data-checked]:not([data-checked="false"])) { @slot; } }
+@custom-variant data-unchecked { &:where([data-state="unchecked"]), &:where([data-unchecked]:not([data-unchecked="false"])) { @slot; } }
+@custom-variant data-selected { &:where([data-selected="true"]) { @slot; } }
+@custom-variant data-disabled { &:where([data-disabled="true"]), &:where([data-disabled]:not([data-disabled="false"])) { @slot; } }
+@custom-variant data-active { &:where([data-state="active"]), &:where([data-active]:not([data-active="false"])) { @slot; } }
+@custom-variant data-horizontal { &:where([data-orientation="horizontal"]) { @slot; } }
+@custom-variant data-vertical { &:where([data-orientation="vertical"]) { @slot; } }
+
 :root {
   --background: #FFFFFF;
   --foreground: #262626;
@@ -30,6 +40,44 @@
   --color-taxable-light: var(--taxable-light);
 
   --font-sans: var(--font-archivo);
+
+  /* Typography Scale */
+  --text-1: 12px;
+  --text-2: 13px;
+  --text-3: 15px;
+  --text-4: 17px;
+  --text-5: 19px;
+  --text-6: 21px;
+  --text-7: 24px;
+  --text-8: 27px;
+  --text-9: 30px;
+  --text-10: 34px;
+  --text-11: 38px;
+  --text-12: 43px;
+  --text-13: 49px;
+  --text-14: 55px;
+  --text-15: 62px;
+
+  /* Neutral Color Palette */
+  --color-neutral-50: #fafafa;
+  --color-neutral-100: #f5f5f5;
+  --color-neutral-200: #e5e5e5;
+  --color-neutral-300: #d4d4d4;
+  --color-neutral-400: #a3a3a3;
+  --color-neutral-500: #737373;
+  --color-neutral-600: #525252;
+  --color-neutral-700: #404040;
+  --color-neutral-800: #262626;
+  --color-neutral-900: #171717;
+
+  /* Radius Tokens */
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 

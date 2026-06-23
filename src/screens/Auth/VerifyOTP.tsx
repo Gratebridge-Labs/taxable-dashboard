@@ -93,7 +93,7 @@ export default function VerifyOTP() {
             <OnboardingLayout>
                 <div className="flex-1 flex flex-col justify-center relative">
                     <div className="absolute top-0 right-0 -top-2 md:top-0">
-                        <Link href="/signin" className="px-4 md:px-5 py-2 md:py-2.5 rounded-xl border border-gray-200 text-taxable-dark font-bold hover:bg-gray-50 transition-colors bg-white text-[12px] md:text-[13px] whitespace-nowrap shadow-xs">
+                        <Link href="/signin" className="px-4 md:px-5 py-2 md:py-2.5 rounded-xl border border-neutral-200 text-taxable-dark font-bold hover:bg-neutral-50 transition-colors bg-white text-1 md:text-2 whitespace-nowrap shadow-xs">
                             Log in
                         </Link>
                     </div>
@@ -101,7 +101,7 @@ export default function VerifyOTP() {
                     <div className="max-w-[480px] w-full mx-auto px-4 md:px-0">
                         <div className="mb-8 md:mb-10">
                             <h2 className="text-[22px] md:text-[26px] font-bold text-taxable-dark mb-2 md:mb-2.5">Enter Verification Code</h2>
-                            <p className="text-taxable-gray text-[14px] md:text-[15px] leading-relaxed font-medium">
+                            <p className="text-taxable-gray text-[14px] md:text-3 leading-relaxed font-medium">
                                 We&apos;ve sent a verification code to your mail<br />
                                 <span className="text-taxable-dark font-bold">{email}</span>
                             </p>
@@ -120,7 +120,7 @@ export default function VerifyOTP() {
                                         value={digit}
                                         onChange={(e) => handleOtpChange(index, e.target.value)}
                                         onKeyDown={(e) => handleKeyDown(index, e)}
-                                        className="w-12 h-12 md:w-16 md:h-16 text-center text-xl md:text-2xl font-bold bg-[#F9FBFC] border border-gray-100 rounded-xl md:rounded-2xl focus:outline-none focus:ring-2 focus:ring-taxable-blue/10 focus:border-taxable-blue transition-all"
+                                        className="w-12 h-12 md:w-16 md:h-16 text-center text-xl md:text-2xl font-bold bg-slate-50 border border-neutral-100 rounded-xl md:rounded-2xl focus:outline-none focus:ring-2 focus:ring-taxable-blue/10 focus:border-taxable-blue transition-all"
                                     />
                                 ))}
                             </div>
@@ -134,7 +134,7 @@ export default function VerifyOTP() {
                             <button
                                 type="submit"
                                 disabled={otp.some(d => !d) || isLoading}
-                                className="w-full h-[48px] md:h-[54px] bg-taxable-blue text-white font-bold rounded-xl md:rounded-2xl shadow-lg shadow-taxable-blue/10 hover:opacity-95 disabled:opacity-50 transition-all text-[14px] md:text-[15px] flex items-center justify-center gap-2"
+                                className="w-full h-[48px] md:h-[54px] bg-taxable-blue text-white font-bold rounded-xl md:rounded-2xl shadow-lg shadow-taxable-blue/10 hover:opacity-95 disabled:opacity-50 transition-all text-[14px] md:text-3 flex items-center justify-center gap-2"
                             >
                                 {isLoading ? (
                                     <>
@@ -149,7 +149,7 @@ export default function VerifyOTP() {
                                 )}
                             </button>
 
-                            <div className="text-center text-[14px] md:text-[15px]">
+                            <div className="text-center text-[14px] md:text-3">
                                 <span className="text-taxable-gray font-medium">Did not receive mail? </span>
                                 <button
                                     type="button"

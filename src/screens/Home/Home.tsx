@@ -1,5 +1,6 @@
 'use client';
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import gsap from 'gsap';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -127,7 +128,7 @@ const FAQSection = () => {
     ];
 
     return (
-        <div className="mt-12 pb-20">
+        <div className="mt-12 pb-20" data-animate>
             <h2 className="text-xl md:text-2xl font-bold text-taxable-dark mb-8">Common Tax Questions</h2>
 
             <div className="flex gap-10 border-b border-neutral-100 mb-8 overflow-x-auto no-scrollbar">
@@ -199,6 +200,21 @@ export default function Home() {
         }
     ];
 
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const ctx = gsap.context(() => {
+            gsap.from('[data-animate]', {
+                opacity: 0,
+                y: 12,
+                duration: 0.5,
+                stagger: 0.06,
+                ease: 'power2.out',
+            });
+        }, containerRef);
+        return () => ctx.revert();
+    }, []);
+
     const router = useRouter();
     const [resumeProfileId, setResumeProfileId] = useState<string | null>(null);
     const [resumeData, setResumeData] = useState<{ year?: string; category?: string } | undefined>(undefined);
@@ -232,7 +248,7 @@ export default function Home() {
     };
 
     return (
-        <div className="min-h-screen bg-taxable-light">
+        <div ref={containerRef} className="min-h-screen bg-taxable-light">
             <DashboardHeader />
 
             {/* Main Content */}
@@ -252,7 +268,7 @@ export default function Home() {
                 ) : !hasTaxFolders ? (
                     <>
                         <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-12">
-                            <div>
+                            <div data-animate>
                                 <h1 className="text-7 md:text-[32px] font-bold text-taxable-dark mb-2 tracking-tight">
                                     Hello, {user?.firstName}. Welcome to Taxable
                                 </h1>
@@ -261,7 +277,7 @@ export default function Home() {
                                 </p>
                             </div>
 
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
+                            <div data-animate className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
                                 <button
                                     onClick={() => setIsSidebarOpen(true)}
                                     className="h-12 px-6 bg-taxable-blue hover:opacity-90 text-white font-bold rounded-xl transition-all shadow-sm whitespace-nowrap"
@@ -279,7 +295,7 @@ export default function Home() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
                             {videos.map((video, index) => (
-                                <VideoCard key={index} {...video} />
+                                <div key={index} data-animate><VideoCard {...video} /></div>
                             ))}
                         </div>
 
@@ -288,7 +304,7 @@ export default function Home() {
                 ) : (
                     <div className="animate-in fade-in duration-700">
                         <div className="mb-8 flex flex-col md:flex-row justify-between items-start gap-6">
-                            <div>
+                            <div data-animate>
                                 <h1 className="text-[22px] md:text-[28px] font-semibold text-taxable-dark mb-2 tracking-tight">
                                     Hello, {user?.firstName}, Welcome back
                                 </h1>
@@ -308,7 +324,7 @@ export default function Home() {
                                 return acc;
                             }, {})
                         ).sort(([yearA], [yearB]) => Number(yearB) - Number(yearA)).map(([year, yearProfiles], index) => (
-                            <section key={year} className="mb-10 last:mb-0">
+                            <section key={year} className="mb-10 last:mb-0" data-animate>
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                                     <h2 className="text-xl md:text-2xl font-bold text-taxable-dark">{year} Tax Filings</h2>
                                     {index === 0 ? (

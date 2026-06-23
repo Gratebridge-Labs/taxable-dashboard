@@ -1,6 +1,8 @@
-import React, { ReactNode } from 'react';
+'use client';
+import React, { ReactNode, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import Lenis from 'lenis';
 import { OnboardingProvider } from '@/contexts/OnboardingContext';
 
 const LogoWhite = () => (
@@ -20,6 +22,22 @@ interface OnboardingLayoutProps {
 }
 
 const OnboardingLayout = ({ children }: OnboardingLayoutProps) => {
+    useEffect(() => {
+        const lenis = new Lenis({ lerp: 0.1 });
+        (window as any).__lenis = lenis;
+
+        function raf(time: number) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
+
+        return () => {
+            lenis.destroy();
+            (window as any).__lenis = undefined;
+        };
+    }, []);
+
     return (
         <OnboardingProvider>
             <div className="min-h-screen md:h-screen w-full flex flex-col md:flex-row bg-white md:overflow-hidden">

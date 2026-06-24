@@ -1,172 +1,37 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import gsap from 'gsap';
-import Image from 'next/image';
-import Link from 'next/link';
+import Lenis from 'lenis';
 import { useRouter } from 'next/navigation';
 import SetupSidebar from '@/components/SetupSidebar/SetupSidebar';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
+import { TaxFolderCard } from '@/screens/Home/TaxFolderCard';
+import { VideoCard } from '@/screens/Home/VideoCard';
+import { FAQSection } from '@/screens/Home/FAQSection';
 
 import { useUser } from '@/contexts/UserContext';
 import { useProfile } from '@/contexts/ProfileContext';
+import { useTaxableApi } from '@/hooks/useTaxableApi';
 
-const StatusBadge = ({ type, text }: { type: 'complete' | 'progress' | 'none' | 'filed', text: string }) => {
-    const styles = {
-        complete: 'bg-emerald-50 text-emerald-500',
-        progress: 'bg-orange-50 text-orange-500',
-        none: 'bg-neutral-100 text-taxable-gray',
-        filed: 'bg-blue-50 text-blue-600'
-    };
-
-    return (
-        <span className={`text-2 font-semibold px-2.5 py-1 rounded-full ${styles[type]}`}>
-            {text}
-        </span>
-    );
-};
-
-const TaxFolderCard = ({
-    title,
-    valueText,
-    description,
-    status,
-    statusText,
-    isInactive = false,
-    onClick
-}: {
-    title: string,
-    valueText: string,
-    description: string,
-    status: 'complete' | 'progress' | 'none' | 'filed',
-    statusText: string,
-    isInactive?: boolean,
-    onClick?: () => void
-}) => (
-    <div
-        onClick={onClick}
-        className={`group cursor-pointer ${isInactive ? 'pointer-events-none opacity-80' : ''}`}
-    >
-        <div className="w-full h-[323px] bg-white rounded-[34px] p-6 transition-all flex flex-col">
-            {/* Icon Container */}
-            <div className={`w-full h-[145px] rounded-3xl flex items-center justify-center mb-5 ${isInactive ? 'bg-neutral-100' : 'bg-taxable-light'}`}>
-                <Image
-                    src={isInactive ? "/icons/inactive_folder.svg" : "/icons/folder.svg"}
-                    alt="folder"
-                    width={60}
-                    height={58}
-                    className="transition-transform group-hover:scale-110 duration-500"
-                />
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 flex flex-col items-start text-left">
-                <h3 className="text-5 font-bold text-taxable-dark mb-1.5">{title}</h3>
-                <p className="text-sm font-semibold text-taxable-dark mb-1">{valueText}</p>
-                <div className="relative w-full">
-                    <p className="text-2 text-taxable-gray font-medium leading-relaxed mb-4 line-clamp-2">
-                        {description}
-                    </p>
-                </div>
-
-                <div className="mt-auto">
-                    <StatusBadge type={status} text={statusText} />
-                </div>
-            </div>
-        </div>
-    </div>
-);
-
-const VideoCard = ({ thumbnail, title, duration }: { thumbnail: string; title: string; duration: string }) => (
-    <div className="group cursor-pointer">
-        <div className="relative aspect-[16/10] w-full rounded-3xl overflow-hidden mb-4 shadow-xs group-hover:shadow-md transition-all duration-300">
-            <Image
-                src={thumbnail}
-                alt={title}
-                fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
-            />
-            <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5 text-taxable-blue">
-                        <path d="M5 3L19 12L5 21V3Z" />
-                    </svg>
-                </div>
-            </div>
-        </div>
-        <div className="text-left px-0.5">
-            <h3 className="text-4 font-semibold text-taxable-dark mb-1 leading-tight">{title}</h3>
-            <p className="text-sm text-taxable-gray font-medium">{duration}</p>
-        </div>
-    </div>
-);
-
-const FAQItem = ({ question, answer }: { question: string; answer: string }) => (
-    <div className="w-full bg-taxable-lightgray2 rounded-2xl p-6 mb-3 cursor-pointer">
-        <h4 className="text-3 font-medium text-taxable-dark mb-1.5">{question}</h4>
-        <p className="text-[14px] text-taxable-gray font-medium leading-relaxed">{answer}</p>
-    </div>
-);
-
-const FAQSection = () => {
-    const [activeTab, setActiveTab] = useState('FAQs');
-    const tabs = ['FAQs', 'Guides', '2026 Reforms'];
-
-    const faqs = [
-        {
-            question: "Do I need to file taxes if I'm self-employed?",
-            answer: "Yes. If you earn income from freelancing, online business, or any self-employment"
-        },
-        {
-            question: "What's my Tax Identification Number (TIN) and how do I get one?",
-            answer: "Your TIN is a unique number issued by FIRS. Here's how to register..."
-        },
-        {
-            question: "When is the tax filing deadline for 2026?",
-            answer: "Individual tax returns must be filed by March 31, 2026. Here's what you need to know.."
-        }
-    ];
-
-    return (
-        <div className="mt-12 pb-20" data-animate>
-            <h2 className="text-xl md:text-2xl font-bold text-taxable-dark mb-8">Common Tax Questions</h2>
-
-            <div className="flex gap-10 border-b border-neutral-100 mb-8 overflow-x-auto no-scrollbar">
-                {tabs.map((tab) => (
-                    <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`pb-4 text-3 font-bold transition-all relative whitespace-nowrap ${activeTab === tab ? 'text-taxable-blue' : 'text-taxable-gray'
-                            }`}
-                    >
-                        {tab}
-                        {activeTab === tab && (
-                            <div className="absolute bottom-0 left-0 w-full h-[3px] bg-taxable-blue rounded-full" />
-                        )}
-                    </button>
-                ))}
-            </div>
-
-            <div className="max-w-[760px] flex flex-col gap-3 text-4 font-medium text-taxable-gray">
-                {activeTab === 'FAQs' ? (
-                    faqs.map((faq, index) => (
-                        <FAQItem key={index} {...faq} />
-                    ))
-                ) : activeTab === 'Guides' ? (
-                    <div className="py-8">GUIDES</div>
-                ) : (
-                    <div className="py-8">TAX REFORM</div>
-                )}
-            </div>
-        </div>
-    );
-};
-
+const VIDEOS = [
+    { thumbnail: "/thumbnails/tour.png", title: "The Taxable Tour", duration: "8:37 mins" },
+    { thumbnail: "/thumbnails/reforms.png", title: "Nigeria's 2026 Tax Reforms Explained", duration: "8:37 mins" },
+    { thumbnail: "/thumbnails/reforms.png", title: "Nigeria's 2026 Tax Reforms Explained", duration: "8:37 mins" },
+];
 
 export default function Home() {
     const { user, isAuthenticated, loading: authLoading } = useUser();
     const { profiles, loading: profilesLoading, fetchProfiles } = useProfile();
+    const { deleteProfile } = useTaxableApi();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const handleDeleteProfile = useCallback(async (profileId: string) => {
+        try {
+            await deleteProfile(profileId);
+            fetchProfiles();
+        } catch (err: unknown) {
+            console.error('Failed to delete profile:', err instanceof Error ? err.message : 'Unknown error');
+        }
+    }, [deleteProfile, fetchProfiles]);
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -177,37 +42,52 @@ export default function Home() {
     const hasTaxFolders = profiles.length > 0;
     const isInitialLoading = authLoading || profilesLoading;
 
-    const videos = [
-        {
-            thumbnail: "/thumbnails/tour.png",
-            title: "The Taxable Tour",
-            duration: "8:37 mins"
-        },
-        {
-            thumbnail: "/thumbnails/reforms.png",
-            title: "Nigeria's 2026 Tax Reforms Explained",
-            duration: "8:37 mins"
-        },
-        {
-            thumbnail: "/thumbnails/reforms.png",
-            title: "Nigeria's 2026 Tax Reforms Explained",
-            duration: "8:37 mins"
-        }
-    ];
-
     const containerRef = useRef<HTMLDivElement>(null);
+    const hasAnimated = useRef(false);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
+        if (isInitialLoading || authLoading) return;
+        if (hasAnimated.current) return;
+        hasAnimated.current = true;
+
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
         const ctx = gsap.context(() => {
-            gsap.from('[data-animate]', {
-                opacity: 0,
-                y: 12,
-                duration: 0.5,
-                stagger: 0.06,
-                ease: 'power2.out',
-            });
+            gsap.fromTo(
+                '[data-animate]',
+                { opacity: 0, y: 12 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.5,
+                    stagger: 0.06,
+                    ease: 'power2.out',
+                    onStart: () => gsap.set('[data-animate]', { transition: 'none' }),
+                    onComplete: () => gsap.set('[data-animate]', { clearProps: 'transition' }),
+                }
+            );
         }, containerRef);
         return () => ctx.revert();
+    }, [isInitialLoading, authLoading]);
+
+    useEffect(() => {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+        const lenis = new Lenis({ lerp: 0.1 });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (window as any).__lenis = lenis;
+
+        function raf(time: number) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
+
+        return () => {
+            lenis.destroy();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (window as any).__lenis = undefined;
+        };
     }, []);
 
     const router = useRouter();
@@ -243,118 +123,107 @@ export default function Home() {
     };
 
     return (
-        <div ref={containerRef} className="min-h-screen bg-taxable-light">
+        <div ref={containerRef} className="min-h-screen bg-white">
             <DashboardHeader />
 
             {/* Main Content */}
-            <main className="max-w-[1280px] mx-auto px-6 md:px-12 py-6 md:py-8">
-                {isInitialLoading || authLoading ? (
-                    <div className="flex flex-col gap-8 animate-pulse text-left">
-                        <div className="space-y-4">
-                            <div className="h-10 bg-neutral-200 rounded-lg w-1/3"></div>
-                            <div className="h-6 bg-neutral-200 rounded-lg w-1/2"></div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                            {[1, 2, 3].map(i => (
-                                <div key={i} className="aspect-[16/10] bg-neutral-200 rounded-3xl"></div>
-                            ))}
-                        </div>
-                    </div>
-                ) : !hasTaxFolders ? (
+            <main className="max-w-[1280px] mx-auto px-6 md:px-12 pt-10 pb-6 md:pb-8">
+                { !hasTaxFolders ? (
                     <>
-                        <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-12">
-                            <div data-animate>
-                                <h1 className="text-7 md:text-[32px] font-bold text-taxable-dark mb-2 tracking-tight">
-                                    Hello, {user?.firstName}. Welcome to Taxable
-                                </h1>
-                                <p className="text-3 md:text-4 text-taxable-gray font-medium leading-relaxed max-w-xl">
-                                    The 2026 tax cycle is currently active. Let's make sure you're compliant.
-                                </p>
+                        <div className="flex flex-col gap-12">
+                            <div className="flex flex-col md:flex-row justify-between items-start gap-8">
+                                <div data-animate>
+                                    <h1 className="text-7 font-bold text-taxable-dark mb-2 tracking-tight">
+                                        Hello {user?.firstName}, Welcome to Taxable
+                                    </h1>
+                                    <p className="text-2 text-neutral-400 font-medium">The 2026 tax cycle is currently active. Let's make sure you're compliant.</p>
+                                </div>
+
+                                <div data-animate className="w-full md:w-auto">
+                                    <button
+                                        onClick={() => setIsSidebarOpen(true)}
+                                        className="h-12 px-4 bg-taxable-blue text-white font-semibold rounded-xl whitespace-nowrap"
+                                    >
+                                        Create new tax filing
+                                    </button>
+                                </div>
                             </div>
 
-                            <div data-animate className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
-                                <button
-                                    onClick={() => setIsSidebarOpen(true)}
-                                    className="h-12 px-6 bg-taxable-blue hover:opacity-90 text-white font-bold rounded-xl transition-all shadow-sm whitespace-nowrap"
-                                >
-                                    Get started
-                                </button>
-                                <Link
-                                    href="/educational-resources"
-                                    className="h-12 px-6 bg-white border border-neutral-100 hover:bg-neutral-50 text-taxable-dark font-bold rounded-xl transition-all shadow-sm flex items-center justify-center whitespace-nowrap"
-                                >
-                                    Watch more guides
-                                </Link>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                {VIDEOS.map((video, index) => (
+                                    <div key={index} data-animate><VideoCard {...video} /></div>
+                                ))}
                             </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-                            {videos.map((video, index) => (
-                                <div key={index} data-animate><VideoCard {...video} /></div>
-                            ))}
                         </div>
 
                         <FAQSection />
                     </>
                 ) : (
-                    <div className="animate-in fade-in duration-700">
-                        <div className="mb-8 flex flex-col md:flex-row justify-between items-start gap-6">
-                            <div data-animate>
-                                <h1 className="text-[22px] md:text-[28px] font-semibold text-taxable-dark mb-2 tracking-tight">
-                                    Hello, {user?.firstName}, Welcome back
-                                </h1>
-                                <p className="text-sm md:text-base text-taxable-gray font-medium">
-                                    You have {profiles.length} tax filing{profiles.length !== 1 ? 's' : ''} ready for 2026. Click any card to begin.
-                                </p>
+                    <>
+                        <div className="animate-in fade-in duration-700">
+                            <div className="mb-8 flex flex-col md:flex-row justify-between items-start gap-6">
+                                <div data-animate>
+                                    <h1 className="text-7 font-semibold text-taxable-dark mb-2 tracking-tight">
+                                        Welcome, {user?.firstName}
+                                    </h1>
+                                </div>
                             </div>
+
+                            {/* Dynamic Tax Filings Sections */}
+                            {Object.entries(
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                profiles.reduce((acc: Record<string, any[]>, profile) => {
+                                    const year = profile.year || '2026';
+                                    if (!acc[year]) acc[year] = [];
+                                    acc[year].push(profile);
+                                    return acc;
+                                }, {})
+                            ).sort(([yearA], [yearB]) => Number(yearB) - Number(yearA)).map(([year, yearProfiles], index) => (
+                                <section key={year} className="mb-10 last:mb-0" data-animate>
+                                    <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-10">
+                                        <h2 className="text-5 font-semibold text-taxable-dark">{year} Tax Filings</h2>
+                                        {index === 0 ? (
+                                            <button
+                                                onClick={() => setIsSidebarOpen(true)}
+                                                className="h-12 px-4 bg-taxable-blue text-white font-semibold text-3 rounded-xl w-full sm:w-auto text-center"
+                                            >
+                                                Create another tax filing
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => setIsSidebarOpen(true)}
+                                                className="text-2 font-medium text-taxable-gray"
+                                            >
+                                                Add another tax type
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                        {yearProfiles.map((profile, index) => (
+                                            <TaxFolderCard
+                                                key={profile._id || profile.profileId || index}
+                                                title={profile.title || `${profile.year || year} ${profile.profileType || 'Tax'}`}
+                                                description={profile.description || `Your ${profile.profileType?.toLowerCase() || 'tax'} filing for the ${profile.year || year} tax year.`}
+                                                statusText={profile.statusText || (profile.status === 'draft' ? 'In progress' : 'Not started')}
+                                                onClick={() => handleFolderClick(profile)}
+                                                onDelete={() => handleDeleteProfile(profile.profileId || profile._id)}
+                                            />
+                                        ))}
+                                    </div>
+                                </section>
+                            ))}
                         </div>
 
-                        {/* Dynamic Tax Filings Sections */}
-                        {Object.entries(
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            profiles.reduce((acc: Record<string, any[]>, profile) => {
-                                const year = profile.year || '2026';
-                                if (!acc[year]) acc[year] = [];
-                                acc[year].push(profile);
-                                return acc;
-                            }, {})
-                        ).sort(([yearA], [yearB]) => Number(yearB) - Number(yearA)).map(([year, yearProfiles], index) => (
-                            <section key={year} className="mb-10 last:mb-0" data-animate>
-                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                                    <h2 className="text-xl md:text-2xl font-bold text-taxable-dark">{year} Tax Filings</h2>
-                                    {index === 0 ? (
-                                        <button
-                                            onClick={() => setIsSidebarOpen(true)}
-                                            className="h-11 px-6 bg-taxable-blue hover:opacity-90 text-white text-[14px] font-bold rounded-xl transition-all w-full sm:w-auto text-center"
-                                        >
-                                            Create another tax filing
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={() => setIsSidebarOpen(true)}
-                                            className="text-[14px] font-medium text-taxable-gray hover:text-taxable-dark transition-colors"
-                                        >
-                                            Add another tax type
-                                        </button>
-                                    )}
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                    {yearProfiles.map((profile, index) => (
-                                        <TaxFolderCard
-                                            key={profile._id || profile.profileId || index}
-                                            title={profile.title || `${profile.year || year} ${profile.profileType || 'Tax'}`}
-                                            valueText={profile.taxDue ? `Tax Due - ₦${profile.taxDue.toLocaleString()}` : "Calculation in progress"}
-                                            description={profile.description || `Your ${profile.profileType?.toLowerCase() || 'tax'} filing for the ${profile.year || year} tax year.`}
-                                            status={profile.status === 'draft' ? 'progress' : (profile.status || "none")}
-                                            statusText={profile.statusText || (profile.status === 'draft' ? 'In progress' : 'Not started')}
-                                            onClick={() => handleFolderClick(profile)}
-                                        />
-                                    ))}
-                                </div>
-                            </section>
-                        ))}
-                    </div>
+                        <section className="mt-16" data-animate>
+                            <h2 className="text-5 font-semibold text-taxable-dark mb-6">Resources</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                {VIDEOS.map((video, index) => (
+                                    <VideoCard key={index} {...video} />
+                                ))}
+                            </div>
+                        </section>
+                    </>
                 )}
             </main>
 

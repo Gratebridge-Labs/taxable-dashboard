@@ -28,7 +28,6 @@ export const useApi = () => {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [data, setData] = useState<unknown>(null);
 
     const request = useCallback(async (endpoint: string, config: ApiConfig = {}): Promise<ApiResponse> => {
         const { useToken = true, skipContentType, ...customConfig } = config;
@@ -86,7 +85,6 @@ export const useApi = () => {
                 throw new ApiError(errorMessage, responseData);
             }
 
-            setData(responseData);
             return responseData as ApiResponse;
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Something went wrong';
@@ -156,7 +154,6 @@ export const useApi = () => {
                 throw new ApiError(errorMessage);
             }
 
-            setData(responseData);
             return responseData as ApiResponse;
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Something went wrong';
@@ -167,5 +164,5 @@ export const useApi = () => {
         }
     }, [token, logout, router, authLoading]);
 
-    return { get, post, put, patch, del, upload, loading, error, data };
+    return { get, post, put, patch, del, upload, loading, error };
 };

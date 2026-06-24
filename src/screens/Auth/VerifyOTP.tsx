@@ -1,24 +1,26 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import OnboardingLayout from '@/components/OnboardingLayout/OnboardingLayout';
-import LoadingScreen from '@/screens/Onboarding/LoadingScreen';
 import { useApi } from '@/hooks/useApi';
 import { useUser } from '@/contexts/UserContext';
+import { useFormEntrance } from '@/hooks/useFormEntrance';
+import { OtpInput } from '@/components/ui/otp-input';
+import { Spinner } from '@/components/ui/spinner';
 
 export default function VerifyOTP() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { login } = useUser();
     const { post, error: apiError } = useApi();
+    const formRef = useFormEntrance<HTMLDivElement>({ stagger: 0.04 });
 
     const email = searchParams.get('email') || '';
     const type = searchParams.get('type') || 'signup';
-    const [otp, setOtp] = useState(['', '', '', '', '', '']);
+    const [otp, setOtp] = useState<string[]>(['', '', '', '', '', '']);
     const [timer, setTimer] = useState(60);
     const [isLoading, setIsLoading] = useState(false);
-    const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
     const canResend = timer === 0;
 
@@ -30,43 +32,24 @@ export default function VerifyOTP() {
         return () => clearInterval(interval);
     }, [timer]);
 
-    const handleOtpChange = (index: number, value: string) => {
-        if (value.length > 1) value = value[value.length - 1];
-
-        const newOtp = [...otp];
-        newOtp[index] = value;
-        setOtp(newOtp);
-
-        // Move to next input if value is entered
-        if (value && index < 5) {
-            inputRefs.current[index + 1]?.focus();
-        }
-    };
-
-    const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-        if (e.key === 'Backspace' && !otp[index] && index > 0) {
-            inputRefs.current[index - 1]?.focus();
-        }
-    };
-
-    const handleVerify = async (e?: React.FormEvent) => {
-        e?.preventDefault();
-        const code = otp.join('');
-        if (code.length < 6) return;
+    const handleVerify = async (code?: string) => {
+        const otpCode = code || otp.join('');
+        if (otpCode.length < 6 || isLoading) return;
 
         setIsLoading(true);
         try {
             if (type === 'reset') {
-                const response = await post('/auth/verify-reset-otp', { email, code }, { useToken: false });
+                const response = await post('/auth/verify-reset-otp', { email, code: otpCode }, { useToken: false });
                 if (response?.data?.resetToken) {
                     router.push(`/create-new-password?email=${encodeURIComponent(email)}&token=${response.data.resetToken}`);
                 } else {
                     setIsLoading(false);
                 }
             } else {
-                const response = await post('/auth/verify-otp', { email, code }, { useToken: false });
+                const response = await post('/auth/verify-otp', { email, code: otpCode }, { useToken: false });
                 if (response?.data?.token) {
                     login(response.data.token, response.data.user);
+                    router.push('/home');
                 } else {
                     setIsLoading(false);
                 }
@@ -93,91 +76,54 @@ export default function VerifyOTP() {
             <OnboardingLayout>
                 <div className="flex-1 flex flex-col justify-center relative">
                     <div className="absolute top-0 right-0 -top-2 md:top-0">
-                        <Link href="/signin" className="px-4 md:px-5 py-2 md:py-2.5 rounded-xl border border-neutral-200 text-taxable-dark font-bold hover:bg-neutral-50 transition-colors bg-white text-1 md:text-2 whitespace-nowrap shadow-xs">
+                        <Link href="/signin" className="px-4 md:px-5 py-2 md:py-2.5 rounded-xl border border-neutral-200 text-taxable-dark font-bold bg-white text-1 md:text-2 whitespace-nowrap">
                             Log in
                         </Link>
                     </div>
 
-                    <div className="max-w-[480px] w-full mx-auto px-4 md:px-0">
-                        <div className="mb-8 md:mb-10">
-                            <h2 className="text-[22px] md:text-[26px] font-bold text-taxable-dark mb-2 md:mb-2.5">Enter Verification Code</h2>
-                            <p className="text-taxable-gray text-[14px] md:text-3 leading-relaxed font-medium">
+                    <div ref={formRef} className="max-w-[420px] w-full mx-auto px-4 md:px-0">
+                        <div className="mb-10">
+                            <h2 data-animate className="text-6 md:text-7 font-bold text-taxable-dark mb-1 tracking-[-0.02em]">Enter Verification Code</h2>
+                            <p data-animate className="text-neutral-400 text-2 leading-relaxed font-medium tracking-[-0.01em]">
                                 We&apos;ve sent a verification code to your mail<br />
                                 <span className="text-taxable-dark font-bold">{email}</span>
                             </p>
                         </div>
 
-                        <form onSubmit={handleVerify} className="flex flex-col gap-8 md:gap-10">
-                            <div className="flex gap-2 md:gap-3 justify-between">
-                                {otp.map((digit, index) => (
-                                    <input
-                                        key={index}
-                                        ref={(el) => { inputRefs.current[index] = el; }}
-                                        type="text"
-                                        inputMode="numeric"
-                                        pattern="\d*"
-                                        maxLength={1}
-                                        value={digit}
-                                        onChange={(e) => handleOtpChange(index, e.target.value)}
-                                        onKeyDown={(e) => handleKeyDown(index, e)}
-                                        className="w-12 h-12 md:w-16 md:h-16 text-center text-xl md:text-2xl font-bold bg-slate-50 border border-neutral-100 rounded-xl md:rounded-2xl focus:outline-none focus:ring-2 focus:ring-taxable-blue/10 focus:border-taxable-blue transition-all"
-                                    />
-                                ))}
+                        <form onSubmit={(e) => { e.preventDefault(); handleVerify(); }} className="flex flex-col gap-10">
+                            <div data-animate>
+                                <OtpInput
+                                    value={otp}
+                                    onChange={setOtp}
+                                    onComplete={handleVerify}
+                                    error={apiError}
+                                />
                             </div>
 
-                            {apiError && (
-                                <div className="text-sm text-red-500 font-medium -mt-4 md:-mt-6">
-                                    {apiError}
-                                </div>
-                            )}
-
+                            <div data-animate className="flex flex-col gap-3 items-center">
                             <button
                                 type="submit"
-                                disabled={otp.some(d => !d) || isLoading}
-                                className="w-full h-[48px] md:h-[54px] bg-taxable-blue text-white font-bold rounded-xl md:rounded-2xl shadow-lg shadow-taxable-blue/10 hover:opacity-95 disabled:opacity-50 transition-all text-[14px] md:text-3 flex items-center justify-center gap-2"
+                                disabled={otp.some(d => !d)}
+                                className="btn-auth w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400 text-3 flex items-center justify-center gap-2"
                             >
-                                {isLoading ? (
-                                    <>
-                                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        <span>Verifying...</span>
-                                    </>
-                                ) : (
-                                    "Verify"
-                                )}
+                                {isLoading ? <Spinner /> : "Verify"}
                             </button>
 
-                            <div className="text-center text-[14px] md:text-3">
-                                <span className="text-taxable-gray font-medium">Did not receive mail? </span>
+                            <div className="text-center text-2">
+                                <span className="text-neutral-400 font-medium">Did not receive mail? </span>
                                 <button
                                     type="button"
                                     onClick={handleResend}
-                                    className={`font-bold transition-colors ${canResend ? 'text-taxable-blue hover:underline' : 'text-taxable-gray opacity-50 cursor-not-allowed'}`}
+                                    className={`font-bold transition-colors ${canResend ? 'text-neutral-800' : 'text-neutral-400 opacity-50 cursor-not-allowed'}`}
                                 >
                                     Resend {!canResend && `(${timer}s)`}
                                 </button>
+                            </div>
                             </div>
                         </form>
                     </div>
                 </div>
             </OnboardingLayout>
-
-            {isLoading && (
-                <LoadingScreen
-                    onComplete={() => type === 'signup' ? router.push('/home') : null}
-                    title={type === 'reset' ? "Verifying code..." : "Verifying your account..."}
-                    steps={type === 'reset' ? [
-                        { text: "Validating reset code" },
-                        { text: "Preparing password reset" }
-                    ] : [
-                        { text: "Validating security code" },
-                        { text: "Securing your workspace" },
-                        { text: "Preparing your dashboard" }
-                    ]}
-                />
-            )}
         </>
     );
 }

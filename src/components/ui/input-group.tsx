@@ -8,7 +8,7 @@ const InputGroup = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "flex h-10 w-full rounded-xl border border-neutral-200 bg-white overflow-hidden focus-within:ring-1 focus-within:ring-neutral-800 focus-within:border-neutral-800 transition-all",
+      "flex h-10 w-full rounded-xl border border-neutral-200 bg-white overflow-hidden focus-within:ring-1 focus-within:ring-neutral-800 focus-within:border-neutral-800 transition-colors data-[invalid=true]:border-destructive data-[invalid=true]:focus-within:ring-destructive/20",
       className
     )}
     {...props}
@@ -23,7 +23,7 @@ const InputGroupInput = React.forwardRef<
   <input
     type={type}
     className={cn(
-      "flex-1 h-full min-w-0 bg-transparent px-4 text-sm font-medium text-neutral-800 placeholder:text-neutral-300 focus-visible:outline-none",
+      "flex-1 h-full min-w-0 bg-transparent px-3 text-sm font-medium text-neutral-800 placeholder:text-neutral-300 focus-visible:outline-none",
       className
     )}
     ref={ref}
@@ -32,14 +32,14 @@ const InputGroupInput = React.forwardRef<
 ));
 InputGroupInput.displayName = "InputGroupInput";
 
-type InputGroupTextProps = React.HTMLAttributes<HTMLDivElement> & { align?: string };
+type InputGroupTextProps = React.HTMLAttributes<HTMLDivElement>;
 
 const InputGroupAddon = React.forwardRef<HTMLDivElement, InputGroupTextProps>(
-  ({ className, align: _align = "inline-end", ...props }, ref) => (
+  ({ className, ...props }, ref) => (
     <div
       ref={ref}
       className={cn(
-        "flex items-center justify-center px-3 text-sm text-neutral-500 bg-neutral-50",
+        "flex items-center justify-center px-3 text-sm text-neutral-500 bg-white",
         className
       )}
       {...props}

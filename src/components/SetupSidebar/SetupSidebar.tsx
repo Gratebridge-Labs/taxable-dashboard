@@ -134,9 +134,6 @@ const CheckboxOption = ({
     </button>
 );
 
-// ── Divider ──────────────────────────────────────────────────────────────────
-const _Divider = () => <div className="w-full h-[1px] bg-neutral-100" />;
-
 // ── Main component ────────────────────────────────────────────────────────────
 export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfileId, initialData }: SetupSidebarProps) {
     const router = useRouter();
@@ -147,7 +144,6 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [loadingStep, setLoadingStep] = useState<0 | 1 | 2 | null>(null);
     const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
-    const [_shouldRedirectAfterLoading, setShouldRedirectAfterLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     // Step 0 state
@@ -156,7 +152,6 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
     const [filingIntent, setFilingIntent] = useState<'returns' | 'paye'>('returns');
     const [taxYear, setTaxYear] = useState<'2026' | '2025'>('2026');
     // Business-specific: which services they need
-    const [_businessServices, setBusinessServices] = useState<string[]>([]);
 
     // Step 1 state — income sources
     const [selectedSources, setSelectedSources] = useState<string[]>([]);
@@ -180,7 +175,6 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                 setTaxYear('2026');
                 setSelectedSources([]);
                 setLifeAnswers({});
-                setBusinessServices([]);
                 setActiveProfileId(null);
                 setIsSubmitting(false);
             }
@@ -222,7 +216,6 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
             setError(null);
             setLoadingStep(0);
             const profile = await createProfile(parseInt(taxYear), 'Individual');
-            console.log('[SetupSidebar] Profile created:', profile);
             setActiveProfileId(profile.profileId);
             setStep(1);
         } catch (err: unknown) {
@@ -247,7 +240,6 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
             return;
         }
         
-        setShouldRedirectAfterLoading(true);
         setIsSubmitting(true);
         
         try {
@@ -275,10 +267,8 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                 filingPreference: taxYear === '2025' ? 'annual' : 'monthly',
             };
             
-            console.log('[SetupSidebar] Completing profile with:', completeData);
             await completeProfile(activeProfileId, completeData);
-            console.log('[SetupSidebar] Profile completed successfully');
-            
+
             // Refresh profiles list
             await fetchProfiles();
             

@@ -3,14 +3,21 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/contexts/UserContext';
 
-export default function RootRedirect() {
+interface RequireAuthProps {
+    children: React.ReactNode;
+}
+
+export function RequireAuth({ children }: RequireAuthProps) {
     const router = useRouter();
     const { isAuthenticated, loading } = useUser();
 
     useEffect(() => {
-        if (loading) return;
-        router.replace(isAuthenticated ? '/home' : '/signin');
+        if (!loading && !isAuthenticated) {
+            router.replace('/signin');
+        }
     }, [isAuthenticated, loading, router]);
 
-    return null;
+    if (loading || !isAuthenticated) return null;
+
+    return children;
 }

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -176,11 +176,6 @@ export default function Home() {
 
     const hasTaxFolders = profiles.length > 0;
     const isInitialLoading = authLoading || profilesLoading;
-
-    // Kept so SetupSidebar can notify us of newly created profiles
-    const _handleNewProfileCreated = useCallback(() => {
-        fetchProfiles();
-    }, [fetchProfiles]);
 
     const videos = [
         {

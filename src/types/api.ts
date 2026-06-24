@@ -609,3 +609,42 @@ export interface UpdateIncomeDataResponse {
     incomes: IncomeDataItem[];
   };
 }
+
+// ── Auth types ───────────────────────────────────────────
+
+export interface User {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  emailVerified?: boolean;
+  twoFactorEnabled?: boolean;
+  tin?: string;
+  whatsappReminders?: boolean;
+  name?: string;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  data: {
+    token: string;
+    user: User;
+  };
+}
+
+export interface AuthVerifyResponse {
+  success: boolean;
+  data: {
+    token?: string;
+    user?: User;
+    resetToken?: string;
+  };
+}
+
+export interface AuthResetPasswordResponse {
+  success: boolean;
+  data: {
+    message: string;
+  };
+}

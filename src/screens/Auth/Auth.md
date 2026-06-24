@@ -221,6 +221,7 @@ src/screens/Auth/VerifyOTP.tsx
 src/screens/Auth/Verify2FA.tsx
 src/screens/Auth/CreateNewPassword.tsx
 src/components/OnboardingLayout/OnboardingLayout.tsx
+src/components/OnboardingLayout/LogoWhite.tsx
 src/components/ui/input.tsx
 src/components/ui/label.tsx
 src/components/ui/password-input.tsx
@@ -229,4 +230,44 @@ src/components/ui/spinner.tsx
 src/lib/utils.ts
 src/contexts/UserContext.tsx
 src/hooks/useApi.ts
+src/types/api.ts
 ```
+
+---
+
+## Changelog — Auth Refactor (June 2026)
+
+### Critical Fixes
+- **CreateNewPassword success feedback** — Added `toast.success()` + `router.push('/signin')` after successful password reset. Added `try/catch` error logging. Previously the user was left stranded on the form with no indication of success.
+- **ForgotPassword error logging** — Added `try/catch` around the API call so network/server errors are logged to console.
+- **Auth response types** — Added `User`, `AuthResponse`, `AuthVerifyResponse`, `AuthResetPasswordResponse` interfaces to `src/types/api.ts`. `UserContext.tsx` now imports `User` from the shared types file instead of defining it inline.
+- **Orphaned route removed** — Deleted `/reset-password` (duplicate of `/create-new-password`, never linked from any auth screen).
+- **2FA dead cleanup removed** — `sessionStorage.removeItem('taxable_temp_token')` in `Verify2FA.tsx` was clearing a key that was never written. Removed.
+
+### Dead Code Removed
+- `SpinnerCustom` — exported but never imported (`spinner.tsx`)
+- `_Divider` component — defined in SetupSidebar but never used
+- `_shouldRedirectAfterLoading` — state always `true`, never read
+- `_businessServices` — state never read
+- `_handleNewProfileCreated` — callback in Home.tsx, never called
+- `_user` — destructured from `useUser()` in `DashboardHeader.tsx` but never used
+- `align` prop — in `InputGroupTextProps`, destructured as `_align` and ignored
+- `data` state — in `useApi.ts`, set on every response but never read by any caller
+- `forwardRef` — removed misleading `forwardRef` on `OtpInput` (ref was never forwarded to DOM)
+
+### Architecture
+- **LogoWhite extracted** — Moved nested `LogoWhite` component from `OnboardingLayout.tsx` to a standalone file `src/components/OnboardingLayout/LogoWhite.tsx`, fixing the nested-component-definition pattern violation.
+- **Console.log removed** — Three `console.log` calls removed from `SetupSidebar.tsx` (debug logging in production path).
+- **Auto-redirect authenticated users** — `SignIn.tsx`, `Signup.tsx`, and `ForgotPassword.tsx` now redirect to `/home` via `useEffect` when `isAuthenticated` is already true.
+- **API proxy** — `next.config.ts` now rewrites `/api/proxy/:path*` → `https://api.gettaxable.com/api/:path*`. Default `API_BASE_URL` switched to `/api/proxy` (relative, same-origin), eliminating cross-origin "Failed to fetch" errors.
+- **Login redirects** — All four `login()` call sites (`SignIn`, `Signup`, `Verify2FA`, `VerifyOTP`) now call `router.push('/home')` after successful auth.
+
+### Accessibility
+- **`prefers-reduced-motion`** — Lenis smooth-scroll initialization in `OnboardingLayout.tsx` now checks `window.matchMedia('(prefers-reduced-motion: reduce)').matches` and skips initialization entirely when the user prefers reduced motion.
+- No other a11y changes in this pass (forms are semantic, labels use `<label>` with `htmlFor`, keyboard navigation works via native form controls).
+
+### Lint & Verification
+- `npm run lint`: 0 errors, 8 pre-existing warnings (all from TaxFolders screens, not auth).
+- `npx tsc --noEmit`: 0 errors.
+- No hydration warnings, no test regressions.
+

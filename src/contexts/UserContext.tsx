@@ -1,19 +1,7 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { API_BASE_URL } from '@/lib/api-endpoints';
-
-interface User {
-    id: string;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    phone?: string;
-    emailVerified?: boolean;
-    twoFactorEnabled?: boolean;
-    tin?: string;
-    whatsappReminders?: boolean;
-    name?: string;
-}
+import type { User } from '@/types/api';
 
 interface UserContextType {
     user: User | null;
@@ -49,8 +37,14 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                 const result = await response.json();
                 if (result.success && result.data.user) {
                     setUser(result.data.user);
-                    localStorage.setItem('taxable_user', JSON.stringify(result.data.user));
+                    sessionStorage.setItem('taxable_user', JSON.stringify(result.data.user));
                 }
+            } else if (response.status === 401) {
+                // Token is invalid/expired — clear auth state so isAuthenticated reflects reality
+                setToken(null);
+                setUser(null);
+                sessionStorage.removeItem('taxable_token');
+                sessionStorage.removeItem('taxable_user');
             }
         } catch (err: unknown) {
             console.error('Failed to refresh user data:', err instanceof Error ? err.message : 'Unknown error');
@@ -58,8 +52,8 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     }, [token]);
 
     useEffect(() => {
-        const storedToken = localStorage.getItem('taxable_token');
-        const storedUser = localStorage.getItem('taxable_user');
+        const storedToken = sessionStorage.getItem('taxable_token');
+        const storedUser = sessionStorage.getItem('taxable_user');
 
         if (storedToken) {
             // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -70,7 +64,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                     setUser(JSON.parse(storedUser));
                 } catch (err: unknown) {
                     console.error('Failed to parse stored user:', err instanceof Error ? err.message : 'Unknown error');
-                    localStorage.removeItem('taxable_user');
+                    sessionStorage.removeItem('taxable_user');
                 }
             }
             refreshUser(storedToken).finally(() => setLoading(false));
@@ -82,17 +76,17 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     const login = useCallback((newToken: string, userData: User) => {
         setToken(newToken);
         setUser(userData);
-        localStorage.setItem('taxable_token', newToken);
+        sessionStorage.setItem('taxable_token', newToken);
         if (userData) {
-            localStorage.setItem('taxable_user', JSON.stringify(userData));
+            sessionStorage.setItem('taxable_user', JSON.stringify(userData));
         }
     }, []);
 
     const logout = useCallback(() => {
         setToken(null);
         setUser(null);
-        localStorage.removeItem('taxable_token');
-        localStorage.removeItem('taxable_user');
+        sessionStorage.removeItem('taxable_token');
+        sessionStorage.removeItem('taxable_user');
     }, []);
 
     const setUserCallback = useCallback((userData: User) => {

@@ -392,8 +392,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                     label="Businesses & Organizations"
                                     desc="For registered companies (LTD, NGOs, Partnerships) subject to Corporate Income Tax"
                                     selected={filingType === 'Business'}
-                                    onClick={() => {}}
-                                    disabled={true}
+                                    onClick={() => setFilingType('Business')}
                                 />
 
                                 {/* Tax ID — label changes based on filing type */}

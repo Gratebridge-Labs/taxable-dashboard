@@ -70,7 +70,7 @@ const OnboardingLayout = ({ children }: OnboardingLayoutProps) => {
                     </div>
 
                     <div className="relative z-10 mt-12 md:mt-0">
-                        <h1 data-animate-left className="text-3xl md:text-5xl lg:text-5xl font-semibold text-taxable-light mb-4 md:mb-6 leading-[1.1] tracking-[-0.02em]">
+                        <h1 data-animate-left className="text-7 font-semibold text-taxable-light mb-4 md:mb-6 leading-[1.1] tracking-[-0.02em]">
                             Start your stress-free tax journey.
                         </h1>
                         <p data-animate-left className="text-neutral-50 text-2 font-medium tracking-[-0.01em]">

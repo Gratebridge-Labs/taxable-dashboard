@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState } from 'react';
 interface OnboardingData {
     filingType: string;
     incomeSources: string[];
+    lifeAnswers: string[];
     filingPreference: 'monthly' | 'annual';
     year: number;
 }
@@ -12,6 +13,7 @@ interface OnboardingContextType {
     data: OnboardingData;
     setFilingType: (type: string) => void;
     setIncomeSources: (sources: string[]) => void;
+    setLifeAnswers: (answers: string[]) => void;
     setFilingPreference: (pref: 'monthly' | 'annual') => void;
     setYear: (year: number) => void;
     clearData: () => void;
@@ -20,6 +22,7 @@ interface OnboardingContextType {
 const defaultData: OnboardingData = {
     filingType: '',
     incomeSources: [],
+    lifeAnswers: [],
     filingPreference: 'monthly',
     year: new Date().getFullYear(),
 };
@@ -68,6 +71,10 @@ export const OnboardingProvider = ({ children }: { children: React.ReactNode }) 
         setData(prev => ({ ...prev, filingPreference: pref }));
     };
 
+    const setLifeAnswers = (answers: string[]) => {
+        setData(prev => ({ ...prev, lifeAnswers: answers }));
+    };
+
     const setYear = (year: number) => {
         setData(prev => ({ ...prev, year }));
     };
@@ -85,6 +92,7 @@ export const OnboardingProvider = ({ children }: { children: React.ReactNode }) 
                 data,
                 setFilingType,
                 setIncomeSources,
+                setLifeAnswers,
                 setFilingPreference,
                 setYear,
                 clearData,

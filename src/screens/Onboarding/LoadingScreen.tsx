@@ -28,7 +28,7 @@ const LoadingItem = ({ text, status }: { text: string; status: 'pending' | 'load
             ) : (
                 <div className="w-5 h-5 rounded-full border border-white/20 flex-shrink-0" />
             )}
-            <span className={`text-lg font-medium transition-colors duration-500 ${status === 'completed' ? 'text-white' : status === 'loading' ? 'text-white' : 'text-white/40'}`}>
+            <span className={`text-5 font-medium transition-colors duration-500 ${status === 'completed' ? 'text-white' : status === 'loading' ? 'text-white' : 'text-white/40'}`}>
                 {text} {status === 'completed' && text === 'Deductions schedule' ? 'ready' : ''}
             </span>
         </div>

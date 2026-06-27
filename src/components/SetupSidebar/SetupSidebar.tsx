@@ -140,10 +140,20 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
     const handleGetStarted = async () => {
         if (!filingIntent) return;
 
-        // Business flow → route to business tax details page
+        // Business flow → create profile then route to business tax details
         if (filingType === 'Business') {
-            onClose();
-            router.push(`/tax-folders/business?year=${taxYear}&new=workspace`);
+            setLoadingStep(0);
+            try {
+                const profile = await createProfile(parseInt(taxYear), 'Business');
+                await fetchProfiles();
+                onClose();
+                router.push(`/tax-folders/business?year=${taxYear}&new=workspace&profileId=${profile.profileId}`);
+            } catch (err: unknown) {
+                console.error('[SetupSidebar] Failed to create business profile:', err);
+                setError(err instanceof Error ? err.message : 'Failed to create business profile');
+            } finally {
+                setLoadingStep(null);
+            }
             return;
         }
         // Individual PAYE flow → go directly to the calculator
@@ -418,14 +428,14 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                     onClick={step === 0 ? handleGetStarted : step === 1 ? handleContinueFromSources : handleCreateAndSubmit}
                                     disabled={
                                         step === 0
-                                            ? !filingIntent || !filingType || (filingType === 'Business' && businessServices.length === 0)
+                                            ? !filingIntent || !filingType || (filingType === 'Business' && businessServices.length === 0) || loadingStep === 0
                                             : step === 1
                                                 ? selectedSources.length === 0
                                                 : !allLifeQuestionsAnswered || loadingStep === 2
                                     }
                                     className="flex-1 h-12 bg-taxable-blue text-white font-semibold rounded-xl text-3 disabled:bg-neutral-100 disabled:text-neutral-400 flex items-center justify-center gap-2"
                                 >
-                                    {loadingStep === 2 ? <Spinner /> : step === 0 ? (filingType === 'Business' ? 'Get Started' : 'Continue') : step === 1 ? 'Continue' : 'Get Started'}
+                                    {(loadingStep === 2 || loadingStep === 0) ? <Spinner /> : step === 0 ? (filingType === 'Business' ? 'Get Started' : 'Continue') : step === 1 ? 'Continue' : 'Get Started'}
                                 </button>
                             </div>
                         </div>

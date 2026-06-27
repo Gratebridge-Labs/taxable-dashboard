@@ -103,7 +103,7 @@ const WelcomeModal = ({ onClose }: { onClose: () => void }) => (
                     <polyline points="20 6 9 17 4 12" />
                 </svg>
             </div>
-            <h2 className="text-5 font-bold text-neutral-800 mb-3">Welcome to your tax workspace!</h2>
+            <h2 className="text-6 font-bold text-neutral-800 mb-3">Welcome to your tax workspace!</h2>
             <p className="text-3 text-neutral-500 font-medium leading-relaxed mb-1.5">
                 Everything you need is organized in sections on the left. Start with{' '}
                 <span className="text-neutral-800 font-bold">Company Information</span>{' '}
@@ -301,7 +301,7 @@ export default function BusinessTaxDetails() {
             <main className="max-w-[1200px] mx-auto px-4 md:px-8 pt-14 pb-8">
 
                 {/* 3-column layout */}
-                <div className="flex items-start gap-6 justify-center">
+                <div className="flex items-start gap-10 justify-center">
                     {/* Left sidebar */}
                     <div className="w-[250px] flex-shrink-0 flex flex-col gap-4 sticky top-24 border border-neutral-50 rounded-xl p-3">
                         {/* Main sections */}
@@ -312,7 +312,7 @@ export default function BusinessTaxDetails() {
                                     <div key={sec.key}>
                                         <SidebarItem
                                             label={sec.label}
-                                            active={activeSection === sec.key}
+                                            active={activeSection === sec.key && sec.key !== 'vat-wht' && sec.key !== 'company-income-tax'}
                                             completed={false}
                                             locked={sec.key !== 'company-info' && !companyInfoSaved}
                                             onClick={() => {
@@ -331,7 +331,7 @@ export default function BusinessTaxDetails() {
                                                 ].map(sub => (
                                                     <button key={sub.id}
                                                         onClick={() => setVatWhtSubSection(sub.id as 'file-vat' | 'remit-wht' | 'wht-balance')}
-                                                        className={`w-full text-left px-3 py-2 rounded-lg text-3 font-semibold transition-colors mb-0.5 ${vatWhtSubSection === sub.id ? 'text-neutral-800 bg-neutral-100' : 'text-neutral-500  '
+                                                        className={`w-full text-left px-3 py-2 rounded-lg text-3 font-medium transition-colors mb-2 ${vatWhtSubSection === sub.id ? 'text-neutral-800 bg-neutral-100' : 'text-neutral-500  '
                                                             }`}>
                                                         {sub.label}
                                                     </button>
@@ -350,7 +350,7 @@ export default function BusinessTaxDetails() {
                                                 ].map(sub => (
                                                     <button key={sub.id}
                                                         onClick={() => setCitSubSection(sub.id as 'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review')}
-                                                        className={`w-full text-left px-3 py-2 rounded-lg text-3 font-semibold transition-colors mb-0.5 ${citSubSection === sub.id ? 'text-neutral-800 bg-neutral-100' : 'text-neutral-500  '
+                                                        className={`w-full text-left px-3 py-2 rounded-lg text-3 font-medium transition-colors mb-2 ${citSubSection === sub.id ? 'text-neutral-800 bg-neutral-100' : 'text-neutral-500  '
                                                             }`}>
                                                         {sub.label}
                                                     </button>
@@ -633,7 +633,7 @@ export default function BusinessTaxDetails() {
                                         <polyline points="20 6 9 17 4 12" />
                                     </svg>
                                 </div>
-                                <h3 className="text-5 font-bold text-neutral-800 mb-2">Ready to file?</h3>
+                                <h3 className="text-6 font-bold text-neutral-800 mb-2">Ready to file?</h3>
                                 <p className="text-3 text-neutral-500 font-medium mb-6">
                                     Review your information and submit your company tax return.
                                 </p>

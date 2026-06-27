@@ -72,7 +72,7 @@ export function PayeMonthlyFiling({
 
     const monthSelector = (
         <div data-animate>
-        <Select value={activeMonth} onValueChange={onMonthChange}>
+        <Select value={activeMonth} onValueChange={(v) => v && onMonthChange(v)}>
             <SelectTrigger className="w-fit min-w-[180px] h-10 rounded-xl bg-white border-neutral-50 text-3">
                 <div className="flex items-center gap-2 mr-6">
                     <span>{activeMonth}</span>
@@ -105,7 +105,7 @@ export function PayeMonthlyFiling({
 
     const entryOptions = (
         <div data-animate className="max-w-[480px] mx-auto">
-            <h2 className="text-5 font-bold text-neutral-800 mb-1">How do you want to add payroll data?</h2>
+            <h2 className="text-6 font-bold text-neutral-800 mb-1">How do you want to add payroll data?</h2>
             <p className="text-3 text-neutral-500 font-medium mb-6">Upload or enter your payroll for this month</p>
 
             {isFirstTime ? (
@@ -127,7 +127,7 @@ export function PayeMonthlyFiling({
 
                     <div className="mb-8">
                         <label className="block text-2 font-medium text-neutral-700 mb-2">Select starting month</label>
-                        <Select value={onboardingMonth} onValueChange={setOnboardingMonth}>
+                        <Select value={onboardingMonth} onValueChange={(v) => v && setOnboardingMonth(v)}>
                             <SelectTrigger className="w-[300px] h-10 rounded-xl bg-white text-3">
                                 <SelectValue placeholder="Choose a month" />
                             </SelectTrigger>
@@ -191,7 +191,7 @@ export function PayeMonthlyFiling({
         <div data-animate className="w-full">
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-4">
-                    <h2 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em]">Employee Payroll</h2>
+                    <h2 className="text-6 font-semibold text-neutral-800 tracking-[-0.02em]">Employee Payroll</h2>
                     {monthSelector}
                 </div>
                 <button
@@ -263,7 +263,7 @@ export function PayeMonthlyFiling({
         return (
             <>
                 {!isFirstTime && <div className="mb-6 flex items-center gap-4">
-                    <h2 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em]">Employee Payroll</h2>
+                    <h2 className="text-6 font-semibold text-neutral-800 tracking-[-0.02em]">Employee Payroll</h2>
                     {monthSelector}
                 </div>}
                 {entryOptions}
@@ -273,13 +273,15 @@ export function PayeMonthlyFiling({
                     onAdd={(newStaff) => onAddStaff(newStaff)}
                     editStaff={editingStaff}
                     onRemove={onRemoveStaff}
-                    onSave={onSaveStaff}
+                    onSave={(updated) => {
+                        if (editingStaff) onSaveStaff(editingStaff, updated);
+                    }}
                 />
                 {showCopyModal && pendingCopy && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/20" onClick={() => setShowCopyModal(false)}>
                         <div className="bg-white rounded-2xl p-6 max-w-[400px] mx-4 w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
                             <div className="flex flex-col items-center text-center">
-                                <h3 className="text-5 font-semibold text-neutral-800 mb-2">Copy payroll data?</h3>
+                                <h3 className="text-6 font-semibold text-neutral-800 mb-2">Copy payroll data?</h3>
                                 <p className="text-3 text-neutral-500 font-medium mb-4">
                                     This will copy all employees from {pendingCopy.sourceMonth} 2026 to {activeMonth} 2026. You can edit them independently.
                                 </p>
@@ -328,7 +330,7 @@ export function PayeAnnualReturns({
     const fmtN = (n: number) => `₦${n.toLocaleString()}`;
     return (
         <div className="max-w-[680px] mx-auto">
-            <h2 className="text-5 font-bold text-neutral-800 mb-1">PAYE · Annual Returns (2026)</h2>
+            <h2 className="text-6 font-bold text-neutral-800 mb-1">PAYE · Annual Returns (2026)</h2>
             <p className="text-3 text-neutral-500 font-medium mb-6">Your annual PAYE reconciliation is ready</p>
             <div className="space-y-3 mb-7">
                 {[`${staffCount} employees`, `${filedMonthsCount} months of payroll data`, `Total PAYE remitted: ${fmtN(totalAnnualPAYE)}`, `Total Gross Payroll: ${fmtN(totalGrossPayroll)}`, hasDiscrepancies ? 'Discrepancies found' : 'No discrepancies'].map((line, i) => (

@@ -78,7 +78,7 @@ interface UploadContainerProps {
 
 export function UploadContainer({ label, sublabel, icon }: UploadContainerProps) {
   return (
-    <div className="flex items-center justify-between p-4 rounded-xl border border-dashed border-neutral-200 bg-neutral-50">
+    <div className="flex items-center justify-between p-4 rounded-3xl bg-white">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 bg-neutral-100 rounded-xl flex items-center justify-center">
           {icon || (
@@ -91,17 +91,42 @@ export function UploadContainer({ label, sublabel, icon }: UploadContainerProps)
         </div>
         <div>
           <p className="text-3 font-semibold text-neutral-800">{label}</p>
-          <p className="text-2 text-neutral-500 font-medium">{sublabel}</p>
+          <p className="text-2 text-neutral-300 font-medium">{sublabel}</p>
         </div>
       </div>
       <button
         type="button"
-        className="h-12 px-4 border border-neutral-200 bg-white rounded-xl text-3 font-semibold text-neutral-800"
+        className="h-12 px-4 bg-white border border-neutral-100 rounded-xl text-3 font-semibold text-neutral-800"
       >
         Upload
       </button>
     </div>
   );
+}
+
+// ── Section Heading ────────────────────────────────────────────────
+export function SectionHeading({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return <h2 className={`text-6 font-semibold text-neutral-800 mb-1 ${className}`}>{children}</h2>;
+}
+
+// ── Description Text ───────────────────────────────────────────────
+export function DescriptionText({ children }: { children: React.ReactNode }) {
+  return <p className="text-3 text-neutral-500 font-medium mb-6">{children}</p>;
+}
+
+// ── Card Title ──────────────────────────────────────────────────────
+export function CardTitle({ children }: { children: React.ReactNode }) {
+  return <h3 className="text-3 font-semibold text-neutral-800 mb-4">{children}</h3>;
+}
+
+// ── Card Container ──────────────────────────────────────────────────
+export function CardContainer({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return <div className={`bg-white border border-neutral-100 rounded-2xl p-5 ${className}`}>{children}</div>;
+}
+
+// ── Form Field Row ─────────────────────────────────────────────────
+export function FormFieldRow({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return <div className={`flex items-center gap-4 mb-4 ${className}`}>{children}</div>;
 }
 
 // ── Filing Sheet (Drawer) ──────────────────────────────────────────
@@ -176,13 +201,13 @@ export function MonthList({ activeMonth, setActiveMonth, filedMonths, periodMode
       <div className="flex items-center gap-1 mb-4 px-2 pt-1.5">
         <button
           onClick={() => setPeriodMode('monthly')}
-          className={`flex-1 h-12 rounded-xl text-3 font-semibold transition-all ${periodMode === 'monthly' ? 'bg-white text-neutral-800 shadow-sm' : 'text-neutral-500'}`}
+          className={`flex-1 h-12 rounded-xl text-3 transition-all ${periodMode === 'monthly' ? 'text-neutral-800 font-medium' : 'text-neutral-500 font-medium'}`}
         >
           Monthly
         </button>
         <button
           onClick={() => setPeriodMode('annually')}
-          className={`flex-1 h-12 rounded-xl text-3 font-semibold transition-all ${periodMode === 'annually' ? 'bg-white text-neutral-800 shadow-sm' : 'text-neutral-500'}`}
+          className={`flex-1 h-12 rounded-xl text-3 transition-all ${periodMode === 'annually' ? 'text-neutral-800 font-medium' : 'text-neutral-500 font-medium'}`}
         >
           Annually
         </button>
@@ -195,7 +220,7 @@ export function MonthList({ activeMonth, setActiveMonth, filedMonths, periodMode
           return (
             <button key={month}
               onClick={() => setActiveMonth(idx)}
-              className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-left ${isActive ? 'bg-taxable-blue text-white font-semibold' : 'text-neutral-800 font-medium'}`}
+              className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-left ${isActive ? 'text-neutral-800 font-bold' : 'text-neutral-800 font-medium'}`}
             >
               <span className="text-3">{month}</span>
               {filed && (

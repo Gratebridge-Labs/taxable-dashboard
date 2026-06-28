@@ -52,14 +52,21 @@ class TaxableApiService {
   }
 
   private async handleResponse<T>(response: Response): Promise<T> {
-    const data = await response.json();
+    const text = await response.text();
+    let data: Record<string, unknown>;
+
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error(text || `Request failed with status ${response.status}`);
+    }
 
     if (data.message === 'Profile not found') {
       return { success: true, data: { profiles: [] }, message: 'Profile not found' } as unknown as T;
     }
 
     if (!response.ok || !data.success) {
-      const errorMessage = data.message || `Request failed with status ${response.status}`;
+      const errorMessage = String(data.message || '') || `Request failed with status ${response.status}`;
       console.error('[TaxableApi] Request failed:', {
         status: response.status,
         message: data.message,
@@ -68,7 +75,7 @@ class TaxableApiService {
       throw new Error(errorMessage);
     }
 
-    return data;
+    return data as T;
   }
 
   async createProfile(token: string, year: number, profileType: 'Individual' | 'Business'): Promise<Profile> {

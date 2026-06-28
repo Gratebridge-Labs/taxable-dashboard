@@ -79,10 +79,10 @@ const WHTDeductionForm = ({ onSave, onCancel, initial }: {
 
     return (
         <div>
-            <h2 className="text-base font-bold text-neutral-800 mb-5">Add WHT Deduction</h2>
+            <h2 className="text-5 font-semibold text-neutral-800 mb-5">Add WHT Deduction</h2>
 
-            <CardContainer className="mb-4">
-                <CardTitle>Payee Details (who you paid)</CardTitle>
+            <div className="bg-neutral-50 rounded-3xl p-5 mb-4">
+                <h3 className="text-3 font-semibold text-neutral-800 mb-4">Payee Details (who you paid)</h3>
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <FormLabel tip="Full legal name or company name of the vendor/payee.">Name</FormLabel>
@@ -93,49 +93,42 @@ const WHTDeductionForm = ({ onSave, onCancel, initial }: {
                         <Input type="text" placeholder="Enter TIN" value={form.tin} onChange={e => set('tin')(e.target.value)} />
                     </div>
                 </div>
-            </CardContainer>
+            </div>
 
-            <CardContainer className="mb-5">
-                <CardTitle>Payment Details</CardTitle>
+            <div className="bg-neutral-50 rounded-3xl p-5">
+                <h3 className="text-3 font-semibold text-neutral-800 mb-4">Payment Details</h3>
                 <div className="space-y-3">
-                    <FormFieldRow>
+                    <FormFieldRow className="justify-between">
                         <FormLabel tip="The type of transaction determines the applicable WHT rate.">WHT Type</FormLabel>
-                        <div className="relative w-[220px] flex-shrink-0">
-                            <select value={form.whtType} onChange={e => set('whtType')(e.target.value)}
-                                className="w-full h-10 border border-neutral-100 bg-white rounded-xl px-3 text-2 font-medium text-neutral-800 focus-visible:outline-none focus-visible:border-[1.5px] focus-visible:border-neutral-800 transition-all appearance-none">
-                                {WHT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                            </select>
-                            <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-                        </div>
+                        <SearchableSelect
+                            options={WHT_TYPES}
+                            value={form.whtType}
+                            onChange={(v) => set('whtType')(v)}
+                            className="w-[150px]"
+                        />
                     </FormFieldRow>
-                    <FormFieldRow>
+                    <FormFieldRow className="justify-between">
                         <FormLabel tip="Total amount paid before deducting WHT.">Gross payment</FormLabel>
-                        <Input type="text" placeholder="N0" value={form.gross} onChange={e => set('gross')(e.target.value.replace(/[^0-9.]/g, ''))} className="w-[220px] flex-shrink-0" />
+                        <Input type="text" placeholder="N0" value={form.gross} onChange={e => set('gross')(e.target.value.replace(/[^0-9.]/g, ''))} className="w-[150px] text-left" />
                     </FormFieldRow>
-                    <FormFieldRow>
+                    <FormFieldRow className="justify-between">
                         <FormLabel tip="Applicable Withholding Tax rate set by FIRS.">WHT rate</FormLabel>
-                        <div className="w-[220px] flex-shrink-0 h-10 border border-neutral-200 bg-neutral-100 rounded-xl px-3 flex items-center text-2 font-medium text-neutral-500">
-                            {autoRate > 0 ? `${autoRate}%` : 'Select type above'}
-                        </div>
+                        <Input type="text" value={autoRate > 0 ? `${autoRate}%` : 'Select type above'} disabled className="w-[150px] text-left bg-neutral-50 text-neutral-300" />
                     </FormFieldRow>
-                    <FormFieldRow>
+                    <FormFieldRow className="justify-between">
                         <FormLabel tip="Auto-calculated: Gross x WHT rate.">WHT deducted</FormLabel>
-                        <div className="w-[220px] flex-shrink-0 h-10 border border-neutral-200 bg-neutral-50 rounded-xl px-3 flex items-center text-2 font-medium text-neutral-800">
-                            {autoWHT > 0 ? `₦${Math.round(autoWHT).toLocaleString()}` : 'Select'}
-                        </div>
+                        <Input type="text" value={autoWHT > 0 ? `₦${Math.round(autoWHT).toLocaleString()}` : 'Select'} disabled className="w-[150px] text-left bg-neutral-50 text-neutral-300" />
                     </FormFieldRow>
-                    <FormFieldRow>
+                    <FormFieldRow className="justify-between">
                         <FormLabel tip="Amount actually remitted: Gross minus WHT.">Net paid to payee</FormLabel>
-                        <div className="w-[220px] flex-shrink-0 h-10 border border-neutral-200 bg-neutral-50 rounded-xl px-3 flex items-center text-2 font-medium text-neutral-800">
-                            {autoNet > 0 ? `₦${Math.round(autoNet).toLocaleString()}` : 'N0'}
-                        </div>
+                        <Input type="text" value={autoNet > 0 ? `₦${Math.round(autoNet).toLocaleString()}` : 'N0'} disabled className="w-[150px] text-left bg-neutral-50 text-neutral-300" />
                     </FormFieldRow>
-                    <FormFieldRow>
+                    <FormFieldRow className="justify-between">
                         <FormLabel tip="The date when payment was made to the vendor.">Date of payment</FormLabel>
-                        <Input type="text" placeholder="dd/mm/yyyy" value={form.date} onChange={e => set('date')(e.target.value)} className="w-[220px] flex-shrink-0" />
+                        <Input type="text" placeholder="dd/mm/yyyy" value={form.date} onChange={e => set('date')(e.target.value)} className="w-[150px] text-left" />
                     </FormFieldRow>
                 </div>
-            </CardContainer>
+            </div>
 
             <div className="flex gap-3">
                 <SecondaryButton onClick={onCancel}>Cancel</SecondaryButton>
@@ -202,6 +195,7 @@ const WHTRemittance = () => {
     const autoNet = grossNum - autoWHT;
 
     const total = deductions.reduce((s, d) => s + (Number(d.whtDeducted) || 0), 0);
+    const [periodMode, setPeriodMode] = useState<'monthly' | 'annually'>('monthly');
     const dueDate = MONTHS[(activeMonth + 1) % 12].slice(0, 3) + ' 21, 2025';
     const canSave = form.payee.trim() && form.tin.trim() && form.whtType !== 'Select' && form.gross.trim() && form.date.trim();
     const hasAnyInput = form.payee.trim() || form.tin.trim() || form.whtType !== 'Select' || form.gross.trim() || form.date.trim();
@@ -246,8 +240,38 @@ const WHTRemittance = () => {
     };
 
     return (
-        <div className="flex gap-6">
-            <MonthList activeMonth={activeMonth} setActiveMonth={setActiveMonth} filedMonths={filedMonths} periodMode="monthly" setPeriodMode={() => {}} />
+        <div className="flex gap-10">
+            <div className="w-[220px] flex-shrink-0 sticky top-24 self-start p-[11px]">
+                <div className="flex items-center gap-3 mb-6">
+                    <span className={`text-3 font-medium ${periodMode === 'monthly' ? 'text-neutral-800' : 'text-neutral-500'}`}>Monthly</span>
+                    <Switch checked={periodMode === 'annually'} onCheckedChange={(v) => setPeriodMode(v ? 'annually' : 'monthly')} />
+                    <span className={`text-3 font-medium ${periodMode === 'annually' ? 'text-neutral-800' : 'text-neutral-500'}`}>Annually</span>
+                </div>
+                {periodMode === 'monthly' && (
+                    <Select value={MONTHS[activeMonth]} onValueChange={(v) => { if (v) setActiveMonth(MONTHS.indexOf(v)); }}>
+                        <SelectTrigger className="w-full h-10 rounded-xl bg-white text-3">
+                            <div className="flex items-center gap-2">
+                                <span>{MONTHS[activeMonth]}</span>
+                                {filedMonths.has(activeMonth) &&
+                                    <Badge variant="secondary" className="bg-green-50 text-green-600 border-green-200 text-2 font-semibold px-2 py-0 h-5">Filed</Badge>
+                                }
+                            </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                            {MONTHS.map((m, i) => (
+                                <SelectItem key={m} value={m}>
+                                    <div className="flex items-center gap-2">
+                                        <span>{m}</span>
+                                        {filedMonths.has(i) &&
+                                            <Badge variant="secondary" className="bg-green-50 text-green-600 border-green-200 text-2 font-semibold px-2 py-0 h-5">Filed</Badge>
+                                        }
+                                    </div>
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                )}
+            </div>
 
             <FilingSheet open={showFilingModal} onClose={() => setShowFilingModal(false)} onFile={handleFile} />
 
@@ -255,12 +279,12 @@ const WHTRemittance = () => {
                 <DrawerContent className="bg-white w-full max-w-full px-4 pb-4 max-h-[85vh]">
                     <DrawerTitle className="sr-only">Add WHT Deduction</DrawerTitle>
                     <div className="max-w-[450px] mx-auto w-full pt-2 text-center">
-                        <h2 className="text-base font-bold text-neutral-800 mb-8">Add WHT Deduction</h2>
+                        <h2 className="text-5 font-semibold text-neutral-800 mb-8">Add WHT Deduction</h2>
                     </div>
                     <div data-lenis-prevent className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
                         <div className="max-w-[450px] mx-auto w-full pb-[32px]">
-                            <CardTitle>Payee Details (who you paid)</CardTitle>
-                            <CardContainer className="mb-6">
+                            <h3 className="text-3 font-semibold text-neutral-800 mb-4">Payee Details (who you paid)</h3>
+                            <div className="bg-neutral-50 rounded-3xl p-5 mb-6">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <FormLabel tip="Full legal name or company name of the vendor/payee.">Name</FormLabel>
@@ -271,52 +295,44 @@ const WHTRemittance = () => {
                                         <Input type="text" placeholder="Enter TIN" value={form.tin} onChange={e => set('tin')(e.target.value)} />
                                     </div>
                                 </div>
-                            </CardContainer>
+                            </div>
 
-                            <CardTitle>Payment Details</CardTitle>
-                            <CardContainer>
+                            <h3 className="text-3 font-semibold text-neutral-800 mb-4">Payment Details</h3>
+                            <div className="bg-neutral-50 rounded-3xl p-5">
                                 <div className="space-y-3">
-                                    <FormFieldRow>
+                                    <FormFieldRow className="justify-between">
                                         <FormLabel tip="The type of transaction determines the applicable WHT rate.">WHT Type</FormLabel>
-                                        <div className="relative w-[220px] flex-shrink-0">
-                                            <select value={form.whtType} onChange={e => set('whtType')(e.target.value)}
-                                                className="w-full h-10 border border-neutral-100 bg-white rounded-xl px-3 text-2 font-medium text-neutral-800 focus-visible:outline-none focus-visible:border-[1.5px] focus-visible:border-neutral-800 transition-all appearance-none">
-                                                {WHT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                                            </select>
-                                            <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-                                        </div>
+                                        <SearchableSelect
+                                            options={WHT_TYPES}
+                                            value={form.whtType}
+                                            onChange={(v) => set('whtType')(v)}
+                                            className="w-[150px]"
+                                        />
                                     </FormFieldRow>
-                                    <FormFieldRow>
+                                    <FormFieldRow className="justify-between">
                                         <FormLabel tip="Total amount paid before deducting WHT.">Gross payment</FormLabel>
-                                        <Input type="text" placeholder="N0" value={form.gross} onChange={e => set('gross')(e.target.value.replace(/[^0-9.]/g, ''))} className="w-[220px] flex-shrink-0" />
+                                        <Input type="text" placeholder="N0" value={form.gross} onChange={e => set('gross')(e.target.value.replace(/[^0-9.]/g, ''))} className="w-[150px] text-left" />
                                     </FormFieldRow>
-                                    <FormFieldRow>
+                                    <FormFieldRow className="justify-between">
                                         <FormLabel tip="Applicable Withholding Tax rate set by FIRS.">WHT rate</FormLabel>
-                                        <div className="w-[220px] flex-shrink-0 h-10 border border-neutral-200 bg-neutral-100 rounded-xl px-3 flex items-center text-2 font-medium text-neutral-500">
-                                            {autoRate > 0 ? `${autoRate}%` : 'Select type above'}
-                                        </div>
+                                        <Input type="text" value={autoRate > 0 ? `${autoRate}%` : 'Select type above'} disabled className="w-[150px] text-left bg-neutral-50 text-neutral-300" />
                                     </FormFieldRow>
-                                    <FormFieldRow>
+                                    <FormFieldRow className="justify-between">
                                         <FormLabel tip="Auto-calculated: Gross x WHT rate.">WHT deducted</FormLabel>
-                                        <div className="w-[220px] flex-shrink-0 h-10 border border-neutral-200 bg-neutral-50 rounded-xl px-3 flex items-center text-2 font-medium text-neutral-800">
-                                            {autoWHT > 0 ? `₦${Math.round(autoWHT).toLocaleString()}` : 'Select'}
-                                        </div>
+                                        <Input type="text" value={autoWHT > 0 ? `₦${Math.round(autoWHT).toLocaleString()}` : 'Select'} disabled className="w-[150px] text-left bg-neutral-50 text-neutral-300" />
                                     </FormFieldRow>
-                                    <FormFieldRow>
+                                    <FormFieldRow className="justify-between">
                                         <FormLabel tip="Amount actually remitted: Gross minus WHT.">Net paid to payee</FormLabel>
-                                        <div className="w-[220px] flex-shrink-0 h-10 border border-neutral-200 bg-neutral-50 rounded-xl px-3 flex items-center text-2 font-medium text-neutral-800">
-                                            {autoNet > 0 ? `₦${Math.round(autoNet).toLocaleString()}` : 'N0'}
-                                        </div>
+                                        <Input type="text" value={autoNet > 0 ? `₦${Math.round(autoNet).toLocaleString()}` : 'N0'} disabled className="w-[150px] text-left bg-neutral-50 text-neutral-300" />
                                     </FormFieldRow>
-                                    <FormFieldRow>
+                                    <FormFieldRow className="justify-between">
                                         <FormLabel tip="The date when payment was made to the vendor.">Date of payment</FormLabel>
-                                        <Input type="text" placeholder="dd/mm/yyyy" value={form.date} onChange={e => set('date')(e.target.value)} className="w-[220px] flex-shrink-0" />
+                                        <Input type="text" placeholder="dd/mm/yyyy" value={form.date} onChange={e => set('date')(e.target.value)} className="w-[150px] text-left" />
                                     </FormFieldRow>
                                 </div>
-                            </CardContainer>
+                            </div>
                         </div>
                     </div>
-                    {hasAnyInput && (
                     <div className="max-w-[450px] mx-auto w-full pt-4 border-t border-neutral-100 mt-2">
                         <div className="flex gap-3">
                             <DrawerClose asChild>
@@ -325,12 +341,45 @@ const WHTRemittance = () => {
                             <PrimaryButton className="flex-1" onClick={handleSave} disabled={!canSave}>Save WHT Deduction</PrimaryButton>
                         </div>
                     </div>
-                    )}
                 </DrawerContent>
             </Drawer>
 
             <div className="flex-1 max-w-[700px]">
-                {deductions.length === 0 ? (
+                {periodMode === 'annually' ? (
+                    <div>
+                        <SectionHeading>Annual WHT Return</SectionHeading>
+                        <DescriptionText>Annual reconciliation of withholding tax deductions</DescriptionText>
+                        {deductions.length === 0 ? (
+                            <p className="text-2 font-medium text-neutral-500 mb-6">No WHT deductions recorded for any month</p>
+                        ) : (
+                            <>
+                                <div className="grid grid-cols-2 gap-3 mb-4">
+                                    {deductions.map(d => (
+                                        <PayeeCard key={d.id} d={d}
+                                            onRemove={() => setDeductions(prev => prev.filter(x => x.id !== d.id))}
+                                            onEdit={() => openEdit(d)}
+                                        />
+                                    ))}
+                                </div>
+                                <button onClick={openAdd}
+                                    className="flex items-center gap-1.5 text-2 font-semibold text-taxable-blue mb-7">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                                    Add Another WHT Deduction
+                                </button>
+                                <div className="mb-2">
+                                    <p className="text-2 font-medium text-neutral-700 mb-1">Total Withholding Tax to remit</p>
+                                    <p className="text-5 font-semibold text-neutral-800">₦{Math.round(total).toLocaleString()}</p>
+                                </div>
+                                <div className="flex gap-3">
+                                    <SecondaryButton>Download PDF</SecondaryButton>
+                                    <PrimaryButton onClick={() => setShowFilingModal(true)}>
+                                        File & Remit ({total >= 1_000_000 ? `₦${(total / 1_000_000).toFixed(1)}M` : total >= 1000 ? `₦${Math.round(total / 1000)}K` : fmt(total)})
+                                    </PrimaryButton>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                ) : deductions.length === 0 ? (
                     <div>
                         <SectionHeading>Remit Monthly WHT</SectionHeading>
                         <DescriptionText>Record payments and calculate withholding tax to remit</DescriptionText>
@@ -387,6 +436,7 @@ const WHTCreditBalance = () => {
     const [editId, setEditId] = useState<number | null>(null);
     const [activeMonth, setActiveMonth] = useState(0);
     const [filedMonths, _setFiledMonths] = useState<Set<number>>(new Set());
+    const [periodMode, setPeriodMode] = useState<'monthly' | 'annually'>('monthly');
 
     const total = credits.reduce((s, d) => s + (Number(d.whtDeducted) || 0), 0);
 
@@ -401,8 +451,28 @@ const WHTCreditBalance = () => {
     };
 
     return (
-        <div className="flex gap-6">
-            <MonthList activeMonth={activeMonth} setActiveMonth={setActiveMonth} filedMonths={filedMonths} periodMode="monthly" setPeriodMode={() => {}} />
+        <div className="flex gap-10">
+            <div className="w-[220px] flex-shrink-0 sticky top-24 self-start p-[11px]">
+                <div className="flex items-center gap-3 mb-6">
+                    <span className={`text-3 font-medium ${periodMode === 'monthly' ? 'text-neutral-800' : 'text-neutral-500'}`}>Monthly</span>
+                    <Switch checked={periodMode === 'annually'} onCheckedChange={(v) => setPeriodMode(v ? 'annually' : 'monthly')} />
+                    <span className={`text-3 font-medium ${periodMode === 'annually' ? 'text-neutral-800' : 'text-neutral-500'}`}>Annually</span>
+                </div>
+                {periodMode === 'monthly' && (
+                    <Select value={MONTHS[activeMonth]} onValueChange={(v) => { if (v) setActiveMonth(MONTHS.indexOf(v)); }}>
+                        <SelectTrigger className="w-full h-10 rounded-xl bg-white text-3">
+                            <SelectValue placeholder="Select month" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {MONTHS.map((m) => (
+                                <SelectItem key={m} value={m}>
+                                    <span>{m}</span>
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                )}
+            </div>
 
             <div className="flex-1 min-w-0">
                 {(showForm || editId !== null) ? (

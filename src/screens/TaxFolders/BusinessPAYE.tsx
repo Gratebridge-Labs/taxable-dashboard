@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import gsap from 'gsap';
 import Lenis from 'lenis';
 import { useRouter } from 'next/navigation';
@@ -191,6 +191,7 @@ export default function BusinessPAYE() {
 
     useEffect(() => {
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        if ((window as unknown as { __lenis?: Lenis }).__lenis) return;
 
         const lenis = new Lenis({ lerp: 0.1 });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -209,7 +210,13 @@ export default function BusinessPAYE() {
         };
     }, []);
 
+    const contentRef = useRef<HTMLDivElement>(null);
+
     useLayoutEffect(() => {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            gsap.set('[data-animate]', { opacity: 1, y: 0, clearProps: 'all' });
+            return;
+        }
         const ctx = gsap.context(() => {
             gsap.fromTo(
                 '[data-animate]',
@@ -220,16 +227,14 @@ export default function BusinessPAYE() {
                     duration: 0.5,
                     stagger: 0.06,
                     ease: 'power2.out',
-                    onStart: () => gsap.set('[data-animate]', { transition: 'none' }),
-                    onComplete: () => gsap.set('[data-animate]', { clearProps: 'transition' }),
                 }
             );
-        });
+        }, contentRef);
         return () => ctx.revert();
     }, []);
 
     return (
-        <div className="min-h-screen bg-white pb-20">
+        <div ref={contentRef} className="min-h-screen bg-white pb-20">
             {/* Custom nav bar */}
             <div className="w-full bg-white border-b border-neutral-100 px-4 md:px-8 py-3">
                 <div className="max-w-[1200px] mx-auto w-full flex flex-col gap-1">
@@ -406,7 +411,7 @@ export default function BusinessPAYE() {
                                                     <td className="px-4 py-3 text-neutral-500 whitespace-nowrap">{emp.phone}</td>
                                                     <td className="px-4 py-3 text-neutral-500 whitespace-nowrap">{emp.position}</td>
                                                     <td className="px-4 py-3 text-neutral-500 whitespace-nowrap">{emp.nationality}</td>
-                                                    <td className="px-4 py-3 text-neutral-500 font-mono whitespace-nowrap">{emp.taxId}</td>
+                                                    <td className="px-4 py-3 text-neutral-500 whitespace-nowrap">{emp.taxId}</td>
                                                     <td className="px-4 py-3 font-bold text-neutral-800 whitespace-nowrap">{fmtN(emp.gross)}</td>
                                                     {/* Pension */}
                                                     <td className="px-4 py-3 whitespace-nowrap">
@@ -692,7 +697,7 @@ export default function BusinessPAYE() {
                                             </table>
                                             <div className="border-t border-neutral-100 pt-4">
                                                 <p className="text-2 font-semibold text-neutral-500 mb-1">Total Levy</p>
-                                                <p className="text-[24px] font-bold text-neutral-800">{fmtN(totalLevy)}</p>
+                                                <p className="text-7 font-bold text-neutral-800">{fmtN(totalLevy)}</p>
                                             </div>
                                         </div>
                                     )}

@@ -161,7 +161,7 @@ export default function PAYECalculator() {
     const hasData = gross > 0;
 
     return (
-        <div className="min-h-screen bg-taxable-light pb-20">
+        <div className="min-h-screen bg-white pb-20 font-sans">
             <DashboardHeader />
 
             <main className="max-w-[760px] mx-auto px-4 md:px-8 py-8">
@@ -169,7 +169,7 @@ export default function PAYECalculator() {
                 <div className="flex items-center gap-3 mb-8">
                     <button
                         onClick={() => router.back()}
-                        className="flex items-center gap-1.5 text-2 font-bold text-neutral-800 hover:text-taxable-blue transition-colors"
+                        className="flex items-center gap-1.5 text-2 font-bold text-neutral-800  transition-colors"
                     >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                             <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
@@ -295,7 +295,7 @@ export default function PAYECalculator() {
                     <div className="mb-6">
                         <button
                             onClick={() => setShowBreakdown(s => !s)}
-                            className="flex items-center gap-1.5 text-2 font-bold text-taxable-blue hover:opacity-80 transition-opacity"
+                            className="flex items-center gap-1.5 text-2 font-bold text-taxable-blue transition-opacity"
                         >
                             {showBreakdown ? 'Hide' : 'Show'} calculation breakdown
                             <svg
@@ -371,12 +371,12 @@ export default function PAYECalculator() {
 
                 {/* Action buttons */}
                 <div className="flex gap-3 mb-4">
-                    <button className="flex-1 h-12 border border-neutral-200 text-neutral-800 font-bold rounded-xl hover:bg-neutral-50 transition-colors text-[14px]">
+                    <button className="flex-1 h-12 border border-neutral-200 text-neutral-800 font-semibold rounded-xl text-3">
                         Download PDF
                     </button>
                     <button
                         onClick={() => router.push('/tax-folders/pit')}
-                        className="flex-[2] h-12 bg-taxable-blue text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[14px]"
+                        className="flex-[2] h-12 bg-taxable-blue text-white font-semibold rounded-xl text-3"
                     >
                         File PIT taxes
                     </button>
@@ -385,7 +385,7 @@ export default function PAYECalculator() {
                 {/* Mismatch help */}
                 <p className="text-center text-2 text-neutral-500 font-medium">
                     This doesn't match my payslip.{' '}
-                    <a href="#" className="text-taxable-blue font-bold hover:underline">Get help</a>
+                    <a href="#" className="text-taxable-blue font-bold">Get help</a>
                 </p>
             </main>
         </div>

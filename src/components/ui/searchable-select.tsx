@@ -8,9 +8,10 @@ interface SearchableSelectProps {
     value: string;
     onChange: (value: string) => void;
     placeholder?: string;
+    className?: string;
 }
 
-export function SearchableSelect({ options, value, onChange, placeholder }: SearchableSelectProps) {
+export function SearchableSelect({ options, value, onChange, placeholder, className = '' }: SearchableSelectProps) {
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState('');
     const [focusedIdx, setFocusedIdx] = useState(-1);
@@ -74,7 +75,7 @@ export function SearchableSelect({ options, value, onChange, placeholder }: Sear
     };
 
     return (
-        <div ref={wrapperRef} className="relative">
+        <div ref={wrapperRef} className={`relative ${className}`}>
             <div className="relative">
                 <Input
                     value={displayText}

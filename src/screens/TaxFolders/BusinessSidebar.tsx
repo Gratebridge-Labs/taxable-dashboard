@@ -70,7 +70,7 @@ export function BusinessSidebar({
         className={`
           md:w-[260px] md:flex-shrink-0 md:flex md:flex-col md:sticky md:top-24
           fixed md:relative inset-y-0 left-0 z-50 bg-neutral-100 md:bg-transparent
-          transform transition-transform duration-300 ease-in-out font-sans
+          
           ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
           w-[280px] flex flex-col p-4 shadow-xl md:shadow-none
         `}
@@ -96,7 +96,7 @@ export function BusinessSidebar({
                   <button
                     onClick={() => handleSectionClick(section)}
                     className={`w-full flex items-center justify-between px-[8px] py-[12px] rounded-[10px] transition-all ${
-                      activeSection === section.key ? 'bg-neutral-50' : 'hover:bg-neutral-50'
+                      activeSection === section.key ? 'bg-neutral-50' : ''
                     }`}
                   >
                     <span
@@ -131,7 +131,7 @@ export function BusinessSidebar({
                             key={child.key}
                             onClick={() => handleSubClick(section, child)}
                             className={`w-full flex items-center justify-between px-[8px] py-[10px] rounded-[10px] transition-all text-left ${
-                              isActive ? 'bg-neutral-50' : 'hover:bg-neutral-50'
+                              isActive ? 'bg-neutral-50' : ''
                             }`}
                           >
                             <span
@@ -152,7 +152,7 @@ export function BusinessSidebar({
                 <button
                   onClick={() => handleSectionClick(section)}
                   className={`w-full flex items-center justify-between px-[8px] py-[12px] rounded-[10px] transition-all ${
-                    activeSection === section.key ? 'bg-neutral-50' : 'hover:bg-neutral-50'
+                    activeSection === section.key ? 'bg-neutral-50' : ''
                   }`}
                 >
                   <span

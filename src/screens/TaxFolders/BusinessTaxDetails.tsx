@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useLayoutEffect, startTransition } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, startTransition } from 'react';
 import gsap from 'gsap';
 import Lenis from 'lenis';
 import Image from 'next/image';
@@ -73,7 +73,7 @@ const SidebarItem = ({
                 <Image src={locked ? "/icons/folder-inactive.svg" : "/icons/folder.svg"} alt="" width={16} height={15} />
             </span>
             <div className="flex items-center gap-2">
-                <span className={`text-3 font-medium ${locked ? 'text-neutral-400' : active ? 'text-neutral-800' : 'text-neutral-700'}`}>
+                <span className={`text-2 font-medium ${locked ? 'text-neutral-400' : active ? 'text-neutral-800' : 'text-neutral-700'}`}>
                     {label}
                 </span>
                 {completed && (
@@ -160,13 +160,9 @@ export default function BusinessTaxDetails() {
     const [citSubSection, setCitSubSection] = React.useState<'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review'>('quarterly');
 
     const [activeMonth, setActiveMonth] = React.useState('January');
-    const [_payeStep, _setPayeStep] = React.useState<Record<string, 'method' | 'table'>>({});
-    const [_payeMethod, _setPayeMethod] = React.useState<Record<string, string>>({});
-    const [filedMonths, _setFiledMonths] = React.useState<Set<string>>(new Set());
-    const [payeStaffByMonth, setPayeStaffByMonth] = React.useState<Record<string, PayeStaff[]>>({});
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [filedMonths, setFiledMonths] = React.useState<Set<string>>(new Set());
     const [showPayeFilingModal, setShowPayeFilingModal] = React.useState(false);
-    const [_showBreakdown, _setShowBreakdown] = React.useState(false);
+    const [payeStaffByMonth, setPayeStaffByMonth] = React.useState<Record<string, PayeStaff[]>>({});
     const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
     // Determine sourceMonth (most recent previous month with data)
@@ -212,7 +208,13 @@ export default function BusinessTaxDetails() {
         } catch { /* ignore */ }
     }, []);
 
+    const containerRef = useRef<HTMLDivElement>(null);
+
     useLayoutEffect(() => {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            gsap.set('[data-animate]', { opacity: 1, y: 0, clearProps: 'all' });
+            return;
+        }
         const ctx = gsap.context(() => {
             gsap.fromTo(
                 '[data-animate]',
@@ -223,16 +225,15 @@ export default function BusinessTaxDetails() {
                     duration: 0.5,
                     stagger: 0.06,
                     ease: 'power2.out',
-                    onStart: () => gsap.set('[data-animate]', { transition: 'none' }),
-                    onComplete: () => gsap.set('[data-animate]', { clearProps: 'transition' }),
                 }
             );
-        });
+        }, containerRef);
         return () => ctx.revert();
     }, []);
 
     useEffect(() => {
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        if ((window as unknown as { __lenis?: Lenis }).__lenis) return;
 
         const lenis = new Lenis({ lerp: 0.1 });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -271,13 +272,13 @@ export default function BusinessTaxDetails() {
     };
 
     const handlePayeFile = () => {
-        _setFiledMonths(prev => new Set(prev).add(activeMonth));
+        setFiledMonths(prev => new Set(prev).add(activeMonth));
         setShowPayeFilingModal(false);
     };
 
 
     return (
-        <div className="min-h-screen bg-white pb-20">
+        <div ref={containerRef} className="min-h-screen bg-white pb-20">
             {/* Custom nav bar */}
             <div className="w-full bg-white border-b border-neutral-100 px-4 md:px-8 py-3">
                 <div className="max-w-[1200px] mx-auto w-full flex flex-col gap-1">
@@ -331,7 +332,7 @@ export default function BusinessTaxDetails() {
                                                 ].map(sub => (
                                                     <button key={sub.id}
                                                         onClick={() => setVatWhtSubSection(sub.id as 'file-vat' | 'remit-wht' | 'wht-balance')}
-                                                        className={`w-full text-left px-3 py-2 rounded-lg text-3 font-medium transition-colors mb-2 ${vatWhtSubSection === sub.id ? 'text-neutral-800 bg-neutral-100' : 'text-neutral-500  '
+                                                        className={`w-full text-left px-3 py-2 rounded-lg text-2 font-medium transition-colors mb-2 ${vatWhtSubSection === sub.id ? 'text-neutral-800 bg-neutral-100' : 'text-neutral-500  '
                                                             }`}>
                                                         {sub.label}
                                                     </button>
@@ -350,7 +351,7 @@ export default function BusinessTaxDetails() {
                                                 ].map(sub => (
                                                     <button key={sub.id}
                                                         onClick={() => setCitSubSection(sub.id as 'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review')}
-                                                        className={`w-full text-left px-3 py-2 rounded-lg text-3 font-medium transition-colors mb-2 ${citSubSection === sub.id ? 'text-neutral-800 bg-neutral-100' : 'text-neutral-500  '
+                                                        className={`w-full text-left px-3 py-2 rounded-lg text-2 font-medium transition-colors mb-2 ${citSubSection === sub.id ? 'text-neutral-800 bg-neutral-100' : 'text-neutral-500  '
                                                             }`}>
                                                         {sub.label}
                                                     </button>
@@ -621,6 +622,8 @@ export default function BusinessTaxDetails() {
                                 <BusinessCITContent
                                     activeSubMenu={citSubSection}
                                     onSubMenuChange={setCitSubSection}
+                                    estimatedProfit={estimatedAnnualProfit}
+                                    onEstimatedProfitChange={setEstimatedAnnualProfit}
                                 />
                             </div>
                         )}

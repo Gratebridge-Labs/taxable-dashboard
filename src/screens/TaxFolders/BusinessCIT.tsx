@@ -1,6 +1,11 @@
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Input } from '@/components/ui/input';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Drawer, DrawerContent, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
+import { PrimaryButton, SecondaryButton, PrimaryButtonSm, SecondaryButtonSm } from './TaxFolderShared';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -46,7 +51,7 @@ const LeftSidebar = ({
             <div>
                 <div className="flex items-center justify-between mb-2 px-1">
                     <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Select</p>
-                    <button className="flex items-center gap-1 text-[11px] font-bold text-taxable-blue hover:opacity-70 transition-opacity">
+                    <button className="flex items-center gap-1 text-[11px] font-bold text-taxable-blue  transition-opacity">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
                         </svg>
@@ -60,7 +65,7 @@ const LeftSidebar = ({
                             <div key={item.key}>
                                 <button
                                     onClick={() => item.route && router.push(item.route)}
-                                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all mb-0.5 hover:bg-neutral-50"
+                                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all mb-0.5 "
                                 >
                                     <div className="flex items-center gap-3 text-left">
                                         <span className="text-lg leading-none">📁</span>
@@ -82,7 +87,7 @@ const LeftSidebar = ({
                                             <button
                                                 key={child.key}
                                                 onClick={() => onSubSection(child.key)}
-                                                className={`w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-semibold transition-colors mb-0.5 ${activeSubSection === child.key ? 'text-neutral-800 bg-neutral-100' : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50'}`}
+                                                className={`w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-semibold transition-colors mb-0.5 ${activeSubSection === child.key ? 'text-neutral-800 bg-neutral-100' : 'text-neutral-500 hover:text-neutral-700 '}`}
                                             >
                                                 {child.label}
                                             </button>
@@ -106,7 +111,7 @@ const LeftSidebar = ({
                 <p className="text-[12px] text-neutral-500 font-medium leading-relaxed mb-4">
                     Get your return reviewed by a certified tax accountant. They'll ensure accuracy, compliance, and file for you.
                 </p>
-                <button className="w-full py-2.5 bg-white border border-neutral-200 rounded-xl text-[12px] font-bold text-neutral-800 hover:bg-neutral-50 transition-all">
+                <button className="w-full py-2.5 bg-white border border-neutral-200 rounded-xl text-[12px] font-bold text-neutral-800  transition-all">
                     Book Accountant (₦15,000)
                 </button>
             </div>
@@ -127,7 +132,7 @@ const FilingModal = ({ onClose, onFile }: { onClose: () => void; onFile: () => v
             <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-white h-full w-full max-w-[380px] shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
                 <div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-neutral-100">
-                    <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors">
+                    <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full  transition-colors">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0C0C0E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
                         </svg>
@@ -148,8 +153,8 @@ const FilingModal = ({ onClose, onFile }: { onClose: () => void; onFile: () => v
                     ))}
                 </div>
                 <div className="px-6 pb-6 flex gap-3 border-t border-neutral-100 pt-4">
-                    <button onClick={onClose} className="flex-1 h-11 border border-neutral-200 rounded-xl text-[14px] font-bold text-neutral-800 hover:bg-neutral-50 transition-colors">Back</button>
-                    <button onClick={onFile} className="flex-[2] h-11 bg-taxable-blue text-white rounded-xl text-[14px] font-bold hover:opacity-90 transition-opacity">Continue</button>
+                    <button onClick={onClose} className="flex-1 h-11 border border-neutral-200 rounded-xl text-[14px] font-bold text-neutral-800  transition-colors">Back</button>
+                    <button onClick={onFile} className="flex-[2] h-11 bg-taxable-blue text-white rounded-xl text-[14px] font-bold transition-opacity">Continue</button>
                 </div>
             </div>
         </div>
@@ -200,9 +205,13 @@ const WHT_RATES = ['Select', '2.5%', '5%', '10%'];
 export function BusinessCITContent({
     activeSubMenu,
     onSubMenuChange,
+    estimatedProfit: estimatedProfitProp,
+    onEstimatedProfitChange,
 }: {
     activeSubMenu?: 'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review';
     onSubMenuChange?: (s: 'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review') => void;
+    estimatedProfit?: string;
+    onEstimatedProfitChange?: (v: string) => void;
 } = {}) {
     const router = useRouter();
     const [internalSubSection, setInternalSubSection] = useState<'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review'>('quarterly');
@@ -219,13 +228,16 @@ export function BusinessCITContent({
     const [showFilingModal, setShowFilingModal] = useState(false);
 
     // Quarterly assessments
-    const [estimatedProfit, setEstimatedProfit] = useState('20000000');
+    const [internalProfit, setInternalProfit] = useState('20000000');
+    const estimatedProfit = estimatedProfitProp ?? internalProfit;
+    const setEstimatedProfit = onEstimatedProfitChange ?? setInternalProfit;
     const [editingEstimate, setEditingEstimate] = useState(false);
     const [editEstimateVal, setEditEstimateVal] = useState('');
     const [paidQuarters, setPaidQuarters] = useState<Set<number>>(new Set([0, 1]));
     const [deferredQuarters, setDeferredQuarters] = useState<Set<number>>(new Set());
     const [showDeferModal, setShowDeferModal] = useState(false);
     const [deferModalQuarter, setDeferModalQuarter] = useState<number | null>(null);
+    const [payQuarter, setPayQuarter] = useState<number | null>(null);
 
     // Financials
     const [totalRevenue, setTotalRevenue] = useState('');
@@ -315,43 +327,44 @@ export function BusinessCITContent({
                                     <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
                                     <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[380px] mx-4 p-7 text-center">
                                         <div className="w-12 h-12 rounded-full border-2 border-neutral-200 flex items-center justify-center mx-auto mb-4">
-                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-700">
                                                 <polyline points="20 6 9 17 4 12" />
                                                 <circle cx="12" cy="12" r="10" />
                                             </svg>
                                         </div>
-                                        <h3 className="text-[16px] font-bold text-neutral-800 mb-3">Defer to annual filing</h3>
-                                        <p className="text-[13px] text-neutral-500 font-medium leading-relaxed mb-6">
+                                        <h3 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em] mb-3">Defer to annual filing</h3>
+                                        <p className="text-2 text-neutral-500 font-medium leading-relaxed mb-6">
                                             You chose to defer Q{deferModalQuarter + 1} payment to annual filing. You'll settle this when you file your CIT return in June 2026.
                                         </p>
-                                        <button
+                                        <PrimaryButton
                                             onClick={() => {
                                                 setDeferredQuarters(prev => new Set([...prev, deferModalQuarter!]));
                                                 setShowDeferModal(false);
                                                 setDeferModalQuarter(null);
                                             }}
-                                            className="w-full h-12 bg-taxable-blue text-white rounded-xl font-bold text-[14px] hover:opacity-90 transition-opacity">
+                                            className="w-full">
                                             Got it
-                                        </button>
+                                        </PrimaryButton>
                                     </div>
                                 </div>
                             )}
 
-                            <h2 className="text-base font-bold text-neutral-800 mb-1">Quarterly Assessments (2026)</h2>
-                            <p className="text-[13px] text-neutral-500 font-medium mb-6">Pay your estimated CIT in quarterly installments</p>
+                            <h2 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em] mb-1">Quarterly Assessments (2026)</h2>
+                            <p className="text-2 text-neutral-500 font-medium mb-8">Pay your estimated CIT in quarterly installments</p>
 
-                            <div className="space-y-10">
+                            <div className="space-y-12">
+                            <div className="flex flex-col gap-6">
                             {/* Summary */}
                             <div className="space-y-2">
-                                <div className="flex items-center justify-between text-[13px]">
+                                <div className="flex items-center justify-between text-2">
                                     <span className="text-neutral-500 font-medium">Estimated annual profit</span>
                                     <span className="font-semibold text-neutral-800">{qFmt(profitNum)}</span>
                                 </div>
-                                <div className="flex items-center justify-between text-[13px]">
+                                <div className="flex items-center justify-between text-2">
                                     <span className="text-neutral-500 font-medium">Estimated CIT (30%)</span>
                                     <span className="font-semibold text-neutral-800">{qFmt(totalCIT)}</span>
                                 </div>
-                                <div className="flex items-center justify-between text-[13px]">
+                                <div className="flex items-center justify-between text-2">
                                     <span className="text-neutral-500 font-medium">Per quarter</span>
                                     <span className="font-semibold text-neutral-800">{qFmt(perQuarter)}</span>
                                 </div>
@@ -359,91 +372,125 @@ export function BusinessCITContent({
 
                             {editingEstimate ? (
                                 <div className="flex items-center gap-3">
-                                    <input type="text" value={editEstimateVal}
-                                        onChange={e => setEditEstimateVal(e.target.value.replace(/[^0-9.]/g, ''))}
+                                    <Input type="text" value={editEstimateVal}
+                                        onChange={e => { const raw = e.target.value.replace(/[^0-9.]/g, ''); const parts = raw.split('.'); const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ','); setEditEstimateVal(parts.length > 1 ? integer + '.' + parts.slice(1).join('') : integer); }}
                                         placeholder="Enter estimated profit"
-                                        className="flex-1 h-10 border border-neutral-200 bg-neutral-100 rounded-xl px-3 text-[13px] font-medium focus:outline-none focus:border-taxable-blue/40" />
-                                    <button onClick={() => { if (editEstimateVal) setEstimatedProfit(editEstimateVal); setEditingEstimate(false); }}
-                                        className="h-10 px-4 bg-taxable-blue text-white rounded-xl text-[13px] font-bold hover:opacity-90">Save</button>
-                                    <button onClick={() => setEditingEstimate(false)}
-                                        className="h-10 px-4 border border-neutral-200 rounded-xl text-[13px] font-bold hover:bg-neutral-50">Cancel</button>
+                                        className="flex-1" />
+                                    <PrimaryButtonSm onClick={() => { if (editEstimateVal) setEstimatedProfit(editEstimateVal.replace(/,/g, '')); setEditingEstimate(false); }}>
+                                        Save
+                                    </PrimaryButtonSm>
+                                    <SecondaryButtonSm onClick={() => setEditingEstimate(false)}>
+                                        Cancel
+                                    </SecondaryButtonSm>
                                 </div>
                             ) : (
-                                <button onClick={() => { setEditEstimateVal(estimatedProfit); setEditingEstimate(true); }}
-                                    className="flex items-center gap-1.5 text-[13px] font-bold text-taxable-blue hover:opacity-80">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                                <SecondaryButtonSm onClick={() => { setEditEstimateVal(estimatedProfit); setEditingEstimate(true); }} className="self-start">
                                     Edit Estimate
-                                </button>
+                                </SecondaryButtonSm>
                             )}
+                            </div>
 
                             {/* Quarters table */}
-                            <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden">
-                                <div className="overflow-x-auto">
-                                <table className="w-full text-left text-[13px]">
-                                    <thead className="bg-neutral-100 border-b border-neutral-100">
-                                        <tr>
+                            <div className="bg-white border border-neutral-50 rounded-2xl overflow-hidden">
+                                <Table className="text-2 [&_tr]:border-neutral-50">
+                                    <TableHeader>
+                                        <TableRow className="bg-neutral-50">
                                             {['Quarter', 'Due Date', 'Amount', 'Status'].map(h => (
-                                                <th key={h} className="px-5 py-3.5 font-semibold text-neutral-500 whitespace-nowrap">{h}</th>
+                                                <TableHead key={h} className="px-6 py-4 font-medium text-neutral-500">{h}</TableHead>
                                             ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-neutral-50">
-                                        {quarters.map((q, i) => {
-                                            const isPaid = paidQuarters.has(i);
-                                            const isDeferred = deferredQuarters.has(i);
-                                            const isPayable = i === nextUnpaid;
-                                            return (
-                                                <tr key={q.label} className="hover:bg-neutral-100 cursor-pointer transition-colors">
-                                                    <td className="px-5 py-3.5 font-semibold text-neutral-800 whitespace-nowrap">{q.label}</td>
-                                                    <td className="px-5 py-3.5 text-neutral-500 whitespace-nowrap">{q.due}</td>
-                                                    <td className="px-5 py-3.5 font-medium text-neutral-700 whitespace-nowrap">{qFmt(perQuarter)}</td>
-                                                    <td className="px-5 py-3.5">
-                                                        {isPaid ? (
-                                                            <span className="flex items-center gap-1.5 text-green-600 font-bold text-[12px]">
-                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                                                                Paid
-                                                            </span>
-                                                        ) : isDeferred ? (
-                                                            <span className="flex items-center gap-1.5 text-green-600 font-medium text-[12px]">
-                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                                                                Deferred (Annual CIT filing due by June 30, 2026)
-                                                            </span>
-                                                        ) : isPayable ? (
-                                                            <div className="flex items-center gap-3">
-                                                                <button
-                                                                    onClick={() => setPaidQuarters(prev => new Set([...prev, i]))}
-                                                                    className="flex items-center gap-1 text-taxable-blue font-bold text-[12px] hover:opacity-80 transition-opacity">
-                                                                    Pay & File Q{i + 1}
-                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5l7 7-7 7" /></svg>
-                                                                </button>
-                                                                <span className="text-[#D1D5DB]">|</span>
-                                                                <button
-                                                                    onClick={() => { setDeferModalQuarter(i); setShowDeferModal(true); }}
-                                                                    className="text-neutral-500 font-semibold text-[12px] hover:text-neutral-700 transition-colors">
-                                                                    Defer to annual filing
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-neutral-400 font-medium text-[12px]">Upcoming</span>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
-                                </div>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {quarters.map((q, i) => (
+                                            <TableRow key={q.label}>
+                                                <TableCell className="px-6 py-4 font-medium text-neutral-500">{q.label}</TableCell>
+                                                <TableCell className="px-6 py-4 text-neutral-500">{q.due}</TableCell>
+                                                <TableCell className="px-6 py-4 font-medium text-neutral-700">{qFmt(perQuarter)}</TableCell>
+                                                <TableCell className="px-6 py-4">
+                                                    {paidQuarters.has(i) ? (
+                                                        <Badge className="bg-green-50 text-green-600 border-green-200 text-1 font-medium px-2 py-0 h-5">Paid</Badge>
+                                                    ) : deferredQuarters.has(i) ? (
+                                                        <Badge className="bg-amber-50 text-amber-600 border-amber-200 text-1 font-medium px-2 py-0 h-5">Deferred</Badge>
+                                                    ) : i === nextUnpaid && nextUnpaid === 3 ? null : i === nextUnpaid ? (
+                                                        <Badge className="bg-neutral-100 text-neutral-500 border-neutral-200 text-1 font-medium px-2 py-0 h-5">Pending</Badge>
+                                                    ) : (
+                                                        <Badge className="bg-neutral-100 text-neutral-500 border-neutral-200 text-1 font-medium px-2 py-0 h-5">Upcoming</Badge>
+                                                    )}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                                {nextUnpaid !== -1 && (
+                                    <div className="px-6 py-4 border-t border-neutral-50">
+                                        {nextUnpaid === 3 ? (
+                                            <div className="flex gap-3">
+                                                <SecondaryButton onClick={() => { setDeferModalQuarter(3); setShowDeferModal(true); }} className="flex-1">
+                                                    Defer to Annual Filing
+                                                </SecondaryButton>
+                                                <PrimaryButton onClick={() => setPayQuarter(3)} className="flex-1">
+                                                    File Q4 taxes
+                                                </PrimaryButton>
+                                            </div>
+                                        ) : (
+                                            <PrimaryButton onClick={() => setPayQuarter(nextUnpaid)} className="w-full">
+                                                File Q{nextUnpaid + 1} taxes
+                                            </PrimaryButton>
+                                        )}
+                                    </div>
+                                )}
                             </div>
+
+                            {/* Payment confirmation drawer */}
+                            <Drawer open={payQuarter !== null} onOpenChange={(o) => { if (!o) setPayQuarter(null); }}>
+                                <DrawerContent className="bg-white w-full max-w-full px-4 pb-6">
+                                    <DrawerTitle className="sr-only">File Quarter</DrawerTitle>
+                                    <div className="max-w-[420px] mx-auto w-full pt-6 text-center">
+                                        <h2 className="text-5 font-semibold text-neutral-800 mb-8">
+                                            File {payQuarter !== null ? quarters[payQuarter].label : ''}
+                                        </h2>
+                                        {payQuarter !== null && (() => {
+                                            const q = quarters[payQuarter];
+                                            return (
+                                                <div className="space-y-4 mb-8 text-left">
+                                                    <div className="flex items-center justify-between py-2.5 border-b border-neutral-50">
+                                                        <span className="text-2 text-neutral-500 font-medium">Quarter</span>
+                                                        <span className="text-2 font-semibold text-neutral-800">{q.label}</span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between py-2.5 border-b border-neutral-50">
+                                                        <span className="text-2 text-neutral-500 font-medium">Due Date</span>
+                                                        <span className="text-2 font-semibold text-neutral-800">{q.due}</span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between py-2.5">
+                                                        <span className="text-2 text-neutral-500 font-medium">Amount</span>
+                                                        <span className="text-5 font-semibold text-neutral-800 tracking-[-0.02em]">{qFmt(perQuarter)}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+                                        <div className="flex gap-3">
+                                            <DrawerClose asChild>
+                                                <button type="button" onClick={() => setPayQuarter(null)} className="flex-1 h-12 border border-neutral-200 bg-white rounded-xl text-3 font-semibold text-neutral-800">
+                                                    Back
+                                                </button>
+                                            </DrawerClose>
+                                            <button type="button" onClick={() => { if (payQuarter !== null) { setPaidQuarters(prev => new Set([...prev, payQuarter!])); setPayQuarter(null); } }} className="flex-1 h-12 bg-taxable-blue text-white font-semibold rounded-xl text-3">
+                                                Continue
+                                            </button>
+                                        </div>
+                                    </div>
+                                </DrawerContent>
+                            </Drawer>
 
                             {/* Totals */}
                             <div className="grid grid-cols-2 gap-8">
                                 <div>
-                                    <p className="text-[12px] font-semibold text-neutral-500 mb-1">Total paid ({paidPct}%)</p>
-                                    <p className="text-[26px] font-bold text-neutral-800">{qFmt(totalPaid)}</p>
+                                    <p className="text-1 font-semibold text-neutral-500 mb-1">Total paid ({paidPct}%)</p>
+                                    <p className="text-7 font-semibold text-neutral-800">{qFmt(totalPaid)}</p>
                                 </div>
                                 <div>
-                                    <p className="text-[12px] font-semibold text-neutral-500 mb-1">Remaining</p>
-                                    <p className="text-[26px] font-bold text-neutral-800">{qFmt(remaining)}</p>
+                                    <p className="text-1 font-semibold text-neutral-500 mb-1">Remaining</p>
+                                    <p className="text-7 font-semibold text-neutral-800">{qFmt(remaining)}</p>
                                 </div>
                             </div>
                             </div>
@@ -452,37 +499,37 @@ export function BusinessCITContent({
                             {allPaid ? (
                                 <div className="space-y-4">
                                     <div className="flex items-start gap-2">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2.5" className="flex-shrink-0 mt-0.5">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="flex-shrink-0 mt-0.5 text-neutral-500">
                                             <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
                                         </svg>
-                                        <p className="text-[12px] font-medium text-neutral-500 leading-relaxed">
+                                        <p className="text-1 font-medium text-neutral-500 leading-relaxed">
                                             You've completed your 2025 quarterly payments.<br />Now it's time to file your annual return based on actual profit.
                                         </p>
                                     </div>
-                                    <button onClick={() => setSubSection('file-returns')} className="h-12 px-8 bg-taxable-blue text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[14px]">
+                                    <PrimaryButton onClick={() => setSubSection('file-returns')}>
                                         File Annual CIT
-                                    </button>
+                                    </PrimaryButton>
                                 </div>
                             ) : allSettled ? (
                                 <div className="space-y-4">
                                     <div className="flex items-start gap-2">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2.5" className="flex-shrink-0 mt-0.5">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="flex-shrink-0 mt-0.5 text-amber-500">
                                             <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
                                         </svg>
-                                        <p className="text-[12px] font-semibold text-amber-600 leading-relaxed">
+                                        <p className="text-1 font-semibold text-amber-600 leading-relaxed">
                                             Remember: When you file your annual CIT in June 2027, we'll reconcile based on your actual profit. You may owe more or get a refund.
                                         </p>
                                     </div>
-                                    <button onClick={() => setSubSection('file-returns')} className="h-12 px-8 bg-taxable-blue text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[14px]">
+                                    <PrimaryButton onClick={() => setSubSection('file-returns')}>
                                         File Annual CIT
-                                    </button>
+                                    </PrimaryButton>
                                 </div>
                             ) : (
                                 <div className="flex items-start gap-2">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2.5" className="flex-shrink-0 mt-0.5">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="flex-shrink-0 mt-0.5 text-amber-500">
                                         <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
                                     </svg>
-                                    <p className="text-[12px] font-semibold text-amber-600 leading-relaxed">
+                                    <p className="text-1 font-semibold text-amber-600 leading-relaxed">
                                         Remember: When you file your annual CIT in June 2027, we'll reconcile based on your actual profit. You may owe more or get a refund.
                                     </p>
                                 </div>
@@ -506,7 +553,7 @@ export function BusinessCITContent({
                                 </button>
                             ))}
                         </div>
-                        <button onClick={() => setStep('form')} className="h-11 px-8 bg-taxable-blue text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[14px]">
+                        <button onClick={() => setStep('form')} className="h-11 px-8 bg-taxable-blue text-white font-bold rounded-xl transition-opacity text-[14px]">
                             Continue
                         </button>
                     </div>
@@ -556,13 +603,13 @@ export function BusinessCITContent({
                                         <p className="text-[11px] text-neutral-400 font-medium">PDF, JPG, or PNG (Max 5MB)</p>
                                     </div>
                                 </div>
-                                <button className="h-8 px-4 border border-neutral-300 rounded-lg text-[12px] font-bold text-neutral-800 hover:bg-neutral-50 transition-colors">Upload</button>
+                                <button className="h-8 px-4 border border-neutral-300 rounded-lg text-[12px] font-bold text-neutral-800  transition-colors">Upload</button>
                             </div>
                         </div>
                         </div>
                         </div>
 
-                        <button onClick={() => setSubSection('tax-adjustment')} className="h-12 px-8 bg-taxable-blue text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[14px]">
+                        <button onClick={() => setSubSection('tax-adjustment')} className="h-12 px-8 bg-taxable-blue text-white font-bold rounded-xl transition-opacity text-[14px]">
                             Continue to Tax Adjustments
                         </button>
                     </div>
@@ -621,7 +668,7 @@ export function BusinessCITContent({
                         </div>
                         </div>
 
-                        <button onClick={() => setSubSection('wht-credits')} className="h-12 px-8 bg-taxable-blue text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[14px]">
+                        <button onClick={() => setSubSection('wht-credits')} className="h-12 px-8 bg-taxable-blue text-white font-bold rounded-xl transition-opacity text-[14px]">
                             Continue to WHT Credits
                         </button>
                     </div>
@@ -749,7 +796,7 @@ export function BusinessCITContent({
                                                 <p className="text-[11px] text-neutral-400 font-medium">PDF, JPG, or PNG (Max 5MB)</p>
                                             </div>
                                         </div>
-                                        <button className="h-8 px-4 border border-neutral-300 rounded-lg text-[12px] font-bold text-neutral-800 hover:bg-neutral-50 transition-colors">Upload</button>
+                                        <button className="h-8 px-4 border border-neutral-300 rounded-lg text-[12px] font-bold text-neutral-800  transition-colors">Upload</button>
                                     </div>
                                 </div>
                             </div>
@@ -757,14 +804,14 @@ export function BusinessCITContent({
 
                         <button
                             onClick={() => setWhtCredits(prev => [...prev, { creditNoteNo: '', issuerName: '', issuerTIN: '', whtType: 'Select', whtRate: 'Select', grossAmount: '', whtAmount: '', dateIssued: '', paymentRef: '' }])}
-                            className="flex items-center gap-1.5 text-[13px] font-bold text-taxable-blue hover:opacity-80 transition-opacity">
+                            className="flex items-center gap-1.5 text-[13px] font-bold text-taxable-blue  transition-opacity">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
                             Upload Another WHT Credit Note
                         </button>
                         </div>
                         </div>
 
-                        <button onClick={() => setSubSection('review')} className="h-12 px-8 bg-taxable-blue text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[14px]">
+                        <button onClick={() => setSubSection('review')} className="h-12 px-8 bg-taxable-blue text-white font-bold rounded-xl transition-opacity text-[14px]">
                             Continue to Review
                         </button>
                     </div>
@@ -799,10 +846,10 @@ export function BusinessCITContent({
                         </div>
 
                         <div className="flex gap-3">
-                            <button className="flex-1 h-12 border border-neutral-300 text-neutral-800 font-bold rounded-xl hover:bg-neutral-50 transition-colors text-[14px]">
+                            <button className="flex-1 h-12 border border-neutral-300 text-neutral-800 font-bold rounded-xl  transition-colors text-[14px]">
                                 Download PDF
                             </button>
-                            <button onClick={() => setShowFilingModal(true)} className="flex-1 h-12 bg-taxable-blue text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[14px]">
+                            <button onClick={() => setShowFilingModal(true)} className="flex-1 h-12 bg-taxable-blue text-white font-bold rounded-xl transition-opacity text-[14px]">
                                 File & Pay
                             </button>
                         </div>
@@ -818,7 +865,7 @@ export function BusinessCITContent({
 export default function BusinessCIT() {
     const _router = useRouter();
     return (
-        <div className="min-h-screen bg-neutral-100 font-sans pb-20">
+        <div className="min-h-screen bg-white pb-20">
             <DashboardHeader />
             <main className="max-w-[1200px] mx-auto px-4 md:px-8 py-8">
                 <BusinessCITContent />

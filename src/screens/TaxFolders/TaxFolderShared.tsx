@@ -50,6 +50,30 @@ export function SecondaryButton({ children, onClick, className = '' }: Secondary
   );
 }
 
+// ── Primary Button Sm ────────────────────────────────────────────────
+export function PrimaryButtonSm({ children, onClick, className = '', disabled = false, type = 'button' }: {
+  children: React.ReactNode; onClick?: () => void; className?: string; disabled?: boolean; type?: 'button' | 'submit';
+}) {
+  return (
+    <button type={type} onClick={onClick} disabled={disabled}
+      className={`h-9 px-3.5 bg-taxable-blue text-white font-semibold rounded-lg whitespace-nowrap text-2 disabled:bg-neutral-100 disabled:text-neutral-400 ${className}`}>
+      {children}
+    </button>
+  );
+}
+
+// ── Secondary Button Sm ──────────────────────────────────────────────
+export function SecondaryButtonSm({ children, onClick, className = '' }: {
+  children: React.ReactNode; onClick?: () => void; className?: string;
+}) {
+  return (
+    <button type="button" onClick={onClick}
+      className={`h-9 px-3.5 border border-neutral-200 bg-white text-neutral-800 font-semibold rounded-lg whitespace-nowrap text-2 ${className}`}>
+      {children}
+    </button>
+  );
+}
+
 // ── Form Label with tooltip ─────────────────────────────────────────
 export function FormLabel({ children, tip }: { children: React.ReactNode; tip: string }) {
   return (

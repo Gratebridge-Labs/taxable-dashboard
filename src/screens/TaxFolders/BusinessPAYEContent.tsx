@@ -7,6 +7,36 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 
+// ── PAYE Calculation (2026 Nigeria Tax Act) ─────────────────────────
+const PAYE_BANDS = [
+    { limit: 800000, rate: 0 },
+    { limit: 2200000, rate: 0.15 },
+    { limit: 9000000, rate: 0.18 },
+    { limit: 13000000, rate: 0.21 },
+    { limit: 25000000, rate: 0.23 },
+    { limit: Infinity, rate: 0.25 },
+];
+
+export function calculateAnnualPAYE(st: PayeStaff) {
+    const annualGross = st.gross * 12;
+    const pension = st.pensionOn ? Math.round(annualGross * 0.08) : 0;
+    const nhf = st.nhfOn ? Math.round(annualGross * 0.025) : 0;
+    const hmo = st.hmoOn ? Math.round(annualGross * 0.05) : 0;
+    const rentRelief = st.annualRentChecked ? Math.min((Number(st.annualRent.replace(/,/g, '')) || 0) * 0.20, 500000) : 0;
+    const taxableIncome = Math.max(0, annualGross - pension - nhf - hmo - rentRelief);
+
+    let remaining = taxableIncome;
+    let annualTax = 0;
+    for (const band of PAYE_BANDS) {
+        const chunk = Math.min(remaining, band.limit);
+        annualTax += chunk * band.rate;
+        remaining -= chunk;
+        if (remaining <= 0) break;
+    }
+
+    return { annualTax: Math.round(annualTax), monthlyTax: Math.round(annualTax / 12), taxableIncome: Math.round(taxableIncome) };
+}
+
 interface MonthlyFilingProps {
     activeMonth: string;
     activeStep: 'method' | 'table';
@@ -205,7 +235,7 @@ export function PayeMonthlyFiling({
                 <Table className="text-2 [&_tr]:border-neutral-50">
                     <TableHeader>
                         <TableRow className="bg-neutral-50 hover:bg-neutral-50">
-                            {['Full Name', 'Gross Income', 'HMO', 'Pension', 'NHF', 'Taxable Income', 'JRB Tax ID', 'Job Position', 'Email Address', 'Phone Number', 'Nationality'].map(h => (
+                            {['Full Name', 'Gross Income', 'HMO', 'Pension', 'NHF', 'Taxable Income', 'JRB Tax ID', 'Job Position', 'Email Address', 'Phone Number'].map(h => (
                                 <TableHead key={h} className="px-6 py-4 font-medium text-neutral-500">{h}</TableHead>
                             ))}
                         </TableRow>
@@ -213,7 +243,7 @@ export function PayeMonthlyFiling({
                     <TableBody>
                         {staff.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={11} className="px-6 py-8 text-center text-3 text-neutral-400 font-medium">
+                                <TableCell colSpan={10} className="px-6 py-8 text-center text-3 text-neutral-400 font-medium">
                                     No employees yet. Add employee to see payroll calculations.
                                 </TableCell>
                             </TableRow>
@@ -235,7 +265,6 @@ export function PayeMonthlyFiling({
                                         <TableCell className="px-6 py-4 font-medium text-neutral-600">{st.position}</TableCell>
                                         <TableCell className="px-6 py-4 font-medium text-neutral-600">{st.email}</TableCell>
                                         <TableCell className="px-6 py-4 font-medium text-neutral-600">{st.phone}</TableCell>
-                                        <TableCell className="px-6 py-4 font-medium text-neutral-600">{st.nationality || 'Nigeria'}</TableCell>
                                     </TableRow>
                                 );
                             })

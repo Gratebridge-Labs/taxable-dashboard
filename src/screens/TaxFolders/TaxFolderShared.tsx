@@ -2,6 +2,7 @@
 import React from 'react';
 import { Drawer, DrawerContent, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { InformationFill } from '@mingcute/react';
 
 // ── Primary Button ─────────────────────────────────────────────────
 interface PrimaryButtonProps {
@@ -77,17 +78,14 @@ export function SecondaryButtonSm({ children, onClick, className = '' }: {
 // ── Form Label with tooltip ─────────────────────────────────────────
 export function FormLabel({ children, tip }: { children: React.ReactNode; tip: string }) {
   return (
-    <label className="block text-2 font-medium text-neutral-700 mb-1">
+    <label className="block text-2 font-medium text-neutral-500 mb-1">
       {children}
-      <div className="relative group inline-flex items-center ml-1">
-        <span className="w-3.5 h-3.5 rounded-full bg-neutral-200 text-white flex items-center justify-center text-1 cursor-help font-bold">
-          i
-        </span>
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-900 text-white text-2 rounded-lg w-52 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 whitespace-normal pointer-events-none">
+      <span className="relative group inline-flex items-center ml-1 align-middle cursor-default">
+        <InformationFill className="w-3.5 h-3.5" color="#E5E5E5" />
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-800 text-white text-2 rounded-lg w-52 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 whitespace-normal pointer-events-none">
           {tip}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-neutral-900" />
         </div>
-      </div>
+      </span>
     </label>
   );
 }
@@ -145,7 +143,7 @@ export function CardTitle({ children }: { children: React.ReactNode }) {
 
 // ── Card Container ──────────────────────────────────────────────────
 export function CardContainer({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <div className={`bg-white border border-neutral-100 rounded-2xl p-5 ${className}`}>{children}</div>;
+  return <div className={`bg-neutral-50 rounded-3xl p-5 ${className}`}>{children}</div>;
 }
 
 // ── Form Field Row ─────────────────────────────────────────────────
@@ -194,13 +192,13 @@ export function FilingSheet({ open, onClose, onFile }: FilingSheetProps) {
 
           <div className="flex gap-3">
             <DrawerClose asChild>
-              <button type="button" onClick={onClose} className="flex-1 h-12 border border-neutral-200 bg-white rounded-xl text-3 font-semibold text-neutral-800">
+              <SecondaryButton className="flex-1" onClick={onClose}>
                 Back
-              </button>
+              </SecondaryButton>
             </DrawerClose>
-            <button type="button" onClick={handleContinue} className="flex-1 h-12 bg-taxable-blue text-white font-semibold rounded-xl text-3">
+            <PrimaryButton className="flex-1" onClick={handleContinue}>
               Continue
-            </button>
+            </PrimaryButton>
           </div>
         </div>
       </DrawerContent>
@@ -225,13 +223,13 @@ export function MonthList({ activeMonth, setActiveMonth, filedMonths, periodMode
       <div className="flex items-center gap-1 mb-4 px-2 pt-1.5">
         <button
           onClick={() => setPeriodMode('monthly')}
-          className={`flex-1 h-12 rounded-xl text-3 transition-all ${periodMode === 'monthly' ? 'text-neutral-800 font-medium' : 'text-neutral-500 font-medium'}`}
+          className={`flex-1 h-12 rounded-xl text-3 ${periodMode === 'monthly' ? 'text-neutral-800 font-medium' : 'text-neutral-500 font-medium'}`}
         >
           Monthly
         </button>
         <button
           onClick={() => setPeriodMode('annually')}
-          className={`flex-1 h-12 rounded-xl text-3 transition-all ${periodMode === 'annually' ? 'text-neutral-800 font-medium' : 'text-neutral-500 font-medium'}`}
+          className={`flex-1 h-12 rounded-xl text-3 ${periodMode === 'annually' ? 'text-neutral-800 font-medium' : 'text-neutral-500 font-medium'}`}
         >
           Annually
         </button>
@@ -244,7 +242,7 @@ export function MonthList({ activeMonth, setActiveMonth, filedMonths, periodMode
           return (
             <button key={month}
               onClick={() => setActiveMonth(idx)}
-              className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-left ${isActive ? 'text-neutral-800 font-bold' : 'text-neutral-800 font-medium'}`}
+              className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-left ${isActive ? 'text-neutral-800 font-semibold' : 'text-neutral-800 font-medium'}`}
             >
               <span className="text-3">{month}</span>
               {filed && (

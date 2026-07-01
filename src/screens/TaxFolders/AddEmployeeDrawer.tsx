@@ -15,8 +15,7 @@ export interface PayeStaff {
     pensionOn: boolean;
     nhfOn: boolean;
     hmoOn: boolean;
-    annualRent: string;
-    annualRentChecked: boolean;
+    nationality: string;
 }
 
 interface AddEmployeeDrawerProps {
@@ -43,8 +42,7 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
     const [pensionOn, setPensionOn] = useState(false);
     const [nhfOn, setNhfOn] = useState(false);
     const [hmoOn, setHmoOn] = useState(false);
-    const [annualRent, setAnnualRent] = useState('');
-    const [annualRentChecked, setAnnualRentChecked] = useState(false);
+    const [nationality, setNationality] = useState('Nigeria');
 
     useEffect(() => {
         startTransition(() => {
@@ -59,13 +57,12 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
                 setPensionOn(editStaff.pensionOn);
                 setNhfOn(editStaff.nhfOn);
                 setHmoOn(editStaff.hmoOn);
-                setAnnualRent(editStaff.annualRent);
-                setAnnualRentChecked(editStaff.annualRentChecked);
+                setNationality(editStaff.nationality);
             } else if (open) {
                 setFirstName(''); setLastName(''); setEmail(''); setPhone('');
                 setPosition(''); setTaxId(''); setGross('');
                 setPensionOn(false); setNhfOn(false); setHmoOn(false);
-                setAnnualRent(''); setAnnualRentChecked(false);
+                setNationality('Nigeria');
             }
             setIsEditing(false);
             setShowRemoveConfirm(false);
@@ -84,7 +81,7 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
         onAdd({
             firstName, lastName, email, phone, position, taxId,
             gross: Number(gross.replace(/,/g, '')),
-            pensionOn, nhfOn, hmoOn, annualRent, annualRentChecked,
+            pensionOn, nhfOn, hmoOn, nationality,
         });
         onClose();
     };
@@ -94,7 +91,7 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
         onSave({
             firstName, lastName, email, phone, position, taxId,
             gross: Number(gross.replace(/,/g, '')),
-            pensionOn, nhfOn, hmoOn, annualRent, annualRentChecked,
+            pensionOn, nhfOn, hmoOn, nationality,
         });
         setIsEditing(false);
         onClose();
@@ -122,8 +119,7 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
             setPensionOn(editStaff.pensionOn);
             setNhfOn(editStaff.nhfOn);
             setHmoOn(editStaff.hmoOn);
-            setAnnualRent(editStaff.annualRent);
-            setAnnualRentChecked(editStaff.annualRentChecked);
+            setNationality(editStaff.nationality);
         }
         setIsEditing(false);
     };
@@ -145,17 +141,15 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
                                         firstName={firstName} lastName={lastName}
                                         email={email} phone={phone}
                                         position={position} taxId={taxId}
-                                        gross={gross}
+                                        gross={gross} nationality={nationality}
                                         pensionOn={pensionOn} nhfOn={nhfOn} hmoOn={hmoOn}
-                                        annualRent={annualRent} annualRentChecked={annualRentChecked}
                                         disabled={true}
                                         onFirstNameChange={() => {}} onLastNameChange={() => {}}
                                         onEmailChange={() => {}} onPhoneChange={() => {}}
                                         onPositionChange={() => {}} onTaxIdChange={() => {}}
-                                        onGrossChange={() => {}}
+                                        onGrossChange={() => {}} onNationalityChange={() => {}}
                                         onPensionChange={() => {}} onNhfChange={() => {}}
                                         onHmoChange={() => {}}
-                                        onAnnualRentChange={() => {}} onAnnualRentToggle={() => {}}
                                         readOnlyStyle="bg-neutral-50 text-neutral-300"
                                     />
                                 )}
@@ -166,19 +160,17 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
                                         firstName={firstName} lastName={lastName}
                                         email={email} phone={phone}
                                         position={position} taxId={taxId}
-                                        gross={gross}
+                                        gross={gross} nationality={nationality}
                                         pensionOn={pensionOn} nhfOn={nhfOn} hmoOn={hmoOn}
-                                        annualRent={annualRent} annualRentChecked={annualRentChecked}
                                         disabled={false}
                                         onFirstNameChange={setFirstName} onLastNameChange={setLastName}
                                         onEmailChange={setEmail} onPhoneChange={setPhone}
                                         onPositionChange={setPosition} onTaxIdChange={setTaxId}
                                         onGrossChange={(v) => setGross(v)}
+                                        onNationalityChange={setNationality}
                                         onPensionChange={() => setPensionOn(p => !p)}
                                         onNhfChange={() => setNhfOn(p => !p)}
                                         onHmoChange={() => setHmoOn(p => !p)}
-                                        onAnnualRentChange={(v) => setAnnualRent(v)}
-                                        onAnnualRentToggle={() => setAnnualRentChecked(p => !p)}
                                         readOnlyStyle=""
                                     />
                                 )}
@@ -188,19 +180,17 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
                                     firstName={firstName} lastName={lastName}
                                     email={email} phone={phone}
                                     position={position} taxId={taxId}
-                                    gross={gross}
+                                    gross={gross} nationality={nationality}
                                     pensionOn={pensionOn} nhfOn={nhfOn} hmoOn={hmoOn}
-                                    annualRent={annualRent} annualRentChecked={annualRentChecked}
                                     disabled={false}
                                     onFirstNameChange={setFirstName} onLastNameChange={setLastName}
                                     onEmailChange={setEmail} onPhoneChange={setPhone}
                                     onPositionChange={setPosition} onTaxIdChange={setTaxId}
                                     onGrossChange={(v) => setGross(v)}
+                                    onNationalityChange={setNationality}
                                     onPensionChange={() => setPensionOn(p => !p)}
                                     onNhfChange={() => setNhfOn(p => !p)}
                                     onHmoChange={() => setHmoOn(p => !p)}
-                                    onAnnualRentChange={(v) => setAnnualRent(v)}
-                                    onAnnualRentToggle={() => setAnnualRentChecked(p => !p)}
                                     readOnlyStyle=""
                                 />
                             )}
@@ -280,9 +270,8 @@ interface FormContentProps {
     firstName: string; lastName: string;
     email: string; phone: string;
     position: string; taxId: string;
-    gross: string;
+    gross: string; nationality: string;
     pensionOn: boolean; nhfOn: boolean; hmoOn: boolean;
-    annualRent: string; annualRentChecked: boolean;
     disabled: boolean;
     onFirstNameChange: (v: string) => void;
     onLastNameChange: (v: string) => void;
@@ -291,13 +280,14 @@ interface FormContentProps {
     onPositionChange: (v: string) => void;
     onTaxIdChange: (v: string) => void;
     onGrossChange: (v: string) => void;
+    onNationalityChange: (v: string) => void;
     onPensionChange: () => void;
     onNhfChange: () => void;
     onHmoChange: () => void;
-    onAnnualRentChange: (v: string) => void;
-    onAnnualRentToggle: () => void;
     readOnlyStyle: string;
 }
+
+const NATIONALITIES_OPTIONS = ['Nigeria', 'Ghana', 'Kenya', 'South Africa', 'Other'];
 
 function FormContent(props: FormContentProps) {
     const rs = props.readOnlyStyle;
@@ -330,7 +320,7 @@ function FormContent(props: FormContentProps) {
                     <Input type="text" value={props.taxId} onChange={e => props.onTaxIdChange(e.target.value)} disabled={props.disabled} placeholder="Enter tax ID" className={rs} />
                 </div>
                 <div className="col-span-2">
-                    <label className="block text-2 font-medium text-neutral-700 mb-1">Monthly Salary</label>
+                    <label className="block text-2 font-medium text-neutral-700 mb-1">Monthly Income</label>
                     <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-3 text-neutral-500 pointer-events-none">₦</span>
                         <Input type="text" value={props.gross} onChange={e => {
@@ -342,45 +332,35 @@ function FormContent(props: FormContentProps) {
                         }} disabled={props.disabled} placeholder="0" className={`pl-8 ${rs}`} />
                     </div>
                 </div>
+                <div className="col-span-2">
+                    <label className="block text-2 font-medium text-neutral-700 mb-1">Nationality</label>
+                    <select
+                        value={props.nationality}
+                        onChange={e => props.onNationalityChange(e.target.value)}
+                        disabled={props.disabled}
+                        className={`w-full h-10 rounded-xl border border-neutral-200 px-3 text-3 font-medium text-neutral-800 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-neutral-800 appearance-none cursor-pointer ${props.disabled ? 'bg-neutral-50 text-neutral-300 cursor-default' : 'bg-white'}`}
+                    >
+                        {NATIONALITIES_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                </div>
             </div>
 
             {/* Deductions section */}
             <div className="mb-8">
                 <p className="text-3 font-semibold text-neutral-800 mb-3">Deductions</p>
-                <div className="flex flex-col gap-3">
-                    <div className="flex items-center gap-6">
-                        <label className={`flex items-center gap-2 ${props.disabled ? 'cursor-default' : 'cursor-pointer'}`}>
-                            <Checkbox checked={props.pensionOn} onCheckedChange={() => !props.disabled && props.onPensionChange()} disabled={props.disabled} />
-                            <span className={`text-3 font-medium ${props.disabled ? 'text-neutral-300' : 'text-neutral-700'}`}>Pension 8%</span>
-                        </label>
-                        <label className={`flex items-center gap-2 ${props.disabled ? 'cursor-default' : 'cursor-pointer'}`}>
-                            <Checkbox checked={props.nhfOn} onCheckedChange={() => !props.disabled && props.onNhfChange()} disabled={props.disabled} />
-                            <span className={`text-3 font-medium ${props.disabled ? 'text-neutral-300' : 'text-neutral-700'}`}>NHF (2.5%)</span>
-                        </label>
-                        <label className={`flex items-center gap-2 ${props.disabled ? 'cursor-default' : 'cursor-pointer'}`}>
-                            <Checkbox checked={props.hmoOn} onCheckedChange={() => !props.disabled && props.onHmoChange()} disabled={props.disabled} />
-                            <span className={`text-3 font-medium ${props.disabled ? 'text-neutral-300' : 'text-neutral-700'}`}>HMO (5%)</span>
-                        </label>
-                        <label className={`flex items-center gap-2 ${props.disabled ? 'cursor-default' : 'cursor-pointer'}`}>
-                            <Checkbox checked={props.annualRentChecked} onCheckedChange={() => !props.disabled && props.onAnnualRentToggle()} disabled={props.disabled} />
-                            <span className={`text-3 font-medium ${props.disabled ? 'text-neutral-300' : 'text-neutral-700'}`}>Annual Rent</span>
-                        </label>
-                    </div>
-                    {props.annualRentChecked && (
-                        <div className="relative pl-6">
-                            <span className="absolute left-9 top-1/2 -translate-y-1/2 text-3 text-neutral-500 pointer-events-none">₦</span>
-                            <Input type="text" value={props.annualRent} placeholder="Enter annual rent amount"
-                                onChange={e => {
-                                    const raw = e.target.value.replace(/[^0-9.]/g, '');
-                                    const parts = raw.split('.');
-                                    const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-                                    props.onAnnualRentChange(parts.length > 1 ? integer + '.' + parts.slice(1).join('') : integer);
-                                }}
-                                disabled={props.disabled}
-                                className={`pl-12 ${rs}`}
-                            />
-                        </div>
-                    )}
+                <div className="flex items-center gap-6">
+                    <label className={`flex items-center gap-2 ${props.disabled ? 'cursor-default' : 'cursor-pointer'}`}>
+                        <Checkbox checked={props.pensionOn} onCheckedChange={() => !props.disabled && props.onPensionChange()} disabled={props.disabled} />
+                        <span className={`text-3 font-medium ${props.disabled ? 'text-neutral-300' : 'text-neutral-700'}`}>Pension 8%</span>
+                    </label>
+                    <label className={`flex items-center gap-2 ${props.disabled ? 'cursor-default' : 'cursor-pointer'}`}>
+                        <Checkbox checked={props.nhfOn} onCheckedChange={() => !props.disabled && props.onNhfChange()} disabled={props.disabled} />
+                        <span className={`text-3 font-medium ${props.disabled ? 'text-neutral-300' : 'text-neutral-700'}`}>NHF (2.5%)</span>
+                    </label>
+                    <label className={`flex items-center gap-2 ${props.disabled ? 'cursor-default' : 'cursor-pointer'}`}>
+                        <Checkbox checked={props.hmoOn} onCheckedChange={() => !props.disabled && props.onHmoChange()} disabled={props.disabled} />
+                        <span className={`text-3 font-medium ${props.disabled ? 'text-neutral-300' : 'text-neutral-700'}`}>HMO (2.5%)</span>
+                    </label>
                 </div>
             </div>
         </>

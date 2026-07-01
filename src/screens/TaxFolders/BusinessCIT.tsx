@@ -1,24 +1,26 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Input } from '@/components/ui/input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Drawer, DrawerContent, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
-import { PrimaryButton, SecondaryButton, FilingSheet } from './TaxFolderShared';
+import { PrimaryButton, SecondaryButton, PrimaryButtonSm, SecondaryButtonSm } from './TaxFolderShared';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
-import { InformationFill } from '@mingcute/react';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmt = (n: number) => `₦${Math.round(n).toLocaleString()}`;
 const num = (s: string) => Number(s.replace(/,/g, '')) || 0;
 
 const HintIcon = ({ tip }: { tip: string }) => (
-    <span className="relative group inline-flex items-center ml-1 align-middle cursor-default">
-        <InformationFill className="w-3.5 h-3.5" color="#E5E5E5" />
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2 bg-neutral-800 text-white text-1 leading-snug rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-40 font-medium">
+    <div className="relative group inline-flex items-center ml-1 cursor-default">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+        </svg>
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2 bg-neutral-800 text-white text-[11px] leading-snug rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-40 font-medium">
             {tip}
         </div>
-    </span>
+    </div>
 );
 
 // ── Left Sidebar ──────────────────────────────────────────────────────────────
@@ -31,26 +33,30 @@ const CIT_SUBSECTIONS = [
 ];
 
 const LeftSidebar = ({
-    activeSubSection, onSubSection, router, payQuarterly,
+    activeSubSection, onSubSection, router,
 }: {
     activeSubSection: string;
     onSubSection: (s: string) => void;
     router: ReturnType<typeof useRouter>;
-    payQuarterly?: boolean;
 }) => {
-    const navChildren = payQuarterly ? CIT_SUBSECTIONS : CIT_SUBSECTIONS.filter(s => s.key !== 'quarterly');
     const NAV = [
         { key: 'company-info', label: 'Company Information', route: '/tax-folders/business' },
         { key: 'paye', label: 'PAYE', route: '/tax-folders/business-paye' },
         { key: 'vat-wht', label: 'VAT/WHT', route: '/tax-folders/business-vat-wht' },
-        { key: 'cit', label: 'Company Income Tax', route: null, children: navChildren },
+        { key: 'cit', label: 'Company Income Tax', route: null, children: CIT_SUBSECTIONS },
     ];
 
     return (
         <div className="w-[220px] flex-shrink-0 flex flex-col gap-4 sticky top-24">
             <div>
                 <div className="flex items-center justify-between mb-2 px-1">
-                    <p className="text-1 font-semibold text-neutral-400 uppercase tracking-wider">Select</p>
+                    <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Select</p>
+                    <button className="flex items-center gap-1 text-[11px] font-bold text-taxable-blue  transition-opacity">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                        Edit section
+                    </button>
                 </div>
                 <div>
                     {NAV.map(item => {
@@ -59,11 +65,11 @@ const LeftSidebar = ({
                             <div key={item.key}>
                                 <button
                                     onClick={() => item.route && router.push(item.route)}
-                                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl mb-0.5"
+                                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all mb-0.5 "
                                 >
                                     <div className="flex items-center gap-3 text-left">
-                                        <span className="text-3 leading-none">📁</span>
-                                        <span className="text-2 font-semibold text-neutral-700">{item.label}</span>
+                                        <span className="text-lg leading-none">📁</span>
+                                        <span className="text-[13px] font-semibold text-neutral-700">{item.label}</span>
                                     </div>
                                     {isExpanded ? (
                                         <svg className="w-3.5 h-3.5 text-neutral-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
@@ -81,7 +87,7 @@ const LeftSidebar = ({
                                             <button
                                                 key={child.key}
                                                 onClick={() => onSubSection(child.key)}
-                                                className={`w-full text-left px-3 py-2 rounded-lg text-2 font-semibold mb-0.5 ${activeSubSection === child.key ? 'text-neutral-800 bg-neutral-100' : 'text-neutral-500'}`}
+                                                className={`w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-semibold transition-colors mb-0.5 ${activeSubSection === child.key ? 'text-neutral-800 bg-neutral-100' : 'text-neutral-500 hover:text-neutral-700 '}`}
                                             >
                                                 {child.label}
                                             </button>
@@ -94,6 +100,63 @@ const LeftSidebar = ({
                 </div>
             </div>
 
+            {/* Book accountant */}
+            <div className="bg-white rounded-[16px] p-5 border border-neutral-100 shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+                    </svg>
+                    <h4 className="text-[13px] font-bold text-neutral-800">Need expert eyes on your return?</h4>
+                </div>
+                <p className="text-[12px] text-neutral-500 font-medium leading-relaxed mb-4">
+                    Get your return reviewed by a certified tax accountant. They'll ensure accuracy, compliance, and file for you.
+                </p>
+                <button className="w-full py-2.5 bg-white border border-neutral-200 rounded-xl text-[12px] font-bold text-neutral-800  transition-all">
+                    Book Accountant (₦15,000)
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// ── Filing Modal ──────────────────────────────────────────────────────────────
+const FilingModal = ({ onClose, onFile }: { onClose: () => void; onFile: () => void }) => {
+    const [method, setMethod] = useState<'download' | 'taxable' | 'accountant'>('download');
+    const OPTIONS = [
+        { id: 'download' as const, label: 'Download forms (Free)', desc: 'Download pre-filled FIRS forms and file yourself.' },
+        { id: 'taxable' as const, label: 'Let Taxable file for you (₦8,000)', desc: 'We submit your return directly to FIRS.' },
+        { id: 'accountant' as const, label: 'Get accountant review first (₦25,000)', desc: 'A licensed accountant reviews before filing.' },
+    ];
+    return (
+        <div className="fixed inset-0 z-[200] flex items-center justify-end">
+            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={onClose} />
+            <div className="relative bg-white h-full w-full max-w-[380px] shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+                <div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-neutral-100">
+                    <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full  transition-colors">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0C0C0E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
+                        </svg>
+                    </button>
+                    <h3 className="text-[16px] font-bold text-neutral-800">How do you want to file?</h3>
+                </div>
+                <div className="flex-1 px-6 py-5">
+                    {OPTIONS.map(opt => (
+                        <button key={opt.id} onClick={() => setMethod(opt.id)} className="w-full flex items-start gap-3 py-4 text-left">
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${method === opt.id ? 'border-taxable-blue' : 'border-neutral-300'}`}>
+                                {method === opt.id && <div className="w-2.5 h-2.5 rounded-full bg-taxable-blue" />}
+                            </div>
+                            <div>
+                                <p className="text-[14px] font-semibold text-neutral-800 mb-0.5">{opt.label}</p>
+                                <p className="text-[12px] text-neutral-500 font-medium leading-relaxed">{opt.desc}</p>
+                            </div>
+                        </button>
+                    ))}
+                </div>
+                <div className="px-6 pb-6 flex gap-3 border-t border-neutral-100 pt-4">
+                    <button onClick={onClose} className="flex-1 h-11 border border-neutral-200 rounded-xl text-[14px] font-bold text-neutral-800  transition-colors">Back</button>
+                    <button onClick={onFile} className="flex-[2] h-11 bg-taxable-blue text-white rounded-xl text-[14px] font-bold transition-opacity">Continue</button>
+                </div>
+            </div>
         </div>
     );
 };
@@ -142,11 +205,13 @@ const WHT_RATES = ['Select', '2.5%', '5%', '10%'];
 export function BusinessCITContent({
     activeSubMenu,
     onSubMenuChange,
-    payQuarterly: _payQuarterly = false,
+    estimatedProfit: estimatedProfitProp,
+    onEstimatedProfitChange,
 }: {
     activeSubMenu?: 'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review';
     onSubMenuChange?: (s: 'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review') => void;
-    payQuarterly?: boolean;
+    estimatedProfit?: string;
+    onEstimatedProfitChange?: (v: string) => void;
 } = {}) {
     const router = useRouter();
     const [internalSubSection, setInternalSubSection] = useState<'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review'>('quarterly');
@@ -160,24 +225,19 @@ export function BusinessCITContent({
 
     const [step, setStep] = useState<'method' | 'form'>('method');
     const [entryMethod, setEntryMethod] = useState<'manual' | 'pdf' | 'software'>('manual');
-    const [showFilingSheet, setShowFilingSheet] = useState(false);
-    const [showReviewFilingSheet, setShowReviewFilingSheet] = useState(false);
-
-    useEffect(() => {
-        if (!_payQuarterly && subSection === 'quarterly') {
-            setSubSectionLocal('file-returns');
-        }
-    }, [_payQuarterly, subSection, setSubSectionLocal]);
+    const [showFilingModal, setShowFilingModal] = useState(false);
 
     // Quarterly assessments
-    const [estimatedProfit, _setEstimatedProfit] = useState('20000000');
+    const [internalProfit, setInternalProfit] = useState('20000000');
+    const estimatedProfit = estimatedProfitProp ?? internalProfit;
+    const setEstimatedProfit = onEstimatedProfitChange ?? setInternalProfit;
+    const [editingEstimate, setEditingEstimate] = useState(false);
+    const [editEstimateVal, setEditEstimateVal] = useState('');
     const [paidQuarters, setPaidQuarters] = useState<Set<number>>(new Set([0, 1]));
     const [deferredQuarters, setDeferredQuarters] = useState<Set<number>>(new Set());
     const [showDeferModal, setShowDeferModal] = useState(false);
     const [deferModalQuarter, setDeferModalQuarter] = useState<number | null>(null);
     const [payQuarter, setPayQuarter] = useState<number | null>(null);
-    const [filingQuarter, setFilingQuarter] = useState<number | null>(null);
-    const [_activeDrawerQuarter, setActiveDrawerQuarter] = useState<number | null>(null);
 
     // Financials
     const [totalRevenue, setTotalRevenue] = useState('');
@@ -228,14 +288,12 @@ export function BusinessCITContent({
 
     return (
         <div className="flex items-start gap-8 w-full">
-            {showFilingSheet && <FilingSheet open={showFilingSheet} onClose={() => { setShowFilingSheet(false); setFilingQuarter(null); }} onFile={() => { if (filingQuarter !== null) { setPaidQuarters(prev => new Set([...prev, filingQuarter])); setActiveDrawerQuarter(null); } }} />}
-            {showReviewFilingSheet && <FilingSheet open={showReviewFilingSheet} onClose={() => setShowReviewFilingSheet(false)} onFile={() => setShowReviewFilingSheet(false)} />}
+            {showFilingModal && <FilingModal onClose={() => setShowFilingModal(false)} onFile={() => setShowFilingModal(false)} />}
             {!activeSubMenu && (
                 <LeftSidebar
                     activeSubSection={subSection}
                     onSubSection={s => setSubSection(s as 'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review')}
                     router={router}
-                    payQuarterly={_payQuarterly}
                 />
             )}
             {/* ── Right content ── */}
@@ -295,6 +353,7 @@ export function BusinessCITContent({
                             <p className="text-2 text-neutral-500 font-medium mb-8">Pay your estimated CIT in quarterly installments</p>
 
                             <div className="space-y-12">
+                            <div className="flex flex-col gap-6">
                             {/* Summary */}
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between text-2">
@@ -309,6 +368,26 @@ export function BusinessCITContent({
                                     <span className="text-neutral-500 font-medium">Per quarter</span>
                                     <span className="font-semibold text-neutral-800">{qFmt(perQuarter)}</span>
                                 </div>
+                            </div>
+
+                            {editingEstimate ? (
+                                <div className="flex items-center gap-3">
+                                    <Input type="text" value={editEstimateVal}
+                                        onChange={e => { const raw = e.target.value.replace(/[^0-9.]/g, ''); const parts = raw.split('.'); const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ','); setEditEstimateVal(parts.length > 1 ? integer + '.' + parts.slice(1).join('') : integer); }}
+                                        placeholder="Enter estimated profit"
+                                        className="flex-1" />
+                                    <PrimaryButtonSm onClick={() => { if (editEstimateVal) setEstimatedProfit(editEstimateVal.replace(/,/g, '')); setEditingEstimate(false); }}>
+                                        Save
+                                    </PrimaryButtonSm>
+                                    <SecondaryButtonSm onClick={() => setEditingEstimate(false)}>
+                                        Cancel
+                                    </SecondaryButtonSm>
+                                </div>
+                            ) : (
+                                <SecondaryButtonSm onClick={() => { setEditEstimateVal(estimatedProfit); setEditingEstimate(true); }} className="self-start">
+                                    Edit Estimate
+                                </SecondaryButtonSm>
+                            )}
                             </div>
 
                             {/* Quarters table */}
@@ -770,9 +849,9 @@ export function BusinessCITContent({
                             <button className="flex-1 h-12 border border-neutral-300 text-neutral-800 font-bold rounded-xl  transition-colors text-[14px]">
                                 Download PDF
                             </button>
-                            <PrimaryButton onClick={() => setShowReviewFilingSheet(true)} className="flex-1">
+                            <button onClick={() => setShowFilingModal(true)} className="flex-1 h-12 bg-taxable-blue text-white font-bold rounded-xl transition-opacity text-[14px]">
                                 File & Pay
-                            </PrimaryButton>
+                            </button>
                         </div>
                     </div>
                 )}

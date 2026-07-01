@@ -6,10 +6,9 @@ import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { PayeMonthlyFiling, calculateAnnualPAYE } from '@/screens/TaxFolders/BusinessPAYEContent';
+import { PayeMonthlyFiling, PayeAnnualReturns } from '@/screens/TaxFolders/BusinessPAYEContent';
 import { PayeStaff } from '@/screens/TaxFolders/AddEmployeeDrawer';
 import { Calendar } from '@/components/ui/calendar';
 import { Spinner } from '@/components/ui/spinner';
@@ -30,13 +29,6 @@ const NIGERIA_CITIES = [
     'Lagos', 'Abuja', 'Port Harcourt', 'Kano', 'Ibadan', 'Benin City',
     'Enugu', 'Aba', 'Onitsha', 'Warri', 'Calabar', 'Uyo', 'Kaduna',
     'Jos', 'Maiduguri', 'Akure', 'Abeokuta', 'Asaba', 'Owerri', 'Ile-Ife',
-];
-
-const NIGERIA_LGAS = [
-    'Agege', 'Ajeromi-Ifelodun', 'Alimosho', 'Amuwo-Odofin', 'Apapa',
-    'Badagry', 'Epe', 'Eti-Osa', 'Ibeju-Lekki', 'Ifako-Ijaiye',
-    'Ikeja', 'Ikorodu', 'Kosofe', 'Lagos Island', 'Lagos Mainland',
-    'Mushin', 'Ojo', 'Oshodi-Isolo', 'Somolu', 'Surulere',
 ];
 
 const INDUSTRIES = [
@@ -137,7 +129,6 @@ export default function BusinessTaxDetails() {
     const profileId = searchParams.get('profileId') || 'default';
     const taxYear = searchParams.get('year') || '2026';
     const STORAGE_KEY = `taxable_business_info_${profileId}`;
-    const PAYE_STORAGE_KEY = `taxable_paye_${profileId}_${taxYear}`;
 
     // SessionStorage persistence — restore on client mount to avoid hydration mismatch
     const [showWelcomeModal, setShowWelcomeModal] = React.useState(false);
@@ -149,29 +140,24 @@ export default function BusinessTaxDetails() {
     const [rcbn, setRcbn] = React.useState('12345678901');
     const [companyName, setCompanyName] = React.useState('');
     const [industry, setIndustry] = React.useState('');
+    const [incorporationDate, setIncorporationDate] = React.useState('');
     const [address, setAddress] = React.useState('');
     const [city, setCity] = React.useState('');
     const [state, setState] = React.useState('');
-    const [lga, setLga] = React.useState('');
     const [payQuarterly, setPayQuarterly] = React.useState(false);
+    const [estimatedAnnualProfit, setEstimatedAnnualProfit] = React.useState('');
 
     const [datePickerOpen, setDatePickerOpen] = useState(false);
     const [incorporationDateObj, setIncorporationDateObj] = useState<Date | undefined>(undefined);
 
     const companyInfoComplete = Boolean(
-        rcbn && companyName && industry && incorporationDateObj && address && city && state && lga
+        rcbn && companyName && industry && incorporationDateObj && address && city && state
     );
 
     // PAYE inline state
     const [payeSubSection, _setPayeSubSection] = React.useState<'monthly-filing' | 'annual-returns'>('monthly-filing');
     const [vatWhtSubSection, setVatWhtSubSection] = React.useState<'file-vat' | 'remit-wht' | 'wht-balance'>('file-vat');
     const [citSubSection, setCitSubSection] = React.useState<'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review'>('quarterly');
-
-    React.useEffect(() => {
-        if (!payQuarterly && citSubSection === 'quarterly') {
-            setCitSubSection('file-returns');
-        }
-    }, [payQuarterly, citSubSection]);
 
     const [activeMonth, setActiveMonth] = React.useState('January');
     const [filedMonths, setFiledMonths] = React.useState<Set<string>>(new Set());
@@ -211,28 +197,16 @@ export default function BusinessTaxDetails() {
                 if (saved.rcbn) setRcbn(saved.rcbn);
                 if (saved.companyName) setCompanyName(saved.companyName);
                 if (saved.industry) setIndustry(saved.industry);
+                if (saved.incorporationDate) setIncorporationDate(saved.incorporationDate);
                 if (saved.incorporationDateObj) setIncorporationDateObj(new Date(saved.incorporationDateObj));
-                if (saved.lga) setLga(saved.lga);
                 if (saved.address) setAddress(saved.address);
                 if (saved.city) setCity(saved.city);
                 if (saved.state) setState(saved.state);
                 if (typeof saved.payQuarterly === 'boolean') setPayQuarterly(saved.payQuarterly);
+                if (saved.estimatedAnnualProfit) setEstimatedAnnualProfit(saved.estimatedAnnualProfit);
             });
         } catch { /* ignore */ }
     }, []);
-
-    // Restore PAYE data from sessionStorage
-    useEffect(() => {
-        try {
-            const raw = sessionStorage.getItem(PAYE_STORAGE_KEY);
-            if (!raw) return;
-            const saved = JSON.parse(raw);
-            startTransition(() => {
-                if (saved.payeStaffByMonth) setPayeStaffByMonth(saved.payeStaffByMonth);
-                if (saved.filedMonths) setFiledMonths(new Set(saved.filedMonths));
-            });
-        } catch { /* ignore */ }
-    }, [PAYE_STORAGE_KEY]);
 
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -278,21 +252,13 @@ export default function BusinessTaxDetails() {
         };
     }, []);
 
-    // Save PAYE data to sessionStorage
-    useEffect(() => {
-        sessionStorage.setItem(PAYE_STORAGE_KEY, JSON.stringify({
-            payeStaffByMonth,
-            filedMonths: Array.from(filedMonths),
-        }));
-    }, [payeStaffByMonth, filedMonths, PAYE_STORAGE_KEY]);
-
     const handleSaveAndContinue = async () => {
         setSubmitting(true);
         setCompanyInfoSaved(true);
 
         sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
-            rcbn, companyName, industry, incorporationDateObj, address, city, state, lga,
-            payQuarterly,
+            rcbn, companyName, industry, incorporationDate, incorporationDateObj, address, city, state,
+            payQuarterly, estimatedAnnualProfit,
         }));
 
         await new Promise(res => setTimeout(res, 500));
@@ -382,7 +348,7 @@ export default function BusinessTaxDetails() {
                                                     { id: 'tax-adjustment', label: 'Tax Adjustment' },
                                                     { id: 'wht-credits', label: 'WHT Credits' },
                                                     { id: 'review', label: 'Review' },
-                                                ].filter(sub => payQuarterly || sub.id !== 'quarterly').map(sub => (
+                                                ].map(sub => (
                                                     <button key={sub.id}
                                                         onClick={() => setCitSubSection(sub.id as 'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review')}
                                                         className={`w-full text-left px-3 py-2 rounded-lg text-2 font-medium transition-colors mb-2 ${citSubSection === sub.id ? 'text-neutral-800 bg-neutral-100' : 'text-neutral-500  '
@@ -459,6 +425,7 @@ export default function BusinessTaxDetails() {
                                                         selected={incorporationDateObj}
                                                         onSelect={(date) => {
                                                             setIncorporationDateObj(date);
+                                                            if (date) setIncorporationDate(format(date, 'yyyy-MM-dd'));
                                                             setDatePickerOpen(false);
                                                         }}
                                                     />
@@ -469,34 +436,91 @@ export default function BusinessTaxDetails() {
 
                                     {/* Registered office address */}
                                     <div>
-                                        <label className="block text-2 font-medium text-neutral-500 mb-1">
-                                            Address (building number, street)
-                                            <HintIcon tip="Your registered business address as listed with CAC." />
+                                        <label className="block text-2 font-medium text-neutral-700 mb-1">
+                                            Registered office address
+                                            <HintIcon tip="The address registered with CAC for your business." />
                                         </label>
                                         <Input
                                             type="text"
-                                            placeholder="e.g. 27, Marina Street"
+                                            placeholder="Address"
                                             value={address}
                                             onChange={e => setAddress(e.target.value)}
                                         />
-                                        <div className="grid grid-cols-3 gap-3 mt-3">
+                                        <div className="grid grid-cols-2 gap-3 mt-3">
                                             <SearchableSelect value={city} onChange={setCity} options={NIGERIA_CITIES} placeholder="City" />
                                             <SearchableSelect value={state} onChange={setState} options={NIGERIA_STATES} placeholder="State" />
-                                            <SearchableSelect value={lga} onChange={setLga} options={NIGERIA_LGAS} placeholder="LGA" />
                                         </div>
                                     </div>
 
                                     {/* Pay CIT quarterly */}
-                                    <label className="flex items-center gap-3 cursor-pointer">
-                                        <Checkbox
-                                            checked={payQuarterly}
-                                            onCheckedChange={() => setPayQuarterly(p => !p)}
-                                        />
-                                        <span className="text-3 font-medium text-neutral-500">
+                                    <button
+                                        type="button"
+                                        onClick={() => setPayQuarterly(p => !p)}
+                                        className="flex items-center gap-3"
+                                    >
+                                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${payQuarterly ? 'border-taxable-blue bg-taxable-blue' : 'border-neutral-300 bg-white'}`}>
+                                            {payQuarterly && (
+                                                <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                                                    <path d="M2 6L5 9L10 3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                        <span className="text-3 font-medium text-neutral-700">
                                             Pay CIT in quarterly installments
                                         </span>
                                         <HintIcon tip="Pay your annual CIT liability in 4 equal installments throughout the year." />
-                                    </label>
+                                    </button>
+
+                                    {/* Quarterly installments section */}
+                                    {payQuarterly && (() => {
+                                        const profitNum = Number(estimatedAnnualProfit.replace(/,/g, '')) || 0;
+                                        const estimatedCIT = profitNum * 0.30;
+                                        const quarterlyPayment = estimatedCIT / 4;
+                                        const qFmt = (n: number) => `₦${Math.round(n).toLocaleString()}`;
+                                        return (
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="flex items-center text-2 font-medium text-neutral-700 mb-1">
+                                                        What's your estimated annual profit for 2026?
+                                                        <HintIcon tip="Enter your projected profit before tax. We'll use this to calculate quarterly installments." />
+                                                    </label>
+                                                    <div className="relative">
+                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-3 text-neutral-500 pointer-events-none">₦</span>
+                                                        <Input
+                                                            type="text"
+                                                            placeholder="0"
+                                                            value={estimatedAnnualProfit}
+                                                            onChange={e => {
+                                                                const raw = e.target.value.replace(/[^0-9.]/g, '');
+                                                                const parts = raw.split('.');
+                                                                const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                                                                const formatted = parts.length > 1 ? integer + '.' + parts.slice(1).join('') : integer;
+                                                                setEstimatedAnnualProfit(formatted);
+                                                            }}
+                                                            className="pl-8"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                {profitNum > 0 && (
+                                                    <div className="pt-1">
+                                                        <div className="grid grid-cols-2 gap-6 mb-3">
+                                                            <div>
+                                                                <p className="text-1 font-semibold text-neutral-500 mb-1">Estimated CIT (30%)</p>
+                                                                <p className="text-5 font-bold text-neutral-800">{qFmt(estimatedCIT)}</p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-1 font-semibold text-neutral-500 mb-1">Quarterly payment</p>
+                                                                <p className="text-5 font-bold text-neutral-800">{qFmt(quarterlyPayment)}</p>
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-2 font-medium text-neutral-500">
+                                                            You'll pay {qFmt(quarterlyPayment)} on Mar 31, Jun 30, Sep 30, Dec 31.
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
 
                                     {/* Save & Continue */}
                                     <button
@@ -518,7 +542,11 @@ export default function BusinessTaxDetails() {
                             const hasData = currentMonthStaff.length > 0;
                             const activeStep = hasData ? 'table' as const : 'method' as const;
                             const totalPAYE = currentMonthStaff.reduce((s, st) => {
-                                return s + calculateAnnualPAYE(st).monthlyTax;
+                                const pension = st.pensionOn ? Math.round(st.gross * 0.08) : 0;
+                                const nhf = st.nhfOn ? Math.round(st.gross * 0.025) : 0;
+                                const hmo = st.hmoOn ? Math.round(st.gross * 0.025) : 0;
+                                const chargeable = Math.max(0, st.gross - pension - nhf - hmo);
+                                return s + Math.round(chargeable * 0.07);
                             }, 0);
 
                             return (
@@ -555,6 +583,29 @@ export default function BusinessTaxDetails() {
                             );
                         })()}
 
+                        {/* PAYE Annual Returns */}
+                        {activeSection === 'paye' && payeSubSection === 'annual-returns' && (() => {
+                            const allStaff = Object.values(payeStaffByMonth).flat();
+                            const totalAnnualPAYE = allStaff.reduce((s, st) => {
+                                const pension = st.pensionOn ? Math.round(st.gross * 0.08) : 0;
+                                const nhf = st.nhfOn ? Math.round(st.gross * 0.025) : 0;
+                                const hmo = st.hmoOn ? Math.round(st.gross * 0.025) : 0;
+                                const chargeable = Math.max(0, st.gross - pension - nhf - hmo);
+                                return s + Math.round(chargeable * 0.07) * 12;
+                            }, 0);
+                            const totalGrossPayroll = allStaff.reduce((s, st) => s + st.gross, 0);
+                            return (
+                                <div data-animate>
+                                    <PayeAnnualReturns
+                                        staffCount={allStaff.length}
+                                        totalAnnualPAYE={totalAnnualPAYE}
+                                        totalGrossPayroll={totalGrossPayroll}
+                                        filedMonthsCount={12}
+                                    />
+                                </div>
+                            );
+                        })()}
+
                         {/* VAT/WHT section */}
                         {activeSection === 'vat-wht' && (
                             <div data-animate className="w-full">
@@ -571,7 +622,8 @@ export default function BusinessTaxDetails() {
                                 <BusinessCITContent
                                     activeSubMenu={citSubSection}
                                     onSubMenuChange={setCitSubSection}
-                                    payQuarterly={payQuarterly}
+                                    estimatedProfit={estimatedAnnualProfit}
+                                    onEstimatedProfitChange={setEstimatedAnnualProfit}
                                 />
                             </div>
                         )}

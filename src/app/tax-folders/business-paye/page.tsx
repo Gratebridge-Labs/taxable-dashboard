@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
+import BusinessPAYE from '@/screens/TaxFolders/BusinessPAYE';
 
 export default function Page() {
-    redirect('/tax-folders/business');
+    return <BusinessPAYE />;
 }

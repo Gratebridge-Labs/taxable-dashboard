@@ -714,7 +714,7 @@ export function BusinessVATWHTContent({
                         </RadioGroup>
 
                         <div className="mb-8">
-                            <label className="block text-2 font-medium text-neutral-500 mb-2">Select month</label>
+                            <label className="block text-2 font-medium text-neutral-700 mb-2">Select month</label>
                             <Select value={MONTHS[activeMonth]} onValueChange={(v) => { if (v) setActiveMonth(MONTHS.indexOf(v)); }}>
                                 <SelectTrigger className="w-[300px] h-10 rounded-xl bg-white text-3">
                                     <SelectValue placeholder="Choose a month" />
@@ -827,7 +827,7 @@ export function BusinessVATWHTContent({
                                     </div>
 
                                     <div className="mt-6">
-                                        <p className="text-2 font-medium text-neutral-500 mb-0.5">Total output VAT</p>
+                                        <p className="text-2 font-medium text-neutral-700 mb-0.5">Total output VAT</p>
                                         <p className="text-5 font-semibold text-neutral-800">{fmt(outputVAT)}</p>
                                     </div>
                                     </div>
@@ -863,7 +863,7 @@ export function BusinessVATWHTContent({
                                     </div>
 
                                     <div className="mt-6">
-                                        <p className="text-2 font-medium text-neutral-500 mb-0.5">Total input VAT</p>
+                                        <p className="text-2 font-medium text-neutral-700 mb-0.5">Total input VAT</p>
                                         <p className="text-5 font-semibold text-neutral-800">{fmt(inputVAT)}</p>
                                     </div>
                                     </div>

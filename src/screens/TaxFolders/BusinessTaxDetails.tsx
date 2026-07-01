@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useLayoutEffect, useRef, startTransition } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, startTransition } from 'react';
 import gsap from 'gsap';
 import Lenis from 'lenis';
 import Image from 'next/image';
@@ -217,26 +217,30 @@ export default function BusinessTaxDetails() {
 
     const containerRef = useRef<HTMLDivElement>(null);
 
-    useLayoutEffect(() => {
+    const animateSection = useCallback(() => {
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-            gsap.set('[data-animate]', { opacity: 1, y: 0, clearProps: 'all' });
+            gsap.set('[data-animate]', { opacity: 1, y: 0 });
             return;
         }
+        gsap.fromTo(
+            '[data-animate]',
+            { opacity: 0, y: 16 },
+            { opacity: 1, y: 0, duration: 0.4, stagger: 0.05, ease: 'power2.out' }
+        );
+    }, []);
+
+    useLayoutEffect(() => {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         const ctx = gsap.context(() => {
-            gsap.fromTo(
-                '[data-animate]',
-                { opacity: 0, y: 16 },
-                {
-                    opacity: 1,
-                    y: 0,
-                    duration: 0.5,
-                    stagger: 0.06,
-                    ease: 'power2.out',
-                }
-            );
+            animateSection();
         }, containerRef);
         return () => ctx.revert();
-    }, []);
+    }, [animateSection]);
+
+    // Re-animate when section changes
+    useEffect(() => {
+        animateSection();
+    }, [activeSection, animateSection]);
 
     useEffect(() => {
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -403,7 +407,7 @@ export default function BusinessTaxDetails() {
                                     <div>
                                         <label className="block text-2 font-medium text-neutral-500 mb-1">
                                             RC/BN number
-                                            <HintIcon tip="Your Companies Registration Number (RC) or Business Name (BN) from CAC." />
+                                            <HintIcon tip="RC/BN Number — Your CAC-issued RC number (registered companies) or BN number (business names). Found on your CAC certificate." />
                                         </label>
                                         <Input
                                             type="text"
@@ -489,6 +493,7 @@ export default function BusinessTaxDetails() {
                                         </span>
                                         <HintIcon tip="Pay your annual CIT liability in 4 equal installments throughout the year." />
                                     </label>
+                                    <p className="text-2 text-neutral-400 font-medium mt-1">Spread your Company Income Tax across four payments instead of one lump sum.</p>
 
                                     {/* Save & Continue */}
                                     <PrimaryButton
@@ -496,7 +501,7 @@ export default function BusinessTaxDetails() {
                                         disabled={submitting || !companyInfoComplete}
                                         className="w-full"
                                     >
-                                        {submitting ? <Spinner /> : 'Save & Continue'}
+                                        {submitting ? <Spinner /> : (companyInfoSaved ? 'Save & Continue' : 'Save & Continue to PAYE')}
                                     </PrimaryButton>
                                 </div>
                             </div>
@@ -531,11 +536,11 @@ export default function BusinessTaxDetails() {
                                         }))}
                                         onRemoveStaff={(st) => setPayeStaffByMonth(prev => ({
                                             ...prev,
-                                            [activeMonth]: (prev[activeMonth] || []).filter(s => s !== st)
+                                            [activeMonth]: (prev[activeMonth] || []).filter(s => s.id !== st.id)
                                         }))}
                                         onSaveStaff={(oldSt, newSt) => setPayeStaffByMonth(prev => ({
                                             ...prev,
-                                            [activeMonth]: (prev[activeMonth] || []).map(s => s === oldSt ? newSt : s)
+                                            [activeMonth]: (prev[activeMonth] || []).map(s => s.id === oldSt.id ? newSt : s)
                                         }))}
                                         onCopyStaff={(source) => setPayeStaffByMonth(prev => ({
                                             ...prev,

@@ -173,7 +173,7 @@ export function FilingSheet({ open, onClose, onFile }: FilingSheetProps) {
       <DrawerContent className="bg-white w-full max-w-full px-4 pb-6">
         <DrawerTitle className="sr-only">Filing Options</DrawerTitle>
         <div className="max-w-[420px] mx-auto w-full pt-6">
-          <h2 className="text-7 font-semibold text-taxable-dark text-center mb-8">How do you want to file?</h2>
+          <h2 className="text-5 font-semibold text-taxable-dark text-center mb-8">How do you want to file?</h2>
 
           <RadioGroup value={selectedOption} onValueChange={(v) => setSelectedOption(v as typeof selectedOption)} className="space-y-3 mb-10">
             <label className="flex items-start gap-3 px-4 py-4 rounded-xl bg-white cursor-pointer">

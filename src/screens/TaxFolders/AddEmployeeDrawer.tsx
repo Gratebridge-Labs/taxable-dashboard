@@ -4,8 +4,20 @@ import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PrimaryButton, SecondaryButton } from '@/screens/TaxFolders/TaxFolderShared';
+import { InformationFill } from '@mingcute/react';
+
+// ── Hint Icon ──────────────────────────────────────────────────────────
+const HintIcon = ({ tip }: { tip: string }) => (
+    <span className="relative group inline-flex items-center ml-1 align-middle cursor-default">
+        <InformationFill className="w-3.5 h-3.5" color="#E5E5E5" />
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2 bg-neutral-800 text-white text-1 leading-snug rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-40 font-medium">
+            {tip}
+        </div>
+    </span>
+);
 
 export interface PayeStaff {
+    id: string;
     firstName: string;
     lastName: string;
     email: string;
@@ -83,6 +95,7 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
     const handleAdd = () => {
         if (!isValid || isViewMode) return;
         onAdd({
+            id: crypto.randomUUID(),
             firstName, lastName, email, phone, position, taxId,
             gross: Number(gross.replace(/,/g, '')),
             pensionOn, nhfOn, hmoOn, annualRent, annualRentChecked,
@@ -93,6 +106,7 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
     const handleSave = () => {
         if (!isValid || !editStaff || !onSave) return;
         onSave({
+            id: editStaff.id,
             firstName, lastName, email, phone, position, taxId,
             gross: Number(gross.replace(/,/g, '')),
             pensionOn, nhfOn, hmoOn, annualRent, annualRentChecked,
@@ -132,10 +146,10 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
     return (
         <>
             <Drawer open={open} onOpenChange={(open) => !open && onClose()}>
-            <DrawerContent className="flex flex-col max-h-[90dvh]">
+            <DrawerContent className="flex flex-col max-h-[90dvh]" data-animate>
                 <div data-lenis-prevent className="overflow-y-auto flex-1">
                     <div className="mx-auto max-w-[450px] px-6 py-8">
-                        <h2 className="text-7 font-semibold text-taxable-dark text-center mb-8">
+                        <h2 className="text-5 font-semibold text-taxable-dark text-center mb-8">
                             {headerTitle}
                         </h2>
 
@@ -157,7 +171,7 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
                                         onPensionChange={() => {}} onNhfChange={() => {}}
                                         onHmoChange={() => {}}
                                         onAnnualRentChange={() => {}} onAnnualRentToggle={() => {}}
-                                        readOnlyStyle="bg-neutral-50 text-neutral-300"
+                                        readOnlyStyle="bg-neutral-50 text-neutral-400"
                                     />
                                 )}
                             </div>
@@ -327,7 +341,7 @@ function FormContent(props: FormContentProps) {
                     <Input type="text" value={props.position} onChange={e => props.onPositionChange(e.target.value)} disabled={props.disabled} placeholder="Enter job position" className={rs} />
                 </div>
                 <div>
-                    <label className="block text-2 font-medium text-neutral-500 mb-1">JRB Tax ID</label>
+                    <label className="block text-2 font-medium text-neutral-500 mb-1">JTB Tax ID <HintIcon tip="The employee's Tax Identification Number (TIN) issued by the Joint Tax Board (JTB)." /></label>
                     <Input type="text" value={props.taxId} onChange={e => props.onTaxIdChange(e.target.value)} disabled={props.disabled} placeholder="Enter tax ID" className={rs} />
                 </div>
                 <div className="col-span-2">
@@ -347,24 +361,24 @@ function FormContent(props: FormContentProps) {
 
             {/* Deductions section */}
             <div className="mb-8">
-                <p className="text-3 font-semibold text-neutral-800 mb-3">Deductions</p>
+                <div className="text-2 font-semibold text-neutral-800 mb-3">Deductions <HintIcon tip="Select the statutory deductions applicable to this employee. These are subtracted from gross income before tax is calculated." /></div>
                 <div className="flex flex-col gap-3">
                     <div className="flex items-center gap-6">
                         <label className={`flex items-center gap-2 ${props.disabled ? 'cursor-default' : 'cursor-pointer'}`}>
                             <Checkbox checked={props.pensionOn} onCheckedChange={() => !props.disabled && props.onPensionChange()} disabled={props.disabled} />
-                            <span className={`text-3 font-medium ${props.disabled ? 'text-neutral-300' : 'text-neutral-700'}`}>Pension 8%</span>
+                            <span className={`text-2 font-medium ${props.disabled ? 'text-neutral-300' : 'text-neutral-700'}`}>Pension 8%</span>
                         </label>
                         <label className={`flex items-center gap-2 ${props.disabled ? 'cursor-default' : 'cursor-pointer'}`}>
                             <Checkbox checked={props.nhfOn} onCheckedChange={() => !props.disabled && props.onNhfChange()} disabled={props.disabled} />
-                            <span className={`text-3 font-medium ${props.disabled ? 'text-neutral-300' : 'text-neutral-700'}`}>NHF (2.5%)</span>
+                            <span className={`text-2 font-medium ${props.disabled ? 'text-neutral-300' : 'text-neutral-700'}`}>NHF (2.5%)</span>
                         </label>
                         <label className={`flex items-center gap-2 ${props.disabled ? 'cursor-default' : 'cursor-pointer'}`}>
                             <Checkbox checked={props.hmoOn} onCheckedChange={() => !props.disabled && props.onHmoChange()} disabled={props.disabled} />
-                            <span className={`text-3 font-medium ${props.disabled ? 'text-neutral-300' : 'text-neutral-700'}`}>HMO (5%)</span>
+                            <span className={`text-2 font-medium ${props.disabled ? 'text-neutral-300' : 'text-neutral-700'}`}>HMO (5%)</span>
                         </label>
                         <label className={`flex items-center gap-2 ${props.disabled ? 'cursor-default' : 'cursor-pointer'}`}>
                             <Checkbox checked={props.annualRentChecked} onCheckedChange={() => !props.disabled && props.onAnnualRentToggle()} disabled={props.disabled} />
-                            <span className={`text-3 font-medium ${props.disabled ? 'text-neutral-300' : 'text-neutral-700'}`}>Annual Rent</span>
+                            <span className={`text-2 font-medium ${props.disabled ? 'text-neutral-300' : 'text-neutral-700'}`}>Annual Rent</span>
                         </label>
                     </div>
                     {props.annualRentChecked && (

@@ -13,7 +13,7 @@ import { PayeMonthlyFiling, calculateAnnualPAYE } from '@/screens/TaxFolders/Bus
 import { PayeStaff } from '@/screens/TaxFolders/AddEmployeeDrawer';
 import { Calendar } from '@/components/ui/calendar';
 import { Spinner } from '@/components/ui/spinner';
-import { BusinessVATWHTContent } from './BusinessVATWHT';
+import { BusinessWHTContent } from './BusinessWHT';
 import { FilingSheet } from '@/screens/TaxFolders/TaxFolderShared';
 import { PrimaryButton, SecondaryButton } from '@/screens/TaxFolders/TaxFolderShared';
 import { BusinessCITContent } from './BusinessCIT';
@@ -555,9 +555,8 @@ export default function BusinessTaxDetails() {
                         {/* VAT/WHT section */}
                         {activeSection === 'vat-wht' && (
                             <div data-animate className="w-full">
-                                <BusinessVATWHTContent
-                                    activeSubMenu={vatWhtSubSection}
-                                    onSubMenuChange={setVatWhtSubSection}
+                                <BusinessWHTContent
+                                    activeSubMenu={vatWhtSubSection as 'remit-wht' | 'wht-balance'}
                                 />
                             </div>
                         )}

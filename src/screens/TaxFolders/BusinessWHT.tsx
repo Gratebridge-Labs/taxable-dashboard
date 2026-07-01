@@ -1,46 +1,21 @@
 'use client';
-import React, { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { ArrowLeftLine } from '@mingcute/react';
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Drawer, DrawerContent, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
-import Lenis from 'lenis';
 import { WHTDeduction, useWhtDeductions } from './useWhtDeductions';
 import {
     SectionHeading, DescriptionText, PrimaryButton, SecondaryButton,
-    FilingSheet, CardTitle, FormFieldRow, FormLabel,
-    UploadContainer,
+    FilingSheet, FormFieldRow, FormLabel,
 } from './TaxFolderShared';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
 
-const EXEMPT_CATEGORIES = [
-    'Select', 'Medical / Healthcare', 'Educational materials', 'Basic food items',
-    'Financial services', 'Transportation', 'Rent (residential)', 'None / Not applicable',
-];
-
-const VAT_RATE = 0.075;
-
 const fmt = (n: number) => `₦${Math.round(n).toLocaleString()}`;
-
-// ── VAT Form Types ────────────────────────────────────────────────────────────
-interface MonthVATData {
-    totalSales: string;
-    zeroRated: string;
-    exempt: string;
-    totalPurchases: string;
-    filed: boolean;
-}
-
-const defaultMonth = (): MonthVATData => ({
-    totalSales: '', zeroRated: '', exempt: 'Select', totalPurchases: '', filed: false,
-});
 
 // ── WHT Types ─────────────────────────────────────────────────────────────────
 const WHT_TYPES = [
@@ -650,351 +625,22 @@ const WHTCreditBalance = () => {
 };
 
 // ── Embeddable content component (no page shell) ──────────────────────────────
-export function BusinessVATWHTContent({
+export function BusinessWHTContent({
     activeSubMenu,
-    onSubMenuChange: _onSubMenuChange,
 }: {
-    activeSubMenu?: 'file-vat' | 'remit-wht' | 'wht-balance';
-    onSubMenuChange?: (s: 'file-vat' | 'remit-wht' | 'wht-balance') => void;
+    activeSubMenu?: 'remit-wht' | 'wht-balance';
 }) {
-    const [internalSubSection, _setInternalSubSection] = useState<'file-vat' | 'remit-wht' | 'wht-balance'>('file-vat');
+    const [internalSubSection, setInternalSubSection] = useState<'remit-wht' | 'wht-balance'>('remit-wht');
     const subSection = activeSubMenu ?? internalSubSection;
-
-    const [vatStep, setVatStep] = useState<'method' | 'form'>('method');
-    const [entryMethod, setEntryMethod] = useState<'manual' | 'csv' | 'software'>('manual');
-    const [activeMonth, setActiveMonth] = useState(0);
-    const [periodMode, setPeriodMode] = useState<'monthly' | 'annually'>('monthly');
-    const [filedMonths, setFiledMonths] = useState<Set<number>>(new Set());
-    const [monthData, setMonthData] = useState<Record<number, MonthVATData>>({});
-    const [showFilingModal, setShowFilingModal] = useState(false);
-
-    const data = monthData[activeMonth] ?? defaultMonth();
-
-    const setField = (field: keyof MonthVATData) => (val: string) =>
-        setMonthData(prev => ({ ...prev, [activeMonth]: { ...(prev[activeMonth] ?? defaultMonth()), [field]: val } }));
-
-    const totalSales = Number(data.totalSales.replace(/,/g, '')) || 0;
-    const outputVAT = totalSales * VAT_RATE;
-    const totalPurchases = Number(data.totalPurchases.replace(/,/g, '')) || 0;
-    const inputVAT = totalPurchases * VAT_RATE;
-    const netVAT = outputVAT - inputVAT;
-    const isCredit = netVAT < 0;
-
-    const dueDate = MONTHS[(activeMonth + 1) % 12].slice(0, 3) + ' 21, 2026';
-
-    const handleFile = () => {
-        setFiledMonths(prev => new Set([...prev, activeMonth]));
-        setShowFilingModal(false);
-        if (activeMonth < 11) setActiveMonth(m => m + 1);
-    };
-
-    const ENTRY_OPTIONS = [
-        { id: 'manual' as const, label: 'Manual entry' },
-        { id: 'csv' as const, label: 'Upload sales & purchase ledgers (CSV/Excel)' },
-        { id: 'software' as const, label: 'Connect accounting software (QuickBooks, Xero, Zoho)' },
-    ];
 
     return (
         <div className="w-full">
             <div className="flex-1 min-w-0">
-
-                {/* ── File Monthly VAT Return ── */}
-                {subSection === 'file-vat' && vatStep === 'method' && (
-                    <div className="max-w-[480px] mx-auto">
-                        <SectionHeading>File Monthly VAT Return</SectionHeading>
-                        <DescriptionText>How do you want to enter your VAT data?</DescriptionText>
-
-                        <RadioGroup value={entryMethod} onValueChange={(v) => setEntryMethod(v as 'manual' | 'csv' | 'software')} className="space-y-0 mb-8">
-                            {ENTRY_OPTIONS.map(opt => (
-                                <label key={opt.id} className="flex items-center gap-3 py-3.5 cursor-pointer">
-                                    <RadioGroupItem value={opt.id} />
-                                    <span className="text-3 font-medium text-neutral-800">{opt.label}</span>
-                                </label>
-                            ))}
-                        </RadioGroup>
-
-                        <div className="mb-8">
-                            <label className="block text-2 font-medium text-neutral-500 mb-2">Select month</label>
-                            <Select value={MONTHS[activeMonth]} onValueChange={(v) => { if (v) setActiveMonth(MONTHS.indexOf(v)); }}>
-                                <SelectTrigger className="w-[300px] h-10 rounded-xl bg-white text-3">
-                                    <SelectValue placeholder="Choose a month" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {MONTHS.map((m) => (
-                                        <SelectItem key={m} value={m}>
-                                            <span>{m}</span>
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <PrimaryButton onClick={() => setVatStep('form')}>
-                            Continue
-                        </PrimaryButton>
-                    </div>
-                )}
-
-                {/* ── VAT Form ── */}
-                {subSection === 'file-vat' && vatStep === 'form' && (
-                    <div className="flex gap-10" data-animate>
-                        <div className="w-[220px] flex-shrink-0">
-                            <div className="flex items-center gap-3 mb-6">
-                                <span className={`text-3 font-medium ${periodMode === 'monthly' ? 'text-neutral-800' : 'text-neutral-500'}`}>Monthly</span>
-                                <Switch checked={periodMode === 'annually'} onCheckedChange={(v) => setPeriodMode(v ? 'annually' : 'monthly')} />
-                                <span className={`text-3 font-medium ${periodMode === 'annually' ? 'text-neutral-800' : 'text-neutral-500'}`}>Annually</span>
-                            </div>
-                            {periodMode === 'monthly' && (
-                                <Select value={MONTHS[activeMonth]} onValueChange={(v) => { if (v) setActiveMonth(MONTHS.indexOf(v)); }}>
-                                    <SelectTrigger className="w-full h-10 rounded-xl bg-white text-3">
-                                        <div className="flex items-center gap-2">
-                                            <span>{MONTHS[activeMonth]}</span>
-                                            {filedMonths.has(activeMonth) &&
-                                                <Badge variant="secondary" className="bg-green-50 text-green-600 border-green-200 text-2 font-semibold px-2 py-0 h-5">Filed</Badge>
-                                            }
-                                            {!filedMonths.has(activeMonth) && monthData[activeMonth] && (monthData[activeMonth].totalSales || monthData[activeMonth].totalPurchases) &&
-                                                <Badge variant="secondary" className="bg-neutral-100 text-neutral-500 border-neutral-200 text-2 font-semibold px-2 py-0 h-5">Draft</Badge>
-                                            }
-                                        </div>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {MONTHS.map((m, i) => (
-                                            <SelectItem key={m} value={m}>
-                                                <div className="flex items-center gap-2">
-                                                    <span>{m}</span>
-                                                    {filedMonths.has(i) &&
-                                                        <Badge variant="secondary" className="bg-green-50 text-green-600 border-green-200 text-2 font-semibold px-2 py-0 h-5">Filed</Badge>
-                                                    }
-                                                    {!filedMonths.has(i) && monthData[i] && (monthData[i].totalSales || monthData[i].totalPurchases) &&
-                                                        <Badge variant="secondary" className="bg-neutral-100 text-neutral-500 border-neutral-200 text-2 font-semibold px-2 py-0 h-5">Draft</Badge>
-                                                    }
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            )}
-                        </div>
-
-                        <FilingSheet open={showFilingModal} onClose={() => setShowFilingModal(false)} onFile={handleFile} />
-
-                        <div className="flex-1 max-w-[500px] pb-6">
-                            <SectionHeading>
-                                {periodMode === 'annually' ? 'Annual VAT Return' : `${MONTHS[activeMonth]} VAT Return`}
-                            </SectionHeading>
-
-                            <div className="mt-4 space-y-10">
-                            {/* Output VAT */}
-                            <div>
-                                <CardTitle>Output VAT <span className="text-neutral-500 font-medium">(VAT you charged customers)</span></CardTitle>
-                                <div className="bg-neutral-50 rounded-3xl p-5">
-                                    <div className="space-y-3">
-                                    <FormFieldRow className="justify-between">
-                                        <FormLabel tip="Your total revenue before any VAT is added.">Total sales (before VAT)</FormLabel>
-                                        <Input type="text" value={data.totalSales}
-                                            onChange={e => {
-                                                const raw = e.target.value.replace(/[^0-9.]/g, '');
-                                                const parts = raw.split('.');
-                                                const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-                                                setField('totalSales')(parts.length > 1 ? integer + '.' + parts.slice(1).join('') : integer);
-                                            }}
-                                            placeholder="N0" className="w-[150px] text-left" />
-                                    </FormFieldRow>
-                                    <FormFieldRow className="justify-between">
-                                        <FormLabel tip="Automatically calculated: Total sales x 7.5%">VAT charged at 7.5%</FormLabel>
-                                        <Input type="text" value={outputVAT > 0 ? fmt(outputVAT) : 'N0'} disabled className="w-[150px] text-left bg-neutral-50 text-neutral-300" />
-                                    </FormFieldRow>
-                                    <FormFieldRow className="justify-between">
-                                        <FormLabel tip="Sales where VAT is 0% — exports, certain goods.">Zero-rated sales (exports, etc.)</FormLabel>
-                                        <Input type="text" value={data.zeroRated}
-                                            onChange={e => {
-                                                const raw = e.target.value.replace(/[^0-9.]/g, '');
-                                                const parts = raw.split('.');
-                                                const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-                                                setField('zeroRated')(parts.length > 1 ? integer + '.' + parts.slice(1).join('') : integer);
-                                            }}
-                                            placeholder="N0" className="w-[150px] text-left" />
-                                    </FormFieldRow>
-                                    <FormFieldRow className="justify-between">
-                                        <FormLabel tip="Sales of exempt goods/services where VAT cannot be charged.">Exempt sales (medical, education, etc.)</FormLabel>
-                                        <SearchableSelect
-                                            options={EXEMPT_CATEGORIES}
-                                            value={data.exempt}
-                                            onChange={(v) => setField('exempt')(v)}
-                                            placeholder="Select exempt category"
-                                            className="w-[150px]"
-                                        />
-                                    </FormFieldRow>
-
-                                    <div className="mt-6">
-                                    <UploadContainer
-                                        label="Upload your financial statements"
-                                        sublabel="PDF, JPG, or PNG (Max 5MB)"
-                                    />
-                                    </div>
-
-                                    <div className="mt-6">
-                                        <p className="text-2 font-medium text-neutral-500 mb-0.5">Total output VAT</p>
-                                        <p className="text-5 font-semibold text-neutral-800">{fmt(outputVAT)}</p>
-                                    </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Input VAT */}
-                            <div>
-                                <CardTitle>Input VAT <span className="text-neutral-500 font-medium">(VAT you paid to suppliers)</span></CardTitle>
-                                <div className="bg-neutral-50 rounded-3xl p-5">
-                                    <div className="space-y-3">
-                                    <FormFieldRow className="justify-between">
-                                        <FormLabel tip="Your total spending on goods/services before VAT.">Total purchases (before VAT)</FormLabel>
-                                        <Input type="text" value={data.totalPurchases}
-                                            onChange={e => {
-                                                const raw = e.target.value.replace(/[^0-9.]/g, '');
-                                                const parts = raw.split('.');
-                                                const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-                                                setField('totalPurchases')(parts.length > 1 ? integer + '.' + parts.slice(1).join('') : integer);
-                                            }}
-                                            placeholder="N0" className="w-[150px] text-left" />
-                                    </FormFieldRow>
-                                    <FormFieldRow className="justify-between">
-                                        <FormLabel tip="Automatically calculated: Total purchases x 7.5%">VAT paid at 7.5%</FormLabel>
-                                        <Input type="text" value={inputVAT > 0 ? fmt(inputVAT) : 'N0'} disabled className="w-[150px] text-left bg-neutral-50 text-neutral-300" />
-                                    </FormFieldRow>
-
-                                    <div className="mt-6">
-                                    <UploadContainer
-                                        label="Upload your financial statements"
-                                        sublabel="PDF, JPG, or PNG (Max 5MB)"
-                                    />
-                                    </div>
-
-                                    <div className="mt-6">
-                                        <p className="text-2 font-medium text-neutral-500 mb-0.5">Total input VAT</p>
-                                        <p className="text-5 font-semibold text-neutral-800">{fmt(inputVAT)}</p>
-                                    </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Net VAT Payable */}
-                            <div>
-                                <CardTitle>Net VAT Payable</CardTitle>
-                                <div className="mt-4 space-y-6">
-                                    <div className="space-y-2.5">
-                                        <div className="flex items-center justify-between text-2">
-                                            <span className="text-neutral-500 font-medium">Output VAT</span>
-                                            <span className="font-semibold text-neutral-500">{fmt(outputVAT)}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-2">
-                                            <span className="text-neutral-500 font-medium">Input VAT</span>
-                                            <span className="font-semibold text-neutral-500">-{fmt(inputVAT)}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-2 pt-2 border-t border-neutral-100">
-                                            <span className="font-semibold text-neutral-800">Net VAT {isCredit ? 'credit' : 'due'}</span>
-                                            <span className={`font-semibold text-4 ${isCredit ? 'text-green-600' : 'text-neutral-900'}`}>
-                                                {isCredit ? `+${fmt(Math.abs(netVAT))}` : fmt(netVAT)}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {!isCredit ? (
-                                        <div className="flex items-center gap-1.5">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="flex-shrink-0 text-amber-600" strokeWidth="2.5">
-                                                <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-                                            </svg>
-                                            <p className="text-2 font-semibold text-amber-600">Due by: {dueDate}</p>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-start gap-1.5">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="flex-shrink-0 mt-0.5 text-amber-600" strokeWidth="2.5">
-                                                <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-                                            </svg>
-                                            <p className="text-2 font-semibold text-amber-600">
-                                                Due by: {dueDate}. You paid more VAT to suppliers than you collected from customers.
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="flex gap-3">
-                                {isCredit ? (
-                                    <>
-                                        <SecondaryButton onClick={() => { setFiledMonths(prev => new Set([...prev, activeMonth])); if (activeMonth < 11) setActiveMonth(m => m + 1); }}>
-                                            Carry Forward to {MONTHS[(activeMonth + 1) % 12].slice(0, 3)}
-                                        </SecondaryButton>
-                                        <PrimaryButton onClick={() => setShowFilingModal(true)}>
-                                            Claim Refund
-                                        </PrimaryButton>
-                                    </>
-                                ) : (
-                                    <>
-                                        <SecondaryButton>Download PDF</SecondaryButton>
-                                        <PrimaryButton onClick={() => setShowFilingModal(true)}>
-                                            File & Pay
-                                        </PrimaryButton>
-                                    </>
-                                )}
-                            </div>
-                            </div>
-                            </div>
-                        </div>
-                )}
-
-                {/* ── Remit Monthly WHT ── */}
                 {subSection === 'remit-wht' && <WHTRemittance />}
-
-                {/* ── WHT Credit Balance ── */}
                 {subSection === 'wht-balance' && <WHTCreditBalance />}
             </div>
         </div>
     );
 }
 
-// ── Standalone page wrapper ──────────────────────────────────────────────────
-export default function BusinessVATWHT() {
-    const router = useRouter();
-    const contentRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-        if ((window as unknown as { __lenis?: Lenis }).__lenis) return;
-
-        const lenis = new Lenis({
-            duration: 1.2,
-            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-            orientation: 'vertical',
-            smoothWheel: true,
-            wheelMultiplier: 0.8,
-        });
-        (window as unknown as { __lenis?: Lenis }).__lenis = lenis;
-        function raf(time: number) {
-            lenis.raf(time);
-            requestAnimationFrame(raf);
-        }
-        requestAnimationFrame(raf);
-        return () => {
-            lenis.destroy();
-            (window as unknown as { __lenis?: Lenis }).__lenis = undefined;
-        };
-    }, []);
-
-    return (
-        <div ref={contentRef} className="min-h-screen bg-white">
-            <main className="max-w-[1340px] mx-auto px-4 md:px-8">
-                <div className="pt-6 md:pt-8 mb-6">
-                    <button onClick={() => router.push('/home')} className="flex items-center gap-1.5 text-2 font-semibold text-neutral-800 w-fit mb-[4px]">
-                        <ArrowLeftLine size={14} />
-                        Back
-                    </button>
-                    <div className="flex items-center gap-1.5 text-1 text-neutral-300 font-medium">
-                        <span>2026 Company Tax</span><span>/</span>
-                        <span className="text-neutral-300">VAT/WHT</span>
-                    </div>
-                </div>
-                <BusinessVATWHTContent />
-            </main>
-        </div>
-    );
-}
+export type { WHTDeduction };

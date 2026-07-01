@@ -9,6 +9,10 @@ import { Attachment, AttachmentGroup, AttachmentMedia, AttachmentContent, Attach
 import { FileTextIcon, XIcon } from 'lucide-react';
 import { InformationFill } from '@mingcute/react';
 import {
+    Stepper, StepperItem, StepperIndicator, StepperTitle,
+    StepperSeparator, StepperTrigger,
+} from '@/components/ui/stepper';
+import {
     SectionHeading, DescriptionText, PrimaryButton, SecondaryButton,
     FilingSheet, FormFieldRow, FormLabel, CardTitle,
 } from './TaxFolderShared';
@@ -62,6 +66,14 @@ export function BusinessVATContent() {
     const [showFilingModal, setShowFilingModal] = useState(false);
     const [salesScheduleFiles, setSalesScheduleFiles] = useState<{ name: string }[]>([]);
     const [purchaseInvoiceFiles, setPurchaseInvoiceFiles] = useState<{ name: string }[]>([]);
+    const [visitedSteps, setVisitedSteps] = useState<Set<number>>(new Set([1]));
+    const [dismissCashBanner, setDismissCashBanner] = useState(false);
+
+    const navigateToStep = (target: 'gatekeeper' | 'output-vat' | 'input-vat' | 'adjustments' | 'review') => {
+        const stepNum = { gatekeeper: 1, 'output-vat': 2, 'input-vat': 3, adjustments: 4, review: 5 }[target];
+        setVisitedSteps(prev => new Set([...prev, stepNum]));
+        setVatStep(target);
+    };
 
     const data = monthData[activeMonth] ?? defaultFilingData();
 
@@ -94,12 +106,14 @@ export function BusinessVATContent() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeMonth]);
 
+    useEffect(() => { setDismissCashBanner(false); }, [vatStep]);
+
     const handleFile = () => {
         setFiledMonths(prev => new Set([...prev, activeMonth]));
         setMonthData(prev => ({ ...prev, [activeMonth]: { ...(prev[activeMonth] ?? defaultFilingData()), filed: true } }));
         setShowFilingModal(false);
         if (activeMonth < 11) setActiveMonth(m => m + 1);
-        setVatStep('gatekeeper');
+        navigateToStep('gatekeeper');
     };
 
     const handleAttachmentUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'sales' | 'purchases') => {
@@ -122,15 +136,90 @@ export function BusinessVATContent() {
         { id: 'software' as const, label: 'Connect accounting software (QuickBooks, Xero, Zoho)' },
     ];
 
+    const VAT_STEPS = [
+        { key: 'gatekeeper', step: 1, title: 'Data Source' },
+        { key: 'output-vat', step: 2, title: 'Output VAT' },
+        { key: 'input-vat', step: 3, title: 'Input VAT' },
+        { key: 'adjustments', step: 4, title: 'Adjustments' },
+        { key: 'review', step: 5, title: 'Review' },
+    ];
+
+    const stepIndex = vatStep === 'gatekeeper' ? 1
+        : vatStep === 'output-vat' ? 2
+        : vatStep === 'input-vat' ? 3
+        : vatStep === 'adjustments' ? 4
+        : 5;
+
+    const monthSelector = (
+        <Select value={MONTHS[activeMonth]} onValueChange={(v) => { if (v) setActiveMonth(MONTHS.indexOf(v)); }}>
+            <SelectTrigger className="w-fit min-w-[180px] h-10 rounded-xl bg-white border-neutral-50 text-3">
+                <div className="flex items-center gap-2 mr-6">
+                    <span>{MONTHS[activeMonth]}</span>
+                    {filedMonths.has(activeMonth) &&
+                        <Badge variant="secondary" className="bg-green-50 text-green-600 border-green-200 text-2 font-semibold px-2 py-0 h-5">Filed</Badge>
+                    }
+                    {!filedMonths.has(activeMonth) && monthData[activeMonth] && (monthData[activeMonth].standardSales || monthData[activeMonth].allowableInputVAT) &&
+                        <Badge variant="secondary" className="bg-neutral-100 text-neutral-500 border-neutral-200 text-2 font-semibold px-2 py-0 h-5">Draft</Badge>
+                    }
+                </div>
+            </SelectTrigger>
+            <SelectContent>
+                {MONTHS.map((m, i) => (
+                    <SelectItem key={m} value={m}>
+                        <div className="flex items-center gap-2">
+                            <span>{m}</span>
+                            {filedMonths.has(i) &&
+                                <Badge variant="secondary" className="bg-green-50 text-green-600 border-green-200 text-2 font-semibold px-2 py-0 h-5">Filed</Badge>
+                            }
+                            {!filedMonths.has(i) && monthData[i] && (monthData[i].standardSales || monthData[i].allowableInputVAT) &&
+                                <Badge variant="secondary" className="bg-neutral-100 text-neutral-500 border-neutral-200 text-2 font-semibold px-2 py-0 h-5">Draft</Badge>
+                            }
+                        </div>
+                    </SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
+    );
+
     return (
         <div className="w-full">
+            {/* ── Header + Stepper ── */}
+            <div className="mb-12">
+                <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                        <h1 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em]">
+                            File {MONTHS[activeMonth]} VAT Return
+                        </h1>
+                        {monthSelector}
+                    </div>
+                </div>
+
+                <Stepper value={stepIndex} onValueChange={(step) => {
+                    const map: Record<number, 'gatekeeper' | 'output-vat' | 'input-vat' | 'adjustments' | 'review'> = {
+                        1: 'gatekeeper', 2: 'output-vat', 3: 'input-vat', 4: 'adjustments', 5: 'review'
+                    };
+                    if (step <= stepIndex) navigateToStep(map[step]);
+                }}>
+                    {VAT_STEPS.map((s, idx) => (
+                        <StepperItem key={s.key} step={s.step} completed={visitedSteps.has(s.step) && s.step !== stepIndex} disabled={s.step > stepIndex} className="[&:not(:last-child)]:flex-1 data-[state=inactive]:[&_h3]:text-neutral-400 [&_h3]:text-neutral-800">
+                            <StepperTrigger className="flex items-center gap-3 max-md:flex-col">
+                                <StepperIndicator />
+                                <div className="text-center md:text-left">
+                                    <StepperTitle className="text-2 font-medium">{s.title}</StepperTitle>
+                                </div>
+                            </StepperTrigger>
+                            {idx < VAT_STEPS.length - 1 && <StepperSeparator className="md:mx-4" />}
+                        </StepperItem>
+                    ))}
+                </Stepper>
+            </div>
+
             {/* ── Step 1: Gatekeeper ── */}
             {vatStep === 'gatekeeper' && (
                 <div className="max-w-[480px] mx-auto" data-animate>
-                    <SectionHeading>File Monthly VAT Return</SectionHeading>
-                    <DescriptionText>How do you want to enter your VAT data?</DescriptionText>
+                    <h2 className="text-4 font-semibold text-neutral-800 tracking-[-0.02em] mb-4">How do you want to enter your VAT data?</h2>
 
-                    <RadioGroup value={entryMethod} onValueChange={(v) => setEntryMethod(v as 'manual' | 'csv' | 'software')} className="space-y-0 mb-8">
+                    <RadioGroup value={entryMethod} onValueChange={(v) => setEntryMethod(v as 'manual' | 'csv' | 'software')} className="space-y-0 mb-6">
                         {ENTRY_OPTIONS.map(opt => {
                             const disabled = opt.id !== 'manual';
                             return (
@@ -142,31 +231,7 @@ export function BusinessVATContent() {
                         })}
                     </RadioGroup>
 
-                    <div className="mb-8">
-                        <label className="block text-2 font-medium text-neutral-500 mb-2">Select month <HintIcon tip="The month you're filing VAT for." /></label>
-                        <Select value={MONTHS[activeMonth]} onValueChange={(v) => { if (v) setActiveMonth(MONTHS.indexOf(v)); }}>
-                            <SelectTrigger className="w-[300px] h-10 rounded-xl bg-white text-3">
-                                <SelectValue placeholder="Choose a month" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {MONTHS.map((m, i) => (
-                                    <SelectItem key={m} value={m}>
-                                        <div className="flex items-center gap-2">
-                                            <span>{m}</span>
-                                            {filedMonths.has(i) &&
-                                                <Badge variant="secondary" className="bg-green-50 text-green-600 border-green-200 text-2 font-semibold px-2 py-0 h-5">Filed</Badge>
-                                            }
-                                            {!filedMonths.has(i) && monthData[i] && (monthData[i].standardSales || monthData[i].allowableInputVAT) &&
-                                                <Badge variant="secondary" className="bg-neutral-100 text-neutral-500 border-neutral-200 text-2 font-semibold px-2 py-0 h-5">Draft</Badge>
-                                            }
-                                        </div>
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <PrimaryButton onClick={() => setVatStep('output-vat')}>
+                    <PrimaryButton onClick={() => navigateToStep('output-vat')}>
                         Continue
                     </PrimaryButton>
                 </div>
@@ -175,14 +240,14 @@ export function BusinessVATContent() {
             {/* ── Step 2: Output VAT (Sales) ── */}
             {vatStep === 'output-vat' && (
                 <div className="max-w-[500px] mx-auto" data-animate>
-                    <div className="flex items-center gap-2 mb-2">
-                        <div className="w-6 h-6 rounded-full bg-taxable-blue text-white text-2 font-semibold flex items-center justify-center">1</div>
-                        <h2 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em]">Output VAT (Sales)</h2>
-                    </div>
-                    <div className="flex items-start gap-2 mb-6 p-3 bg-amber-50 rounded-xl">
+                    <h2 className="text-4 font-semibold text-neutral-800 tracking-[-0.02em] mb-4">Output VAT (Sales)</h2>
+                    {!dismissCashBanner && (
+                    <div className="relative flex items-start gap-2 mb-6 p-3 bg-amber-50 rounded-xl">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="flex-shrink-0 mt-0.5 text-amber-600"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-                        <p className="text-2 text-amber-700 font-medium leading-relaxed">Only include cash actually received this month. Do not include unpaid invoices.</p>
+                        <p className="text-2 text-amber-700 font-medium leading-relaxed flex-1">Only include cash actually received this month. Do not include unpaid invoices.</p>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" onClick={() => setDismissCashBanner(true)} className="flex-shrink-0 mt-0.5 text-amber-600 cursor-pointer"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                     </div>
+                    )}
 
                     <div className="bg-neutral-50 rounded-3xl p-5 mb-6">
                         <div className="space-y-3">
@@ -192,7 +257,7 @@ export function BusinessVATContent() {
                             </FormFieldRow>
                             <FormFieldRow className="justify-between">
                                 <FormLabel tip="Automatically calculated: Standard Sales × 7.5%">Output VAT @ 7.5%</FormLabel>
-                                <Input type="text" value={outputVAT > 0 ? fmt(outputVAT) : 'N0'} disabled className="w-[150px] text-left bg-neutral-50 text-neutral-300" />
+                                <Input type="text" value={outputVAT > 0 ? fmt(outputVAT) : 'N0'} disabled className="w-[150px] text-left bg-neutral-50 text-neutral-400" />
                             </FormFieldRow>
                             <FormFieldRow className="justify-between">
                                 <FormLabel tip="Sales where VAT is 0% — exports, certain goods.">Exempt / Zero-Rated Sales</FormLabel>
@@ -238,9 +303,12 @@ export function BusinessVATContent() {
                         )}
                     </div>
 
-                    <PrimaryButton onClick={() => setVatStep('input-vat')}>
-                        Next: Input VAT
-                    </PrimaryButton>
+                    <div className="flex gap-3">
+                        <SecondaryButton onClick={() => navigateToStep('gatekeeper')}>Back</SecondaryButton>
+                        <PrimaryButton onClick={() => navigateToStep('input-vat')} disabled={!data.standardSales}>
+                            Next: Input VAT
+                        </PrimaryButton>
+                    </div>
                 </div>
             )}
 
@@ -249,7 +317,7 @@ export function BusinessVATContent() {
                 <div className="max-w-[500px] mx-auto" data-animate>
                     <div className="flex items-center gap-2 mb-2">
                         <div className="w-6 h-6 rounded-full bg-taxable-blue text-white text-2 font-semibold flex items-center justify-center">2</div>
-                        <h2 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em]">Input VAT (Purchases)</h2>
+                        <h2 className="text-4 font-semibold text-neutral-800 tracking-[-0.02em]">Input VAT (Purchases)</h2>
                     </div>
                     <div className="flex items-start gap-2 mb-6 p-3 bg-amber-50 rounded-xl">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="flex-shrink-0 mt-0.5 text-amber-600"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
@@ -306,9 +374,12 @@ export function BusinessVATContent() {
                         )}
                     </div>
 
-                    <PrimaryButton onClick={() => setVatStep('adjustments')}>
-                        Next: Adjustments
-                    </PrimaryButton>
+                    <div className="flex gap-3">
+                        <SecondaryButton onClick={() => navigateToStep('output-vat')}>Back</SecondaryButton>
+                        <PrimaryButton onClick={() => navigateToStep('adjustments')} disabled={!data.allowableInputVAT}>
+                            Next: Adjustments
+                        </PrimaryButton>
+                    </div>
                 </div>
             )}
 
@@ -317,7 +388,7 @@ export function BusinessVATContent() {
                 <div className="max-w-[500px] mx-auto" data-animate>
                     <div className="flex items-center gap-2 mb-2">
                         <div className="w-6 h-6 rounded-full bg-taxable-blue text-white text-2 font-semibold flex items-center justify-center">3</div>
-                        <h2 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em]">Adjustments</h2>
+                        <h2 className="text-4 font-semibold text-neutral-800 tracking-[-0.02em]">Adjustments</h2>
                     </div>
 
                     <div className="bg-neutral-50 rounded-3xl p-5 mb-6">
@@ -327,9 +398,12 @@ export function BusinessVATContent() {
                         </FormFieldRow>
                     </div>
 
-                    <PrimaryButton onClick={() => setVatStep('review')}>
-                        Review Tax Return
-                    </PrimaryButton>
+                    <div className="flex gap-3">
+                        <SecondaryButton onClick={() => navigateToStep('input-vat')}>Back</SecondaryButton>
+                        <PrimaryButton onClick={() => navigateToStep('review')}>
+                            Review Tax Return
+                        </PrimaryButton>
+                    </div>
                 </div>
             )}
 
@@ -338,7 +412,7 @@ export function BusinessVATContent() {
                 <div className="max-w-[500px] mx-auto" data-animate>
                     <div className="flex items-center gap-2 mb-2">
                         <div className="w-6 h-6 rounded-full bg-taxable-blue text-white text-2 font-semibold flex items-center justify-center">4</div>
-                        <h2 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em]">Review & Submit</h2>
+                        <h2 className="text-4 font-semibold text-neutral-800 tracking-[-0.02em]">Review & Submit</h2>
                     </div>
 
                     <div className="bg-neutral-50 rounded-3xl p-5 mb-6">
@@ -383,9 +457,12 @@ export function BusinessVATContent() {
                         <span className="text-2 font-medium text-neutral-600 leading-relaxed">I confirm these records are accurate under the Nigeria Tax Act.</span>
                     </label>
 
-                    <PrimaryButton onClick={() => setShowFilingModal(true)} disabled={!data.disclaimerAccepted}>
-                        Submit VAT Return
-                    </PrimaryButton>
+                    <div className="flex gap-3">
+                        <SecondaryButton onClick={() => navigateToStep('adjustments')}>Back</SecondaryButton>
+                        <PrimaryButton onClick={() => setShowFilingModal(true)} disabled={!data.disclaimerAccepted}>
+                            Submit VAT Return
+                        </PrimaryButton>
+                    </div>
                 </div>
             )}
 

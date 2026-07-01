@@ -13,6 +13,7 @@ import { PayeMonthlyFiling, calculateAnnualPAYE } from '@/screens/TaxFolders/Bus
 import { PayeStaff } from '@/screens/TaxFolders/AddEmployeeDrawer';
 import { Calendar } from '@/components/ui/calendar';
 import { Spinner } from '@/components/ui/spinner';
+import { BusinessVATContent } from './BusinessVAT';
 import { BusinessWHTContent } from './BusinessWHT';
 import { FilingSheet } from '@/screens/TaxFolders/TaxFolderShared';
 import { PrimaryButton, SecondaryButton } from '@/screens/TaxFolders/TaxFolderShared';
@@ -54,7 +55,8 @@ const INDUSTRIES = [
 const BUSINESS_SECTIONS = [
     { key: 'company-info', label: 'Company Information', locked: false, route: null },
     { key: 'paye', label: 'PAYE', locked: false, route: null },
-    { key: 'vat-wht', label: 'VAT/WHT', locked: false, route: null },
+    { key: 'vat', label: 'VAT', locked: false, route: null },
+    { key: 'wht', label: 'WHT', locked: false, route: null },
     { key: 'company-income-tax', label: 'Company Income Tax', locked: false, route: null },
 ];
 
@@ -164,7 +166,6 @@ export default function BusinessTaxDetails() {
 
     // PAYE inline state
     const [payeSubSection, _setPayeSubSection] = React.useState<'monthly-filing' | 'annual-returns'>('monthly-filing');
-    const [vatWhtSubSection, setVatWhtSubSection] = React.useState<'file-vat' | 'remit-wht' | 'wht-balance'>('file-vat');
     const [citSubSection, setCitSubSection] = React.useState<'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review'>('quarterly');
 
     const [activeMonth, setActiveMonth] = React.useState('January');
@@ -286,7 +287,7 @@ export default function BusinessTaxDetails() {
         toast.success('Company information saved');
         setCompanyInfoSaved(true);
         await new Promise(res => setTimeout(res, 500));
-        const sections = ['company-info', 'paye', 'company-income-tax'];
+        const sections = ['company-info', 'paye', 'vat', 'wht', 'company-income-tax'];
         const idx = sections.indexOf(activeSection);
         if (idx < sections.length - 1) {
             setActiveSection(sections[idx + 1]);
@@ -351,23 +352,6 @@ export default function BusinessTaxDetails() {
                                                 else { setActiveSection(sec.key); }
                                             }}
                                         />
-                                        {/* VAT/WHT sub-items */}
-                                        {sec.key === 'vat-wht' && activeSection === 'vat-wht' && (
-                                            <div className="ml-9 mb-1">
-                                                {[
-                                                    { id: 'file-vat', label: 'File Monthly VAT Return' },
-                                                    { id: 'remit-wht', label: 'Remit Monthly WHT' },
-                                                    { id: 'wht-balance', label: 'WHT Credit Notes' },
-                                                ].map(sub => (
-                                                    <button key={sub.id}
-                                                        onClick={() => setVatWhtSubSection(sub.id as 'file-vat' | 'remit-wht' | 'wht-balance')}
-                                                        className={`w-full text-left px-3 py-2 rounded-lg text-2 font-medium transition-colors mb-2 ${vatWhtSubSection === sub.id ? 'text-neutral-800 bg-neutral-100' : 'text-neutral-500  '
-                                                            }`}>
-                                                        {sub.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
                                         {/* CIT sub-items */}
                                         {sec.key === 'company-income-tax' && activeSection === 'company-income-tax' && (
                                             <div className="ml-9 mb-1">
@@ -552,12 +536,17 @@ export default function BusinessTaxDetails() {
                             );
                         })()}
 
-                        {/* VAT/WHT section */}
-                        {activeSection === 'vat-wht' && (
+                        {/* VAT section */}
+                        {activeSection === 'vat' && (
                             <div data-animate className="w-full">
-                                <BusinessWHTContent
-                                    activeSubMenu={vatWhtSubSection as 'remit-wht' | 'wht-balance'}
-                                />
+                                <BusinessVATContent />
+                            </div>
+                        )}
+
+                        {/* WHT section */}
+                        {activeSection === 'wht' && (
+                            <div data-animate className="w-full">
+                                <BusinessWHTContent />
                             </div>
                         )}
 

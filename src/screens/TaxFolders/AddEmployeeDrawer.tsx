@@ -15,7 +15,8 @@ export interface PayeStaff {
     pensionOn: boolean;
     nhfOn: boolean;
     hmoOn: boolean;
-    nationality: string;
+    annualRent: string;
+    annualRentChecked: boolean;
 }
 
 interface AddEmployeeDrawerProps {
@@ -42,7 +43,8 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
     const [pensionOn, setPensionOn] = useState(false);
     const [nhfOn, setNhfOn] = useState(false);
     const [hmoOn, setHmoOn] = useState(false);
-    const [nationality, setNationality] = useState('Nigeria');
+    const [annualRent, setAnnualRent] = useState('');
+    const [annualRentChecked, setAnnualRentChecked] = useState(false);
 
     useEffect(() => {
         startTransition(() => {
@@ -57,12 +59,13 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
                 setPensionOn(editStaff.pensionOn);
                 setNhfOn(editStaff.nhfOn);
                 setHmoOn(editStaff.hmoOn);
-                setNationality(editStaff.nationality);
+                setAnnualRent(editStaff.annualRent);
+                setAnnualRentChecked(editStaff.annualRentChecked);
             } else if (open) {
                 setFirstName(''); setLastName(''); setEmail(''); setPhone('');
                 setPosition(''); setTaxId(''); setGross('');
                 setPensionOn(false); setNhfOn(false); setHmoOn(false);
-                setNationality('Nigeria');
+                setAnnualRent(''); setAnnualRentChecked(false);
             }
             setIsEditing(false);
             setShowRemoveConfirm(false);
@@ -81,7 +84,7 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
         onAdd({
             firstName, lastName, email, phone, position, taxId,
             gross: Number(gross.replace(/,/g, '')),
-            pensionOn, nhfOn, hmoOn, nationality,
+            pensionOn, nhfOn, hmoOn, annualRent, annualRentChecked,
         });
         onClose();
     };
@@ -91,7 +94,7 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
         onSave({
             firstName, lastName, email, phone, position, taxId,
             gross: Number(gross.replace(/,/g, '')),
-            pensionOn, nhfOn, hmoOn, nationality,
+            pensionOn, nhfOn, hmoOn, annualRent, annualRentChecked,
         });
         setIsEditing(false);
         onClose();
@@ -119,7 +122,8 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
             setPensionOn(editStaff.pensionOn);
             setNhfOn(editStaff.nhfOn);
             setHmoOn(editStaff.hmoOn);
-            setNationality(editStaff.nationality);
+            setAnnualRent(editStaff.annualRent);
+            setAnnualRentChecked(editStaff.annualRentChecked);
         }
         setIsEditing(false);
     };

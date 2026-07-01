@@ -7,6 +7,36 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 
+// ── PAYE Calculation (2026 Nigeria Tax Act) ─────────────────────────
+const PAYE_BANDS = [
+    { limit: 800000, rate: 0 },
+    { limit: 2200000, rate: 0.15 },
+    { limit: 9000000, rate: 0.18 },
+    { limit: 13000000, rate: 0.21 },
+    { limit: 25000000, rate: 0.23 },
+    { limit: Infinity, rate: 0.25 },
+];
+
+export function calculateAnnualPAYE(st: PayeStaff) {
+    const annualGross = st.gross * 12;
+    const pension = st.pensionOn ? Math.round(annualGross * 0.08) : 0;
+    const nhf = st.nhfOn ? Math.round(annualGross * 0.025) : 0;
+    const hmo = st.hmoOn ? Math.round(annualGross * 0.05) : 0;
+    const rentRelief = st.annualRentChecked ? Math.min((Number(st.annualRent.replace(/,/g, '')) || 0) * 0.20, 500000) : 0;
+    const taxableIncome = Math.max(0, annualGross - pension - nhf - hmo - rentRelief);
+
+    let remaining = taxableIncome;
+    let annualTax = 0;
+    for (const band of PAYE_BANDS) {
+        const chunk = Math.min(remaining, band.limit);
+        annualTax += chunk * band.rate;
+        remaining -= chunk;
+        if (remaining <= 0) break;
+    }
+
+    return { annualTax: Math.round(annualTax), monthlyTax: Math.round(annualTax / 12), taxableIncome: Math.round(taxableIncome) };
+}
+
 interface MonthlyFilingProps {
     activeMonth: string;
     activeStep: 'method' | 'table';
@@ -219,10 +249,10 @@ export function PayeMonthlyFiling({
                             </TableRow>
                         ) : (
                             staff.map((st, i) => {
+                                const { monthlyTax: _monthlyTax, taxableIncome } = calculateAnnualPAYE(st);
                                 const pension = st.pensionOn ? Math.round(st.gross * 0.08) : 0;
                                 const nhf = st.nhfOn ? Math.round(st.gross * 0.025) : 0;
-                                const hmo = st.hmoOn ? Math.round(st.gross * 0.025) : 0;
-                                const taxableIncome = Math.max(0, st.gross - pension - nhf - hmo);
+                                const hmo = st.hmoOn ? Math.round(st.gross * 0.05) : 0;
                                 return (
                                     <TableRow key={i} className="cursor-pointer" onClick={() => openViewDrawer(st)}>
                                         <TableCell className="px-6 py-4 font-medium text-neutral-600">{st.firstName} {st.lastName}</TableCell>

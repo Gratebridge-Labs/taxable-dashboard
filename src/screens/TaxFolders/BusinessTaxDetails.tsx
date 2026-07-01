@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { PayeMonthlyFiling, PayeAnnualReturns } from '@/screens/TaxFolders/BusinessPAYEContent';
+import { PayeMonthlyFiling, PayeAnnualReturns, calculateAnnualPAYE } from '@/screens/TaxFolders/BusinessPAYEContent';
 import { PayeStaff } from '@/screens/TaxFolders/AddEmployeeDrawer';
 import { Calendar } from '@/components/ui/calendar';
 import { Spinner } from '@/components/ui/spinner';
@@ -510,11 +510,7 @@ export default function BusinessTaxDetails() {
                             const hasData = currentMonthStaff.length > 0;
                             const activeStep = hasData ? 'table' as const : 'method' as const;
                             const totalPAYE = currentMonthStaff.reduce((s, st) => {
-                                const pension = st.pensionOn ? Math.round(st.gross * 0.08) : 0;
-                                const nhf = st.nhfOn ? Math.round(st.gross * 0.025) : 0;
-                                const hmo = st.hmoOn ? Math.round(st.gross * 0.025) : 0;
-                                const chargeable = Math.max(0, st.gross - pension - nhf - hmo);
-                                return s + Math.round(chargeable * 0.07);
+                                return s + calculateAnnualPAYE(st).monthlyTax;
                             }, 0);
 
                             return (
@@ -555,11 +551,7 @@ export default function BusinessTaxDetails() {
                         {activeSection === 'paye' && payeSubSection === 'annual-returns' && (() => {
                             const allStaff = Object.values(payeStaffByMonth).flat();
                             const totalAnnualPAYE = allStaff.reduce((s, st) => {
-                                const pension = st.pensionOn ? Math.round(st.gross * 0.08) : 0;
-                                const nhf = st.nhfOn ? Math.round(st.gross * 0.025) : 0;
-                                const hmo = st.hmoOn ? Math.round(st.gross * 0.025) : 0;
-                                const chargeable = Math.max(0, st.gross - pension - nhf - hmo);
-                                return s + Math.round(chargeable * 0.07) * 12;
+                                return s + calculateAnnualPAYE(st).annualTax;
                             }, 0);
                             const totalGrossPayroll = allStaff.reduce((s, st) => s + st.gross, 0);
                             return (

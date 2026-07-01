@@ -24,7 +24,7 @@ export function PrimaryButton({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`h-12 px-5 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400 whitespace-nowrap text-3 ${className}`}
+      className={`h-12 px-5 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400 whitespace-nowrap text-2 ${className}`}
     >
       {children}
     </button>
@@ -43,7 +43,7 @@ export function SecondaryButton({ children, onClick, className = '' }: Secondary
     <button
       type="button"
       onClick={onClick}
-      className={`h-12 px-5 border border-neutral-200 bg-white text-neutral-800 font-semibold rounded-xl whitespace-nowrap text-3 ${className}`}
+      className={`h-12 px-5 border border-neutral-200 bg-white text-neutral-800 font-semibold rounded-xl whitespace-nowrap text-2 ${className}`}
     >
       {children}
     </button>

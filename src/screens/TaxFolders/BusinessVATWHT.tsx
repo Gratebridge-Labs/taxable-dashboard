@@ -714,7 +714,7 @@ export function BusinessVATWHTContent({
                         </RadioGroup>
 
                         <div className="mb-8">
-                            <label className="block text-2 font-medium text-neutral-700 mb-2">Select month</label>
+                            <label className="block text-2 font-medium text-neutral-500 mb-2">Select month</label>
                             <Select value={MONTHS[activeMonth]} onValueChange={(v) => { if (v) setActiveMonth(MONTHS.indexOf(v)); }}>
                                 <SelectTrigger className="w-[300px] h-10 rounded-xl bg-white text-3">
                                     <SelectValue placeholder="Choose a month" />
@@ -737,7 +737,7 @@ export function BusinessVATWHTContent({
 
                 {/* ── VAT Form ── */}
                 {subSection === 'file-vat' && vatStep === 'form' && (
-                    <div className="flex gap-10">
+                    <div className="flex gap-10" data-animate>
                         <div className="w-[220px] flex-shrink-0">
                             <div className="flex items-center gap-3 mb-6">
                                 <span className={`text-3 font-medium ${periodMode === 'monthly' ? 'text-neutral-800' : 'text-neutral-500'}`}>Monthly</span>
@@ -752,6 +752,9 @@ export function BusinessVATWHTContent({
                                             {filedMonths.has(activeMonth) &&
                                                 <Badge variant="secondary" className="bg-green-50 text-green-600 border-green-200 text-2 font-semibold px-2 py-0 h-5">Filed</Badge>
                                             }
+                                            {!filedMonths.has(activeMonth) && monthData[activeMonth] && (monthData[activeMonth].totalSales || monthData[activeMonth].totalPurchases) &&
+                                                <Badge variant="secondary" className="bg-neutral-100 text-neutral-500 border-neutral-200 text-2 font-semibold px-2 py-0 h-5">Draft</Badge>
+                                            }
                                         </div>
                                     </SelectTrigger>
                                     <SelectContent>
@@ -761,6 +764,9 @@ export function BusinessVATWHTContent({
                                                     <span>{m}</span>
                                                     {filedMonths.has(i) &&
                                                         <Badge variant="secondary" className="bg-green-50 text-green-600 border-green-200 text-2 font-semibold px-2 py-0 h-5">Filed</Badge>
+                                                    }
+                                                    {!filedMonths.has(i) && monthData[i] && (monthData[i].totalSales || monthData[i].totalPurchases) &&
+                                                        <Badge variant="secondary" className="bg-neutral-100 text-neutral-500 border-neutral-200 text-2 font-semibold px-2 py-0 h-5">Draft</Badge>
                                                     }
                                                 </div>
                                             </SelectItem>
@@ -816,6 +822,7 @@ export function BusinessVATWHTContent({
                                             value={data.exempt}
                                             onChange={(v) => setField('exempt')(v)}
                                             placeholder="Select exempt category"
+                                            className="w-[150px]"
                                         />
                                     </FormFieldRow>
 
@@ -827,7 +834,7 @@ export function BusinessVATWHTContent({
                                     </div>
 
                                     <div className="mt-6">
-                                        <p className="text-2 font-medium text-neutral-700 mb-0.5">Total output VAT</p>
+                                        <p className="text-2 font-medium text-neutral-500 mb-0.5">Total output VAT</p>
                                         <p className="text-5 font-semibold text-neutral-800">{fmt(outputVAT)}</p>
                                     </div>
                                     </div>
@@ -863,7 +870,7 @@ export function BusinessVATWHTContent({
                                     </div>
 
                                     <div className="mt-6">
-                                        <p className="text-2 font-medium text-neutral-700 mb-0.5">Total input VAT</p>
+                                        <p className="text-2 font-medium text-neutral-500 mb-0.5">Total input VAT</p>
                                         <p className="text-5 font-semibold text-neutral-800">{fmt(inputVAT)}</p>
                                     </div>
                                     </div>
@@ -884,8 +891,8 @@ export function BusinessVATWHTContent({
                                             <span className="font-semibold text-neutral-500">-{fmt(inputVAT)}</span>
                                         </div>
                                         <div className="flex items-center justify-between text-2 pt-2 border-t border-neutral-100">
-                                            <span className="font-bold text-neutral-800">Net VAT {isCredit ? 'credit' : 'due'}</span>
-                                            <span className={`font-bold text-4 ${isCredit ? 'text-green-600' : 'text-neutral-900'}`}>
+                                            <span className="font-semibold text-neutral-800">Net VAT {isCredit ? 'credit' : 'due'}</span>
+                                            <span className={`font-semibold text-4 ${isCredit ? 'text-green-600' : 'text-neutral-900'}`}>
                                                 {isCredit ? `+${fmt(Math.abs(netVAT))}` : fmt(netVAT)}
                                             </span>
                                         </div>
@@ -896,14 +903,14 @@ export function BusinessVATWHTContent({
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="flex-shrink-0 text-amber-600" strokeWidth="2.5">
                                                 <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
                                             </svg>
-                                            <p className="text-1 font-bold text-amber-600">Due by: {dueDate}</p>
+                                            <p className="text-2 font-semibold text-amber-600">Due by: {dueDate}</p>
                                         </div>
                                     ) : (
                                         <div className="flex items-start gap-1.5">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="flex-shrink-0 mt-0.5 text-amber-600" strokeWidth="2.5">
                                                 <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
                                             </svg>
-                                            <p className="text-1 font-bold text-amber-600">
+                                            <p className="text-2 font-semibold text-amber-600">
                                                 Due by: {dueDate}. You paid more VAT to suppliers than you collected from customers.
                                             </p>
                                         </div>

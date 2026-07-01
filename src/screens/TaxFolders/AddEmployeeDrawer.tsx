@@ -3,6 +3,7 @@ import React, { useState, useEffect, startTransition } from 'react';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { PrimaryButton, SecondaryButton } from '@/screens/TaxFolders/TaxFolderShared';
 
 export interface PayeStaff {
     firstName: string;
@@ -212,29 +213,29 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
                                     <button onClick={() => setShowRemoveConfirm(true)} className="flex-1 h-12 border border-red-200 bg-red-50 text-red-600 font-semibold rounded-xl text-3">
                                         Remove Staff
                                     </button>
-                                    <button onClick={handleEditClick} className="flex-1 h-12 bg-taxable-blue text-white font-semibold rounded-xl text-3">
+                                    <PrimaryButton onClick={handleEditClick} className="flex-1">
                                         Edit Details
-                                    </button>
+                                    </PrimaryButton>
                                 </>
                             )}
                             {isViewMode && isEditing && (
                                 <>
-                                    <button onClick={handleCancelEdit} className="flex-1 h-12 border border-neutral-200 bg-white text-neutral-800 font-semibold rounded-xl text-3">
+                                    <SecondaryButton onClick={handleCancelEdit} className="flex-1">
                                         Cancel
-                                    </button>
-                                    <button onClick={handleSave} disabled={!isValid} className="flex-1 h-12 bg-taxable-blue text-white font-semibold rounded-xl text-3 disabled:bg-neutral-100 disabled:text-neutral-400 flex items-center justify-center gap-2">
+                                    </SecondaryButton>
+                                    <PrimaryButton onClick={handleSave} disabled={!isValid} className="flex-1">
                                         Save
-                                    </button>
+                                    </PrimaryButton>
                                 </>
                             )}
                             {!isViewMode && (
                                 <>
-                                    <button onClick={onClose} className="flex-1 h-12 border border-neutral-200 bg-white text-neutral-800 font-semibold rounded-xl text-3">
+                                    <SecondaryButton onClick={onClose} className="flex-1">
                                         Cancel
-                                    </button>
-                                    <button onClick={handleAdd} disabled={!isValid} className="flex-1 h-12 bg-taxable-blue text-white font-semibold rounded-xl text-3 disabled:bg-neutral-100 disabled:text-neutral-400 flex items-center justify-center gap-2">
+                                    </SecondaryButton>
+                                    <PrimaryButton onClick={handleAdd} disabled={!isValid} className="flex-1">
                                         Add Employee
-                                    </button>
+                                    </PrimaryButton>
                                 </>
                             )}
                         </div>
@@ -257,9 +258,9 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
                                     Are you sure you want to remove <span className="font-semibold text-neutral-700">{editStaff?.firstName} {editStaff?.lastName}</span>? This action cannot be undone.
                                 </p>
                                 <div className="flex gap-3 w-full">
-                                    <button onClick={() => setShowRemoveConfirm(false)} className="flex-1 h-12 border border-neutral-200 bg-white text-neutral-800 font-semibold rounded-xl text-3">
+                                    <SecondaryButton className="flex-1" onClick={() => setShowRemoveConfirm(false)}>
                                         Cancel
-                                    </button>
+                                    </SecondaryButton>
                                     <button onClick={handleRemove} className="flex-1 h-12 bg-red-600 text-white font-semibold rounded-xl text-3">
                                         Remove
                                     </button>

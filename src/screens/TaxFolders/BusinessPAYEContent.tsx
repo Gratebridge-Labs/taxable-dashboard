@@ -6,6 +6,7 @@ import { AddEmployeeDrawer, PayeStaff } from '@/screens/TaxFolders/AddEmployeeDr
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { PrimaryButton, SecondaryButton } from '@/screens/TaxFolders/TaxFolderShared';
 
 // ── PAYE Calculation (2026 Nigeria Tax Act) ─────────────────────────
 const PAYE_BANDS = [
@@ -135,7 +136,7 @@ export function PayeMonthlyFiling({
 
     const entryOptions = (
         <div data-animate className="max-w-[480px] mx-auto">
-            <h2 className="text-6 font-bold text-neutral-800 mb-1">How do you want to add payroll data?</h2>
+            <h2 className="text-6 font-semibold text-neutral-800 mb-1">How do you want to add payroll data?</h2>
             <p className="text-3 text-neutral-500 font-medium mb-6">Upload or enter your payroll for this month</p>
 
             {isFirstTime ? (
@@ -156,7 +157,7 @@ export function PayeMonthlyFiling({
                     </RadioGroup>
 
                     <div className="mb-8">
-                        <label className="block text-2 font-medium text-neutral-700 mb-2">Select starting month</label>
+                        <label className="block text-2 font-medium text-neutral-500 mb-2">Select starting month</label>
                         <Select value={onboardingMonth} onValueChange={(v) => v && setOnboardingMonth(v)}>
                             <SelectTrigger className="w-[300px] h-10 rounded-xl bg-white text-3">
                                 <SelectValue placeholder="Choose a month" />
@@ -167,12 +168,7 @@ export function PayeMonthlyFiling({
                         </Select>
                     </div>
 
-                    <button
-                        onClick={handleOnboardingContinue}
-                        className="h-12 px-8 bg-taxable-blue text-white font-semibold rounded-xl text-3"
-                    >
-                        Continue
-                    </button>
+                    <PrimaryButton onClick={handleOnboardingContinue}>Continue</PrimaryButton>
                 </>
             ) : (
                 <>
@@ -198,19 +194,9 @@ export function PayeMonthlyFiling({
                     </RadioGroup>
 
                     {sourceMonth ? (
-                        <button
-                            onClick={() => handleCopyClick(sourceMonth)}
-                            className="h-12 px-8 bg-taxable-blue text-white font-semibold rounded-xl text-3"
-                        >
-                            Continue
-                        </button>
+                        <PrimaryButton onClick={() => handleCopyClick(sourceMonth)}>Continue</PrimaryButton>
                     ) : (
-                        <button
-                            onClick={() => openAddDrawer()}
-                            className="h-12 px-8 bg-taxable-blue text-white font-semibold rounded-xl text-3"
-                        >
-                            Continue
-                        </button>
+                        <PrimaryButton onClick={() => openAddDrawer()}>Continue</PrimaryButton>
                     )}
                 </>
             )}
@@ -224,17 +210,12 @@ export function PayeMonthlyFiling({
                     <h2 className="text-6 font-semibold text-neutral-800 tracking-[-0.02em]">Employee Payroll</h2>
                     {monthSelector}
                 </div>
-                <button
-                    onClick={() => openAddDrawer()}
-                    className="h-12 px-4 bg-white border border-neutral-100 text-neutral-800 font-semibold rounded-xl text-3"
-                >
-                    Add employee
-                </button>
+                <SecondaryButton onClick={() => openAddDrawer()}>Add employee</SecondaryButton>
             </div>
             <div className="bg-white border border-neutral-100 rounded-2xl overflow-hidden mb-8">
                 <Table className="text-2 [&_tr]:border-neutral-50">
                     <TableHeader>
-                        <TableRow className="bg-neutral-50 hover:bg-neutral-50">
+                        <TableRow className="bg-neutral-50">
                             {['Full Name', 'Gross Income', 'HMO', 'Pension', 'NHF', 'Taxable Income', 'JRB Tax ID', 'Job Position', 'Email Address', 'Phone Number'].map(h => (
                                 <TableHead key={h} className="px-6 py-4 font-medium text-neutral-500">{h}</TableHead>
                             ))}
@@ -276,14 +257,11 @@ export function PayeMonthlyFiling({
             <div className="flex items-center justify-between">
                 <div>
                     <p className="text-2 font-semibold text-neutral-500 mb-0.5">Total PAYE due this month</p>
-                    <p className="text-7 font-bold text-neutral-800">{fmt(totalPAYE)}</p>
+                    <p className="text-7 font-semibold text-neutral-800">{fmt(totalPAYE)}</p>
                 </div>
-                <button
-                    onClick={onFile}
-                    className="h-12 px-6 bg-taxable-blue text-white font-semibold rounded-xl text-3 disabled:bg-neutral-100 disabled:text-neutral-400"
-                >
+                <PrimaryButton onClick={onFile} disabled={staff.length === 0}>
                     {isFiled ? 'File & Pay' : `File ${activeMonth.slice(0, 3)} PAYE`}
-                </button>
+                </PrimaryButton>
             </div>
         </div>
     );
@@ -314,11 +292,11 @@ export function PayeMonthlyFiling({
                                 </p>
                                 <label className="flex items-center gap-2 mb-6 cursor-pointer">
                                     <Checkbox checked={skipCopyConfirmation} onCheckedChange={() => setSkipCopyConfirmation(p => !p)} />
-                                    <span className="text-3 font-medium text-neutral-700">Don't show this again</span>
+                                    <span className="text-3 font-medium text-neutral-500">Don't show this again</span>
                                 </label>
                                 <div className="flex gap-3 w-full">
-                                    <button onClick={() => setShowCopyModal(false)} className="flex-1 h-12 border border-neutral-200 bg-white text-neutral-800 font-semibold rounded-xl text-3">Cancel</button>
-                                    <button onClick={() => { performCopy(pendingCopy.sourceMonth); setShowCopyModal(false); }} className="flex-1 h-12 bg-taxable-blue text-white font-semibold rounded-xl text-3">Copy</button>
+                                    <SecondaryButton className="flex-1" onClick={() => setShowCopyModal(false)}>Cancel</SecondaryButton>
+                                    <PrimaryButton className="flex-1" onClick={() => { performCopy(pendingCopy.sourceMonth); setShowCopyModal(false); }}>Copy</PrimaryButton>
                                 </div>
                             </div>
                         </div>

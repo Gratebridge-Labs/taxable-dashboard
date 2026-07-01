@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { PayeMonthlyFiling, PayeAnnualReturns, calculateAnnualPAYE } from '@/screens/TaxFolders/BusinessPAYEContent';
+import { PayeMonthlyFiling, calculateAnnualPAYE } from '@/screens/TaxFolders/BusinessPAYEContent';
 import { PayeStaff } from '@/screens/TaxFolders/AddEmployeeDrawer';
 import { Calendar } from '@/components/ui/calendar';
 import { Spinner } from '@/components/ui/spinner';
@@ -542,25 +542,6 @@ export default function BusinessTaxDetails() {
                                             [activeMonth]: [...(prev[source] || [])]
                                         }))}
                                         onFile={() => setShowPayeFilingModal(true)}
-                                    />
-                                </div>
-                            );
-                        })()}
-
-                        {/* PAYE Annual Returns */}
-                        {activeSection === 'paye' && payeSubSection === 'annual-returns' && (() => {
-                            const allStaff = Object.values(payeStaffByMonth).flat();
-                            const totalAnnualPAYE = allStaff.reduce((s, st) => {
-                                return s + calculateAnnualPAYE(st).annualTax;
-                            }, 0);
-                            const totalGrossPayroll = allStaff.reduce((s, st) => s + st.gross, 0);
-                            return (
-                                <div data-animate>
-                                    <PayeAnnualReturns
-                                        staffCount={allStaff.length}
-                                        totalAnnualPAYE={totalAnnualPAYE}
-                                        totalGrossPayroll={totalGrossPayroll}
-                                        filedMonthsCount={12}
                                     />
                                 </div>
                             );

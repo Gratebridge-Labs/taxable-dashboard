@@ -302,9 +302,7 @@ export function PayeMonthlyFiling({
                     onAdd={(newStaff) => onAddStaff(newStaff)}
                     editStaff={editingStaff}
                     onRemove={onRemoveStaff}
-                    onSave={(updated) => {
-                        if (editingStaff) onSaveStaff(editingStaff, updated);
-                    }}
+                    onSave={(updated) => { if (editingStaff) onSaveStaff(editingStaff, updated); }}
                 />
                 {showCopyModal && pendingCopy && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/20" onClick={() => setShowCopyModal(false)}>
@@ -342,39 +340,5 @@ export function PayeMonthlyFiling({
                 onSave={(updated) => { if (editingStaff) onSaveStaff(editingStaff, updated); }}
             />
         </>
-    );
-}
-
-interface AnnualReturnsProps {
-    staffCount: number;
-    totalAnnualPAYE: number;
-    totalGrossPayroll: number;
-    filedMonthsCount: number;
-    hasDiscrepancies?: boolean;
-}
-
-export function PayeAnnualReturns({
-    staffCount, totalAnnualPAYE, totalGrossPayroll, filedMonthsCount = 0, hasDiscrepancies = false,
-}: AnnualReturnsProps) {
-    const fmtN = (n: number) => `₦${n.toLocaleString()}`;
-    return (
-        <div className="max-w-[680px] mx-auto">
-            <h2 className="text-6 font-bold text-neutral-800 mb-1">PAYE · Annual Returns (2026)</h2>
-            <p className="text-3 text-neutral-500 font-medium mb-6">Your annual PAYE reconciliation is ready</p>
-            <div className="space-y-3 mb-7">
-                {[`${staffCount} employees`, `${filedMonthsCount} months of payroll data`, `Total PAYE remitted: ${fmtN(totalAnnualPAYE)}`, `Total Gross Payroll: ${fmtN(totalGrossPayroll)}`, hasDiscrepancies ? 'Discrepancies found' : 'No discrepancies'].map((line, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                        <div className="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                        </div>
-                        <span className="text-3 font-semibold text-neutral-800">{line}</span>
-                    </div>
-                ))}
-            </div>
-            <div className="flex gap-3 mb-8">
-                <button className="flex-1 h-12 border border-neutral-300 text-neutral-800 font-semibold rounded-xl text-3">Download Return</button>
-                <button className="flex-1 h-12 bg-taxable-blue text-white font-semibold rounded-xl text-3">Submit to LIRS</button>
-            </div>
-        </div>
     );
 }

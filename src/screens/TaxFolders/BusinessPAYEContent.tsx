@@ -235,7 +235,7 @@ export function PayeMonthlyFiling({
                 <Table className="text-2 [&_tr]:border-neutral-50">
                     <TableHeader>
                         <TableRow className="bg-neutral-50 hover:bg-neutral-50">
-                            {['Full Name', 'Gross Income', 'HMO', 'Pension', 'NHF', 'Taxable Income', 'JRB Tax ID', 'Job Position', 'Email Address', 'Phone Number', 'Nationality'].map(h => (
+                            {['Full Name', 'Gross Income', 'HMO', 'Pension', 'NHF', 'Taxable Income', 'JRB Tax ID', 'Job Position', 'Email Address', 'Phone Number'].map(h => (
                                 <TableHead key={h} className="px-6 py-4 font-medium text-neutral-500">{h}</TableHead>
                             ))}
                         </TableRow>
@@ -243,7 +243,7 @@ export function PayeMonthlyFiling({
                     <TableBody>
                         {staff.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={11} className="px-6 py-8 text-center text-3 text-neutral-400 font-medium">
+                                <TableCell colSpan={10} className="px-6 py-8 text-center text-3 text-neutral-400 font-medium">
                                     No employees yet. Add employee to see payroll calculations.
                                 </TableCell>
                             </TableRow>
@@ -265,7 +265,6 @@ export function PayeMonthlyFiling({
                                         <TableCell className="px-6 py-4 font-medium text-neutral-600">{st.position}</TableCell>
                                         <TableCell className="px-6 py-4 font-medium text-neutral-600">{st.email}</TableCell>
                                         <TableCell className="px-6 py-4 font-medium text-neutral-600">{st.phone}</TableCell>
-                                        <TableCell className="px-6 py-4 font-medium text-neutral-600">{st.nationality || 'Nigeria'}</TableCell>
                                     </TableRow>
                                 );
                             })

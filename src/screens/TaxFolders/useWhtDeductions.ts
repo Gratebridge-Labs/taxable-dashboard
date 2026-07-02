@@ -5,6 +5,7 @@ export interface WHTDeduction {
     id: number;
     payee: string; tin: string; whtType: string;
     gross: string; whtRate: string; whtDeducted: string; netPaid: string; date: string;
+    receipt?: string;
 }
 
 export function useWhtDeductions(storageKey: string, activeMonthKey?: string) {

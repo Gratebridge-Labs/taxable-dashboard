@@ -539,7 +539,7 @@ export default function BusinessTaxDetails() {
                         {/* VAT section */}
                         {activeSection === 'vat' && (
                             <div data-animate className="w-full">
-                                <BusinessVATContent />
+                                <BusinessVATContent profileId={profileId} taxYear={taxYear} />
                             </div>
                         )}
 

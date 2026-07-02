@@ -56,22 +56,27 @@ const defaultFilingData = (): VATFilingData => ({
 const fmt = (n: number) => `₦${Math.round(n).toLocaleString()}`;
 
 // ── VAT Content ─────────────────────────────────────────────────────────
-export function BusinessVATContent() {
+export function BusinessVATContent({ profileId, taxYear }: { profileId?: string; taxYear?: string } = {}) {
     const [vatStep, setVatStep] = useState<'gatekeeper' | 'output-vat' | 'input-vat' | 'adjustments' | 'review'>('gatekeeper');
     const [entryMethod, setEntryMethod] = useState<'manual' | 'csv' | 'software'>('manual');
     const [activeMonth, setActiveMonth] = useState(0);
-    const [periodMode, setPeriodMode] = useState<'monthly' | 'annually'>('monthly');
     const [filedMonths, setFiledMonths] = useState<Set<number>>(new Set());
     const [monthData, setMonthData] = useState<Record<number, VATFilingData>>({});
     const [showFilingModal, setShowFilingModal] = useState(false);
     const [salesScheduleFiles, setSalesScheduleFiles] = useState<{ name: string }[]>([]);
     const [purchaseInvoiceFiles, setPurchaseInvoiceFiles] = useState<{ name: string }[]>([]);
-    const [visitedSteps, setVisitedSteps] = useState<Set<number>>(new Set([1]));
+    const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
     const [dismissCashBanner, setDismissCashBanner] = useState(false);
+    const [dismissInputBanner, setDismissInputBanner] = useState(false);
 
-    const navigateToStep = (target: 'gatekeeper' | 'output-vat' | 'input-vat' | 'adjustments' | 'review') => {
+    const goForward = (target: 'gatekeeper' | 'output-vat' | 'input-vat' | 'adjustments' | 'review') => {
         const stepNum = { gatekeeper: 1, 'output-vat': 2, 'input-vat': 3, adjustments: 4, review: 5 }[target];
-        setVisitedSteps(prev => new Set([...prev, stepNum]));
+        const currentStepNum = { gatekeeper: 1, 'output-vat': 2, 'input-vat': 3, adjustments: 4, review: 5 }[vatStep];
+        setCompletedSteps(prev => new Set([...prev, currentStepNum]));
+        setVatStep(target);
+    };
+
+    const goBack = (target: 'gatekeeper' | 'output-vat' | 'input-vat' | 'adjustments' | 'review') => {
         setVatStep(target);
     };
 
@@ -106,14 +111,47 @@ export function BusinessVATContent() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeMonth]);
 
-    useEffect(() => { setDismissCashBanner(false); }, [vatStep]);
+    useEffect(() => {
+        setDismissCashBanner(false);
+        setDismissInputBanner(false);
+    }, [vatStep]);
+
+    useEffect(() => {
+        setCompletedSteps(new Set());
+        setSalesScheduleFiles([]);
+        setPurchaseInvoiceFiles([]);
+        setVatStep('gatekeeper');
+    }, [activeMonth]);
+
+    const VAT_STORAGE_KEY = `taxable_vat_${profileId ?? 'default'}_${taxYear ?? new Date().getFullYear()}`;
+
+    // Restore VAT data from localStorage on mount
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(VAT_STORAGE_KEY);
+            if (!raw) return;
+            const saved = JSON.parse(raw);
+            if (saved.monthData) setMonthData(saved.monthData);
+            if (saved.filedMonths) setFiledMonths(new Set(saved.filedMonths));
+            if (typeof saved.activeMonth === 'number') setActiveMonth(saved.activeMonth);
+        } catch { /* ignore */ }
+    }, []);
+
+    // Save VAT data to localStorage on change
+    useEffect(() => {
+        localStorage.setItem(VAT_STORAGE_KEY, JSON.stringify({
+            monthData,
+            filedMonths: Array.from(filedMonths),
+            activeMonth,
+        }));
+    }, [monthData, filedMonths, activeMonth, VAT_STORAGE_KEY]);
 
     const handleFile = () => {
         setFiledMonths(prev => new Set([...prev, activeMonth]));
         setMonthData(prev => ({ ...prev, [activeMonth]: { ...(prev[activeMonth] ?? defaultFilingData()), filed: true } }));
         setShowFilingModal(false);
         if (activeMonth < 11) setActiveMonth(m => m + 1);
-        navigateToStep('gatekeeper');
+        goBack('gatekeeper');
     };
 
     const handleAttachmentUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'sales' | 'purchases') => {
@@ -198,10 +236,10 @@ export function BusinessVATContent() {
                     const map: Record<number, 'gatekeeper' | 'output-vat' | 'input-vat' | 'adjustments' | 'review'> = {
                         1: 'gatekeeper', 2: 'output-vat', 3: 'input-vat', 4: 'adjustments', 5: 'review'
                     };
-                    if (step <= stepIndex) navigateToStep(map[step]);
+                    if (step <= stepIndex) goBack(map[step]);
                 }}>
                     {VAT_STEPS.map((s, idx) => (
-                        <StepperItem key={s.key} step={s.step} completed={visitedSteps.has(s.step) && s.step !== stepIndex} disabled={s.step > stepIndex} className="[&:not(:last-child)]:flex-1 data-[state=inactive]:[&_h3]:text-neutral-400 [&_h3]:text-neutral-800">
+                        <StepperItem key={s.key} step={s.step} completed={completedSteps.has(s.step)} disabled={s.step > stepIndex} className="[&:not(:last-child)]:flex-1 data-[state=inactive]:[&_h3]:text-neutral-400 [&_h3]:text-neutral-800">
                             <StepperTrigger className="flex items-center gap-3 max-md:flex-col">
                                 <StepperIndicator />
                                 <div className="text-center md:text-left">
@@ -217,7 +255,7 @@ export function BusinessVATContent() {
             {/* ── Step 1: Gatekeeper ── */}
             {vatStep === 'gatekeeper' && (
                 <div className="max-w-[480px] mx-auto" data-animate>
-                    <h2 className="text-4 font-semibold text-neutral-800 tracking-[-0.02em] mb-4">How do you want to enter your VAT data?</h2>
+                    <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-4">How do you want to enter your VAT data?</h2>
 
                     <RadioGroup value={entryMethod} onValueChange={(v) => setEntryMethod(v as 'manual' | 'csv' | 'software')} className="space-y-0 mb-6">
                         {ENTRY_OPTIONS.map(opt => {
@@ -231,7 +269,7 @@ export function BusinessVATContent() {
                         })}
                     </RadioGroup>
 
-                    <PrimaryButton onClick={() => navigateToStep('output-vat')}>
+                    <PrimaryButton onClick={() => goForward('output-vat')}>
                         Continue
                     </PrimaryButton>
                 </div>
@@ -240,7 +278,7 @@ export function BusinessVATContent() {
             {/* ── Step 2: Output VAT (Sales) ── */}
             {vatStep === 'output-vat' && (
                 <div className="max-w-[500px] mx-auto" data-animate>
-                    <h2 className="text-4 font-semibold text-neutral-800 tracking-[-0.02em] mb-4">Output VAT (Sales)</h2>
+                    <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-4">Output VAT (Sales)</h2>
                     {!dismissCashBanner && (
                     <div className="relative flex items-start gap-2 mb-6 p-3 bg-amber-50 rounded-xl">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="flex-shrink-0 mt-0.5 text-amber-600"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
@@ -304,8 +342,8 @@ export function BusinessVATContent() {
                     </div>
 
                     <div className="flex gap-3">
-                        <SecondaryButton onClick={() => navigateToStep('gatekeeper')}>Back</SecondaryButton>
-                        <PrimaryButton onClick={() => navigateToStep('input-vat')} disabled={!data.standardSales}>
+                        <SecondaryButton onClick={() => goBack('gatekeeper')}>Back</SecondaryButton>
+                        <PrimaryButton onClick={() => goForward('input-vat')} disabled={!data.standardSales}>
                             Next: Input VAT
                         </PrimaryButton>
                     </div>
@@ -315,14 +353,14 @@ export function BusinessVATContent() {
             {/* ── Step 3: Input VAT (Purchases) ── */}
             {vatStep === 'input-vat' && (
                 <div className="max-w-[500px] mx-auto" data-animate>
-                    <div className="flex items-center gap-2 mb-2">
-                        <div className="w-6 h-6 rounded-full bg-taxable-blue text-white text-2 font-semibold flex items-center justify-center">2</div>
-                        <h2 className="text-4 font-semibold text-neutral-800 tracking-[-0.02em]">Input VAT (Purchases)</h2>
-                    </div>
-                    <div className="flex items-start gap-2 mb-6 p-3 bg-amber-50 rounded-xl">
+                    <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-4">Input VAT (Purchases)</h2>
+                    {!dismissInputBanner && (
+                    <div className="relative flex items-start gap-2 mb-6 p-3 bg-amber-50 rounded-xl">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="flex-shrink-0 mt-0.5 text-amber-600"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-                        <p className="text-2 text-amber-700 font-medium leading-relaxed">Only claim VAT back on raw materials or inventory for direct resale. VAT on overheads (rent, fuel) and assets is non-allowable.</p>
+                        <p className="text-2 text-amber-700 font-medium leading-relaxed flex-1">Only claim VAT back on raw materials or inventory for direct resale. VAT on overheads (rent, fuel) and assets is non-allowable.</p>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" onClick={() => setDismissInputBanner(true)} className="flex-shrink-0 mt-0.5 text-amber-600 cursor-pointer"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                     </div>
+                    )}
 
                     <div className="bg-neutral-50 rounded-3xl p-5 mb-6">
                         <div className="space-y-3">
@@ -375,8 +413,8 @@ export function BusinessVATContent() {
                     </div>
 
                     <div className="flex gap-3">
-                        <SecondaryButton onClick={() => navigateToStep('output-vat')}>Back</SecondaryButton>
-                        <PrimaryButton onClick={() => navigateToStep('adjustments')} disabled={!data.allowableInputVAT}>
+                        <SecondaryButton onClick={() => goBack('output-vat')}>Back</SecondaryButton>
+                        <PrimaryButton onClick={() => goForward('adjustments')} disabled={!data.allowableInputVAT}>
                             Next: Adjustments
                         </PrimaryButton>
                     </div>
@@ -386,21 +424,18 @@ export function BusinessVATContent() {
             {/* ── Step 4: Adjustments ── */}
             {vatStep === 'adjustments' && (
                 <div className="max-w-[500px] mx-auto" data-animate>
-                    <div className="flex items-center gap-2 mb-2">
-                        <div className="w-6 h-6 rounded-full bg-taxable-blue text-white text-2 font-semibold flex items-center justify-center">3</div>
-                        <h2 className="text-4 font-semibold text-neutral-800 tracking-[-0.02em]">Adjustments</h2>
-                    </div>
+                    <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-4">Adjustments</h2>
 
-                    <div className="bg-neutral-50 rounded-3xl p-5 mb-6">
-                        <FormFieldRow className="justify-between">
+                    <div className="bg-neutral-50 rounded-3xl p-5 mb-0">
+                        <FormFieldRow className="justify-between mb-0">
                             <FormLabel tip="VAT credit carried forward from the previous month. Auto-populated if available.">Brought-Forward VAT Credit</FormLabel>
                             <Input type="text" value={data.broughtForwardCredit} onChange={fmtInput(setField('broughtForwardCredit'))} placeholder="N0" className="w-[150px] text-left" />
                         </FormFieldRow>
                     </div>
 
                     <div className="flex gap-3">
-                        <SecondaryButton onClick={() => navigateToStep('input-vat')}>Back</SecondaryButton>
-                        <PrimaryButton onClick={() => navigateToStep('review')}>
+                        <SecondaryButton onClick={() => goBack('input-vat')}>Back</SecondaryButton>
+                        <PrimaryButton onClick={() => goForward('review')}>
                             Review Tax Return
                         </PrimaryButton>
                     </div>
@@ -410,13 +445,10 @@ export function BusinessVATContent() {
             {/* ── Step 5: Review ── */}
             {vatStep === 'review' && (
                 <div className="max-w-[500px] mx-auto" data-animate>
-                    <div className="flex items-center gap-2 mb-2">
-                        <div className="w-6 h-6 rounded-full bg-taxable-blue text-white text-2 font-semibold flex items-center justify-center">4</div>
-                        <h2 className="text-4 font-semibold text-neutral-800 tracking-[-0.02em]">Review & Submit</h2>
-                    </div>
+                    <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-4">Review & Submit</h2>
 
                     <div className="bg-neutral-50 rounded-3xl p-5 mb-6">
-                        <div className="space-y-2.5">
+                        <div className="space-y-6">
                             <div className="flex items-center justify-between text-2">
                                 <span className="text-neutral-500 font-medium">Output VAT Collected</span>
                                 <span className="font-semibold text-neutral-800">{fmt(outputVAT)}</span>
@@ -435,7 +467,7 @@ export function BusinessVATContent() {
                             </div>
                             <div className="flex items-center justify-between text-2 pt-2 border-t border-neutral-100">
                                 <span className="font-semibold text-neutral-800">Net VAT {isCredit ? 'Credit' : 'Liability'}</span>
-                                <span className={`font-semibold text-4 ${isCredit ? 'text-blue-600' : 'text-neutral-900'}`}>{isCredit ? fmt(Math.abs(netPosition)) : fmt(netPosition)}</span>
+                                <span className={`font-semibold text-3 ${isCredit ? 'text-blue-600' : 'text-neutral-900'}`}>{isCredit ? fmt(Math.abs(netPosition)) : fmt(netPosition)}</span>
                             </div>
                         </div>
                     </div>
@@ -458,7 +490,7 @@ export function BusinessVATContent() {
                     </label>
 
                     <div className="flex gap-3">
-                        <SecondaryButton onClick={() => navigateToStep('adjustments')}>Back</SecondaryButton>
+                        <SecondaryButton onClick={() => goBack('adjustments')}>Back</SecondaryButton>
                         <PrimaryButton onClick={() => setShowFilingModal(true)} disabled={!data.disclaimerAccepted}>
                             Submit VAT Return
                         </PrimaryButton>

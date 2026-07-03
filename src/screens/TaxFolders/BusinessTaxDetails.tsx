@@ -176,7 +176,7 @@ export default function BusinessTaxDetails() {
 
     // PAYE inline state
     const [payeSubSection, _setPayeSubSection] = React.useState<'monthly-filing' | 'annual-returns'>('monthly-filing');
-    const [citSubSection, setCitSubSection] = React.useState<'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review'>('quarterly');
+    const [citSubSection, setCitSubSection] = React.useState<'quarterly' | 'file-returns'>('quarterly');
 
     const [activeMonth, setActiveMonth] = React.useState('January');
     const [filedMonths, setFiledMonths] = React.useState<Set<string>>(new Set());
@@ -389,16 +389,12 @@ export default function BusinessTaxDetails() {
                                         {sec.key === 'company-income-tax' && activeSection === 'company-income-tax' && (
                                             <div className="ml-9 mb-1">
                                                 {[
-                                                    { id: 'quarterly', label: 'Quarterly Assessments' },
+                                                    ...(payQuarterly ? [{ id: 'quarterly', label: 'Quarterly Assessments' }] : []),
                                                     { id: 'file-returns', label: 'File Annual Returns' },
-                                                    { id: 'tax-adjustment', label: 'Tax Adjustment' },
-                                                    { id: 'wht-credits', label: 'WHT Credits' },
-                                                    { id: 'review', label: 'Review' },
                                                 ].map(sub => (
                                                     <button key={sub.id}
-                                                        onClick={() => setCitSubSection(sub.id as 'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review')}
-                                                        className={`w-full text-left px-3 py-2 rounded-lg text-2 font-medium transition-colors mb-2 ${citSubSection === sub.id ? 'text-neutral-800 bg-neutral-100' : 'text-neutral-500  '
-                                                            }`}>
+                                                        onClick={() => setCitSubSection(sub.id as 'quarterly' | 'file-returns')}
+                                                        className={`w-full text-left px-3 py-2 rounded-lg text-2 font-medium mb-2 ${citSubSection === sub.id ? 'text-neutral-800 bg-neutral-100' : 'text-neutral-500'}`}>
                                                         {sub.label}
                                                     </button>
                                                 ))}
@@ -504,7 +500,14 @@ export default function BusinessTaxDetails() {
                                      <label className="flex items-center gap-3 cursor-pointer">
                                          <Checkbox
                                              checked={payQuarterly}
-                                             onCheckedChange={() => { setPayQuarterly(p => !p); hasUnsavedChanges.current = true; }}
+                                              onCheckedChange={() => {
+                                                  const next = !payQuarterly;
+                                                  setPayQuarterly(next);
+                                                  if (!next && citSubSection === 'quarterly') {
+                                                      setCitSubSection('file-returns');
+                                                  }
+                                                  hasUnsavedChanges.current = true;
+                                              }}
                                          />
                                          <span className="text-3 font-medium text-neutral-800">
                                              Pay CIT in quarterly installments
@@ -632,6 +635,7 @@ export default function BusinessTaxDetails() {
                                 <BusinessCITContent
                                     activeSubMenu={citSubSection}
                                     onSubMenuChange={setCitSubSection}
+                                    payQuarterly={payQuarterly}
                                     estimatedAnnualRevenue={estimatedAnnualRevenue}
                                     profitMargin={profitMargin}
                                     onEstimatedRevenueChange={handleEstimatedRevenueChange}

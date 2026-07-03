@@ -1,13 +1,17 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
-import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Drawer, DrawerContent, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
-import { PrimaryButton, SecondaryButton, SecondaryButtonSm } from './TaxFolderShared';
+import {
+    Stepper, StepperItem, StepperIndicator, StepperTitle,
+    StepperSeparator, StepperTrigger,
+} from '@/components/ui/stepper';
+import { PrimaryButton, SecondaryButton, SecondaryButtonSm, FormFieldRow, FormLabel } from './TaxFolderShared';
 import { FilingSheet } from './TaxFolderShared';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
 import { InformationFill } from '@mingcute/react';
@@ -16,158 +20,140 @@ import { InformationFill } from '@mingcute/react';
 const fmt = (n: number) => `₦${Math.round(n).toLocaleString()}`;
 const num = (s: string) => Number(s.replace(/,/g, '')) || 0;
 
+// ── Hint Icon ─────────────────────────────────────────────────────────────────
 const HintIcon = ({ tip }: { tip: string }) => (
-   <span className="relative group inline-flex items-center ml-1 align-middle cursor-default">
-      <InformationFill className="w-3.5 h-3.5" color="#E5E5E5" />
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2 bg-neutral-800 text-white text-1 leading-snug rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-40 font-medium">
-        {tip}
-      </div>
-   </span>
+    <span className="relative group inline-flex items-center ml-1 align-middle cursor-default">
+        <InformationFill className="w-3.5 h-3.5" color="#E5E5E5" />
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2 bg-neutral-800 text-white text-1 leading-snug rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-40 font-medium">
+            {tip}
+        </div>
+    </span>
 );
 
-// ── Left Sidebar ──────────────────────────────────────────────────────────────
-const CIT_SUBSECTIONS = [
-   { key: 'quarterly', label: 'Quarterly Assessments' },
-   { key: 'file-returns', label: 'File Annual Returns' },
-   { key: 'tax-adjustment', label: 'Tax Adjustment' },
-   { key: 'wht-credits', label: 'WHT Credits' },
-   { key: 'review', label: 'Review' },
-];
-
-const LeftSidebar = ({
-   activeSubSection, onSubSection, router,
-}: {
-   activeSubSection: string;
-   onSubSection: (s: string) => void;
-   router: ReturnType<typeof useRouter>;
-}) => {
-   const NAV = [
-      { key: 'company-info', label: 'Company Information', route: '/tax-folders/business' },
-      { key: 'paye', label: 'PAYE', route: '/tax-folders/business-paye' },
-      { key: 'vat-wht', label: 'VAT/WHT', route: '/tax-folders/business-vat-wht' },
-      { key: 'cit', label: 'Company Income Tax', route: null, children: CIT_SUBSECTIONS },
-   ];
-
-   return (
-      <div className="w-[220px] flex-shrink-0 flex flex-col gap-4 sticky top-24">
-        <div>
-           <div className="flex items-center justify-between mb-2 px-1">
-              <p className="text-1 font-semibold text-neutral-400 uppercase tracking-wider">Select</p>
-              <button className="flex items-center gap-1 text-1 font-semibold text-taxable-blue">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                   <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-                Edit section
-              </button>
-           </div>
-           <div>
-              {NAV.map(item => {
-                const isExpanded = item.key === 'cit';
-                return (
-                   <div key={item.key}>
-                      <button
-                        onClick={() => item.route && router.push(item.route)}
-                        className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl mb-0.5"
-                      >
-                        <div className="flex items-center gap-3 text-left">
-                           <span className="text-3 leading-none">📁</span>
-                           <span className="text-2 font-semibold text-neutral-700">{item.label}</span>
-                        </div>
-                        {isExpanded ? (
-                           <svg className="w-3.5 h-3.5 text-neutral-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                              <polyline points="18 15 12 9 6 15" />
-                           </svg>
-                        ) : (
-                           <svg className="w-3.5 h-3.5 text-neutral-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                           </svg>
-                        )}
-                      </button>
-                      {isExpanded && item.children && (
-                        <div className="ml-9 mb-1">
-                           {item.children.map(child => (
-                              <button
-                                key={child.key}
-                                onClick={() => onSubSection(child.key)}
-                                className={`w-full text-left px-3 py-2 rounded-lg text-2 font-semibold mb-0.5 ${activeSubSection === child.key ? 'text-neutral-800 bg-neutral-100' : 'text-neutral-500'}`}
-                              >
-                                {child.label}
-                              </button>
-                           ))}
-                        </div>
-                      )}
-                   </div>
-                );
-              })}
-           </div>
-        </div>
-
-      </div>
-   );
+const fmtInput = (set: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/[^0-9.]/g, '');
+    const parts = raw.split('.');
+    const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    set(parts.length > 1 ? integer + '.' + parts.slice(1).join('') : integer);
 };
 
-// ── Input field helper ────────────────────────────────────────────────────────
-const Field = ({ label, tip, value, onChange, readOnly, placeholder }: {
-   label: string; tip?: string; value: string; onChange?: (v: string) => void;
-   readOnly?: boolean; placeholder?: string;
-}) => (
-   <div>
-      <label className="flex items-center text-1 font-semibold text-neutral-500 mb-1.5">
-        {label} {tip && <HintIcon tip={tip} />}
-      </label>
-      <Input type="text" value={value} onChange={e => onChange?.(e.target.value.replace(/[^0-9.]/g, ''))} placeholder={placeholder ?? 'N0'} disabled={readOnly} />
-   </div>
-);
+// ── Left Sidebar ─────────────────────────────────────────────────────────────
+const LeftSidebar = ({
+    activeSubSection, onSubSection, router, payQuarterly,
+}: {
+    activeSubSection: string;
+    onSubSection: (s: string) => void;
+    router: ReturnType<typeof useRouter>;
+    payQuarterly?: boolean;
+}) => {
+    const filteredSubSections = CIT_SUBSECTIONS.filter(s => payQuarterly || s.key !== 'quarterly');
+    const NAV = [
+        { key: 'company-info', label: 'Company Information', route: '/tax-folders/business' },
+        { key: 'paye', label: 'PAYE', route: '/tax-folders/business-paye' },
+        { key: 'vat-wht', label: 'VAT/WHT', route: '/tax-folders/business-vat-wht' },
+        { key: 'cit', label: 'Company Income Tax', route: null, children: filteredSubSections },
+    ];
+    return (
+        <div className="w-[200px] flex-shrink-0 hidden md:block">
+            <div className="space-y-4">
+                {NAV.map(item => {
+                    const isActive = item.children ? item.children.some(c => c.key === activeSubSection) : false;
+                    return (
+                        <div key={item.key}>
+                            <button
+                                onClick={() => { if (item.route) router.push(item.route); }}
+                                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-2 font-semibold ${isActive ? 'bg-neutral-100 text-neutral-800' : 'text-neutral-500'}`}>
+                                <span className="text-3 leading-none">📁</span>
+                                {item.label}
+                            </button>
+                            {item.children && isActive && (
+                                <div className="ml-5 mt-1 space-y-0.5 border-l-2 border-neutral-100 pl-3">
+                                    {item.children.map(sub => (
+                                        <button key={sub.key}
+                                            onClick={() => onSubSection(sub.key)}
+                                            className={`block w-full text-left py-1.5 text-2 font-medium ${activeSubSection === sub.key ? 'text-neutral-800' : 'text-neutral-500'}`}>
+                                            {sub.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
 
 // ── Row in review ledger ──────────────────────────────────────────────────────
 const LedgerRow = ({ label, value, bold, indent, prefix }: {
-   label: string; value: string; bold?: boolean; indent?: boolean; prefix?: string;
+    label: string; value: string; bold?: boolean; indent?: boolean; prefix?: string;
 }) => (
-   <div className={`flex items-center justify-between py-2.5 ${bold ? 'border-t border-neutral-100 mt-1' : ''}`}>
-      <span className={`text-2 ${bold ? 'font-semibold text-neutral-800' : 'font-medium text-neutral-500'} ${indent ? 'pl-4' : ''}`}>{label}</span>
-      <span className={`text-2 ${bold ? 'font-semibold text-neutral-800' : 'font-semibold text-neutral-800'}`}>
-        {prefix}{value}
-      </span>
-   </div>
+    <div className={`flex items-center justify-between py-2.5 ${bold ? 'border-t border-neutral-100 mt-1' : ''}`}>
+        <span className={`text-2 ${bold ? 'font-semibold text-neutral-800' : 'font-medium text-neutral-500'} ${indent ? 'pl-4' : ''}`}>{label}</span>
+        <span className={`text-2 ${bold ? 'font-semibold text-neutral-800' : 'font-semibold text-neutral-800'}`}>
+            {prefix}{value}
+        </span>
+    </div>
 );
 
+// ── Section header in review ledger ───────────────────────────────────────────
 const SectionHeader = ({ label }: { label: string }) => (
-   <p className="text-2 font-semibold text-neutral-800 mt-5 mb-1">{label}</p>
+    <div className="flex items-center gap-2 py-2.5 border-t border-neutral-100 mt-1">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-400" strokeWidth="2.5">
+            <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        <span className="text-2 font-semibold text-neutral-600">{label}</span>
+    </div>
 );
 
-// ── WHT Type options ──────────────────────────────────────────────────────────
-const WHT_TYPES = ['Select', 'WHT on Services (5%)', 'WHT on Rent (10%)', 'WHT on Dividends (10%)', 'WHT on Interest (10%)', 'WHT on Royalties (10%)', 'WHT on Construction (2.5%)'];
-const WHT_RATES = ['Select', '2.5%', '5%', '10%'];
+const CIT_SUBSECTIONS = [
+    { key: 'quarterly', label: 'Quarterly Assessments' },
+    { key: 'file-returns', label: 'File Annual Returns' },
+];
 
 // ── Embeddable content component (no page shell) ──────────────────────────────
 export function BusinessCITContent({
-   activeSubMenu,
-   onSubMenuChange,
-   estimatedAnnualRevenue,
-   profitMargin,
-   onEstimatedRevenueChange,
-   onProfitMarginChange,
+    activeSubMenu,
+    onSubMenuChange,
+    payQuarterly,
+    estimatedAnnualRevenue,
+    profitMargin,
+    onEstimatedRevenueChange,
+    onProfitMarginChange,
 }: {
-   activeSubMenu?: 'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review';
-   onSubMenuChange?: (s: 'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review') => void;
-   estimatedAnnualRevenue?: string;
-   profitMargin?: string;
-   onEstimatedRevenueChange?: (v: string) => void;
-   onProfitMarginChange?: (v: string) => void;
+    activeSubMenu?: 'quarterly' | 'file-returns';
+    onSubMenuChange?: (s: 'quarterly' | 'file-returns') => void;
+    payQuarterly?: boolean;
+    estimatedAnnualRevenue?: string;
+    profitMargin?: string;
+    onEstimatedRevenueChange?: (v: string) => void;
+    onProfitMarginChange?: (v: string) => void;
 } = {}) {
-   const router = useRouter();
-   const [internalSubSection, setInternalSubSection] = useState<'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review'>('quarterly');
-   const subSection = activeSubMenu ?? internalSubSection;
-   const setSubSectionLocal = onSubMenuChange ?? setInternalSubSection;
+    const router = useRouter();
+    const [internalSubSection, setInternalSubSection] = useState<'quarterly' | 'file-returns'>('quarterly');
+    const subSection = activeSubMenu ?? internalSubSection;
+    const setSubSectionLocal = onSubMenuChange ?? setInternalSubSection;
 
-   const setSubSection = (s: 'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review') => {
-      setSubSectionLocal(s);
-      if (s === 'file-returns') setStep('method');
-   };
+    const setSubSection = (s: 'quarterly' | 'file-returns') => {
+        setSubSectionLocal(s);
+        if (s === 'file-returns') {
+            setAnnualStep('method');
+            setCompletedAnnualSteps(new Set());
+        }
+    };
 
-   const [step, setStep] = useState<'method' | 'form'>('method');
-   const [entryMethod, setEntryMethod] = useState<'manual' | 'pdf' | 'software'>('manual');
-   const [showFilingReviewSheet, setShowFilingReviewSheet] = useState(false);
+    const goForward = (target: 'method' | 'financials' | 'tax-adjustments' | 'wht-credits' | 'review') => {
+        const stepNum: Record<string, number> = { method: 1, financials: 2, 'tax-adjustments': 3, 'wht-credits': 4, review: 5 };
+        const currentStepNum = stepNum[annualStep];
+        if (currentStepNum) setCompletedAnnualSteps(prev => new Set([...prev, currentStepNum]));
+        setAnnualStep(target);
+    };
+
+    const [entryMethod, setEntryMethod] = useState<'manual' | 'pdf' | 'software'>('manual');
+    const [showFilingReviewSheet, setShowFilingReviewSheet] = useState(false);
+    const [annualStep, setAnnualStep] = useState<'method' | 'financials' | 'tax-adjustments' | 'wht-credits' | 'review'>('method');
+    const [completedAnnualSteps, setCompletedAnnualSteps] = useState<Set<number>>(new Set());
 
    // Quarterly assessments
    const [quarterPayments, setQuarterPayments] = useState<Record<number, number>>({0: 0, 1: 0});
@@ -181,40 +167,57 @@ export function BusinessCITContent({
    const [editRevenue, setEditRevenue] = useState('');
    const [editMargin, setEditMargin] = useState('20%');
 
-   // Financials
-   const [totalRevenue, setTotalRevenue] = useState('');
-   const [otherIncome, setOtherIncome] = useState('');
-   const [cogs, setCogs] = useState('');
-   const [opex, setOpex] = useState('');
-   const [depreciation, setDepreciation] = useState('');
-   const [interestPaid, setInterestPaid] = useState('');
-   const [otherExpenses, setOtherExpenses] = useState('');
+    // Financials
+    const [totalRevenue, setTotalRevenue] = useState('');
+    const [cogs, setCogs] = useState('');
+    const [opex, setOpex] = useState('');
+    const [auditedFiles, setAuditedFiles] = useState<{ name: string }[]>([]);
+    const [trialBalanceFiles, setTrialBalanceFiles] = useState<{ name: string }[]>([]);
+    const auditedInputRef = useRef<HTMLInputElement>(null);
+    const trialBalanceInputRef = useRef<HTMLInputElement>(null);
 
-   // Tax Adjustments
-   const [nonDeductible, setNonDeductible] = useState('');
-   const [capitalAllowances, setCapitalAllowances] = useState('');
-   const [pioneerRelief, setPioneerRelief] = useState('');
-   const [otherDeductions, setOtherDeductions] = useState('');
+    // Tax Adjustments
+    const [govFines, setGovFines] = useState('');
+    const [accountingDepreciation, setAccountingDepreciation] = useState('');
+    const [generalProvisions, setGeneralProvisions] = useState('');
+    const [class1Assets, setClass1Assets] = useState('');
+    const [class2Assets, setClass2Assets] = useState('');
+    const [class3Assets, setClass3Assets] = useState('');
 
-   // WHT Credits
-   const [whtCredits, setWhtCredits] = useState([{
-      creditNoteNo: '', issuerName: '', issuerTIN: '', whtType: 'Select',
-      whtRate: 'Select', grossAmount: '', whtAmount: '', dateIssued: '', paymentRef: '',
-   }]);
+    // WHT Credits
+    const [whtCredits, setWhtCredits] = useState<{
+        clientName: string; clientTIN: string; creditRef: string;
+        grossValue: string; withheldAmount: string;
+    }[]>([]);
+    const [whtCreditStep, setWhtCreditStep] = useState<'method' | 'table'>('method');
+    const [creditEntryMethod, setCreditEntryMethod] = useState<'manual' | 'csv' | 'software'>('manual');
+    const [showCreditSheet, setShowCreditSheet] = useState(false);
+    const [editCreditIdx, setEditCreditIdx] = useState<number | null>(null);
+    const [isEditingCredit, setIsEditingCredit] = useState(false);
+    const [showRemoveCredit, setShowRemoveCredit] = useState(false);
 
-   // Derived financials
-   const totalRev = num(totalRevenue) + num(otherIncome);
-   const totalExp = num(cogs) + num(opex) + num(depreciation) + num(interestPaid) + num(otherExpenses);
-   const nhf = totalRev * 0.025;
-   const accountingProfit = totalRev - totalExp - nhf;
-   const addBack = num(nonDeductible);
-   const subtract = num(capitalAllowances) + num(pioneerRelief) + num(otherDeductions);
-   const taxableProfit = accountingProfit + addBack - subtract;
-   const citRate = taxableProfit * 0.30;
-   const eduTax = taxableProfit * 0.025;
-   const grossTaxDue = citRate + eduTax;
-   const totalWHTCredits = whtCredits.reduce((s, c) => s + num(c.whtAmount), 0);
-   const netTaxPayable = Math.max(0, grossTaxDue - totalWHTCredits);
+    const defaultCreditForm = () => ({
+        clientName: '', clientTIN: '', creditRef: '',
+        grossValue: '', withheldAmount: '',
+    });
+
+    const [creditForm, setCreditForm] = useState(defaultCreditForm);
+    const [creditCertificateFiles, setCreditCertificateFiles] = useState<{ name: string }[]>([]);
+    const creditCertificateRef = useRef<HTMLInputElement>(null);
+
+    // Derived financials
+    const totalRev = num(totalRevenue);
+    const totalExp = num(cogs) + num(opex);
+    const nhf = totalRev * 0.025;
+    const accountingProfit = totalRev - totalExp - nhf;
+    const nonDeductibleTotal = num(govFines) + num(accountingDepreciation) + num(generalProvisions);
+    const totalCapitalAllowances = num(class1Assets) * 0.10 + num(class2Assets) * 0.20 + num(class3Assets) * 0.25;
+    const adjustedTaxableProfit = accountingProfit + nonDeductibleTotal - totalCapitalAllowances;
+    const citRate = adjustedTaxableProfit * 0.30;
+    const eduTax = adjustedTaxableProfit * 0.025;
+    const grossTaxDue = citRate + eduTax;
+    const totalWHTCredits = whtCredits.reduce((s, c) => s + num(c.withheldAmount), 0);
+    const netTaxPayable = Math.max(0, grossTaxDue - totalWHTCredits);
 
    const ENTRY_OPTIONS = [
       { id: 'manual' as const, label: 'Manual entry (enter revenue and expenses below)' },
@@ -222,28 +225,112 @@ export function BusinessCITContent({
       { id: 'software' as const, label: 'Connect accounting software (QuickBooks, Xero, Zoho)' },
    ];
 
-   const _breadcrumb = subSection === 'quarterly' ? 'Quarterly Assessments'
-      : subSection === 'file-returns' ? 'File Annual Returns'
-        : subSection === 'tax-adjustment' ? 'Tax Adjustment'
-           : subSection === 'wht-credits' ? 'WHT Credits'
-              : 'Review';
+    const _breadcrumb = subSection === 'quarterly' ? 'Quarterly Assessments'
+        : 'File Annual Returns';
 
-   const handleFileQuarter = () => {
-      if (payQuarter !== null) {
-        setQuarterPayments(prev => ({ ...prev, [payQuarter]: pendingQuarterAmount }));
-        setPayQuarter(null);
-        setPendingQuarterAmount(0);
-      }
-   };
+    const handleFileQuarter = () => {
+        if (payQuarter !== null) {
+            setQuarterPayments(prev => ({ ...prev, [payQuarter]: pendingQuarterAmount }));
+            setPayQuarter(null);
+            setPendingQuarterAmount(0);
+        }
+    };
+
+    const goBack = (target: 'method' | 'financials' | 'tax-adjustments' | 'wht-credits' | 'review') => {
+        setAnnualStep(target);
+    };
+
+    const CREDIT_ENTRY_OPTIONS = [
+        { id: 'manual' as const, label: 'Manual entry' },
+        { id: 'csv' as const, label: 'Upload WHT credit notes (CSV/Excel)' },
+        { id: 'software' as const, label: 'Connect accounting software (QuickBooks, Xero, Zoho)' },
+    ];
+
+    const openAddCredit = () => {
+        setCreditForm(defaultCreditForm());
+        setCreditCertificateFiles([]);
+        setEditCreditIdx(null);
+        setIsEditingCredit(false);
+        setShowRemoveCredit(false);
+        setShowCreditSheet(true);
+    };
+
+    const openEditCredit = (idx: number) => {
+        const c = whtCredits[idx];
+        setCreditForm({
+            clientName: c.clientName, clientTIN: c.clientTIN, creditRef: c.creditRef,
+            grossValue: c.grossValue, withheldAmount: c.withheldAmount,
+        });
+        setCreditCertificateFiles([]);
+        setEditCreditIdx(idx);
+        setIsEditingCredit(false);
+        setShowRemoveCredit(false);
+        setShowCreditSheet(true);
+    };
+
+    const handleSaveCredit = () => {
+        if (editCreditIdx !== null) {
+            const r = [...whtCredits];
+            r[editCreditIdx] = creditForm;
+            setWhtCredits(r);
+        } else {
+            setWhtCredits(prev => [...prev, creditForm]);
+        }
+        setShowCreditSheet(false);
+        setEditCreditIdx(null);
+        setIsEditingCredit(false);
+        setWhtCreditStep('table');
+    };
+
+    const handleRemoveCredit = () => {
+        if (editCreditIdx !== null) {
+            setWhtCredits(prev => prev.filter((_, i) => i !== editCreditIdx));
+        }
+        setShowRemoveCredit(false);
+        setShowCreditSheet(false);
+        setEditCreditIdx(null);
+        setIsEditingCredit(false);
+    };
+
+    const handleCancelCredit = () => {
+        if (isEditingCredit && editCreditIdx !== null) {
+            const c = whtCredits[editCreditIdx];
+            setCreditForm({
+                clientName: c.clientName, clientTIN: c.clientTIN, creditRef: c.creditRef,
+                grossValue: c.grossValue, withheldAmount: c.withheldAmount,
+            });
+            setCreditCertificateFiles([]);
+            setIsEditingCredit(false);
+        } else {
+            setShowCreditSheet(false);
+            setEditCreditIdx(null);
+            setIsEditingCredit(false);
+        }
+    };
+
+    const CIT_ANNUAL_STEPS = [
+        { key: 'method', step: 1, title: 'Data Source' },
+        { key: 'financials', step: 2, title: 'Financial Inputs' },
+        { key: 'tax-adjustments', step: 3, title: 'Tax Adjustments' },
+        { key: 'wht-credits', step: 4, title: 'WHT Credits' },
+        { key: 'review', step: 5, title: 'Review' },
+    ];
+
+    const stepIndex = annualStep === 'method' ? 1
+        : annualStep === 'financials' ? 2
+        : annualStep === 'tax-adjustments' ? 3
+        : annualStep === 'wht-credits' ? 4
+        : 5;
 
    return (
       <div className="flex items-start gap-8 w-full">
         {!activeSubMenu && (
-           <LeftSidebar
-              activeSubSection={subSection}
-              onSubSection={s => setSubSection(s as 'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review')}
-              router={router}
-           />
+                <LeftSidebar
+                    activeSubSection={subSection}
+                    onSubSection={s => setSubSection(s as 'quarterly' | 'file-returns')}
+                    router={router}
+                    payQuarterly={payQuarterly}
+                />
         )}
         {/* ── Right content ── */}
         <div className="flex-1 min-w-0">
@@ -426,13 +513,12 @@ export function BusinessCITContent({
                               </div>
                            </div>
                            <hr className="border-neutral-100" />
-                           {(() => {
-                              const editRev = Number((editRevenue || '').replace(/,/g, '')) || 0;
-                              const editMarg = editMargin ? Number(editMargin.replace('%', '')) / 100 : 0;
-                              const editCIT = editRev * editMarg * 0.30;
-                              const editQtr = editCIT / 4;
-                              const fmt = (n: number) => `₦${Math.round(n).toLocaleString()}`;
-                              return (
+                            {(() => {
+                               const editRev = Number((editRevenue || '').replace(/,/g, '')) || 0;
+                               const editMarg = editMargin ? Number(editMargin.replace('%', '')) / 100 : 0;
+                               const editCIT = editRev * editMarg * 0.30;
+                               const editQtr = editCIT / 4;
+                               return (
                                 <div className="space-y-3">
                                    <div className="flex items-center justify-between text-2">
                                       <span className="text-neutral-500 font-medium">Estimated annual CIT</span>
@@ -522,330 +608,490 @@ export function BusinessCITContent({
               onFile={handleFileQuarter}
            />
 
-           {/* ── Step 1: Method selection ── */}
-           {subSection === 'file-returns' && step === 'method' && (
-              <div className="max-w-[520px] mx-auto">
-                <h2 className="text-5 font-semibold text-neutral-800 mb-1">Enter your company's financial performance</h2>
-                <p className="text-2 text-neutral-500 font-medium mb-6">How do you want to provide your financials?</p>
-                <div className="space-y-0 mb-8">
-                   {ENTRY_OPTIONS.map(opt => (
-                      <button key={opt.id} onClick={() => setEntryMethod(opt.id)} className="w-full flex items-center gap-3 py-3.5 text-left">
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0  ${entryMethod === opt.id ? 'border-taxable-blue' : 'border-neutral-300'}`}>
-                           {entryMethod === opt.id && <div className="w-2.5 h-2.5 rounded-full bg-taxable-blue" />}
-                        </div>
-                        <span className="text-3 font-semibold text-neutral-800">{opt.label}</span>
-                      </button>
-                   ))}
-                </div>
-                <button onClick={() => setStep('form')} className="h-11 px-8 bg-taxable-blue text-white font-semibold rounded-xl text-3">
-                   Continue
-                </button>
-              </div>
-           )}
-
-           {/* ── Step 2: Financial Inputs ── */}
-           {subSection === 'file-returns' && step === 'form' && (
-              <div className="w-full max-w-[500px] mx-auto">
-                <div className="space-y-10">
-                {/* Revenue */}
-                <div>
-                <h2 className="text-3 font-semibold text-neutral-800 mb-4">Revenue</h2>
-                <div className="bg-white border border-neutral-200 rounded-2xl p-3">
-                   <div className="grid grid-cols-3 gap-4">
-                      <Field label="Total revenue" tip="All revenue earned from your main business activities." value={totalRevenue} onChange={setTotalRevenue} />
-                      <Field label="Other income" tip="Non-operating income e.g. interest earned, dividend received." value={otherIncome} onChange={setOtherIncome} />
-                      <Field label="Total Revenue" tip="Automatically calculated: Total revenue + Other income." value={totalRev > 0 ? fmt(totalRev) : ''} readOnly placeholder="N0" />
-                   </div>
-                </div>
-                </div>
-
-                {/* Expenses */}
-                <div>
-                <h2 className="text-3 font-semibold text-neutral-800 mb-4">Expenses</h2>
-                <div className="bg-white border border-neutral-200 rounded-2xl p-3">
-                   <div className="grid grid-cols-2 gap-4">
-                      <Field label="Cost of goods sold (COGS)" tip="Direct costs of producing goods/services sold." value={cogs} onChange={setCogs} />
-                      <Field label="Operating expenses" tip="Day-to-day running costs: salaries, rent, utilities." value={opex} onChange={setOpex} />
-                      <Field label="Depreciation" tip="Annual reduction in value of fixed assets." value={depreciation} onChange={setDepreciation} />
-                      <Field label="Interest paid" tip="Interest on business loans or credit facilities." value={interestPaid} onChange={setInterestPaid} />
-                      <Field label="Other expenses" tip="Any other allowable business expenses not listed above." value={otherExpenses} onChange={setOtherExpenses} />
-                   </div>
-                </div>
-                </div>
-
-                {/* Financial statements */}
-                <div>
-                <h2 className="text-3 font-semibold text-neutral-800 mb-4">Financial statements</h2>
-                <div className="bg-white border border-neutral-200 rounded-2xl p-3">
-                   <div className="flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
-                      <div className="flex items-center gap-2.5">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-400" strokeWidth="2">
-                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
-                        </svg>
-                        <div>
-                           <p className="text-1 font-semibold text-neutral-700">Upload your financial statements</p>
-                           <p className="text-1 text-neutral-400 font-medium">PDF, JPG, or PNG (Max 5MB)</p>
-                        </div>
-                      </div>
-                      <button className="h-8 px-4 border border-neutral-300 rounded-lg text-1 font-semibold text-neutral-800">Upload</button>
-                   </div>
-                </div>
-                </div>
-                </div>
-
-                <button onClick={() => setSubSection('tax-adjustment')} className="h-12 px-8 bg-taxable-blue text-white font-semibold rounded-xl text-3">
-                   Continue to Tax Adjustments
-                </button>
-              </div>
-           )}
-
-           {/* ── Tax Adjustment ── */}
-           {subSection === 'tax-adjustment' && (
-              <div className="w-full max-w-[500px] mx-auto">
-                <h2 className="text-5 font-semibold text-neutral-800 mb-1">Tax Adjustments</h2>
-                <p className="text-2 text-neutral-500 font-medium mb-6">Adjust your accounting profit to get taxable profit</p>
-
-                <div className="space-y-10">
-                <div>
-                   <p className="text-1 font-semibold text-neutral-500 mb-1">Accounting Profit</p>
-                   <p className="text-9 font-semibold text-neutral-800">{fmt(accountingProfit)}</p>
-                </div>
-
-                <div className="bg-white border border-neutral-200 rounded-2xl p-3 space-y-5">
-                   {/* Add back */}
-                   <div>
-                      <p className="text-2 font-semibold text-neutral-800 mb-3">Add back</p>
-                      <div className="flex items-center justify-between gap-4">
-                        <label className="flex items-center text-2 font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
-                           Non-deductible expenses <HintIcon tip="Expenses not allowed by FIRS e.g. fines, penalties, personal expenses." />
-                        </label>
-                        <Input type="text" placeholder="N0" value={nonDeductible}
-                           onChange={e => setNonDeductible(e.target.value.replace(/[^0-9.]/g, ''))}
-                           className="w-[180px] flex-shrink-0" />
-                      </div>
-                   </div>
-
-                   <div className="border-t border-neutral-100 pt-4">
-                      <p className="text-2 font-semibold text-neutral-800 mb-3">Subtract</p>
-                      <div className="space-y-3">
-                        {[
-                           { label: 'Capital Allowances', tip: 'Tax-allowable depreciation of fixed assets.', value: capitalAllowances, set: setCapitalAllowances },
-                           { label: 'Pioneer Status Relief (if applicable)', tip: 'Companies in pioneer industries may get full tax exemption for 3-5 years.', value: pioneerRelief, set: setPioneerRelief },
-                           { label: 'Other deductions', tip: 'Any other FIRS-approved deductions.', value: otherDeductions, set: setOtherDeductions },
-                        ].map(({ label, tip, value, set }) => (
-                           <div key={label} className="flex items-center justify-between gap-4">
-                              <label className="flex items-center text-2 font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
-                                {label} <HintIcon tip={tip} />
-                              </label>
-                              <Input type="text" placeholder="N0" value={value}
-                                onChange={e => set(e.target.value.replace(/[^0-9.]/g, ''))}
-                                className="w-[180px] flex-shrink-0" />
-                           </div>
-                        ))}
-                      </div>
-                   </div>
-                </div>
-
-                <div>
-                   <p className="text-1 font-semibold text-neutral-500 mb-1">Taxable Profit</p>
-                   <p className="text-9 font-semibold text-neutral-800">{fmt(taxableProfit)}</p>
-                </div>
-                </div>
-
-                <button onClick={() => setSubSection('wht-credits')} className="h-12 px-8 bg-taxable-blue text-white font-semibold rounded-xl text-3">
-                   Continue to WHT Credits
-                </button>
-              </div>
-           )}
-
-           {/* ── WHT Credits ── */}
-           {subSection === 'wht-credits' && (
-              <div className="w-full max-w-[500px] mx-auto">
-                <h2 className="text-5 font-semibold text-neutral-800 mb-1">WHT Credits</h2>
-                <p className="text-2 text-neutral-500 font-medium leading-relaxed mb-6">
-                   WHT is tax your clients already paid to FIRS on your behalf.<br />
-                   You can deduct this from your final tax bill.
-                </p>
-
-                <div className="space-y-10">
-                <div>
-                <p className="text-2 font-semibold text-neutral-800 mb-3">Upload your WHT credit notes</p>
-
-                {whtCredits.map((credit, idx) => (
-                   <div key={idx} className="bg-white border border-neutral-200 rounded-2xl p-3 mb-4">
-                      <div className="space-y-3">
-                        {/* Credit Note Number */}
-                        <div className="flex items-center justify-between gap-4">
-                           <label className="flex items-center text-2 font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
-                              Credit Note Number <HintIcon tip="The unique reference on your WHT credit note certificate." />
-                           </label>
-                           <Input type="text" placeholder="Enter" value={credit.creditNoteNo}
-                              onChange={e => {
-                                const r = [...whtCredits]; r[idx] = { ...r[idx], creditNoteNo: e.target.value };
-                                setWhtCredits(r);
-                              }}
-                              className="w-[220px] flex-shrink-0" />
-                        </div>
-                        {/* Issuer Name */}
-                        <div className="flex items-center justify-between gap-4">
-                           <label className="flex items-center text-2 font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
-                              Issuer (Withholder) Name <HintIcon tip="The company or person that deducted WHT from payments to you." />
-                           </label>
-                           <Input type="text" placeholder="Enter" value={credit.issuerName}
-                              onChange={e => { const r = [...whtCredits]; r[idx] = { ...r[idx], issuerName: e.target.value }; setWhtCredits(r); }}
-                              className="w-[220px] flex-shrink-0" />
-                        </div>
-                        {/* Issuer TIN */}
-                        <div className="flex items-center justify-between gap-4">
-                           <label className="flex items-center text-2 font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
-                              Issuer TIN <HintIcon tip="Tax Identification Number of the withholder." />
-                           </label>
-                           <Input type="text" placeholder="Enter" value={credit.issuerTIN}
-                              onChange={e => { const r = [...whtCredits]; r[idx] = { ...r[idx], issuerTIN: e.target.value }; setWhtCredits(r); }}
-                              className="w-[220px] flex-shrink-0" />
-                        </div>
-                        {/* WHT Type */}
-                        <div className="flex items-center justify-between gap-4">
-                           <label className="flex items-center text-2 font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
-                              WHT Type <HintIcon tip="Nature of the transaction e.g. services, rent, dividends." />
-                           </label>
-                           <SearchableSelect
-                              options={WHT_TYPES}
-                              value={credit.whtType}
-                              onChange={(v) => { const r = [...whtCredits]; r[idx] = { ...r[idx], whtType: v }; setWhtCredits(r); }}
-                              className="w-[220px] flex-shrink-0"
-                           />
-                        </div>
-                        {/* WHT Rate */}
-                        <div className="flex items-center justify-between gap-4">
-                           <label className="flex items-center text-2 font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
-                              WHT Rate <HintIcon tip="Applicable rate as shown on your credit note." />
-                           </label>
-                           <SearchableSelect
-                              options={WHT_RATES}
-                              value={credit.whtRate}
-                              onChange={(v) => { const r = [...whtCredits]; r[idx] = { ...r[idx], whtRate: v }; setWhtCredits(r); }}
-                              className="w-[220px] flex-shrink-0"
-                           />
-                        </div>
-                        {/* Gross Amount */}
-                        <div className="flex items-center justify-between gap-4">
-                           <label className="flex items-center text-2 font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
-                              Gross Amount <HintIcon tip="Total contract value before WHT deduction." />
-                           </label>
-                           <Input type="text" placeholder="N0" value={credit.grossAmount}
-                              onChange={e => { const r = [...whtCredits]; r[idx] = { ...r[idx], grossAmount: e.target.value.replace(/[^0-9.]/g, '') }; setWhtCredits(r); }}
-                              className="w-[220px] flex-shrink-0" />
-                        </div>
-                        {/* WHT Amount */}
-                        <div className="flex items-center justify-between gap-4">
-                           <label className="flex items-center text-2 font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
-                              WHT Amount <HintIcon tip="Actual WHT deducted, as stated on the credit note." />
-                           </label>
-                           <Input type="text" placeholder="N0" value={credit.whtAmount}
-                              onChange={e => { const r = [...whtCredits]; r[idx] = { ...r[idx], whtAmount: e.target.value.replace(/[^0-9.]/g, '') }; setWhtCredits(r); }}
-                              className="w-[220px] flex-shrink-0" />
-                        </div>
-                        {/* Date Issued */}
-                        <div className="flex items-center justify-between gap-4">
-                           <label className="flex items-center text-2 font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
-                              Date Issued <HintIcon tip="Date on the WHT credit note certificate." />
-                           </label>
-                           <Input type="text" placeholder="dd/mm/yyyy" value={credit.dateIssued}
-                              onChange={e => { const r = [...whtCredits]; r[idx] = { ...r[idx], dateIssued: e.target.value }; setWhtCredits(r); }}
-                              className="w-[220px] flex-shrink-0" />
-                        </div>
-                        {/* Payment Reference */}
-                        <div className="flex items-center justify-between gap-4">
-                           <label className="flex items-center text-2 font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
-                              Payment Reference <HintIcon tip="Reference number for the original payment transaction." />
-                           </label>
-                           <Input type="text" placeholder="Enter" value={credit.paymentRef}
-                              onChange={e => { const r = [...whtCredits]; r[idx] = { ...r[idx], paymentRef: e.target.value }; setWhtCredits(r); }}
-                              className="w-[220px] flex-shrink-0" />
+            {/* ── File Annual Returns (with Stepper) ── */}
+            {subSection === 'file-returns' && (
+                <div className="w-full">
+                    {/* Stepper header */}
+                    <div className="mb-12">
+                        <div className="flex items-center justify-between mb-8">
+                            <h1 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em]">
+                                File 2025 Annual CIT Return
+                            </h1>
                         </div>
 
-                        {/* Upload */}
-                        <div className="flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl mt-1">
-                           <div className="flex items-center gap-2.5">
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-400" strokeWidth="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
-                              </svg>
-                              <div>
-                                <p className="text-1 font-semibold text-neutral-700">Upload your financial statements</p>
-                                <p className="text-1 text-neutral-400 font-medium">PDF, JPG, or PNG (Max 5MB)</p>
-                              </div>
-                           </div>
-                           <button className="h-8 px-4 border border-neutral-300 rounded-lg text-1 font-semibold text-neutral-800">Upload</button>
+                        <Stepper value={stepIndex} onValueChange={(s) => {
+                            const map: Record<number, 'method' | 'financials' | 'tax-adjustments' | 'wht-credits' | 'review'> = {
+                                1: 'method', 2: 'financials', 3: 'tax-adjustments', 4: 'wht-credits', 5: 'review',
+                            };
+                            if (s <= stepIndex) goBack(map[s]);
+                        }}>
+                            {CIT_ANNUAL_STEPS.map((s, idx) => (
+                                <StepperItem key={s.key} step={s.step} completed={completedAnnualSteps.has(s.step)} disabled={s.step > stepIndex} className="[&:not(:last-child)]:flex-1 data-[state=inactive]:[&_h3]:text-neutral-400 [&_h3]:text-neutral-800">
+                                    <StepperTrigger className="flex items-center gap-3 max-md:flex-col">
+                                        <StepperIndicator />
+                                        <div className="text-center md:text-left">
+                                            <StepperTitle className="text-2 font-medium">{s.title}</StepperTitle>
+                                        </div>
+                                    </StepperTrigger>
+                                    {idx < CIT_ANNUAL_STEPS.length - 1 && <StepperSeparator className="md:mx-4" />}
+                                </StepperItem>
+                            ))}
+                        </Stepper>
+                    </div>
+
+                    {/* Step 1: Method selection */}
+                    {annualStep === 'method' && (
+                        <div className="max-w-[520px] mx-auto" data-animate>
+                            <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-4">How do you want to enter your data?</h2>
+                            <RadioGroup value={entryMethod} onValueChange={(v) => setEntryMethod(v as 'manual' | 'pdf' | 'software')} className="space-y-0 mb-8">
+                                {ENTRY_OPTIONS.map(opt => {
+                                    const disabled = opt.id !== 'manual';
+                                    return (
+                                    <label key={opt.id} className={`flex items-center gap-3 py-3.5 cursor-pointer ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}>
+                                        <RadioGroupItem value={opt.id} disabled={disabled} />
+                                        <span className="text-3 font-medium text-neutral-800">{opt.label}</span>
+                                    </label>
+                                    );
+                                })}
+                            </RadioGroup>
+                            <PrimaryButton onClick={() => goForward('financials')}>
+                                Continue
+                            </PrimaryButton>
                         </div>
-                      </div>
-                   </div>
-                ))}
+                    )}
 
-                <button
-                   onClick={() => setWhtCredits(prev => [...prev, { creditNoteNo: '', issuerName: '', issuerTIN: '', whtType: 'Select', whtRate: 'Select', grossAmount: '', whtAmount: '', dateIssued: '', paymentRef: '' }])}
-                   className="flex items-center gap-1.5 text-2 font-semibold text-taxable-blue">
-                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-                   Upload Another WHT Credit Note
-                </button>
+                    {/* Step 2: Financial Inputs */}
+                    {annualStep === 'financials' && (
+                        <div className="w-full max-w-[500px] mx-auto" data-animate>
+                            <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-6">Financial Inputs</h2>
+
+                            <div className="space-y-6">
+                                {/* Section 1: Core Revenue & Cost Inputs */}
+                                <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <h3 className="text-3 font-semibold text-neutral-800 mb-4">Core Revenue & Cost Inputs</h3>
+                                    <div className="space-y-3">
+                                        <FormFieldRow className="justify-between">
+                                            <FormLabel tip="The total gross sales or income generated by your business during the 12-month fiscal year.">Total Revenue / Turnover</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={totalRevenue} onChange={fmtInput(setTotalRevenue)} className="w-[180px] text-left" />
+                                        </FormFieldRow>
+                                        <FormFieldRow className="justify-between">
+                                            <FormLabel tip="Direct costs attributable to the production or purchase of the goods sold by your business.">Cost of Sales (COGS)</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={cogs} onChange={fmtInput(setCogs)} className="w-[180px] text-left" />
+                                        </FormFieldRow>
+                                        <FormFieldRow className="justify-between">
+                                            <FormLabel tip="General administrative and running costs (e.g., office rent, salaries, utilities, marketing).">Operating Expenses (OPEX)</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={opex} onChange={fmtInput(setOpex)} className="w-[180px] text-left" />
+                                        </FormFieldRow>
+                                    </div>
+                                </div>
+
+                                {/* Section 2: Accounting Baseline */}
+                                <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <h3 className="text-3 font-semibold text-neutral-800 mb-4">Accounting Baseline</h3>
+                                    <FormFieldRow className="justify-between">
+                                        <FormLabel tip="Automatically calculated: Total Revenue − Cost of Sales − Operating Expenses. This is the starting point for tax adjustments in the next step.">Net Profit Before Tax</FormLabel>
+                                        <Input type="text" value={totalRev > 0 ? fmt(totalRev - num(cogs) - num(opex)) : '₦ 0.00'} disabled className="w-[180px] text-left bg-neutral-50 text-neutral-400" />
+                                    </FormFieldRow>
+                                </div>
+
+                                {/* Section 3: Document Evidence Layer */}
+                                <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <h3 className="text-3 font-semibold text-neutral-800 mb-4">Document Evidence Layer</h3>
+                                     <div className="space-y-6">
+                                        <div>
+                                            <p className="text-2 font-medium text-neutral-500 mb-2">Audited Financial Statements <span className="text-red-500">*</span></p>
+                                            <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                                <div className="flex items-center gap-2.5">
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-neutral-400"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                                                    <span className="text-1 text-neutral-400 font-medium">Upload Audited Financial Statements</span>
+                                                </div>
+                                                <button onClick={() => auditedInputRef.current?.click()} className="cursor-pointer text-2 font-semibold text-taxable-blue bg-transparent border-none p-0">
+                                                    Upload
+                                                </button>
+                                                <input ref={auditedInputRef} type="file" accept=".pdf" className="hidden" onChange={(e) => { const files = e.target.files; if (!files) return; setAuditedFiles(prev => [...prev, ...Array.from(files).map(f => ({ name: f.name }))]); e.target.value = ''; }} />
+                                            </div>
+                                            {auditedFiles.length > 0 && (
+                                                <div className="mt-2 flex flex-wrap gap-2">
+                                                    {auditedFiles.map((f, i) => (
+                                                        <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
+                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-neutral-400"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                                                            <span className="text-1 text-neutral-600">{f.name}</span>
+                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-neutral-400 cursor-pointer" onClick={() => setAuditedFiles(prev => prev.filter((_, j) => j !== i))}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <p className="text-2 font-medium text-neutral-500 mb-2">Trial Balance / General Ledger <span className="text-neutral-400 font-medium text-1">(Optional)</span></p>
+                                            <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                                <div className="flex items-center gap-2.5">
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-neutral-400"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                                                    <span className="text-1 text-neutral-400 font-medium">Upload Trial Balance</span>
+                                                </div>
+                                                <button onClick={() => trialBalanceInputRef.current?.click()} className="cursor-pointer text-2 font-semibold text-taxable-blue bg-transparent border-none p-0">
+                                                    Upload
+                                                </button>
+                                                <input ref={trialBalanceInputRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={(e) => { const files = e.target.files; if (!files) return; setTrialBalanceFiles(prev => [...prev, ...Array.from(files).map(f => ({ name: f.name }))]); e.target.value = ''; }} />
+                                            </div>
+                                            {trialBalanceFiles.length > 0 && (
+                                                <div className="mt-2 flex flex-wrap gap-2">
+                                                    {trialBalanceFiles.map((f, i) => (
+                                                        <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
+                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-neutral-400"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                                                            <span className="text-1 text-neutral-600">{f.name}</span>
+                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-neutral-400 cursor-pointer" onClick={() => setTrialBalanceFiles(prev => prev.filter((_, j) => j !== i))}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 mt-8">
+                                <SecondaryButton onClick={() => goBack('method')}>Back</SecondaryButton>
+                                <PrimaryButton onClick={() => goForward('tax-adjustments')} disabled={!totalRevenue}>
+                                    Next: Tax Adjustments
+                                </PrimaryButton>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Step 3: Tax Adjustments */}
+                    {annualStep === 'tax-adjustments' && (
+                        <div className="w-full max-w-[500px] mx-auto" data-animate>
+                            <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-6">Tax Adjustments</h2>
+
+                            <div className="space-y-6">
+                                {/* Section 1: Non-Deductible Expenses */}
+                                <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <h3 className="text-3 font-semibold text-neutral-800 mb-4">Non-Deductible Expenses (Add-backs)</h3>
+                                    <div className="space-y-3">
+                                        <FormFieldRow className="justify-between">
+                                            <FormLabel tip="Any fine or penalty paid to a Federal, State, or Local government agency for regulatory violations (these are strictly non-deductible by law).">Government Fines & Penalties</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={govFines} onChange={fmtInput(setGovFines)} className="w-[180px] text-left" />
+                                        </FormFieldRow>
+                                        <FormFieldRow className="justify-between">
+                                            <FormLabel tip="The standard depreciation written off on your financial statement. Tax law does not recognize accounting depreciation; it must be added back and replaced by Capital Allowances.">Accounting Depreciation</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={accountingDepreciation} onChange={fmtInput(setAccountingDepreciation)} className="w-[180px] text-left" />
+                                        </FormFieldRow>
+                                        <FormFieldRow className="justify-between">
+                                            <FormLabel tip="Estimated or general provisions for bad debts. Only actual, realized bad debts are tax-deductible.">General Provisions / Estimated Losses</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={generalProvisions} onChange={fmtInput(setGeneralProvisions)} className="w-[180px] text-left" />
+                                        </FormFieldRow>
+                                        <div className="border-t border-neutral-100 pt-3">
+                                            <FormFieldRow className="justify-between">
+                                                <span className="text-2 font-semibold text-neutral-600">Non-Deductible Expenses</span>
+                                                <span className="text-3 font-semibold text-neutral-800">{fmt(nonDeductibleTotal)}</span>
+                                            </FormFieldRow>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Section 2: Capital Allowances */}
+                                <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <h3 className="text-3 font-semibold text-neutral-800 mb-4">Capital Allowances (Deductions)</h3>
+                                    <div className="space-y-3">
+                                        <FormFieldRow className="justify-between">
+                                            <FormLabel tip="Total qualifying cost of permanent buildings, communication masts, heavy transport, or agricultural plants.">Class 1 Assets <span className="text-neutral-400">(10% Tax Relief)</span></FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={class1Assets} onChange={fmtInput(setClass1Assets)} className="w-[180px] text-left" />
+                                        </FormFieldRow>
+                                        <FormFieldRow className="justify-between">
+                                            <FormLabel tip="Total qualifying cost of general plant & machinery, office equipment, furniture, and fittings.">Class 2 Assets <span className="text-neutral-400">(20% Tax Relief)</span></FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={class2Assets} onChange={fmtInput(setClass2Assets)} className="w-[180px] text-left" />
+                                        </FormFieldRow>
+                                        <FormFieldRow className="justify-between">
+                                            <FormLabel tip="Total qualifying cost of motor vehicles, corporate software, and electronic applications.">Class 3 Assets <span className="text-neutral-400">(25% Tax Relief)</span></FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={class3Assets} onChange={fmtInput(setClass3Assets)} className="w-[180px] text-left" />
+                                        </FormFieldRow>
+                                        <div className="border-t border-neutral-100 pt-3">
+                                            <FormFieldRow className="justify-between">
+                                                <span className="text-2 font-semibold text-neutral-600">Total Capital Allowances</span>
+                                                <span className="text-3 font-semibold text-neutral-800">{totalCapitalAllowances > 0 ? fmt(totalCapitalAllowances) : '₦ 0'}</span>
+                                            </FormFieldRow>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Section 3: Adjusted Taxable Profit */}
+                                <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <h3 className="text-3 font-semibold text-neutral-800 mb-4">Adjusted Taxable Profit</h3>
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between text-2">
+                                            <span className="text-neutral-500 font-medium">Net Profit Before Tax</span>
+                                            <span className="font-semibold text-neutral-800">{fmt(accountingProfit)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-2">
+                                            <span className="text-neutral-500 font-medium">+ Non-Deductible Expenses</span>
+                                            <span className="font-semibold text-neutral-800">{fmt(nonDeductibleTotal)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-2">
+                                            <span className="text-neutral-500 font-medium">− Capital Allowances</span>
+                                            <span className="font-semibold text-neutral-800">{fmt(totalCapitalAllowances)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-2 pt-2 border-t border-neutral-100">
+                                            <span className="text-2 font-semibold text-neutral-800">Adjusted Taxable Profit</span>
+                                            <span className="text-3 font-semibold text-neutral-800">{fmt(adjustedTaxableProfit)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 mt-8">
+                                <SecondaryButton onClick={() => goBack('financials')}>Back</SecondaryButton>
+                                <PrimaryButton onClick={() => goForward('wht-credits')}>
+                                    Next: WHT Credits
+                                </PrimaryButton>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Step 4: WHT Credits */}
+                    {annualStep === 'wht-credits' && (
+                        <div className="w-full max-w-[800px] mx-auto" data-animate>
+                            <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-6">WHT Credits</h2>
+
+                            {whtCreditStep === 'method' ? (
+                                <div>
+                                    <p className="text-2 text-neutral-500 font-medium mb-6">Choose how you'd like to enter your WHT credit notes.</p>
+                                    <RadioGroup value={creditEntryMethod} onValueChange={(v) => setCreditEntryMethod(v as 'manual' | 'csv' | 'software')} className="space-y-0 mb-6">
+                                        {CREDIT_ENTRY_OPTIONS.map(opt => {
+                                            const disabled = opt.id !== 'manual';
+                                            return (
+                                                <label key={opt.id} className={`flex items-center gap-3 py-3.5 cursor-pointer ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}>
+                                                    <RadioGroupItem value={opt.id} disabled={disabled} />
+                                                    <span className="text-3 font-medium text-neutral-800">{opt.label}</span>
+                                                </label>
+                                            );
+                                        })}
+                                    </RadioGroup>
+                                </div>
+                            ) : whtCredits.length === 0 && editCreditIdx === null ? (
+                                <div>
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <p className="text-2 font-medium text-neutral-500">No WHT credit notes recorded yet</p>
+                                    </div>
+                                    <RadioGroup value={creditEntryMethod} onValueChange={(v) => setCreditEntryMethod(v as 'manual' | 'csv' | 'software')} className="space-y-0 mb-6">
+                                        {CREDIT_ENTRY_OPTIONS.map(opt => {
+                                            const disabled = opt.id !== 'manual';
+                                            return (
+                                                <label key={opt.id} className={`flex items-center gap-3 py-3.5 cursor-pointer ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}>
+                                                    <RadioGroupItem value={opt.id} disabled={disabled} />
+                                                    <span className="text-3 font-medium text-neutral-800">{opt.label}</span>
+                                                </label>
+                                            );
+                                        })}
+                                    </RadioGroup>
+                                </div>
+                            ) : (
+                                <div>
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h3 className="text-3 font-semibold text-neutral-800">WHT Credit Notes</h3>
+                                        <SecondaryButtonSm onClick={() => openAddCredit()}>Add WHT Credit Note</SecondaryButtonSm>
+                                    </div>
+
+                                    <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden mb-6">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    {['Client Name', 'TIN', 'Credit Ref #', 'Gross Value', 'WHT Amount', 'Certificate'].map(h => (
+                                                        <TableHead key={h} className="px-4 py-3 font-medium text-neutral-400 text-1">{h}</TableHead>
+                                                    ))}
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {whtCredits.map((c, idx) => (
+                                                    <TableRow key={idx} className="cursor-pointer" onClick={() => openEditCredit(idx)}>
+                                                        <TableCell className="px-4 py-3 text-1 font-medium text-neutral-600">{c.clientName || '—'}</TableCell>
+                                                        <TableCell className="px-4 py-3 text-1 font-medium text-neutral-600">{c.clientTIN || '—'}</TableCell>
+                                                        <TableCell className="px-4 py-3 text-1 font-medium text-neutral-600">{c.creditRef || '—'}</TableCell>
+                                                        <TableCell className="px-4 py-3 text-1 font-medium text-neutral-600">{num(c.grossValue) > 0 ? fmt(num(c.grossValue)) : '—'}</TableCell>
+                                                        <TableCell className="px-4 py-3 text-1 font-medium text-neutral-600">{num(c.withheldAmount) > 0 ? fmt(num(c.withheldAmount)) : '—'}</TableCell>
+                                                        <TableCell className="px-4 py-3 text-1 font-medium text-neutral-600">—</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl mb-6">
+                                        <span className="text-2 font-medium text-neutral-500">Total WHT Credits</span>
+                                        <span className="text-2 font-semibold text-neutral-800">{fmt(totalWHTCredits)}</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex gap-3 mt-8">
+                                <div className="flex gap-3">
+                                    <SecondaryButton onClick={() => goBack('tax-adjustments')}>Back</SecondaryButton>
+                                    <SecondaryButton onClick={() => openAddCredit()}>
+                                        {whtCreditStep === 'method' || whtCredits.length === 0 ? 'Continue' : 'Add WHT Credit Note'}
+                                    </SecondaryButton>
+                                </div>
+                                <PrimaryButton onClick={() => goForward('review')} className="ml-auto">
+                                    Next: Review
+                                </PrimaryButton>
+                            </div>
+
+                            {/* Credit Note Drawer */}
+                            <Drawer open={showCreditSheet} onOpenChange={(o) => { if (!o) handleCancelCredit(); }}>
+                                <DrawerContent className="bg-white w-full max-w-full px-4 pb-4 max-h-[85vh]">
+                                    <DrawerTitle className="sr-only">{editCreditIdx !== null ? 'Edit WHT Credit Note' : 'Add WHT Credit Note'}</DrawerTitle>
+                                    <div className="max-w-[450px] mx-auto w-full pt-2 text-center">
+                                        <h2 className="text-5 font-semibold text-neutral-800 mb-8">{editCreditIdx !== null ? (isEditingCredit ? 'Edit Credit Note' : 'Credit Note Details') : 'Add WHT Credit Note'}</h2>
+                                    </div>
+                                    <div data-lenis-prevent className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                                        <div className="max-w-[450px] mx-auto w-full space-y-6">
+                                            <div className="bg-neutral-50 rounded-3xl p-5">
+                                                <div className="space-y-3">
+                                                    <FormFieldRow className="justify-between">
+                                                        <FormLabel tip="The company or person that deducted WHT from payments to you.">Payer / Client Name</FormLabel>
+                                                        <Input type="text" placeholder="e.g., MTN Nigeria Communications Plc" value={creditForm.clientName} onChange={e => setCreditForm(f => ({ ...f, clientName: e.target.value }))} disabled={editCreditIdx !== null && !isEditingCredit} className={`w-[180px] text-left ${editCreditIdx !== null && !isEditingCredit ? 'bg-neutral-50 text-neutral-400' : ''}`} />
+                                                    </FormFieldRow>
+                                                    <FormFieldRow className="justify-between">
+                                                        <FormLabel tip="Tax Identification Number of the withholder.">Payer Tax Identification Number (TIN)</FormLabel>
+                                                        <Input type="text" placeholder="10 to 14-digit FIRS TIN" value={creditForm.clientTIN} onChange={e => { const v = e.target.value.replace(/[^0-9]/g, ''); if (v.length <= 14) setCreditForm(f => ({ ...f, clientTIN: v })); }} disabled={editCreditIdx !== null && !isEditingCredit} className={`w-[180px] text-left ${editCreditIdx !== null && !isEditingCredit ? 'bg-neutral-50 text-neutral-400' : ''}`} />
+                                                    </FormFieldRow>
+                                                    <FormFieldRow className="justify-between">
+                                                        <FormLabel tip="The unique digital certificate ID issued on the government portal when your client remitted the tax.">FIRS Credit Note Reference Number</FormLabel>
+                                                        <Input type="text" placeholder="e.g., WHT/2026/XXXXX" value={creditForm.creditRef} onChange={e => setCreditForm(f => ({ ...f, creditRef: e.target.value }))} disabled={editCreditIdx !== null && !isEditingCredit} className={`w-[180px] text-left ${editCreditIdx !== null && !isEditingCredit ? 'bg-neutral-50 text-neutral-400' : ''}`} />
+                                                    </FormFieldRow>
+                                                    <FormFieldRow className="justify-between">
+                                                        <FormLabel tip="Total contract value before WHT deduction.">Gross Invoice Value</FormLabel>
+                                                        <Input type="text" placeholder="₦ 0.00" value={creditForm.grossValue} onChange={e => { const raw = e.target.value.replace(/[^0-9.]/g, ''); const parts = raw.split('.'); const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ','); setCreditForm(f => ({ ...f, grossValue: parts.length > 1 ? integer + '.' + parts.slice(1).join('') : integer })); }} disabled={editCreditIdx !== null && !isEditingCredit} className={`w-[180px] text-left ${editCreditIdx !== null && !isEditingCredit ? 'bg-neutral-50 text-neutral-400' : ''}`} />
+                                                    </FormFieldRow>
+                                                    <FormFieldRow className="justify-between">
+                                                        <FormLabel tip="Actual WHT deducted, as stated on the credit note.">Withheld Amount (Credit Value)</FormLabel>
+                                                        <Input type="text" placeholder="₦ 0.00" value={creditForm.withheldAmount} onChange={e => setCreditForm(f => ({ ...f, withheldAmount: e.target.value.replace(/[^0-9.]/g, '') }))} disabled={editCreditIdx !== null && !isEditingCredit} className={`w-[180px] text-left ${editCreditIdx !== null && !isEditingCredit ? 'bg-neutral-50 text-neutral-400' : ''}`} />
+                                                    </FormFieldRow>
+                                                </div>
+                                            </div>
+
+                                            {/* Upload FIRS Certificate */}
+                                            <div className="bg-neutral-50 rounded-3xl p-5">
+                                                <h3 className="text-3 font-semibold text-neutral-800 mb-4">Upload FIRS WHT Credit Certificate <span className="text-red-500">*</span></h3>
+                                                {editCreditIdx !== null && !isEditingCredit ? (
+                                                    <p className="text-3 font-medium text-neutral-400">No certificate uploaded</p>
+                                                ) : (
+                                                    <>
+                                                        <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                                            <span className="text-1 text-neutral-400 font-medium">Click to upload or drag & drop the physical or PDF certificate received from your client (Max 5MB)</span>
+                                                            <button onClick={() => creditCertificateRef.current?.click()} className="cursor-pointer text-2 font-semibold text-taxable-blue bg-transparent border-none p-0">Upload</button>
+                                                            <input ref={creditCertificateRef} type="file" hidden accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => { const f = e.target.files; if (!f) return; setCreditCertificateFiles(prev => [...prev, ...Array.from(f).map(x => ({ name: x.name }))]); e.target.value = ''; }} />
+                                                        </div>
+                                                        {creditCertificateFiles.length > 0 && (
+                                                            <div className="mt-2 flex flex-wrap gap-2">
+                                                                {creditCertificateFiles.map((f, i) => (
+                                                                    <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
+                                                                        <span className="text-1 text-neutral-600">{f.name}</span>
+                                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-neutral-400 cursor-pointer" onClick={() => setCreditCertificateFiles(prev => prev.filter((_, j) => j !== i))}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="max-w-[450px] mx-auto w-full pt-4 border-t border-neutral-100 mt-2">
+                                        <div className="flex gap-3">
+                                            {editCreditIdx !== null && !isEditingCredit ? (
+                                                <>
+                                                    <button onClick={() => setShowRemoveCredit(true)} className="flex-1 h-12 border border-red-200 bg-red-50 text-red-600 font-semibold rounded-xl text-3">Remove</button>
+                                                    <PrimaryButton className="flex-1" onClick={() => setIsEditingCredit(true)}>Edit Details</PrimaryButton>
+                                                </>
+                                            ) : editCreditIdx !== null && isEditingCredit ? (
+                                                <>
+                                                    <SecondaryButton className="flex-1" onClick={handleCancelCredit}>Cancel</SecondaryButton>
+                                                    <PrimaryButton className="flex-1" onClick={handleSaveCredit}>Save</PrimaryButton>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <DrawerClose asChild>
+                                                        <SecondaryButton className="flex-1">Cancel</SecondaryButton>
+                                                    </DrawerClose>
+                                                    <PrimaryButton className="flex-1" onClick={handleSaveCredit}>Save Credit Note</PrimaryButton>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Remove confirmation */}
+                                    {showRemoveCredit && (
+                                        <div className="fixed inset-0 z-[200] flex items-center justify-center backdrop-blur-sm bg-black/20" onClick={() => setShowRemoveCredit(false)}>
+                                            <div className="bg-white rounded-2xl p-6 max-w-[400px] mx-4 w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                                                <div className="flex flex-col items-center text-center">
+                                                    <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-red-600"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+                                                    </div>
+                                                    <h3 className="text-6 font-semibold text-neutral-800 mb-2">Remove Credit Note?</h3>
+                                                    <p className="text-2 text-neutral-500 font-medium mb-6">This action cannot be undone.</p>
+                                                    <div className="flex gap-3 w-full">
+                                                        <SecondaryButton className="flex-1" onClick={() => setShowRemoveCredit(false)}>Cancel</SecondaryButton>
+                                                        <button onClick={handleRemoveCredit} className="flex-1 h-12 bg-red-600 text-white font-semibold rounded-xl text-3">Remove</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </DrawerContent>
+                            </Drawer>
+                        </div>
+                    )}
+
+                    {/* Step 5: Review */}
+                    {annualStep === 'review' && (
+                        <div className="w-full max-w-[500px] mx-auto" data-animate>
+                            <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-6">Review & Submit</h2>
+
+                            <div className="space-y-10">
+                            <div className="bg-white border border-neutral-200 rounded-2xl p-3">
+                                <LedgerRow label="Revenue" value={fmt(totalRev)} />
+                                <LedgerRow label="Expenses" value={`-${fmt(totalExp)}`} />
+                                <LedgerRow label="NHF (2.5%)" value={`-${fmt(nhf)}`} />
+                                <LedgerRow label="Accounting Profit" value={fmt(accountingProfit)} bold />
+
+                                <SectionHeader label="Tax Adjustments" />
+                                <LedgerRow label="Non-deductible expenses" value={`+${fmt(nonDeductibleTotal)}`} indent />
+                                <LedgerRow label="Capital Allowances" value={`-${fmt(totalCapitalAllowances)}`} indent />
+                                <LedgerRow label="Taxable Profit" value={fmt(adjustedTaxableProfit)} bold />
+
+                                <LedgerRow label="CIT Rate (30%)" value={fmt(citRate)} />
+                                <LedgerRow label="Education Tax (2.5%)" value={fmt(eduTax)} />
+                                <LedgerRow label="Gross Tax Due" value={fmt(grossTaxDue)} bold />
+
+                                <SectionHeader label="Credits" />
+                                <LedgerRow label="WHT Credits" value={`-${fmt(totalWHTCredits)}`} indent />
+                                <LedgerRow label="Quarterly payments" value={`-${fmt(Object.values(quarterPayments).reduce((s, v) => s + v, 0))}`} indent />
+                                <LedgerRow label="Net Tax Payable" value={fmt(netTaxPayable)} bold />
+                            </div>
+                            </div>
+
+                            <div className="flex gap-3 mt-8">
+                                <SecondaryButton onClick={() => goBack('wht-credits')}>Back</SecondaryButton>
+                                <PrimaryButton onClick={() => setShowFilingReviewSheet(true)}>
+                                    File & Pay
+                                </PrimaryButton>
+                            </div>
+
+                            <FilingSheet
+                                open={showFilingReviewSheet}
+                                onClose={() => setShowFilingReviewSheet(false)}
+                                onFile={() => setShowFilingReviewSheet(false)}
+                            />
+                        </div>
+                    )}
                 </div>
+            )}
+
                 </div>
-
-                <button onClick={() => setSubSection('review')} className="h-12 px-8 bg-taxable-blue text-white font-semibold rounded-xl text-3">
-                   Continue to Review
-                </button>
-              </div>
-           )}
-
-           {/* ── Review ── */}
-           {subSection === 'review' && (
-              <div className="w-full max-w-[500px] mx-auto">
-                <h2 className="text-5 font-semibold text-neutral-800 mb-6">Your CIT calculation for 2025</h2>
-
-                <div className="space-y-10">
-                <div className="bg-white border border-neutral-200 rounded-2xl p-3">
-                   <LedgerRow label="Revenue" value={fmt(totalRev)} />
-                   <LedgerRow label="Expenses" value={`-${fmt(totalExp)}`} />
-                   <LedgerRow label="NHF (2.5%)" value={`-${fmt(nhf)}`} />
-                   <LedgerRow label="Accounting Profit" value={fmt(accountingProfit)} bold />
-
-                   <SectionHeader label="Tax Adjustments" />
-                   <LedgerRow label="Non-deductible expenses" value={`+${fmt(num(nonDeductible))}`} indent />
-                   <LedgerRow label="Capital Allowances" value={`-${fmt(num(capitalAllowances))}`} indent />
-                   <LedgerRow label="Taxable Profit" value={fmt(taxableProfit)} bold />
-
-                   <LedgerRow label="CIT Rate (30%)" value={fmt(citRate)} />
-                   <LedgerRow label="Education Tax (2.5%)" value={fmt(eduTax)} />
-                   <LedgerRow label="Gross Tax Due" value={fmt(grossTaxDue)} bold />
-
-                   <SectionHeader label="Credits" />
-                   <LedgerRow label="WHT Credits" value={`-${fmt(totalWHTCredits)}`} indent />
-                   <LedgerRow label="Quarterly payments" value={`-${fmt(Object.values(quarterPayments).reduce((s, v) => s + v, 0))}`} indent />
-                   <LedgerRow label="Net Tax Payable" value={fmt(netTaxPayable)} bold />
-                </div>
-                </div>
-
-                <div className="flex gap-3">
-                   <button className="flex-1 h-12 border border-neutral-300 text-neutral-800 font-semibold rounded-xl text-3">
-                      Download PDF
-                   </button>
-                   <button onClick={() => setShowFilingReviewSheet(true)} className="flex-1 h-12 bg-taxable-blue text-white font-semibold rounded-xl text-3">
-                      File & Pay
-                   </button>
-                </div>
-              </div>
-           )}
-           {/* FilingSheet for review */}
-           <FilingSheet
-              open={showFilingReviewSheet}
-              onClose={() => setShowFilingReviewSheet(false)}
-              onFile={() => setShowFilingReviewSheet(false)}
-           />
-
-        </div>
-      </div>
-   );
-}
+            </div>
+        );
+    }
 
 // ── Standalone page wrapper (keeps old route working) ───────────────────
 export default function BusinessCIT() {

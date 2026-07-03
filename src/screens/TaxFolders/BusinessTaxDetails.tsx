@@ -324,6 +324,16 @@ export default function BusinessTaxDetails() {
         setShowPayeFilingModal(false);
     };
 
+    const handleEstimatedRevenueChange = (v: string) => {
+        setEstimatedAnnualRevenue(v);
+        hasUnsavedChanges.current = true;
+    };
+
+    const handleProfitMarginChange = (v: string) => {
+        setProfitMargin(v);
+        hasUnsavedChanges.current = true;
+    };
+
 
     return (
         <div ref={containerRef} className="min-h-screen bg-white pb-20">
@@ -624,6 +634,8 @@ export default function BusinessTaxDetails() {
                                     onSubMenuChange={setCitSubSection}
                                     estimatedAnnualRevenue={estimatedAnnualRevenue}
                                     profitMargin={profitMargin}
+                                    onEstimatedRevenueChange={handleEstimatedRevenueChange}
+                                    onProfitMarginChange={handleProfitMarginChange}
                                 />
                             </div>
                         )}
@@ -636,7 +648,7 @@ export default function BusinessTaxDetails() {
                                         <polyline points="20 6 9 17 4 12" />
                                     </svg>
                                 </div>
-                                <h3 className="text-6 font-bold text-neutral-800 mb-2">Ready to file?</h3>
+                                <h3 className="text-6 font-semibold text-neutral-800 mb-2">Ready to file?</h3>
                                 <p className="text-3 text-neutral-500 font-medium mb-6">
                                     Review your information and submit your company tax return.
                                 </p>

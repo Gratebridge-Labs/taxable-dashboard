@@ -107,6 +107,74 @@ const SectionHeader = ({ label }: { label: string }) => (
     </div>
 );
 
+// ── WHT Credit Form Content (read-only + editable) ─────────────────────────────
+function CreditFormContent({
+    form, onChange, disabled, readOnlyStyle,
+    certificateFiles, setCertificateFiles, certificateRef,
+}: {
+    form: { clientName: string; clientTIN: string; creditRef: string; grossValue: string; withheldAmount: string };
+    onChange: (k: string, v: string) => void;
+    disabled: boolean;
+    readOnlyStyle: string;
+    certificateFiles: { name: string }[];
+    setCertificateFiles: React.Dispatch<React.SetStateAction<{ name: string }[]>>;
+    certificateRef: React.RefObject<HTMLInputElement | null>;
+}) {
+    return (
+        <>
+            <div className="bg-neutral-50 rounded-3xl p-5">
+                <div className="space-y-3">
+                                                    <FormFieldRow className="justify-between">
+                                                        <FormLabel tip="The company or person that deducted WHT from payments to you.">Payer / Client Name</FormLabel>
+                                                        <Input type="text" placeholder="e.g., MTN Nigeria Communications Plc" value={form.clientName} onChange={e => onChange('clientName', e.target.value)} disabled={disabled} className={`w-[180px] text-left ${readOnlyStyle}`} />
+                                                    </FormFieldRow>
+                                                    <FormFieldRow className="justify-between">
+                                                        <FormLabel tip="Tax Identification Number of the withholder.">Payer Tax Identification Number (TIN)</FormLabel>
+                                                        <Input type="text" placeholder="10 to 14-digit FIRS TIN" value={form.clientTIN} onChange={e => { const v = e.target.value.replace(/[^0-9]/g, ''); if (v.length <= 14) onChange('clientTIN', v); }} disabled={disabled} className={`w-[180px] text-left ${readOnlyStyle}`} />
+                                                    </FormFieldRow>
+                                                    <FormFieldRow className="justify-between">
+                                                        <FormLabel tip="The unique digital certificate ID issued on the government portal when your client remitted the tax.">FIRS Credit Note Reference Number</FormLabel>
+                                                        <Input type="text" placeholder="e.g., WHT/2026/XXXXX" value={form.creditRef} onChange={e => onChange('creditRef', e.target.value)} disabled={disabled} className={`w-[180px] text-left ${readOnlyStyle}`} />
+                                                    </FormFieldRow>
+                                                    <FormFieldRow className="justify-between">
+                                                        <FormLabel tip="Total contract value before WHT deduction.">Gross Invoice Value</FormLabel>
+                                                        <Input type="text" placeholder="₦ 0.00" value={form.grossValue} onChange={e => { const raw = e.target.value.replace(/[^0-9.]/g, ''); const parts = raw.split('.'); const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ','); onChange('grossValue', parts.length > 1 ? integer + '.' + parts.slice(1).join('') : integer); }} disabled={disabled} className={`w-[180px] text-left ${readOnlyStyle}`} />
+                                                    </FormFieldRow>
+                                                    <FormFieldRow className="justify-between">
+                                                        <FormLabel tip="Actual WHT deducted, as stated on the credit note.">Withheld Amount (Credit Value)</FormLabel>
+                                                        <Input type="text" placeholder="₦ 0.00" value={form.withheldAmount} onChange={e => onChange('withheldAmount', e.target.value.replace(/[^0-9.]/g, ''))} disabled={disabled} className={`w-[180px] text-left ${readOnlyStyle}`} />
+                    </FormFieldRow>
+                </div>
+            </div>
+
+            <div className="bg-neutral-50 rounded-3xl p-5">
+                <h3 className="text-3 font-semibold text-neutral-800 mb-4">Upload FIRS WHT Credit Certificate <span className="text-red-500">*</span></h3>
+                {disabled ? (
+                    <p className={`text-3 font-medium ${readOnlyStyle}`}>No certificate uploaded</p>
+                ) : (
+                    <>
+                        <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                            <span className="text-1 text-neutral-400 font-medium">image or PDF certificate received</span>
+                            <button onClick={() => certificateRef.current?.click()} className="cursor-pointer text-2 font-semibold text-taxable-blue bg-transparent border-none p-0">Upload</button>
+                            <input ref={certificateRef} type="file" hidden accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => { const f = e.target.files; if (!f) return; setCertificateFiles(prev => [...prev, ...Array.from(f).map(x => ({ name: x.name }))]); e.target.value = ''; }} />
+                        </div>
+                        {certificateFiles.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                                {certificateFiles.map((f, i) => (
+                                    <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
+                                        <span className="text-1 text-neutral-600">{f.name}</span>
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-neutral-400 cursor-pointer" onClick={() => setCertificateFiles(prev => prev.filter((_, j) => j !== i))}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </>
+                )}
+            </div>
+        </>
+    );
+}
+
 const CIT_SUBSECTIONS = [
     { key: 'quarterly', label: 'Quarterly Assessments' },
     { key: 'file-returns', label: 'File Annual Returns' },
@@ -138,21 +206,20 @@ export function BusinessCITContent({
     const setSubSection = (s: 'quarterly' | 'file-returns') => {
         setSubSectionLocal(s);
         if (s === 'file-returns') {
-            setAnnualStep('method');
+            setAnnualStep('financials');
             setCompletedAnnualSteps(new Set());
         }
     };
 
-    const goForward = (target: 'method' | 'financials' | 'tax-adjustments' | 'wht-credits' | 'review') => {
-        const stepNum: Record<string, number> = { method: 1, financials: 2, 'tax-adjustments': 3, 'wht-credits': 4, review: 5 };
+    const goForward = (target: 'financials' | 'tax-adjustments' | 'wht-credits' | 'review') => {
+        const stepNum: Record<string, number> = { financials: 1, 'tax-adjustments': 2, 'wht-credits': 3, review: 4 };
         const currentStepNum = stepNum[annualStep];
         if (currentStepNum) setCompletedAnnualSteps(prev => new Set([...prev, currentStepNum]));
         setAnnualStep(target);
     };
 
-    const [entryMethod, setEntryMethod] = useState<'manual' | 'pdf' | 'software'>('manual');
     const [showFilingReviewSheet, setShowFilingReviewSheet] = useState(false);
-    const [annualStep, setAnnualStep] = useState<'method' | 'financials' | 'tax-adjustments' | 'wht-credits' | 'review'>('method');
+    const [annualStep, setAnnualStep] = useState<'financials' | 'tax-adjustments' | 'wht-credits' | 'review'>('financials');
     const [completedAnnualSteps, setCompletedAnnualSteps] = useState<Set<number>>(new Set());
 
    // Quarterly assessments
@@ -219,12 +286,6 @@ export function BusinessCITContent({
     const totalWHTCredits = whtCredits.reduce((s, c) => s + num(c.withheldAmount), 0);
     const netTaxPayable = Math.max(0, grossTaxDue - totalWHTCredits);
 
-   const ENTRY_OPTIONS = [
-      { id: 'manual' as const, label: 'Manual entry (enter revenue and expenses below)' },
-      { id: 'pdf' as const, label: 'Upload financial statements (PDF/Excel)' },
-      { id: 'software' as const, label: 'Connect accounting software (QuickBooks, Xero, Zoho)' },
-   ];
-
     const _breadcrumb = subSection === 'quarterly' ? 'Quarterly Assessments'
         : 'File Annual Returns';
 
@@ -236,7 +297,7 @@ export function BusinessCITContent({
         }
     };
 
-    const goBack = (target: 'method' | 'financials' | 'tax-adjustments' | 'wht-credits' | 'review') => {
+    const goBack = (target: 'financials' | 'tax-adjustments' | 'wht-credits' | 'review') => {
         setAnnualStep(target);
     };
 
@@ -309,18 +370,16 @@ export function BusinessCITContent({
     };
 
     const CIT_ANNUAL_STEPS = [
-        { key: 'method', step: 1, title: 'Data Source' },
-        { key: 'financials', step: 2, title: 'Financial Inputs' },
-        { key: 'tax-adjustments', step: 3, title: 'Tax Adjustments' },
-        { key: 'wht-credits', step: 4, title: 'WHT Credits' },
-        { key: 'review', step: 5, title: 'Review' },
+        { key: 'financials', step: 1, title: 'Financial Inputs' },
+        { key: 'tax-adjustments', step: 2, title: 'Tax Adjustments' },
+        { key: 'wht-credits', step: 3, title: 'WHT Credits' },
+        { key: 'review', step: 4, title: 'Review' },
     ];
 
-    const stepIndex = annualStep === 'method' ? 1
-        : annualStep === 'financials' ? 2
-        : annualStep === 'tax-adjustments' ? 3
-        : annualStep === 'wht-credits' ? 4
-        : 5;
+    const stepIndex = annualStep === 'financials' ? 1
+        : annualStep === 'tax-adjustments' ? 2
+        : annualStep === 'wht-credits' ? 3
+        : 4;
 
    return (
       <div className="flex items-start gap-8 w-full">
@@ -620,8 +679,8 @@ export function BusinessCITContent({
                         </div>
 
                         <Stepper value={stepIndex} onValueChange={(s) => {
-                            const map: Record<number, 'method' | 'financials' | 'tax-adjustments' | 'wht-credits' | 'review'> = {
-                                1: 'method', 2: 'financials', 3: 'tax-adjustments', 4: 'wht-credits', 5: 'review',
+                            const map: Record<number, 'financials' | 'tax-adjustments' | 'wht-credits' | 'review'> = {
+                                1: 'financials', 2: 'tax-adjustments', 3: 'wht-credits', 4: 'review',
                             };
                             if (s <= stepIndex) goBack(map[s]);
                         }}>
@@ -639,32 +698,9 @@ export function BusinessCITContent({
                         </Stepper>
                     </div>
 
-                    {/* Step 1: Method selection */}
-                    {annualStep === 'method' && (
-                        <div className="max-w-[520px] mx-auto" data-animate>
-                            <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-4">How do you want to enter your data?</h2>
-                            <RadioGroup value={entryMethod} onValueChange={(v) => setEntryMethod(v as 'manual' | 'pdf' | 'software')} className="space-y-0 mb-8">
-                                {ENTRY_OPTIONS.map(opt => {
-                                    const disabled = opt.id !== 'manual';
-                                    return (
-                                    <label key={opt.id} className={`flex items-center gap-3 py-3.5 cursor-pointer ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}>
-                                        <RadioGroupItem value={opt.id} disabled={disabled} />
-                                        <span className="text-3 font-medium text-neutral-800">{opt.label}</span>
-                                    </label>
-                                    );
-                                })}
-                            </RadioGroup>
-                            <PrimaryButton onClick={() => goForward('financials')}>
-                                Continue
-                            </PrimaryButton>
-                        </div>
-                    )}
-
-                    {/* Step 2: Financial Inputs */}
+                    {/* Step 1: Financial Inputs */}
                     {annualStep === 'financials' && (
                         <div className="w-full max-w-[500px] mx-auto" data-animate>
-                            <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-6">Financial Inputs</h2>
-
                             <div className="space-y-6">
                                 {/* Section 1: Core Revenue & Cost Inputs */}
                                 <div className="bg-neutral-50 rounded-3xl p-5">
@@ -751,7 +787,6 @@ export function BusinessCITContent({
                             </div>
 
                             <div className="flex gap-3 mt-8">
-                                <SecondaryButton onClick={() => goBack('method')}>Back</SecondaryButton>
                                 <PrimaryButton onClick={() => goForward('tax-adjustments')} disabled={!totalRevenue}>
                                     Next: Tax Adjustments
                                 </PrimaryButton>
@@ -762,8 +797,6 @@ export function BusinessCITContent({
                     {/* Step 3: Tax Adjustments */}
                     {annualStep === 'tax-adjustments' && (
                         <div className="w-full max-w-[500px] mx-auto" data-animate>
-                            <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-6">Tax Adjustments</h2>
-
                             <div className="space-y-6">
                                 {/* Section 1: Non-Deductible Expenses */}
                                 <div className="bg-neutral-50 rounded-3xl p-5">
@@ -784,7 +817,7 @@ export function BusinessCITContent({
                                         <div className="border-t border-neutral-100 pt-3">
                                             <FormFieldRow className="justify-between">
                                                 <span className="text-2 font-semibold text-neutral-600">Non-Deductible Expenses</span>
-                                                <span className="text-3 font-semibold text-neutral-800">{fmt(nonDeductibleTotal)}</span>
+                                                <span className="text-2 font-medium text-neutral-600">{fmt(nonDeductibleTotal)}</span>
                                             </FormFieldRow>
                                         </div>
                                     </div>
@@ -809,7 +842,7 @@ export function BusinessCITContent({
                                         <div className="border-t border-neutral-100 pt-3">
                                             <FormFieldRow className="justify-between">
                                                 <span className="text-2 font-semibold text-neutral-600">Total Capital Allowances</span>
-                                                <span className="text-3 font-semibold text-neutral-800">{totalCapitalAllowances > 0 ? fmt(totalCapitalAllowances) : '₦ 0'}</span>
+                                                <span className="text-2 font-medium text-neutral-600">{totalCapitalAllowances > 0 ? fmt(totalCapitalAllowances) : '₦ 0'}</span>
                                             </FormFieldRow>
                                         </div>
                                     </div>
@@ -821,19 +854,19 @@ export function BusinessCITContent({
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between text-2">
                                             <span className="text-neutral-500 font-medium">Net Profit Before Tax</span>
-                                            <span className="font-semibold text-neutral-800">{fmt(accountingProfit)}</span>
+                                            <span className="font-medium text-neutral-500">{fmt(accountingProfit)}</span>
                                         </div>
                                         <div className="flex items-center justify-between text-2">
                                             <span className="text-neutral-500 font-medium">+ Non-Deductible Expenses</span>
-                                            <span className="font-semibold text-neutral-800">{fmt(nonDeductibleTotal)}</span>
+                                            <span className="font-medium text-neutral-500">{fmt(nonDeductibleTotal)}</span>
                                         </div>
                                         <div className="flex items-center justify-between text-2">
                                             <span className="text-neutral-500 font-medium">− Capital Allowances</span>
-                                            <span className="font-semibold text-neutral-800">{fmt(totalCapitalAllowances)}</span>
+                                            <span className="font-medium text-neutral-500">{fmt(totalCapitalAllowances)}</span>
                                         </div>
                                         <div className="flex items-center justify-between text-2 pt-2 border-t border-neutral-100">
                                             <span className="text-2 font-semibold text-neutral-800">Adjusted Taxable Profit</span>
-                                            <span className="text-3 font-semibold text-neutral-800">{fmt(adjustedTaxableProfit)}</span>
+                                            <span className="text-2 font-semibold text-neutral-800">{fmt(adjustedTaxableProfit)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -851,12 +884,11 @@ export function BusinessCITContent({
                     {/* Step 4: WHT Credits */}
                     {annualStep === 'wht-credits' && (
                         <div className="w-full max-w-[800px] mx-auto" data-animate>
-                            <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-6">WHT Credits</h2>
 
                             {whtCreditStep === 'method' ? (
-                                <div>
-                                    <p className="text-2 text-neutral-500 font-medium mb-6">Choose how you'd like to enter your WHT credit notes.</p>
-                                    <RadioGroup value={creditEntryMethod} onValueChange={(v) => setCreditEntryMethod(v as 'manual' | 'csv' | 'software')} className="space-y-0 mb-6">
+                                <div className="max-w-[500px] mx-auto">
+                                    <p className="text-3 font-semibold text-neutral-800 mb-4">Choose how you'd like to enter your WHT credit notes.</p>
+                                    <RadioGroup value={creditEntryMethod} onValueChange={(v) => setCreditEntryMethod(v as 'manual' | 'csv' | 'software')} className="space-y-0 mb-4">
                                         {CREDIT_ENTRY_OPTIONS.map(opt => {
                                             const disabled = opt.id !== 'manual';
                                             return (
@@ -867,13 +899,18 @@ export function BusinessCITContent({
                                             );
                                         })}
                                     </RadioGroup>
+                                    <div className="flex gap-3 mt-6">
+                                        <div className="flex gap-3">
+                                            <SecondaryButton onClick={() => goBack('tax-adjustments')}>Back</SecondaryButton>
+                                            <SecondaryButton onClick={() => openAddCredit()}>Continue</SecondaryButton>
+                                        </div>
+                                        <PrimaryButton onClick={() => goForward('review')} className="ml-auto">Next: Review</PrimaryButton>
+                                    </div>
                                 </div>
                             ) : whtCredits.length === 0 && editCreditIdx === null ? (
-                                <div>
-                                    <div className="flex items-center gap-4 mb-6">
-                                        <p className="text-2 font-medium text-neutral-500">No WHT credit notes recorded yet</p>
-                                    </div>
-                                    <RadioGroup value={creditEntryMethod} onValueChange={(v) => setCreditEntryMethod(v as 'manual' | 'csv' | 'software')} className="space-y-0 mb-6">
+                                <div className="max-w-[500px] mx-auto">
+                                    <p className="text-3 font-semibold text-neutral-800 mb-4">Choose how you'd like to enter your WHT credit notes.</p>
+                                    <RadioGroup value={creditEntryMethod} onValueChange={(v) => setCreditEntryMethod(v as 'manual' | 'csv' | 'software')} className="space-y-0 mb-4">
                                         {CREDIT_ENTRY_OPTIONS.map(opt => {
                                             const disabled = opt.id !== 'manual';
                                             return (
@@ -884,6 +921,13 @@ export function BusinessCITContent({
                                             );
                                         })}
                                     </RadioGroup>
+                                    <div className="flex gap-3 mt-6">
+                                        <div className="flex gap-3">
+                                            <SecondaryButton onClick={() => goBack('tax-adjustments')}>Back</SecondaryButton>
+                                            <SecondaryButton onClick={() => openAddCredit()}>Continue</SecondaryButton>
+                                        </div>
+                                        <PrimaryButton onClick={() => goForward('review')} className="ml-auto">Next: Review</PrimaryButton>
+                                    </div>
                                 </div>
                             ) : (
                                 <div>
@@ -892,24 +936,24 @@ export function BusinessCITContent({
                                         <SecondaryButtonSm onClick={() => openAddCredit()}>Add WHT Credit Note</SecondaryButtonSm>
                                     </div>
 
-                                    <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden mb-6">
+                                    <div className="bg-white border border-neutral-200 rounded-xl overflow-hidden mb-6">
                                         <Table>
                                             <TableHeader>
                                                 <TableRow>
                                                     {['Client Name', 'TIN', 'Credit Ref #', 'Gross Value', 'WHT Amount', 'Certificate'].map(h => (
-                                                        <TableHead key={h} className="px-4 py-3 font-medium text-neutral-400 text-1">{h}</TableHead>
+                                                        <TableHead key={h} className="px-6 py-4 font-medium text-neutral-400 text-2">{h}</TableHead>
                                                     ))}
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {whtCredits.map((c, idx) => (
                                                     <TableRow key={idx} className="cursor-pointer" onClick={() => openEditCredit(idx)}>
-                                                        <TableCell className="px-4 py-3 text-1 font-medium text-neutral-600">{c.clientName || '—'}</TableCell>
-                                                        <TableCell className="px-4 py-3 text-1 font-medium text-neutral-600">{c.clientTIN || '—'}</TableCell>
-                                                        <TableCell className="px-4 py-3 text-1 font-medium text-neutral-600">{c.creditRef || '—'}</TableCell>
-                                                        <TableCell className="px-4 py-3 text-1 font-medium text-neutral-600">{num(c.grossValue) > 0 ? fmt(num(c.grossValue)) : '—'}</TableCell>
-                                                        <TableCell className="px-4 py-3 text-1 font-medium text-neutral-600">{num(c.withheldAmount) > 0 ? fmt(num(c.withheldAmount)) : '—'}</TableCell>
-                                                        <TableCell className="px-4 py-3 text-1 font-medium text-neutral-600">—</TableCell>
+                                                        <TableCell className="px-6 py-4 text-2 font-medium text-neutral-600">{c.clientName || '—'}</TableCell>
+                                                        <TableCell className="px-6 py-4 text-2 font-medium text-neutral-600">{c.clientTIN || '—'}</TableCell>
+                                                        <TableCell className="px-6 py-4 text-2 font-medium text-neutral-600">{c.creditRef || '—'}</TableCell>
+                                                        <TableCell className="px-6 py-4 text-2 font-medium text-neutral-600">{num(c.grossValue) > 0 ? fmt(num(c.grossValue)) : '—'}</TableCell>
+                                                        <TableCell className="px-6 py-4 text-2 font-medium text-neutral-600">{num(c.withheldAmount) > 0 ? fmt(num(c.withheldAmount)) : '—'}</TableCell>
+                                                        <TableCell className="px-6 py-4 text-2 font-medium text-neutral-600">—</TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
@@ -920,84 +964,48 @@ export function BusinessCITContent({
                                         <span className="text-2 font-medium text-neutral-500">Total WHT Credits</span>
                                         <span className="text-2 font-semibold text-neutral-800">{fmt(totalWHTCredits)}</span>
                                     </div>
+
+                                    <div className="flex gap-3 mt-6">
+                                        <SecondaryButton onClick={() => goBack('tax-adjustments')}>Back</SecondaryButton>
+                                        <PrimaryButton onClick={() => goForward('review')} className="ml-auto">Next: Review</PrimaryButton>
+                                    </div>
                                 </div>
                             )}
-
-                            <div className="flex gap-3 mt-8">
-                                <div className="flex gap-3">
-                                    <SecondaryButton onClick={() => goBack('tax-adjustments')}>Back</SecondaryButton>
-                                    <SecondaryButton onClick={() => openAddCredit()}>
-                                        {whtCreditStep === 'method' || whtCredits.length === 0 ? 'Continue' : 'Add WHT Credit Note'}
-                                    </SecondaryButton>
-                                </div>
-                                <PrimaryButton onClick={() => goForward('review')} className="ml-auto">
-                                    Next: Review
-                                </PrimaryButton>
-                            </div>
 
                             {/* Credit Note Drawer */}
                             <Drawer open={showCreditSheet} onOpenChange={(o) => { if (!o) handleCancelCredit(); }}>
                                 <DrawerContent className="bg-white w-full max-w-full px-4 pb-4 max-h-[85vh]">
                                     <DrawerTitle className="sr-only">{editCreditIdx !== null ? 'Edit WHT Credit Note' : 'Add WHT Credit Note'}</DrawerTitle>
-                                    <div className="max-w-[450px] mx-auto w-full pt-2 text-center">
+                                    <div className="max-w-[550px] mx-auto w-full pt-2 text-center">
                                         <h2 className="text-5 font-semibold text-neutral-800 mb-8">{editCreditIdx !== null ? (isEditingCredit ? 'Edit Credit Note' : 'Credit Note Details') : 'Add WHT Credit Note'}</h2>
                                     </div>
                                     <div data-lenis-prevent className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-                                        <div className="max-w-[450px] mx-auto w-full space-y-6">
-                                            <div className="bg-neutral-50 rounded-3xl p-5">
-                                                <div className="space-y-3">
-                                                    <FormFieldRow className="justify-between">
-                                                        <FormLabel tip="The company or person that deducted WHT from payments to you.">Payer / Client Name</FormLabel>
-                                                        <Input type="text" placeholder="e.g., MTN Nigeria Communications Plc" value={creditForm.clientName} onChange={e => setCreditForm(f => ({ ...f, clientName: e.target.value }))} disabled={editCreditIdx !== null && !isEditingCredit} className={`w-[180px] text-left ${editCreditIdx !== null && !isEditingCredit ? 'bg-neutral-50 text-neutral-400' : ''}`} />
-                                                    </FormFieldRow>
-                                                    <FormFieldRow className="justify-between">
-                                                        <FormLabel tip="Tax Identification Number of the withholder.">Payer Tax Identification Number (TIN)</FormLabel>
-                                                        <Input type="text" placeholder="10 to 14-digit FIRS TIN" value={creditForm.clientTIN} onChange={e => { const v = e.target.value.replace(/[^0-9]/g, ''); if (v.length <= 14) setCreditForm(f => ({ ...f, clientTIN: v })); }} disabled={editCreditIdx !== null && !isEditingCredit} className={`w-[180px] text-left ${editCreditIdx !== null && !isEditingCredit ? 'bg-neutral-50 text-neutral-400' : ''}`} />
-                                                    </FormFieldRow>
-                                                    <FormFieldRow className="justify-between">
-                                                        <FormLabel tip="The unique digital certificate ID issued on the government portal when your client remitted the tax.">FIRS Credit Note Reference Number</FormLabel>
-                                                        <Input type="text" placeholder="e.g., WHT/2026/XXXXX" value={creditForm.creditRef} onChange={e => setCreditForm(f => ({ ...f, creditRef: e.target.value }))} disabled={editCreditIdx !== null && !isEditingCredit} className={`w-[180px] text-left ${editCreditIdx !== null && !isEditingCredit ? 'bg-neutral-50 text-neutral-400' : ''}`} />
-                                                    </FormFieldRow>
-                                                    <FormFieldRow className="justify-between">
-                                                        <FormLabel tip="Total contract value before WHT deduction.">Gross Invoice Value</FormLabel>
-                                                        <Input type="text" placeholder="₦ 0.00" value={creditForm.grossValue} onChange={e => { const raw = e.target.value.replace(/[^0-9.]/g, ''); const parts = raw.split('.'); const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ','); setCreditForm(f => ({ ...f, grossValue: parts.length > 1 ? integer + '.' + parts.slice(1).join('') : integer })); }} disabled={editCreditIdx !== null && !isEditingCredit} className={`w-[180px] text-left ${editCreditIdx !== null && !isEditingCredit ? 'bg-neutral-50 text-neutral-400' : ''}`} />
-                                                    </FormFieldRow>
-                                                    <FormFieldRow className="justify-between">
-                                                        <FormLabel tip="Actual WHT deducted, as stated on the credit note.">Withheld Amount (Credit Value)</FormLabel>
-                                                        <Input type="text" placeholder="₦ 0.00" value={creditForm.withheldAmount} onChange={e => setCreditForm(f => ({ ...f, withheldAmount: e.target.value.replace(/[^0-9.]/g, '') }))} disabled={editCreditIdx !== null && !isEditingCredit} className={`w-[180px] text-left ${editCreditIdx !== null && !isEditingCredit ? 'bg-neutral-50 text-neutral-400' : ''}`} />
-                                                    </FormFieldRow>
-                                                </div>
-                                            </div>
-
-                                            {/* Upload FIRS Certificate */}
-                                            <div className="bg-neutral-50 rounded-3xl p-5">
-                                                <h3 className="text-3 font-semibold text-neutral-800 mb-4">Upload FIRS WHT Credit Certificate <span className="text-red-500">*</span></h3>
-                                                {editCreditIdx !== null && !isEditingCredit ? (
-                                                    <p className="text-3 font-medium text-neutral-400">No certificate uploaded</p>
-                                                ) : (
-                                                    <>
-                                                        <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
-                                                            <span className="text-1 text-neutral-400 font-medium">Click to upload or drag & drop the physical or PDF certificate received from your client (Max 5MB)</span>
-                                                            <button onClick={() => creditCertificateRef.current?.click()} className="cursor-pointer text-2 font-semibold text-taxable-blue bg-transparent border-none p-0">Upload</button>
-                                                            <input ref={creditCertificateRef} type="file" hidden accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => { const f = e.target.files; if (!f) return; setCreditCertificateFiles(prev => [...prev, ...Array.from(f).map(x => ({ name: x.name }))]); e.target.value = ''; }} />
+                                        <div className="max-w-[550px] mx-auto w-full space-y-6">
+                                            <div className="relative overflow-hidden">
+                                                <div className={`transition-transform duration-300 ease-in-out ${isEditingCredit ? '-translate-x-full' : 'translate-x-0'}`}>
+                                                    {editCreditIdx !== null && (
+                                                        <div className="space-y-6">
+                                                            <CreditFormContent form={creditForm} onChange={(k, v) => setCreditForm(f => ({ ...f, [k]: v }))} disabled={true} readOnlyStyle="bg-neutral-50 text-neutral-400" certificateFiles={creditCertificateFiles} setCertificateFiles={setCreditCertificateFiles} certificateRef={creditCertificateRef} />
                                                         </div>
-                                                        {creditCertificateFiles.length > 0 && (
-                                                            <div className="mt-2 flex flex-wrap gap-2">
-                                                                {creditCertificateFiles.map((f, i) => (
-                                                                    <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
-                                                                        <span className="text-1 text-neutral-600">{f.name}</span>
-                                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-neutral-400 cursor-pointer" onClick={() => setCreditCertificateFiles(prev => prev.filter((_, j) => j !== i))}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        )}
-                                                    </>
+                                                    )}
+                                                </div>
+                                                <div className={`absolute inset-0 transition-transform duration-300 ease-in-out ${isEditingCredit ? 'translate-x-0' : 'translate-x-full'}`}>
+                                                    {isEditingCredit && (
+                                                        <div className="space-y-6">
+                                                            <CreditFormContent form={creditForm} onChange={(k, v) => setCreditForm(f => ({ ...f, [k]: v }))} disabled={false} readOnlyStyle="" certificateFiles={creditCertificateFiles} setCertificateFiles={setCreditCertificateFiles} certificateRef={creditCertificateRef} />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {editCreditIdx === null && (
+                                                    <div className="space-y-6">
+                                                        <CreditFormContent form={creditForm} onChange={(k, v) => setCreditForm(f => ({ ...f, [k]: v }))} disabled={false} readOnlyStyle="" certificateFiles={creditCertificateFiles} setCertificateFiles={setCreditCertificateFiles} certificateRef={creditCertificateRef} />
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="max-w-[450px] mx-auto w-full pt-4 border-t border-neutral-100 mt-2">
+                                    <div className="max-w-[550px] mx-auto w-full pt-4 border-t border-neutral-100 mt-2">
                                         <div className="flex gap-3">
                                             {editCreditIdx !== null && !isEditingCredit ? (
                                                 <>
@@ -1046,8 +1054,6 @@ export function BusinessCITContent({
                     {/* Step 5: Review */}
                     {annualStep === 'review' && (
                         <div className="w-full max-w-[500px] mx-auto" data-animate>
-                            <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-6">Review & Submit</h2>
-
                             <div className="space-y-10">
                             <div className="bg-white border border-neutral-200 rounded-2xl p-3">
                                 <LedgerRow label="Revenue" value={fmt(totalRev)} />

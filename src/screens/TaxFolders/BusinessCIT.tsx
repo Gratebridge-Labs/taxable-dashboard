@@ -2,25 +2,25 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Drawer, DrawerContent, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
-import { PrimaryButton, SecondaryButton, PrimaryButtonSm, SecondaryButtonSm } from './TaxFolderShared';
+import { PrimaryButton, SecondaryButton } from './TaxFolderShared';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
+import { InformationFill } from '@mingcute/react';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmt = (n: number) => `₦${Math.round(n).toLocaleString()}`;
 const num = (s: string) => Number(s.replace(/,/g, '')) || 0;
 
 const HintIcon = ({ tip }: { tip: string }) => (
-    <div className="relative group inline-flex items-center ml-1 cursor-default">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2">
-            <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
-        </svg>
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2 bg-neutral-800 text-white text-[11px] leading-snug rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-40 font-medium">
+    <span className="relative group inline-flex items-center ml-1 align-middle cursor-default">
+        <InformationFill className="w-3.5 h-3.5" color="#E5E5E5" />
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2 bg-neutral-800 text-white text-1 leading-snug rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-40 font-medium">
             {tip}
         </div>
-    </div>
+    </span>
 );
 
 // ── Left Sidebar ──────────────────────────────────────────────────────────────
@@ -50,8 +50,8 @@ const LeftSidebar = ({
         <div className="w-[220px] flex-shrink-0 flex flex-col gap-4 sticky top-24">
             <div>
                 <div className="flex items-center justify-between mb-2 px-1">
-                    <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Select</p>
-                    <button className="flex items-center gap-1 text-[11px] font-bold text-taxable-blue  transition-opacity">
+                    <p className="text-1 font-semibold text-neutral-400 uppercase tracking-wider">Select</p>
+                    <button className="flex items-center gap-1 text-1 font-semibold text-taxable-blue  ">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
                         </svg>
@@ -65,11 +65,11 @@ const LeftSidebar = ({
                             <div key={item.key}>
                                 <button
                                     onClick={() => item.route && router.push(item.route)}
-                                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all mb-0.5 "
+                                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl mb-0.5"
                                 >
                                     <div className="flex items-center gap-3 text-left">
                                         <span className="text-lg leading-none">📁</span>
-                                        <span className="text-[13px] font-semibold text-neutral-700">{item.label}</span>
+                                        <span className="text-2 font-semibold text-neutral-700">{item.label}</span>
                                     </div>
                                     {isExpanded ? (
                                         <svg className="w-3.5 h-3.5 text-neutral-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
@@ -87,7 +87,7 @@ const LeftSidebar = ({
                                             <button
                                                 key={child.key}
                                                 onClick={() => onSubSection(child.key)}
-                                                className={`w-full text-left px-3 py-2 rounded-lg text-[12.5px] font-semibold transition-colors mb-0.5 ${activeSubSection === child.key ? 'text-neutral-800 bg-neutral-100' : 'text-neutral-500 hover:text-neutral-700 '}`}
+                                                className={`w-full text-left px-3 py-2 rounded-lg text-2 font-semibold  mb-0.5 ${activeSubSection === child.key ? 'text-neutral-800 bg-neutral-100' : 'text-neutral-500'}`}
                                             >
                                                 {child.label}
                                             </button>
@@ -103,15 +103,15 @@ const LeftSidebar = ({
             {/* Book accountant */}
             <div className="bg-white rounded-[16px] p-5 border border-neutral-100 shadow-sm">
                 <div className="flex items-center gap-2 mb-2">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-taxable-blue" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
                     </svg>
-                    <h4 className="text-[13px] font-bold text-neutral-800">Need expert eyes on your return?</h4>
+                    <h4 className="text-2 font-semibold text-neutral-800">Need expert eyes on your return?</h4>
                 </div>
-                <p className="text-[12px] text-neutral-500 font-medium leading-relaxed mb-4">
+                <p className="text-1 text-neutral-500 font-medium leading-relaxed mb-4">
                     Get your return reviewed by a certified tax accountant. They'll ensure accuracy, compliance, and file for you.
                 </p>
-                <button className="w-full py-2.5 bg-white border border-neutral-200 rounded-xl text-[12px] font-bold text-neutral-800  transition-all">
+                <button className="w-full py-2.5 bg-white border border-neutral-200 rounded-xl text-1 font-semibold text-neutral-800">
                     Book Accountant (₦15,000)
                 </button>
             </div>
@@ -132,12 +132,12 @@ const FilingModal = ({ onClose, onFile }: { onClose: () => void; onFile: () => v
             <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-white h-full w-full max-w-[380px] shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
                 <div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-neutral-100">
-                    <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full  transition-colors">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0C0C0E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full  ">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-800" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
                         </svg>
                     </button>
-                    <h3 className="text-[16px] font-bold text-neutral-800">How do you want to file?</h3>
+                    <h3 className="text-3 font-semibold text-neutral-800">How do you want to file?</h3>
                 </div>
                 <div className="flex-1 px-6 py-5">
                     {OPTIONS.map(opt => (
@@ -146,15 +146,15 @@ const FilingModal = ({ onClose, onFile }: { onClose: () => void; onFile: () => v
                                 {method === opt.id && <div className="w-2.5 h-2.5 rounded-full bg-taxable-blue" />}
                             </div>
                             <div>
-                                <p className="text-[14px] font-semibold text-neutral-800 mb-0.5">{opt.label}</p>
-                                <p className="text-[12px] text-neutral-500 font-medium leading-relaxed">{opt.desc}</p>
+                                <p className="text-3 font-semibold text-neutral-800 mb-0.5">{opt.label}</p>
+                                <p className="text-1 text-neutral-500 font-medium leading-relaxed">{opt.desc}</p>
                             </div>
                         </button>
                     ))}
                 </div>
                 <div className="px-6 pb-6 flex gap-3 border-t border-neutral-100 pt-4">
-                    <button onClick={onClose} className="flex-1 h-11 border border-neutral-200 rounded-xl text-[14px] font-bold text-neutral-800  transition-colors">Back</button>
-                    <button onClick={onFile} className="flex-[2] h-11 bg-taxable-blue text-white rounded-xl text-[14px] font-bold transition-opacity">Continue</button>
+                    <button onClick={onClose} className="flex-1 h-11 border border-neutral-200 rounded-xl text-3 font-semibold text-neutral-800  ">Back</button>
+                    <button onClick={onFile} className="flex-[2] h-11 bg-taxable-blue text-white rounded-xl text-3 font-semibold ">Continue</button>
                 </div>
             </div>
         </div>
@@ -167,17 +167,10 @@ const Field = ({ label, tip, value, onChange, readOnly, placeholder }: {
     readOnly?: boolean; placeholder?: string;
 }) => (
     <div>
-        <label className="flex items-center text-[12px] font-semibold text-neutral-500 mb-1.5">
+        <label className="flex items-center text-1 font-semibold text-neutral-500 mb-1.5">
             {label} {tip && <HintIcon tip={tip} />}
         </label>
-        <input
-            type="text"
-            readOnly={readOnly}
-            value={value}
-            onChange={e => onChange?.(e.target.value.replace(/[^0-9.]/g, ''))}
-            placeholder={placeholder ?? 'N0'}
-            className={`w-full h-10 border border-neutral-200 rounded-xl px-3 text-[13px] font-medium text-neutral-800 placeholder:placeholder:text-neutral-300 focus:outline-none focus:border-taxable-blue/40 transition-all ${readOnly ? 'bg-neutral-100 text-neutral-400 cursor-default' : 'bg-neutral-100'}`}
-        />
+        <Input type="text" value={value} onChange={e => onChange?.(e.target.value.replace(/[^0-9.]/g, ''))} placeholder={placeholder ?? 'N0'} disabled={readOnly} />
     </div>
 );
 
@@ -186,15 +179,15 @@ const LedgerRow = ({ label, value, bold, indent, prefix }: {
     label: string; value: string; bold?: boolean; indent?: boolean; prefix?: string;
 }) => (
     <div className={`flex items-center justify-between py-2.5 ${bold ? 'border-t border-neutral-100 mt-1' : ''}`}>
-        <span className={`text-[13px] ${bold ? 'font-bold text-neutral-800' : 'font-medium text-neutral-500'} ${indent ? 'pl-4' : ''}`}>{label}</span>
-        <span className={`text-[13px] ${bold ? 'font-bold text-neutral-800' : 'font-semibold text-neutral-800'}`}>
+        <span className={`text-2 ${bold ? 'font-semibold text-neutral-800' : 'font-medium text-neutral-500'} ${indent ? 'pl-4' : ''}`}>{label}</span>
+        <span className={`text-2 ${bold ? 'font-semibold text-neutral-800' : 'font-semibold text-neutral-800'}`}>
             {prefix}{value}
         </span>
     </div>
 );
 
 const SectionHeader = ({ label }: { label: string }) => (
-    <p className="text-[13px] font-bold text-neutral-800 mt-5 mb-1">{label}</p>
+    <p className="text-2 font-semibold text-neutral-800 mt-5 mb-1">{label}</p>
 );
 
 // ── WHT Type options ──────────────────────────────────────────────────────────
@@ -205,13 +198,13 @@ const WHT_RATES = ['Select', '2.5%', '5%', '10%'];
 export function BusinessCITContent({
     activeSubMenu,
     onSubMenuChange,
-    estimatedProfit: estimatedProfitProp,
-    onEstimatedProfitChange,
+    estimatedAnnualRevenue,
+    profitMargin,
 }: {
     activeSubMenu?: 'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review';
     onSubMenuChange?: (s: 'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review') => void;
-    estimatedProfit?: string;
-    onEstimatedProfitChange?: (v: string) => void;
+    estimatedAnnualRevenue?: string;
+    profitMargin?: string;
 } = {}) {
     const router = useRouter();
     const [internalSubSection, setInternalSubSection] = useState<'quarterly' | 'file-returns' | 'tax-adjustment' | 'wht-credits' | 'review'>('quarterly');
@@ -228,11 +221,6 @@ export function BusinessCITContent({
     const [showFilingModal, setShowFilingModal] = useState(false);
 
     // Quarterly assessments
-    const [internalProfit, setInternalProfit] = useState('20000000');
-    const estimatedProfit = estimatedProfitProp ?? internalProfit;
-    const setEstimatedProfit = onEstimatedProfitChange ?? setInternalProfit;
-    const [editingEstimate, setEditingEstimate] = useState(false);
-    const [editEstimateVal, setEditEstimateVal] = useState('');
     const [paidQuarters, setPaidQuarters] = useState<Set<number>>(new Set([0, 1]));
     const [deferredQuarters, setDeferredQuarters] = useState<Set<number>>(new Set());
     const [showDeferModal, setShowDeferModal] = useState(false);
@@ -301,8 +289,10 @@ export function BusinessCITContent({
 
                 {/* ── Quarterly Assessments ── */}
                 {subSection === 'quarterly' && (() => {
-                    const profitNum = Number(estimatedProfit.replace(/,/g, '')) || 0;
-                    const totalCIT = profitNum * 0.30;
+                    const rev = Number((estimatedAnnualRevenue || '').replace(/,/g, '')) || 0;
+                    const margin = profitMargin ? Number(profitMargin.replace('%', '')) / 100 : 0;
+                    const estimatedProfit = rev * margin;
+                    const totalCIT = estimatedProfit * 0.30;
                     const perQuarter = totalCIT / 4;
                     const qFmt = (n: number) => `₦${Math.round(n).toLocaleString()}`;
                     const quarters = [
@@ -357,8 +347,16 @@ export function BusinessCITContent({
                             {/* Summary */}
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between text-2">
+                                    <span className="text-neutral-500 font-medium">Estimated annual revenue</span>
+                                    <span className="font-semibold text-neutral-800">{qFmt(rev)}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-2">
+                                    <span className="text-neutral-500 font-medium">Profit margin</span>
+                                    <span className="font-semibold text-neutral-800">{profitMargin || '—'}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-2">
                                     <span className="text-neutral-500 font-medium">Estimated annual profit</span>
-                                    <span className="font-semibold text-neutral-800">{qFmt(profitNum)}</span>
+                                    <span className="font-semibold text-neutral-800">{qFmt(estimatedProfit)}</span>
                                 </div>
                                 <div className="flex items-center justify-between text-2">
                                     <span className="text-neutral-500 font-medium">Estimated CIT (30%)</span>
@@ -369,25 +367,6 @@ export function BusinessCITContent({
                                     <span className="font-semibold text-neutral-800">{qFmt(perQuarter)}</span>
                                 </div>
                             </div>
-
-                            {editingEstimate ? (
-                                <div className="flex items-center gap-3">
-                                    <Input type="text" value={editEstimateVal}
-                                        onChange={e => { const raw = e.target.value.replace(/[^0-9.]/g, ''); const parts = raw.split('.'); const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ','); setEditEstimateVal(parts.length > 1 ? integer + '.' + parts.slice(1).join('') : integer); }}
-                                        placeholder="Enter estimated profit"
-                                        className="flex-1" />
-                                    <PrimaryButtonSm onClick={() => { if (editEstimateVal) setEstimatedProfit(editEstimateVal.replace(/,/g, '')); setEditingEstimate(false); }}>
-                                        Save
-                                    </PrimaryButtonSm>
-                                    <SecondaryButtonSm onClick={() => setEditingEstimate(false)}>
-                                        Cancel
-                                    </SecondaryButtonSm>
-                                </div>
-                            ) : (
-                                <SecondaryButtonSm onClick={() => { setEditEstimateVal(estimatedProfit); setEditingEstimate(true); }} className="self-start">
-                                    Edit Estimate
-                                </SecondaryButtonSm>
-                            )}
                             </div>
 
                             {/* Quarters table */}
@@ -541,19 +520,19 @@ export function BusinessCITContent({
                 {/* ── Step 1: Method selection ── */}
                 {subSection === 'file-returns' && step === 'method' && (
                     <div className="max-w-[520px] mx-auto">
-                        <h2 className="text-base font-bold text-neutral-800 mb-1">Enter your company's financial performance</h2>
-                        <p className="text-[13px] text-neutral-500 font-medium mb-6">How do you want to provide your financials?</p>
+                        <h2 className="text-5 font-semibold text-neutral-800 mb-1">Enter your company's financial performance</h2>
+                        <p className="text-2 text-neutral-500 font-medium mb-6">How do you want to provide your financials?</p>
                         <div className="space-y-0 mb-8">
                             {ENTRY_OPTIONS.map(opt => (
                                 <button key={opt.id} onClick={() => setEntryMethod(opt.id)} className="w-full flex items-center gap-3 py-3.5 text-left">
-                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${entryMethod === opt.id ? 'border-taxable-blue' : 'border-neutral-300'}`}>
+                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0  ${entryMethod === opt.id ? 'border-taxable-blue' : 'border-neutral-300'}`}>
                                         {entryMethod === opt.id && <div className="w-2.5 h-2.5 rounded-full bg-taxable-blue" />}
                                     </div>
-                                    <span className="text-[14px] font-semibold text-neutral-800">{opt.label}</span>
+                                    <span className="text-3 font-semibold text-neutral-800">{opt.label}</span>
                                 </button>
                             ))}
                         </div>
-                        <button onClick={() => setStep('form')} className="h-11 px-8 bg-taxable-blue text-white font-bold rounded-xl transition-opacity text-[14px]">
+                        <button onClick={() => setStep('form')} className="h-11 px-8 bg-taxable-blue text-white font-semibold rounded-xl  text-3">
                             Continue
                         </button>
                     </div>
@@ -565,7 +544,7 @@ export function BusinessCITContent({
                         <div className="space-y-10">
                         {/* Revenue */}
                         <div>
-                        <h2 className="text-sm font-bold text-neutral-800 mb-4">Revenue</h2>
+                        <h2 className="text-3 font-semibold text-neutral-800 mb-4">Revenue</h2>
                         <div className="bg-white border border-neutral-200 rounded-2xl p-[12px]">
                             <div className="grid grid-cols-3 gap-4">
                                 <Field label="Total revenue" tip="All revenue earned from your main business activities." value={totalRevenue} onChange={setTotalRevenue} />
@@ -577,7 +556,7 @@ export function BusinessCITContent({
 
                         {/* Expenses */}
                         <div>
-                        <h2 className="text-sm font-bold text-neutral-800 mb-4">Expenses</h2>
+                        <h2 className="text-3 font-semibold text-neutral-800 mb-4">Expenses</h2>
                         <div className="bg-white border border-neutral-200 rounded-2xl p-[12px]">
                             <div className="grid grid-cols-2 gap-4">
                                 <Field label="Cost of goods sold (COGS)" tip="Direct costs of producing goods/services sold." value={cogs} onChange={setCogs} />
@@ -591,25 +570,25 @@ export function BusinessCITContent({
 
                         {/* Financial statements */}
                         <div>
-                        <h2 className="text-sm font-bold text-neutral-800 mb-4">Financial statements</h2>
+                        <h2 className="text-3 font-semibold text-neutral-800 mb-4">Financial statements</h2>
                         <div className="bg-white border border-neutral-200 rounded-2xl p-[12px]">
                             <div className="flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
                                 <div className="flex items-center gap-2.5">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-400" strokeWidth="2">
                                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
                                     </svg>
                                     <div>
-                                        <p className="text-[12px] font-semibold text-neutral-700">Upload your financial statements</p>
-                                        <p className="text-[11px] text-neutral-400 font-medium">PDF, JPG, or PNG (Max 5MB)</p>
+                                        <p className="text-1 font-semibold text-neutral-700">Upload your financial statements</p>
+                                        <p className="text-1 text-neutral-400 font-medium">PDF, JPG, or PNG (Max 5MB)</p>
                                     </div>
                                 </div>
-                                <button className="h-8 px-4 border border-neutral-300 rounded-lg text-[12px] font-bold text-neutral-800  transition-colors">Upload</button>
+                                <button className="h-8 px-4 border border-neutral-300 rounded-lg text-1 font-semibold text-neutral-800  ">Upload</button>
                             </div>
                         </div>
                         </div>
                         </div>
 
-                        <button onClick={() => setSubSection('tax-adjustment')} className="h-12 px-8 bg-taxable-blue text-white font-bold rounded-xl transition-opacity text-[14px]">
+                        <button onClick={() => setSubSection('tax-adjustment')} className="h-12 px-8 bg-taxable-blue text-white font-semibold rounded-xl  text-3">
                             Continue to Tax Adjustments
                         </button>
                     </div>
@@ -618,31 +597,31 @@ export function BusinessCITContent({
                 {/* ── Tax Adjustment ── */}
                 {subSection === 'tax-adjustment' && (
                     <div className="w-full max-w-[500px] mx-auto">
-                        <h2 className="text-base font-bold text-neutral-800 mb-1">Tax Adjustments</h2>
-                        <p className="text-[13px] text-neutral-500 font-medium mb-6">Adjust your accounting profit to get taxable profit</p>
+                        <h2 className="text-5 font-semibold text-neutral-800 mb-1">Tax Adjustments</h2>
+                        <p className="text-2 text-neutral-500 font-medium mb-6">Adjust your accounting profit to get taxable profit</p>
 
                         <div className="space-y-10">
                         <div>
-                            <p className="text-[12px] font-semibold text-neutral-500 mb-1">Accounting Profit</p>
-                            <p className="text-[28px] font-bold text-neutral-800">{fmt(accountingProfit)}</p>
+                            <p className="text-1 font-semibold text-neutral-500 mb-1">Accounting Profit</p>
+                            <p className="text-9 font-semibold text-neutral-800">{fmt(accountingProfit)}</p>
                         </div>
 
                         <div className="bg-white border border-neutral-200 rounded-2xl p-[12px] space-y-5">
                             {/* Add back */}
                             <div>
-                                <p className="text-[13px] font-bold text-neutral-800 mb-3">Add back</p>
+                                <p className="text-2 font-semibold text-neutral-800 mb-3">Add back</p>
                                 <div className="flex items-center justify-between gap-4">
-                                    <label className="flex items-center text-[13px] font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
+                                    <label className="flex items-center text-2 font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
                                         Non-deductible expenses <HintIcon tip="Expenses not allowed by FIRS e.g. fines, penalties, personal expenses." />
                                     </label>
-                                    <input type="text" placeholder="N0" value={nonDeductible}
+                                    <Input type="text" placeholder="N0" value={nonDeductible}
                                         onChange={e => setNonDeductible(e.target.value.replace(/[^0-9.]/g, ''))}
-                                        className="w-[180px] flex-shrink-0 h-10 border border-neutral-200 bg-neutral-100 rounded-xl px-3 text-[13px] font-medium text-neutral-800 placeholder:placeholder:text-neutral-300 focus:outline-none focus:border-taxable-blue/40" />
+                                        className="w-[180px] flex-shrink-0" />
                                 </div>
                             </div>
 
                             <div className="border-t border-neutral-100 pt-4">
-                                <p className="text-[13px] font-bold text-neutral-800 mb-3">Subtract</p>
+                                <p className="text-2 font-semibold text-neutral-800 mb-3">Subtract</p>
                                 <div className="space-y-3">
                                     {[
                                         { label: 'Capital Allowances', tip: 'Tax-allowable depreciation of fixed assets.', value: capitalAllowances, set: setCapitalAllowances },
@@ -650,12 +629,12 @@ export function BusinessCITContent({
                                         { label: 'Other deductions', tip: 'Any other FIRS-approved deductions.', value: otherDeductions, set: setOtherDeductions },
                                     ].map(({ label, tip, value, set }) => (
                                         <div key={label} className="flex items-center justify-between gap-4">
-                                            <label className="flex items-center text-[13px] font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
+                                            <label className="flex items-center text-2 font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
                                                 {label} <HintIcon tip={tip} />
                                             </label>
-                                            <input type="text" placeholder="N0" value={value}
+                                            <Input type="text" placeholder="N0" value={value}
                                                 onChange={e => set(e.target.value.replace(/[^0-9.]/g, ''))}
-                                                className="w-[180px] flex-shrink-0 h-10 border border-neutral-200 bg-neutral-100 rounded-xl px-3 text-[13px] font-medium text-neutral-800 placeholder:placeholder:text-neutral-300 focus:outline-none focus:border-taxable-blue/40" />
+                                                className="w-[180px] flex-shrink-0" />
                                         </div>
                                     ))}
                                 </div>
@@ -663,12 +642,12 @@ export function BusinessCITContent({
                         </div>
 
                         <div>
-                            <p className="text-[12px] font-semibold text-neutral-500 mb-1">Taxable Profit</p>
-                            <p className="text-[28px] font-bold text-neutral-800">{fmt(taxableProfit)}</p>
+                            <p className="text-1 font-semibold text-neutral-500 mb-1">Taxable Profit</p>
+                            <p className="text-9 font-semibold text-neutral-800">{fmt(taxableProfit)}</p>
                         </div>
                         </div>
 
-                        <button onClick={() => setSubSection('wht-credits')} className="h-12 px-8 bg-taxable-blue text-white font-bold rounded-xl transition-opacity text-[14px]">
+                        <button onClick={() => setSubSection('wht-credits')} className="h-12 px-8 bg-taxable-blue text-white font-semibold rounded-xl  text-3">
                             Continue to WHT Credits
                         </button>
                     </div>
@@ -677,126 +656,122 @@ export function BusinessCITContent({
                 {/* ── WHT Credits ── */}
                 {subSection === 'wht-credits' && (
                     <div className="w-full max-w-[500px] mx-auto">
-                        <h2 className="text-base font-bold text-neutral-800 mb-1">WHT Credits</h2>
-                        <p className="text-[13px] text-neutral-500 font-medium leading-relaxed mb-6">
+                        <h2 className="text-5 font-semibold text-neutral-800 mb-1">WHT Credits</h2>
+                        <p className="text-2 text-neutral-500 font-medium leading-relaxed mb-6">
                             WHT is tax your clients already paid to FIRS on your behalf.<br />
                             You can deduct this from your final tax bill.
                         </p>
 
                         <div className="space-y-10">
                         <div>
-                        <p className="text-[13px] font-bold text-neutral-800 mb-3">Upload your WHT credit notes</p>
+                        <p className="text-2 font-semibold text-neutral-800 mb-3">Upload your WHT credit notes</p>
 
                         {whtCredits.map((credit, idx) => (
                             <div key={idx} className="bg-white border border-neutral-200 rounded-2xl p-[12px] mb-4">
                                 <div className="space-y-3">
                                     {/* Credit Note Number */}
                                     <div className="flex items-center justify-between gap-4">
-                                        <label className="flex items-center text-[13px] font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
+                                        <label className="flex items-center text-2 font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
                                             Credit Note Number <HintIcon tip="The unique reference on your WHT credit note certificate." />
                                         </label>
-                                        <input type="text" placeholder="Enter" value={credit.creditNoteNo}
+                                        <Input type="text" placeholder="Enter" value={credit.creditNoteNo}
                                             onChange={e => {
                                                 const r = [...whtCredits]; r[idx] = { ...r[idx], creditNoteNo: e.target.value };
                                                 setWhtCredits(r);
                                             }}
-                                            className="w-[220px] flex-shrink-0 h-10 border border-neutral-200 bg-neutral-100 rounded-xl px-3 text-[13px] font-medium text-neutral-800 placeholder:placeholder:text-neutral-300 focus:outline-none focus:border-taxable-blue/40" />
+                                            className="w-[220px] flex-shrink-0" />
                                     </div>
                                     {/* Issuer Name */}
                                     <div className="flex items-center justify-between gap-4">
-                                        <label className="flex items-center text-[13px] font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
+                                        <label className="flex items-center text-2 font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
                                             Issuer (Withholder) Name <HintIcon tip="The company or person that deducted WHT from payments to you." />
                                         </label>
-                                        <input type="text" placeholder="Enter" value={credit.issuerName}
+                                        <Input type="text" placeholder="Enter" value={credit.issuerName}
                                             onChange={e => { const r = [...whtCredits]; r[idx] = { ...r[idx], issuerName: e.target.value }; setWhtCredits(r); }}
-                                            className="w-[220px] flex-shrink-0 h-10 border border-neutral-200 bg-neutral-100 rounded-xl px-3 text-[13px] font-medium text-neutral-800 placeholder:placeholder:text-neutral-300 focus:outline-none focus:border-taxable-blue/40" />
+                                            className="w-[220px] flex-shrink-0" />
                                     </div>
                                     {/* Issuer TIN */}
                                     <div className="flex items-center justify-between gap-4">
-                                        <label className="flex items-center text-[13px] font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
+                                        <label className="flex items-center text-2 font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
                                             Issuer TIN <HintIcon tip="Tax Identification Number of the withholder." />
                                         </label>
-                                        <input type="text" placeholder="Enter" value={credit.issuerTIN}
+                                        <Input type="text" placeholder="Enter" value={credit.issuerTIN}
                                             onChange={e => { const r = [...whtCredits]; r[idx] = { ...r[idx], issuerTIN: e.target.value }; setWhtCredits(r); }}
-                                            className="w-[220px] flex-shrink-0 h-10 border border-neutral-200 bg-neutral-100 rounded-xl px-3 text-[13px] font-medium text-neutral-800 placeholder:placeholder:text-neutral-300 focus:outline-none focus:border-taxable-blue/40" />
+                                            className="w-[220px] flex-shrink-0" />
                                     </div>
                                     {/* WHT Type */}
                                     <div className="flex items-center justify-between gap-4">
-                                        <label className="flex items-center text-[13px] font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
+                                        <label className="flex items-center text-2 font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
                                             WHT Type <HintIcon tip="Nature of the transaction e.g. services, rent, dividends." />
                                         </label>
-                                        <div className="relative w-[220px] flex-shrink-0">
-                                            <select value={credit.whtType}
-                                                onChange={e => { const r = [...whtCredits]; r[idx] = { ...r[idx], whtType: e.target.value }; setWhtCredits(r); }}
-                                                className="w-full h-10 border border-neutral-200 bg-neutral-100 rounded-xl px-3 text-[13px] font-medium text-neutral-800 focus:outline-none appearance-none">
-                                                {WHT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                                            </select>
-                                            <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-                                        </div>
+                                        <SearchableSelect
+                                            options={WHT_TYPES}
+                                            value={credit.whtType}
+                                            onChange={(v) => { const r = [...whtCredits]; r[idx] = { ...r[idx], whtType: v }; setWhtCredits(r); }}
+                                            className="w-[220px] flex-shrink-0"
+                                        />
                                     </div>
                                     {/* WHT Rate */}
                                     <div className="flex items-center justify-between gap-4">
-                                        <label className="flex items-center text-[13px] font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
+                                        <label className="flex items-center text-2 font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
                                             WHT Rate <HintIcon tip="Applicable rate as shown on your credit note." />
                                         </label>
-                                        <div className="relative w-[220px] flex-shrink-0">
-                                            <select value={credit.whtRate}
-                                                onChange={e => { const r = [...whtCredits]; r[idx] = { ...r[idx], whtRate: e.target.value }; setWhtCredits(r); }}
-                                                className="w-full h-10 border border-neutral-200 bg-neutral-100 rounded-xl px-3 text-[13px] font-medium text-neutral-800 focus:outline-none appearance-none">
-                                                {WHT_RATES.map(t => <option key={t} value={t}>{t}</option>)}
-                                            </select>
-                                            <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-                                        </div>
+                                        <SearchableSelect
+                                            options={WHT_RATES}
+                                            value={credit.whtRate}
+                                            onChange={(v) => { const r = [...whtCredits]; r[idx] = { ...r[idx], whtRate: v }; setWhtCredits(r); }}
+                                            className="w-[220px] flex-shrink-0"
+                                        />
                                     </div>
                                     {/* Gross Amount */}
                                     <div className="flex items-center justify-between gap-4">
-                                        <label className="flex items-center text-[13px] font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
+                                        <label className="flex items-center text-2 font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
                                             Gross Amount <HintIcon tip="Total contract value before WHT deduction." />
                                         </label>
-                                        <input type="text" placeholder="N0" value={credit.grossAmount}
+                                        <Input type="text" placeholder="N0" value={credit.grossAmount}
                                             onChange={e => { const r = [...whtCredits]; r[idx] = { ...r[idx], grossAmount: e.target.value.replace(/[^0-9.]/g, '') }; setWhtCredits(r); }}
-                                            className="w-[220px] flex-shrink-0 h-10 border border-neutral-200 bg-neutral-100 rounded-xl px-3 text-[13px] font-medium text-neutral-800 placeholder:placeholder:text-neutral-300 focus:outline-none focus:border-taxable-blue/40" />
+                                            className="w-[220px] flex-shrink-0" />
                                     </div>
                                     {/* WHT Amount */}
                                     <div className="flex items-center justify-between gap-4">
-                                        <label className="flex items-center text-[13px] font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
+                                        <label className="flex items-center text-2 font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
                                             WHT Amount <HintIcon tip="Actual WHT deducted, as stated on the credit note." />
                                         </label>
-                                        <input type="text" placeholder="N0" value={credit.whtAmount}
+                                        <Input type="text" placeholder="N0" value={credit.whtAmount}
                                             onChange={e => { const r = [...whtCredits]; r[idx] = { ...r[idx], whtAmount: e.target.value.replace(/[^0-9.]/g, '') }; setWhtCredits(r); }}
-                                            className="w-[220px] flex-shrink-0 h-10 border border-neutral-200 bg-neutral-100 rounded-xl px-3 text-[13px] font-medium text-neutral-800 placeholder:placeholder:text-neutral-300 focus:outline-none focus:border-taxable-blue/40" />
+                                            className="w-[220px] flex-shrink-0" />
                                     </div>
                                     {/* Date Issued */}
                                     <div className="flex items-center justify-between gap-4">
-                                        <label className="flex items-center text-[13px] font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
+                                        <label className="flex items-center text-2 font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
                                             Date Issued <HintIcon tip="Date on the WHT credit note certificate." />
                                         </label>
-                                        <input type="text" placeholder="dd/mm/yyyy" value={credit.dateIssued}
+                                        <Input type="text" placeholder="dd/mm/yyyy" value={credit.dateIssued}
                                             onChange={e => { const r = [...whtCredits]; r[idx] = { ...r[idx], dateIssued: e.target.value }; setWhtCredits(r); }}
-                                            className="w-[220px] flex-shrink-0 h-10 border border-neutral-200 bg-neutral-100 rounded-xl px-3 text-[13px] font-medium text-neutral-800 placeholder:placeholder:text-neutral-300 focus:outline-none focus:border-taxable-blue/40" />
+                                            className="w-[220px] flex-shrink-0" />
                                     </div>
                                     {/* Payment Reference */}
                                     <div className="flex items-center justify-between gap-4">
-                                        <label className="flex items-center text-[13px] font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
+                                        <label className="flex items-center text-2 font-semibold text-neutral-700 whitespace-nowrap flex-shrink-0">
                                             Payment Reference <HintIcon tip="Reference number for the original payment transaction." />
                                         </label>
-                                        <input type="text" placeholder="Enter" value={credit.paymentRef}
+                                        <Input type="text" placeholder="Enter" value={credit.paymentRef}
                                             onChange={e => { const r = [...whtCredits]; r[idx] = { ...r[idx], paymentRef: e.target.value }; setWhtCredits(r); }}
-                                            className="w-[220px] flex-shrink-0 h-10 border border-neutral-200 bg-neutral-100 rounded-xl px-3 text-[13px] font-medium text-neutral-800 placeholder:placeholder:text-neutral-300 focus:outline-none focus:border-taxable-blue/40" />
+                                            className="w-[220px] flex-shrink-0" />
                                     </div>
 
                                     {/* Upload */}
                                     <div className="flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl mt-1">
                                         <div className="flex items-center gap-2.5">
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-400" strokeWidth="2">
                                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
                                             </svg>
                                             <div>
-                                                <p className="text-[12px] font-semibold text-neutral-700">Upload your financial statements</p>
-                                                <p className="text-[11px] text-neutral-400 font-medium">PDF, JPG, or PNG (Max 5MB)</p>
+                                                <p className="text-1 font-semibold text-neutral-700">Upload your financial statements</p>
+                                                <p className="text-1 text-neutral-400 font-medium">PDF, JPG, or PNG (Max 5MB)</p>
                                             </div>
                                         </div>
-                                        <button className="h-8 px-4 border border-neutral-300 rounded-lg text-[12px] font-bold text-neutral-800  transition-colors">Upload</button>
+                                        <button className="h-8 px-4 border border-neutral-300 rounded-lg text-1 font-semibold text-neutral-800  ">Upload</button>
                                     </div>
                                 </div>
                             </div>
@@ -804,14 +779,14 @@ export function BusinessCITContent({
 
                         <button
                             onClick={() => setWhtCredits(prev => [...prev, { creditNoteNo: '', issuerName: '', issuerTIN: '', whtType: 'Select', whtRate: 'Select', grossAmount: '', whtAmount: '', dateIssued: '', paymentRef: '' }])}
-                            className="flex items-center gap-1.5 text-[13px] font-bold text-taxable-blue  transition-opacity">
+                            className="flex items-center gap-1.5 text-2 font-semibold text-taxable-blue  ">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
                             Upload Another WHT Credit Note
                         </button>
                         </div>
                         </div>
 
-                        <button onClick={() => setSubSection('review')} className="h-12 px-8 bg-taxable-blue text-white font-bold rounded-xl transition-opacity text-[14px]">
+                        <button onClick={() => setSubSection('review')} className="h-12 px-8 bg-taxable-blue text-white font-semibold rounded-xl  text-3">
                             Continue to Review
                         </button>
                     </div>
@@ -820,7 +795,7 @@ export function BusinessCITContent({
                 {/* ── Review ── */}
                 {subSection === 'review' && (
                     <div className="w-full max-w-[500px] mx-auto">
-                        <h2 className="text-base font-bold text-neutral-800 mb-6">Your CIT calculation for 2025</h2>
+                        <h2 className="text-5 font-semibold text-neutral-800 mb-6">Your CIT calculation for 2025</h2>
 
                         <div className="space-y-10">
                         <div className="bg-white border border-neutral-200 rounded-2xl p-[12px]">
@@ -846,10 +821,10 @@ export function BusinessCITContent({
                         </div>
 
                         <div className="flex gap-3">
-                            <button className="flex-1 h-12 border border-neutral-300 text-neutral-800 font-bold rounded-xl  transition-colors text-[14px]">
+                            <button className="flex-1 h-12 border border-neutral-300 text-neutral-800 font-semibold rounded-xl   text-3">
                                 Download PDF
                             </button>
-                            <button onClick={() => setShowFilingModal(true)} className="flex-1 h-12 bg-taxable-blue text-white font-bold rounded-xl transition-opacity text-[14px]">
+                            <button onClick={() => setShowFilingModal(true)} className="flex-1 h-12 bg-taxable-blue text-white font-semibold rounded-xl  text-3">
                                 File & Pay
                             </button>
                         </div>

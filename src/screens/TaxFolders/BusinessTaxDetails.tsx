@@ -146,6 +146,7 @@ export default function BusinessTaxDetails() {
     const hasUnsavedChanges = React.useRef(false);
     const [showUnsavedModal, setShowUnsavedModal] = React.useState(false);
     const [pendingNav, setPendingNav] = React.useState<string | null>(null);
+    const [pendingCITSub, setPendingCITSub] = React.useState<'quarterly' | null>(null);
 
     // Company Info fields
     const [rcbn, setRcbn] = React.useState('');
@@ -156,6 +157,15 @@ export default function BusinessTaxDetails() {
     const [state, setState] = React.useState('');
     const [lga, setLga] = React.useState('');
     const [payQuarterly, setPayQuarterly] = React.useState(false);
+    const [estimatedAnnualRevenue, setEstimatedAnnualRevenue] = React.useState('');
+    const [profitMargin, setProfitMargin] = React.useState('20%');
+
+    const rev = Number((estimatedAnnualRevenue || '').replace(/,/g, '')) || 0;
+    const margin = profitMargin ? Number(profitMargin.replace('%', '')) / 100 : 0;
+    const estimatedProfit = rev * margin;
+    const totalCIT = estimatedProfit * 0.30;
+    const perQuarter = totalCIT / 4;
+    const qFmt = (n: number) => `₦${Math.round(n).toLocaleString()}`;
 
     const [datePickerOpen, setDatePickerOpen] = useState(false);
     const [incorporationDateObj, setIncorporationDateObj] = useState<Date | undefined>(undefined);
@@ -212,6 +222,8 @@ export default function BusinessTaxDetails() {
                 if (saved.city) setCity(saved.city);
                 if (saved.state) setState(saved.state);
                 if (typeof saved.payQuarterly === 'boolean') setPayQuarterly(saved.payQuarterly);
+                if (saved.estimatedAnnualRevenue) setEstimatedAnnualRevenue(saved.estimatedAnnualRevenue);
+                if (saved.profitMargin) setProfitMargin(saved.profitMargin);
             });
         } catch { /* ignore */ }
     }, []);
@@ -281,7 +293,7 @@ export default function BusinessTaxDetails() {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
             rcbn, companyName, industry, incorporationDateObj, address, city, state, lga,
-            payQuarterly,
+            payQuarterly, estimatedAnnualRevenue, profitMargin,
         }));
 
         toast.success('Company information saved');
@@ -294,6 +306,17 @@ export default function BusinessTaxDetails() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         setSubmitting(false);
+    };
+
+    const handleQuarterlyNav = () => {
+        if (hasUnsavedChanges.current) {
+            setPendingNav('company-income-tax');
+            setPendingCITSub('quarterly');
+            setShowUnsavedModal(true);
+        } else {
+            setActiveSection('company-income-tax');
+            setCitSubSection('quarterly');
+        }
     };
 
     const handlePayeFile = () => {
@@ -466,20 +489,63 @@ export default function BusinessTaxDetails() {
                                         </div>
                                     </div>
 
+                                      <div>
                                      {/* Pay CIT quarterly */}
-                                    <label className="flex items-center gap-3 cursor-pointer">
-                                        <Checkbox
-                                            checked={payQuarterly}
-                                            onCheckedChange={() => { setPayQuarterly(p => !p); hasUnsavedChanges.current = true; }}
-                                        />
-                                        <span className="text-3 font-medium text-neutral-500">
-                                            Pay CIT in quarterly installments
-                                        </span>
-                                        <HintIcon tip="Pay your annual CIT liability in 4 equal installments throughout the year." />
-                                    </label>
-                                    <p className="text-2 text-neutral-400 font-medium mt-1">Spread your Company Income Tax across four payments instead of one lump sum.</p>
+                                     <label className="flex items-center gap-3 cursor-pointer">
+                                         <Checkbox
+                                             checked={payQuarterly}
+                                             onCheckedChange={() => { setPayQuarterly(p => !p); hasUnsavedChanges.current = true; }}
+                                         />
+                                         <span className="text-3 font-medium text-neutral-800">
+                                             Pay CIT in quarterly installments
+                                         </span>
+                                         <HintIcon tip="Pay your annual CIT liability in 4 equal installments throughout the year." />
+                                     </label>
+                                     <p className="text-2 text-neutral-400 font-medium mt-1">Spread your Company Income Tax across four payments instead of one lump sum.</p>
+                                      {payQuarterly && (
+                                      <div className="space-y-4 mt-10">
+                                          <div>
+                                              <label className="block text-2 font-medium text-neutral-500 mb-1">
+                                                  Estimated annual gross revenue
+                                                  <HintIcon tip="Your projected gross revenue for the current tax year." />
+                                              </label>
+                                              <Input type="text" placeholder="₦ 0.00" value={estimatedAnnualRevenue}
+                                                  onChange={e => { const raw = e.target.value.replace(/[^0-9.]/g, ''); const parts = raw.split('.'); const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ','); setEstimatedAnnualRevenue(parts.length > 1 ? integer + '.' + parts.slice(1).join('') : integer); hasUnsavedChanges.current = true; }} />
+                                          </div>
+                                          <div>
+                                              <label className="block text-2 font-medium text-neutral-500 mb-2">
+                                                  Estimated profit margin
+                                                  <HintIcon tip="Your estimated profit as a percentage of revenue." />
+                                              </label>
+                                              <div className="flex gap-2">
+                                                  {['10%', '15%', '20%', '25%', '30%'].map(m => (
+                                                      <button key={m} type="button"
+                                                          onClick={() => { setProfitMargin(m); hasUnsavedChanges.current = true; }}
+                                                           className={`h-8 px-3 rounded-full text-1 font-semibold ${profitMargin === m ? 'bg-neutral-800 text-white' : 'bg-white border border-neutral-200 text-neutral-400'}`}
+                                                      >{m}</button>
+                                                  ))}
+                                              </div>
+                                          </div>
+                                          <hr className="border-neutral-100" />
+                                           <div className="space-y-3">
+                                              <div className="flex items-center justify-between text-2">
+                                                  <span className="text-neutral-500 font-medium">Estimated annual CIT</span>
+                                                  <span className="font-semibold text-neutral-800">{rev > 0 ? qFmt(totalCIT) : '—'}</span>
+                                              </div>
+                                              <div className="flex items-center justify-between text-2">
+                                                  <span className="text-neutral-500 font-medium">Quarterly installment</span>
+                                                  <span className="font-semibold text-neutral-800">{rev > 0 ? qFmt(perQuarter) : '—'}</span>
+                                              </div>
+                                          </div>
+                                          <div>
+                                              <p className="text-1 text-neutral-400 font-medium">You can find more details in <button onClick={handleQuarterlyNav} className="text-taxable-blue font-semibold">Quarterly Assessments</button></p>
+                                          </div>
+                                      </div>
+                                      )}
 
-                                    {/* Save & Continue */}
+                                     </div>
+
+                                      {/* Save & Continue */}
                                     <PrimaryButton
                                         onClick={handleSaveAndContinue}
                                         disabled={submitting || !companyInfoComplete}
@@ -556,6 +622,8 @@ export default function BusinessTaxDetails() {
                                 <BusinessCITContent
                                     activeSubMenu={citSubSection}
                                     onSubMenuChange={setCitSubSection}
+                                    estimatedAnnualRevenue={estimatedAnnualRevenue}
+                                    profitMargin={profitMargin}
                                 />
                             </div>
                         )}
@@ -610,6 +678,7 @@ export default function BusinessTaxDetails() {
                                 <PrimaryButton className="flex-1" onClick={() => {
                                     handleSaveAndContinue().then(() => {
                                         if (pendingNav) setActiveSection(pendingNav);
+                                        if (pendingCITSub) { setCitSubSection(pendingCITSub); setPendingCITSub(null); }
                                     });
                                     setShowUnsavedModal(false);
                                 }}>
@@ -619,6 +688,7 @@ export default function BusinessTaxDetails() {
                             <button onClick={() => {
                                 hasUnsavedChanges.current = false;
                                 if (pendingNav) setActiveSection(pendingNav);
+                                if (pendingCITSub) { setCitSubSection(pendingCITSub); setPendingCITSub(null); }
                                 setShowUnsavedModal(false);
                                 setPendingNav(null);
                             }} className="mt-3 text-2 font-semibold text-red-600">

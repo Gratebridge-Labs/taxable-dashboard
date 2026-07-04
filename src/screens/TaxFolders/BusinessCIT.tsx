@@ -677,7 +677,7 @@ export function BusinessCITContent({
                               <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
                            </svg>
                            <p className="text-1 font-semibold text-amber-600 leading-relaxed">
-                              Remember: When you file your annual CIT in June 2027, we'll reconcile based on your actual profit. You may owe more or get a refund.
+                               We'll reconcile at year-end. Overpaid? You get a refund. Underpaid? You owe the difference.
                            </p>
                         </div>
                         <PrimaryButton onClick={() => setSubSection('file-returns')}>
@@ -767,9 +767,9 @@ export function BusinessCITContent({
                                     </FormFieldRow>
                                 </div>
 
-                                {/* Section 3: Document Evidence Layer */}
-                                <div className="bg-neutral-50 rounded-2xl p-5">
-                                    <h3 className="text-3 font-semibold text-neutral-800 mb-4">Document Evidence Layer</h3>
+                                 {/* Section 3: Upload Supporting Documents */}
+                                 <div className="bg-neutral-50 rounded-2xl p-5">
+                                     <h3 className="text-3 font-semibold text-neutral-800 mb-4">Upload Supporting Documents</h3>
                                      <div className="space-y-6">
                                         <div>
                                             <p className="text-2 font-medium text-neutral-500 mb-2">Audited Financial Statements <span className="text-red-500">*</span></p>
@@ -1140,7 +1140,7 @@ export function BusinessCITContent({
                                 )}
                                 {finalPosition < 0 && (
                                     <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl">
-                                        <p className="text-2 font-semibold text-green-700 mb-3">Awesome! You overpaid by {fmt(Math.abs(finalPosition))} this year.</p>
+                                        <p className="text-2 font-semibold text-green-700 mb-3">You've overpaid by {fmt(Math.abs(finalPosition))}. Choose how to handle the surplus.</p>
                                         <RadioGroup value={rolloverRefund} onValueChange={(v) => setRolloverRefund(v as 'rollover' | 'refund')}>
                                             <label className="flex items-center gap-3 py-1.5 cursor-pointer">
                                                 <RadioGroupItem value="rollover" />
@@ -1207,7 +1207,7 @@ export function BusinessCITContent({
 
                                 <AccordionItem value="prepaid" className="bg-neutral-50 border border-neutral-100 rounded-2xl">
                                     <AccordionTrigger className="px-4 py-3 text-2 font-semibold text-neutral-800">
-                                        Advance Prepaid Tax Pool
+                                        Prepaid Taxes
                                     </AccordionTrigger>
                                     <AccordionContent className="px-4 pb-4">
                                         <div className="space-y-4">
@@ -1216,7 +1216,7 @@ export function BusinessCITContent({
                                                 <span className="font-medium text-neutral-800">{whtCredits.length} Certificate{whtCredits.length !== 1 ? 's' : ''} (Totaling {fmt(totalWHTCredits)})</span>
                                             </div>
                                             <div className="flex items-center justify-between text-2">
-                                                <span className="text-neutral-500">Total Taxable Quarterly Milestone Payments</span>
+                                                <span className="text-neutral-500">Quarterly Installments Paid</span>
                                                 <span className="font-medium text-neutral-800">
                                                     {['Q1', 'Q2', 'Q3', 'Q4'].filter((_, i) => (quarterPayments[i] || 0) > 0).join(', ') || '—'} (Totaling {fmt(totalQuarterlyPaid)})
                                                 </span>
@@ -1250,7 +1250,7 @@ export function BusinessCITContent({
                                 <div className="flex gap-3">
                                     <SecondaryButton onClick={() => goBack('wht-credits')}>Back</SecondaryButton>
                                     <PrimaryButton onClick={() => setShowFilingReviewSheet(true)} disabled={!legalConfirm1 || !legalConfirm2} className="flex-shrink-0">
-                                        {finalPosition > 0 ? 'Pay Balance & Submit Annual Return' : finalPosition < 0 ? 'Execute Free Filing & Claim Credit' : 'Submit Annual Return'}
+                                        {finalPosition > 0 ? 'Pay Balance & Submit Annual Return' : finalPosition < 0 ? 'File Return & Claim Credit' : 'Submit Annual Return'}
                                     </PrimaryButton>
                                 </div>
                             </div>

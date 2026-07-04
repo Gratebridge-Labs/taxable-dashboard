@@ -362,7 +362,7 @@ export default function BusinessTaxDetails() {
                     <div className="w-[250px] flex-shrink-0 flex flex-col gap-4 sticky top-24 border border-neutral-50 rounded-xl p-3">
                         {/* Main sections */}
                         <div>
-                            <p className="text-1 font-semibold text-neutral-400 uppercase tracking-wider mb-2">Select</p>
+                            <p className="text-1 font-semibold text-neutral-400 uppercase tracking-wider mb-2">Tax Sections</p>
                             <div>
                                 {BUSINESS_SECTIONS.map(sec => (
                                     <div key={sec.key}>

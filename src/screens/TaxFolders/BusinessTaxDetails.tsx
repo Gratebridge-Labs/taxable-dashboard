@@ -18,7 +18,7 @@ import { BusinessWHTContent } from './BusinessWHT';
 import { FilingSheet } from '@/screens/TaxFolders/TaxFolderShared';
 import { PrimaryButton, SecondaryButton } from '@/screens/TaxFolders/TaxFolderShared';
 import { BusinessCITContent } from './BusinessCIT';
-import { InformationFill } from '@mingcute/react';
+import { InformationFill, Home2Fill } from '@mingcute/react';
 import { toast } from 'sonner';
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
@@ -88,7 +88,7 @@ const SidebarItem = ({
                     {label}
                 </span>
                 {completed && (
-                    <div className="w-4 h-4 bg-green-600 rounded-[3px] flex items-center justify-center">
+                    <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="20 6 9 17 4 12" />
                         </svg>
@@ -106,7 +106,7 @@ const SidebarItem = ({
 // ── Welcome Modal ─────────────────────────────────────────────────────────────
 const WelcomeModal = ({ onClose }: { onClose: () => void }) => (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-black/30 backdrop-blur-[3px]" onClick={onClose} />
+        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
         <div className="relative bg-white rounded-2xl w-full max-w-[380px] p-7 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
             {/* Icon */}
             <div className="w-12 h-12 rounded-full border-2 border-neutral-200 flex items-center justify-center mb-5">
@@ -340,17 +340,14 @@ export default function BusinessTaxDetails() {
             {/* Custom nav bar */}
             <div className="w-full bg-white border-b border-neutral-100 px-4 md:px-8 py-3">
                 <div className="max-w-[1200px] mx-auto w-full flex flex-col gap-1">
-                    <button onClick={() => router.back()} className="flex items-center gap-2 text-3 font-semibold text-neutral-800 w-fit shrink-0">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="19" y1="12" x2="5" y2="12" />
-                            <polyline points="12 19 5 12 12 5" />
-                        </svg>
-                        Back
+                    <button onClick={() => router.push('/home')} className="flex items-center gap-2 text-3 font-semibold text-neutral-800 w-fit shrink-0">
+                        <Home2Fill className="w-5 h-5" color="#E5E5E5" />
+                        Home
                     </button>
                     <div className="flex items-center gap-2 text-1 text-neutral-300 font-medium">
                         <span>{taxYear} Company Tax</span>
                         <span>/</span>
-                        <span className="text-neutral-300">Company Information</span>
+                        <span className="text-neutral-300">{({ 'company-info': 'Company Information', paye: 'PAYE', vat: 'VAT', wht: 'WHT', 'company-income-tax': 'Company Income Tax' })[activeSection] || 'Company Information'}</span>
                     </div>
                 </div>
             </div>
@@ -413,7 +410,7 @@ export default function BusinessTaxDetails() {
                         {/* Company Information */}
                         {activeSection === 'company-info' && (
                             <div data-animate className="flex flex-col items-center">
-                                <h2 className="text-7 font-semibold text-taxable-dark tracking-[-0.02em] mb-8 w-full max-w-[400px]">Company Information</h2>
+                                <h2 className="text-7 font-semibold text-neutral-800 tracking-[-0.02em] mb-8 w-full max-w-[400px]">Company Information</h2>
 
                                         <div className="space-y-10 w-full max-w-[400px]">
                                             {/* RC/BN number */}
@@ -636,6 +633,7 @@ export default function BusinessTaxDetails() {
                                     activeSubMenu={citSubSection}
                                     onSubMenuChange={setCitSubSection}
                                     payQuarterly={payQuarterly}
+                                    taxYear={taxYear}
                                     estimatedAnnualRevenue={estimatedAnnualRevenue}
                                     profitMargin={profitMargin}
                                     onEstimatedRevenueChange={handleEstimatedRevenueChange}

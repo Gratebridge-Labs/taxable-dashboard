@@ -168,6 +168,7 @@ export function BusinessCITContent({
     activeSubMenu,
     onSubMenuChange,
     payQuarterly,
+    taxYear = '2025',
     estimatedAnnualRevenue,
     profitMargin,
     onEstimatedRevenueChange,
@@ -176,6 +177,7 @@ export function BusinessCITContent({
     activeSubMenu?: 'quarterly' | 'file-returns';
     onSubMenuChange?: (s: 'quarterly' | 'file-returns') => void;
     payQuarterly?: boolean;
+    taxYear?: string;
     estimatedAnnualRevenue?: string;
     profitMargin?: string;
     onEstimatedRevenueChange?: (v: string) => void;
@@ -276,9 +278,6 @@ export function BusinessCITContent({
     const totalQuarterlyPaid = Object.values(quarterPayments).reduce((s, v) => s + v, 0);
     const totalPrepayments = totalWHTCredits + totalQuarterlyPaid;
     const finalPosition = totalObligation - totalPrepayments;
-
-    const _breadcrumb = subSection === 'quarterly' ? 'Quarterly Assessments'
-        : 'File Annual Returns';
 
     const handleFileQuarter = () => {
         if (payQuarter !== null) {
@@ -441,10 +440,10 @@ export function BusinessCITContent({
               const initialPerQuarter = totalCIT / 4;
               const qFmt = (n: number) => `₦${Math.round(n).toLocaleString()}`;
               const quarters = [
-                { label: 'Q1 2026', due: 'Mar 31' },
-                { label: 'Q2 2026', due: 'Jun 30' },
-                { label: 'Q3 2026', due: 'Sep 30' },
-                { label: 'Q4 2026', due: 'Dec 31' },
+                { label: 'Q1 ' + taxYear, due: 'Mar 31' },
+                { label: 'Q2 ' + taxYear, due: 'Jun 30' },
+                { label: 'Q3 ' + taxYear, due: 'Sep 30' },
+                { label: 'Q4 ' + taxYear, due: 'Dec 31' },
               ];
               const paidQSet = new Set(Object.keys(quarterPayments).filter(k => quarterPayments[Number(k)] > 0).map(Number));
               const totalPaid = Object.values(quarterPayments).reduce((s, v) => s + v, 0);
@@ -472,7 +471,7 @@ export function BusinessCITContent({
                            </div>
                            <h3 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em] mb-3">Defer to annual filing</h3>
                            <p className="text-1 text-neutral-500 font-medium leading-relaxed mb-6">
-                              You chose to defer Q{deferModalQuarter + 1} payment to annual filing. You'll settle this when you file your CIT return in June 2026.
+                               You chose to defer Q{deferModalQuarter + 1} payment to annual filing. You'll settle this when you file your CIT return in June {Number(taxYear) + 1}.
                            </p>
                            <PrimaryButton
                               onClick={() => {
@@ -488,7 +487,7 @@ export function BusinessCITContent({
 
                    <div className="flex items-start justify-between mb-8">
                       <div>
-                        <h2 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em]">Quarterly Assessments (2026)</h2>
+                        <h2 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em]">Quarterly Assessments ({taxYear})</h2>
                         <p className="text-1 text-neutral-500 font-medium">Pay your estimated CIT in quarterly installments</p>
                       </div>
                       <SecondaryButtonSm onClick={() => { setEditRevenue(estimatedAnnualRevenue || ''); setEditMargin(profitMargin || '20%'); setShowEstimateDrawer(true); }}>
@@ -712,7 +711,7 @@ export function BusinessCITContent({
                     <div className="mb-12">
                         <div className="flex items-center justify-between mb-8">
                             <h1 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em]">
-                                File 2025 Annual CIT Return
+                                File {taxYear} Annual CIT Return
                             </h1>
                         </div>
 

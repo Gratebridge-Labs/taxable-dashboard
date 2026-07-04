@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/stepper';
 import {
     SectionHeading, DescriptionText, PrimaryButton, SecondaryButton,
-    FilingSheet, FormFieldRow, FormLabel, CardTitle,
+    FilingSheet, FormFieldRow, FormLabel,
 } from './TaxFolderShared';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',

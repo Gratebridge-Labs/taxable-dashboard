@@ -1,10 +1,12 @@
 'use client';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, startTransition } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
+import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Drawer, DrawerContent, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
 import {
@@ -85,28 +87,6 @@ const LeftSidebar = ({
     );
 };
 
-// ── Row in review ledger ──────────────────────────────────────────────────────
-const LedgerRow = ({ label, value, bold, indent, prefix }: {
-    label: string; value: string; bold?: boolean; indent?: boolean; prefix?: string;
-}) => (
-    <div className={`flex items-center justify-between py-2.5 ${bold ? 'border-t border-neutral-100 mt-1' : ''}`}>
-        <span className={`text-2 ${bold ? 'font-semibold text-neutral-800' : 'font-medium text-neutral-500'} ${indent ? 'pl-4' : ''}`}>{label}</span>
-        <span className={`text-2 ${bold ? 'font-semibold text-neutral-800' : 'font-semibold text-neutral-800'}`}>
-            {prefix}{value}
-        </span>
-    </div>
-);
-
-// ── Section header in review ledger ───────────────────────────────────────────
-const SectionHeader = ({ label }: { label: string }) => (
-    <div className="flex items-center gap-2 py-2.5 border-t border-neutral-100 mt-1">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-400" strokeWidth="2.5">
-            <line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-        <span className="text-2 font-semibold text-neutral-600">{label}</span>
-    </div>
-);
-
 // ── WHT Credit Form Content (read-only + editable) ─────────────────────────────
 function CreditFormContent({
     form, onChange, disabled, readOnlyStyle,
@@ -122,7 +102,7 @@ function CreditFormContent({
 }) {
     return (
         <>
-            <div className="bg-neutral-50 rounded-3xl p-5">
+            <div className="bg-neutral-50 rounded-2xl p-5">
                 <div className="space-y-3">
                                                     <FormFieldRow className="justify-between">
                                                         <FormLabel tip="The company or person that deducted WHT from payments to you.">Payer / Client Name</FormLabel>
@@ -147,7 +127,7 @@ function CreditFormContent({
                 </div>
             </div>
 
-            <div className="bg-neutral-50 rounded-3xl p-5">
+            <div className="bg-neutral-50 rounded-2xl p-5">
                 <h3 className="text-3 font-semibold text-neutral-800 mb-4">Upload FIRS WHT Credit Certificate <span className="text-red-500">*</span></h3>
                 {disabled ? (
                     <p className={`text-3 font-medium ${readOnlyStyle}`}>No certificate uploaded</p>
@@ -179,6 +159,9 @@ const CIT_SUBSECTIONS = [
     { key: 'quarterly', label: 'Quarterly Assessments' },
     { key: 'file-returns', label: 'File Annual Returns' },
 ];
+
+const STORAGE_KEY_CIT = 'taxable_cit_data';
+const STORAGE_KEY_CIT_FILED = 'taxable_cit_annual_filed';
 
 // ── Embeddable content component (no page shell) ──────────────────────────────
 export function BusinessCITContent({
@@ -219,11 +202,17 @@ export function BusinessCITContent({
     };
 
     const [showFilingReviewSheet, setShowFilingReviewSheet] = useState(false);
+    const [annualReturnFiled, setAnnualReturnFiled] = useState(() => {
+        try { return localStorage.getItem(STORAGE_KEY_CIT_FILED) === 'true'; } catch { return false; }
+    });
+    const [legalConfirm1, setLegalConfirm1] = useState(false);
+    const [legalConfirm2, setLegalConfirm2] = useState(false);
+    const [rolloverRefund, setRolloverRefund] = useState<'rollover' | 'refund'>('rollover');
     const [annualStep, setAnnualStep] = useState<'financials' | 'tax-adjustments' | 'wht-credits' | 'review'>('financials');
     const [completedAnnualSteps, setCompletedAnnualSteps] = useState<Set<number>>(new Set());
 
    // Quarterly assessments
-   const [quarterPayments, setQuarterPayments] = useState<Record<number, number>>({0: 0, 1: 0});
+    const [quarterPayments, setQuarterPayments] = useState<Record<number, number>>({});
    const [deferredQuarters, setDeferredQuarters] = useState<Set<number>>(new Set());
    const [showDeferModal, setShowDeferModal] = useState(false);
    const [deferModalQuarter, setDeferModalQuarter] = useState<number | null>(null);
@@ -275,16 +264,18 @@ export function BusinessCITContent({
     // Derived financials
     const totalRev = num(totalRevenue);
     const totalExp = num(cogs) + num(opex);
-    const nhf = totalRev * 0.025;
-    const accountingProfit = totalRev - totalExp - nhf;
+    const accountingProfit = totalRev - totalExp;
     const nonDeductibleTotal = num(govFines) + num(accountingDepreciation) + num(generalProvisions);
     const totalCapitalAllowances = num(class1Assets) * 0.10 + num(class2Assets) * 0.20 + num(class3Assets) * 0.25;
-    const adjustedTaxableProfit = accountingProfit + nonDeductibleTotal - totalCapitalAllowances;
-    const citRate = adjustedTaxableProfit * 0.30;
-    const eduTax = adjustedTaxableProfit * 0.025;
-    const grossTaxDue = citRate + eduTax;
+    const assessableProfit = accountingProfit + nonDeductibleTotal - totalCapitalAllowances;
+    const bracketRate = assessableProfit > 0 && totalRev <= 25_000_000 ? 0.20 : 0.30;
+    const baseCIT = Math.max(0, assessableProfit) * bracketRate;
+    const developmentLevy = Math.max(0, assessableProfit) * 0.04;
+    const totalObligation = baseCIT + developmentLevy;
     const totalWHTCredits = whtCredits.reduce((s, c) => s + num(c.withheldAmount), 0);
-    const netTaxPayable = Math.max(0, grossTaxDue - totalWHTCredits);
+    const totalQuarterlyPaid = Object.values(quarterPayments).reduce((s, v) => s + v, 0);
+    const totalPrepayments = totalWHTCredits + totalQuarterlyPaid;
+    const finalPosition = totalObligation - totalPrepayments;
 
     const _breadcrumb = subSection === 'quarterly' ? 'Quarterly Assessments'
         : 'File Annual Returns';
@@ -300,6 +291,53 @@ export function BusinessCITContent({
     const goBack = (target: 'financials' | 'tax-adjustments' | 'wht-credits' | 'review') => {
         setAnnualStep(target);
     };
+
+    // Persist annual filed status
+    useEffect(() => {
+        try { localStorage.setItem(STORAGE_KEY_CIT_FILED, String(annualReturnFiled)); } catch { /* ignore */ }
+    }, [annualReturnFiled]);
+
+    // Restore CIT data from localStorage on mount
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY_CIT);
+            if (!raw) return;
+            const saved = JSON.parse(raw);
+            startTransition(() => {
+                if (saved.totalRevenue) setTotalRevenue(saved.totalRevenue);
+                if (saved.cogs) setCogs(saved.cogs);
+                if (saved.opex) setOpex(saved.opex);
+                if (saved.auditedFiles) setAuditedFiles(saved.auditedFiles);
+                if (saved.trialBalanceFiles) setTrialBalanceFiles(saved.trialBalanceFiles);
+                if (saved.govFines) setGovFines(saved.govFines);
+                if (saved.accountingDepreciation) setAccountingDepreciation(saved.accountingDepreciation);
+                if (saved.generalProvisions) setGeneralProvisions(saved.generalProvisions);
+                if (saved.class1Assets) setClass1Assets(saved.class1Assets);
+                if (saved.class2Assets) setClass2Assets(saved.class2Assets);
+                if (saved.class3Assets) setClass3Assets(saved.class3Assets);
+                if (saved.whtCredits) setWhtCredits(saved.whtCredits);
+                if (saved.quarterPayments) setQuarterPayments(saved.quarterPayments);
+                if (saved.deferredQuarters) setDeferredQuarters(new Set(saved.deferredQuarters));
+            });
+        } catch { /* ignore */ }
+    }, []);
+
+    // Persist CIT data on changes
+    useEffect(() => {
+        try {
+            localStorage.setItem(STORAGE_KEY_CIT, JSON.stringify({
+                totalRevenue, cogs, opex, auditedFiles, trialBalanceFiles,
+                govFines, accountingDepreciation, generalProvisions,
+                class1Assets, class2Assets, class3Assets,
+                whtCredits, quarterPayments, deferredQuarters: Array.from(deferredQuarters),
+            }));
+        } catch { /* ignore */ }
+    }, [
+        totalRevenue, cogs, opex, auditedFiles, trialBalanceFiles,
+        govFines, accountingDepreciation, generalProvisions,
+        class1Assets, class2Assets, class3Assets,
+        whtCredits, quarterPayments, deferredQuarters,
+    ]);
 
     const CREDIT_ENTRY_OPTIONS = [
         { id: 'manual' as const, label: 'Manual entry' },
@@ -399,7 +437,7 @@ export function BusinessCITContent({
               const rev = Number((estimatedAnnualRevenue || '').replace(/,/g, '')) || 0;
               const margin = profitMargin ? Number(profitMargin.replace('%', '')) / 100 : 0;
               const estimatedProfit = rev * margin;
-              const totalCIT = estimatedProfit * 0.30;
+               const totalCIT = estimatedProfit * (rev > 0 && rev <= 25_000_000 ? 0.20 : 0.30);
               const initialPerQuarter = totalCIT / 4;
               const qFmt = (n: number) => `₦${Math.round(n).toLocaleString()}`;
               const quarters = [
@@ -433,7 +471,7 @@ export function BusinessCITContent({
                               </svg>
                            </div>
                            <h3 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em] mb-3">Defer to annual filing</h3>
-                           <p className="text-2 text-neutral-500 font-medium leading-relaxed mb-6">
+                           <p className="text-1 text-neutral-500 font-medium leading-relaxed mb-6">
                               You chose to defer Q{deferModalQuarter + 1} payment to annual filing. You'll settle this when you file your CIT return in June 2026.
                            </p>
                            <PrimaryButton
@@ -451,7 +489,7 @@ export function BusinessCITContent({
                    <div className="flex items-start justify-between mb-8">
                       <div>
                         <h2 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em]">Quarterly Assessments (2026)</h2>
-                        <p className="text-2 text-neutral-500 font-medium">Pay your estimated CIT in quarterly installments</p>
+                        <p className="text-1 text-neutral-500 font-medium">Pay your estimated CIT in quarterly installments</p>
                       </div>
                       <SecondaryButtonSm onClick={() => { setEditRevenue(estimatedAnnualRevenue || ''); setEditMargin(profitMargin || '20%'); setShowEstimateDrawer(true); }}>
                         Edit Estimates
@@ -475,7 +513,7 @@ export function BusinessCITContent({
                         <span className="font-semibold text-neutral-800">{qFmt(estimatedProfit)}</span>
                       </div>
                       <div className="flex items-center justify-between text-2">
-                        <span className="text-neutral-500 font-medium">Estimated CIT (30%)</span>
+                                       <span className="text-neutral-500 font-medium">Estimated CIT ({rev > 0 && rev <= 25_000_000 ? '20' : '30'}%)</span>
                         <span className="font-semibold text-neutral-800">{qFmt(totalCIT)}</span>
                       </div>
                       <div className="flex items-center justify-between text-2">
@@ -575,7 +613,7 @@ export function BusinessCITContent({
                             {(() => {
                                const editRev = Number((editRevenue || '').replace(/,/g, '')) || 0;
                                const editMarg = editMargin ? Number(editMargin.replace('%', '')) / 100 : 0;
-                               const editCIT = editRev * editMarg * 0.30;
+                                const editCIT = editRev * editMarg * (editRev > 0 && editRev <= 25_000_000 ? 0.20 : 0.30);
                                const editQtr = editCIT / 4;
                                return (
                                 <div className="space-y-3">
@@ -703,7 +741,7 @@ export function BusinessCITContent({
                         <div className="w-full max-w-[500px] mx-auto" data-animate>
                             <div className="space-y-6">
                                 {/* Section 1: Core Revenue & Cost Inputs */}
-                                <div className="bg-neutral-50 rounded-3xl p-5">
+                                <div className="bg-neutral-50 rounded-2xl p-5">
                                     <h3 className="text-3 font-semibold text-neutral-800 mb-4">Core Revenue & Cost Inputs</h3>
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
@@ -722,7 +760,7 @@ export function BusinessCITContent({
                                 </div>
 
                                 {/* Section 2: Accounting Baseline */}
-                                <div className="bg-neutral-50 rounded-3xl p-5">
+                                <div className="bg-neutral-50 rounded-2xl p-5">
                                     <h3 className="text-3 font-semibold text-neutral-800 mb-4">Accounting Baseline</h3>
                                     <FormFieldRow className="justify-between">
                                         <FormLabel tip="Automatically calculated: Total Revenue − Cost of Sales − Operating Expenses. This is the starting point for tax adjustments in the next step.">Net Profit Before Tax</FormLabel>
@@ -731,7 +769,7 @@ export function BusinessCITContent({
                                 </div>
 
                                 {/* Section 3: Document Evidence Layer */}
-                                <div className="bg-neutral-50 rounded-3xl p-5">
+                                <div className="bg-neutral-50 rounded-2xl p-5">
                                     <h3 className="text-3 font-semibold text-neutral-800 mb-4">Document Evidence Layer</h3>
                                      <div className="space-y-6">
                                         <div>
@@ -799,7 +837,7 @@ export function BusinessCITContent({
                         <div className="w-full max-w-[500px] mx-auto" data-animate>
                             <div className="space-y-6">
                                 {/* Section 1: Non-Deductible Expenses */}
-                                <div className="bg-neutral-50 rounded-3xl p-5">
+                                <div className="bg-neutral-50 rounded-2xl p-5">
                                     <h3 className="text-3 font-semibold text-neutral-800 mb-4">Non-Deductible Expenses (Add-backs)</h3>
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
@@ -824,7 +862,7 @@ export function BusinessCITContent({
                                 </div>
 
                                 {/* Section 2: Capital Allowances */}
-                                <div className="bg-neutral-50 rounded-3xl p-5">
+                                <div className="bg-neutral-50 rounded-2xl p-5">
                                     <h3 className="text-3 font-semibold text-neutral-800 mb-4">Capital Allowances (Deductions)</h3>
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
@@ -849,7 +887,7 @@ export function BusinessCITContent({
                                 </div>
 
                                 {/* Section 3: Adjusted Taxable Profit */}
-                                <div className="bg-neutral-50 rounded-3xl p-5">
+                                <div className="bg-neutral-50 rounded-2xl p-5">
                                     <h3 className="text-3 font-semibold text-neutral-800 mb-4">Adjusted Taxable Profit</h3>
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between text-2">
@@ -866,7 +904,7 @@ export function BusinessCITContent({
                                         </div>
                                         <div className="flex items-center justify-between text-2 pt-2 border-t border-neutral-100">
                                             <span className="text-2 font-semibold text-neutral-800">Adjusted Taxable Profit</span>
-                                            <span className="text-2 font-semibold text-neutral-800">{fmt(adjustedTaxableProfit)}</span>
+                                            <span className="text-2 font-semibold text-neutral-800">{fmt(assessableProfit)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -936,10 +974,10 @@ export function BusinessCITContent({
                                         <SecondaryButtonSm onClick={() => openAddCredit()}>Add WHT Credit Note</SecondaryButtonSm>
                                     </div>
 
-                                    <div className="bg-white border border-neutral-200 rounded-xl overflow-hidden mb-6">
+                                    <div className="bg-white border border-neutral-50 rounded-2xl overflow-hidden mb-6">
                                         <Table>
                                             <TableHeader>
-                                                <TableRow>
+                                                <TableRow className="bg-neutral-50">
                                                     {['Client Name', 'TIN', 'Credit Ref #', 'Gross Value', 'WHT Amount', 'Certificate'].map(h => (
                                                         <TableHead key={h} className="px-6 py-4 font-medium text-neutral-400 text-2">{h}</TableHead>
                                                     ))}
@@ -1037,7 +1075,7 @@ export function BusinessCITContent({
                                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-red-600"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
                                                     </div>
                                                     <h3 className="text-6 font-semibold text-neutral-800 mb-2">Remove Credit Note?</h3>
-                                                    <p className="text-2 text-neutral-500 font-medium mb-6">This action cannot be undone.</p>
+                                                    <p className="text-1 text-neutral-500 font-medium mb-6">This action cannot be undone.</p>
                                                     <div className="flex gap-3 w-full">
                                                         <SecondaryButton className="flex-1" onClick={() => setShowRemoveCredit(false)}>Cancel</SecondaryButton>
                                                         <button onClick={handleRemoveCredit} className="flex-1 h-12 bg-red-600 text-white font-semibold rounded-xl text-3">Remove</button>
@@ -1053,44 +1091,178 @@ export function BusinessCITContent({
 
                     {/* Step 5: Review */}
                     {annualStep === 'review' && (
-                        <div className="w-full max-w-[500px] mx-auto" data-animate>
-                            <div className="space-y-10">
-                            <div className="bg-white border border-neutral-200 rounded-2xl p-3">
-                                <LedgerRow label="Revenue" value={fmt(totalRev)} />
-                                <LedgerRow label="Expenses" value={`-${fmt(totalExp)}`} />
-                                <LedgerRow label="NHF (2.5%)" value={`-${fmt(nhf)}`} />
-                                <LedgerRow label="Accounting Profit" value={fmt(accountingProfit)} bold />
-
-                                <SectionHeader label="Tax Adjustments" />
-                                <LedgerRow label="Non-deductible expenses" value={`+${fmt(nonDeductibleTotal)}`} indent />
-                                <LedgerRow label="Capital Allowances" value={`-${fmt(totalCapitalAllowances)}`} indent />
-                                <LedgerRow label="Taxable Profit" value={fmt(adjustedTaxableProfit)} bold />
-
-                                <LedgerRow label="CIT Rate (30%)" value={fmt(citRate)} />
-                                <LedgerRow label="Education Tax (2.5%)" value={fmt(eduTax)} />
-                                <LedgerRow label="Gross Tax Due" value={fmt(grossTaxDue)} bold />
-
-                                <SectionHeader label="Credits" />
-                                <LedgerRow label="WHT Credits" value={`-${fmt(totalWHTCredits)}`} indent />
-                                <LedgerRow label="Quarterly payments" value={`-${fmt(Object.values(quarterPayments).reduce((s, v) => s + v, 0))}`} indent />
-                                <LedgerRow label="Net Tax Payable" value={fmt(netTaxPayable)} bold />
+                        annualReturnFiled ? (
+                            <div className="w-full max-w-[500px] mx-auto text-center py-12" data-animate>
+                                <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-green-600">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                </div>
+                                <h2 className="text-6 font-semibold text-neutral-800 mb-2">Annual Return Filed</h2>
+                                <p className="text-1 text-neutral-500 font-medium mb-6">
+                                    Your 2025 annual CIT return has been successfully submitted to the NRS.
+                                </p>
+                                <div className="flex justify-center gap-3">
+                                    <SecondaryButton onClick={() => goBack('wht-credits')}>Back</SecondaryButton>
+                                    <PrimaryButton onClick={() => { setAnnualReturnFiled(false); setLegalConfirm1(false); setLegalConfirm2(false); setShowFilingReviewSheet(false); }}>
+                                        File Another
+                                    </PrimaryButton>
+                                </div>
                             </div>
+                        ) : (
+                        <div className="w-full max-w-[800px] mx-auto" data-animate>
+
+                            {/* ═══════════════════════════════════════════════════════
+                               Section 1: Cards + State Messaging
+                               ═══════════════════════════════════════════════════════ */}
+                            <div className="mb-14">
+                                <div className="flex gap-4">
+                                    <div className="flex-1 bg-white border border-neutral-100 rounded-2xl p-4 text-left">
+                                        <p className="text-1 text-neutral-500 font-medium">Gross CIT Owed</p>
+                                        <p className="text-4 font-semibold text-neutral-800 mt-1">{fmt(baseCIT)}</p>
+                                    </div>
+                                    <div className="flex-1 bg-white border border-neutral-100 rounded-2xl p-4 text-left">
+                                        <p className="text-1 text-neutral-500 font-medium">Development Levy (4%)</p>
+                                        <p className="text-4 font-semibold text-neutral-800 mt-1">+{fmt(developmentLevy)}</p>
+                                    </div>
+                                    <div className="flex-1 bg-white border border-neutral-100 rounded-2xl p-4 text-left">
+                                        <p className="text-1 text-neutral-500 font-medium">WHT Credits Applied</p>
+                                        <p className="text-4 font-semibold text-neutral-800 mt-1">-{fmt(totalWHTCredits)}</p>
+                                    </div>
+                                    <div className="flex-1 bg-white border border-neutral-100 rounded-2xl p-4 text-left">
+                                        <p className="text-1 text-neutral-500 font-medium">Quarterly Installments</p>
+                                        <p className="text-4 font-semibold text-neutral-800 mt-1">-{fmt(totalQuarterlyPaid)}</p>
+                                    </div>
+                                </div>
+
+                                {/* State messaging */}
+                                {finalPosition > 0 && (
+                                    <p className="text-2 text-amber-600 font-medium mt-4">You have an outstanding balance of {fmt(finalPosition)} due to the NRS.</p>
+                                )}
+                                {finalPosition < 0 && (
+                                    <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl">
+                                        <p className="text-2 font-semibold text-green-700 mb-3">Awesome! You overpaid by {fmt(Math.abs(finalPosition))} this year.</p>
+                                        <RadioGroup value={rolloverRefund} onValueChange={(v) => setRolloverRefund(v as 'rollover' | 'refund')}>
+                                            <label className="flex items-center gap-3 py-1.5 cursor-pointer">
+                                                <RadioGroupItem value="rollover" />
+                                                <span className="text-2 text-green-700">Apply as rollover credit to lower next year's Q1 payment</span>
+                                            </label>
+                                            <label className="flex items-center gap-3 py-1.5 cursor-pointer">
+                                                <RadioGroupItem value="refund" />
+                                                <span className="text-2 text-green-700">Request direct cash refund processing</span>
+                                            </label>
+                                        </RadioGroup>
+                                    </div>
+                                )}
+
                             </div>
 
-                            <div className="flex gap-3 mt-8">
-                                <SecondaryButton onClick={() => goBack('wht-credits')}>Back</SecondaryButton>
-                                <PrimaryButton onClick={() => setShowFilingReviewSheet(true)}>
-                                    File & Pay
-                                </PrimaryButton>
+                            {/* ═══════════════════════════════════════════════════════
+                               Section 2: Core Data Checklist
+                               ═══════════════════════════════════════════════════════ */}
+                            <div className="mb-14">
+                            <Accordion defaultValue={['accounting']} className="space-y-1">
+                                <AccordionItem value="accounting" className="bg-neutral-50 border border-neutral-100 rounded-2xl">
+                                    <AccordionTrigger className="px-4 py-3 text-2 font-semibold text-neutral-800">
+                                        Accounting Baseline
+                                    </AccordionTrigger>
+                                    <AccordionContent className="px-4 pb-4">
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between text-2">
+                                                <span className="text-neutral-500">Turnover / Gross Revenue</span>
+                                                <span className="font-medium text-neutral-800">{fmt(totalRev)}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-2">
+                                                <span className="text-neutral-500">Net Accounting Profit before Tax</span>
+                                                <span className="font-medium text-neutral-800">{fmt(accountingProfit)}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-2">
+                                                <span className="text-neutral-500">Attached Financial Statement File</span>
+                                                <span className="font-medium text-neutral-800">{auditedFiles.length > 0 ? `📄 ${auditedFiles[0].name}` : '—'}</span>
+                                            </div>
+                                        </div>
+                                    </AccordionContent>
+                                </AccordionItem>
+
+                                <AccordionItem value="legal" className="bg-neutral-50 border border-neutral-100 rounded-2xl">
+                                    <AccordionTrigger className="px-4 py-3 text-2 font-semibold text-neutral-800">
+                                        Legal Adjustments
+                                    </AccordionTrigger>
+                                    <AccordionContent className="px-4 pb-4">
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between text-2">
+                                                <span className="text-neutral-500">Added-back Non-Deductible Expenses</span>
+                                                <span className="font-medium text-neutral-800">{fmt(nonDeductibleTotal)}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-2">
+                                                <span className="text-neutral-500">Deducted Capital Allowances (Asset Relief)</span>
+                                                <span className="font-medium text-neutral-800">{fmt(totalCapitalAllowances)}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-2 pt-2 border-t border-neutral-100">
+                                                <span className="font-semibold text-neutral-800">Final Taxable / Chargeable Profit</span>
+                                                <span className="font-semibold text-neutral-800">{fmt(assessableProfit)}</span>
+                                            </div>
+                                        </div>
+                                    </AccordionContent>
+                                </AccordionItem>
+
+                                <AccordionItem value="prepaid" className="bg-neutral-50 border border-neutral-100 rounded-2xl">
+                                    <AccordionTrigger className="px-4 py-3 text-2 font-semibold text-neutral-800">
+                                        Advance Prepaid Tax Pool
+                                    </AccordionTrigger>
+                                    <AccordionContent className="px-4 pb-4">
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between text-2">
+                                                <span className="text-neutral-500">Total WHT Credit Notes (Verified)</span>
+                                                <span className="font-medium text-neutral-800">{whtCredits.length} Certificate{whtCredits.length !== 1 ? 's' : ''} (Totaling {fmt(totalWHTCredits)})</span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-2">
+                                                <span className="text-neutral-500">Total Taxable Quarterly Milestone Payments</span>
+                                                <span className="font-medium text-neutral-800">
+                                                    {['Q1', 'Q2', 'Q3', 'Q4'].filter((_, i) => (quarterPayments[i] || 0) > 0).join(', ') || '—'} (Totaling {fmt(totalQuarterlyPaid)})
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            </Accordion>
+                            </div>
+
+                                {/* ═══════════════════════════════════════════════════════
+                                   Section 3: Legal Declaration & Final Settlement
+                                   ═══════════════════════════════════════════════════════ */}
+                                <div className="space-y-3 mb-8">
+                                    <label className="flex items-start gap-3 cursor-pointer">
+                                        <Checkbox checked={legalConfirm1} onCheckedChange={(c) => setLegalConfirm1(c === true)} className="mt-0.5" />
+                                        <span className="text-2 text-neutral-600 font-medium leading-relaxed">I confirm that the numbers above perfectly match our uploaded audited financials.</span>
+                                    </label>
+                                    <label className="flex items-start gap-3 cursor-pointer">
+                                        <Checkbox checked={legalConfirm2} onCheckedChange={(c) => setLegalConfirm2(c === true)} className="mt-0.5" />
+                                        <span className="text-2 text-neutral-600 font-medium leading-relaxed">I authorize Taxable to act as our designated tax agent to finalize this submission.</span>
+                                    </label>
+                                </div>
+
+                            {/* Final Settlement + CTA */}
+                            <div className="flex items-center justify-between mb-8">
+                                <div>
+                                    <p className="text-1 text-neutral-500 font-medium">Final Settlement Position</p>
+                                    <p className="text-7 font-semibold text-neutral-800">{fmt(Math.abs(finalPosition))}</p>
+                                </div>
+                                <div className="flex gap-3">
+                                    <SecondaryButton onClick={() => goBack('wht-credits')}>Back</SecondaryButton>
+                                    <PrimaryButton onClick={() => setShowFilingReviewSheet(true)} disabled={!legalConfirm1 || !legalConfirm2} className="flex-shrink-0">
+                                        {finalPosition > 0 ? 'Pay Balance & Submit Annual Return' : finalPosition < 0 ? 'Execute Free Filing & Claim Credit' : 'Submit Annual Return'}
+                                    </PrimaryButton>
+                                </div>
                             </div>
 
                             <FilingSheet
                                 open={showFilingReviewSheet}
                                 onClose={() => setShowFilingReviewSheet(false)}
-                                onFile={() => setShowFilingReviewSheet(false)}
+                                onFile={() => { setAnnualReturnFiled(true); setShowFilingReviewSheet(false); }}
                             />
                         </div>
-                    )}
+                    ))}
                 </div>
             )}
 

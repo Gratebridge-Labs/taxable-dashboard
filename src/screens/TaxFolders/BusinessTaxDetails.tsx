@@ -107,7 +107,7 @@ const SidebarItem = ({
 const WelcomeModal = ({ onClose }: { onClose: () => void }) => (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
         <div className="absolute inset-0 bg-black/30 backdrop-blur-[3px]" onClick={onClose} />
-        <div className="relative bg-white rounded-[20px] w-full max-w-[380px] p-7 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+        <div className="relative bg-white rounded-2xl w-full max-w-[380px] p-7 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
             {/* Icon */}
             <div className="w-12 h-12 rounded-full border-2 border-neutral-200 flex items-center justify-center mb-5">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-taxable-dark">
@@ -163,7 +163,7 @@ export default function BusinessTaxDetails() {
     const rev = Number((estimatedAnnualRevenue || '').replace(/,/g, '')) || 0;
     const margin = profitMargin ? Number(profitMargin.replace('%', '')) / 100 : 0;
     const estimatedProfit = rev * margin;
-    const totalCIT = estimatedProfit * 0.30;
+    const totalCIT = estimatedProfit * (rev > 0 && rev <= 25_000_000 ? 0.20 : 0.30);
     const perQuarter = totalCIT / 4;
     const qFmt = (n: number) => `₦${Math.round(n).toLocaleString()}`;
 
@@ -175,7 +175,7 @@ export default function BusinessTaxDetails() {
     );
 
     // PAYE inline state
-    const [payeSubSection, _setPayeSubSection] = React.useState<'monthly-filing' | 'annual-returns'>('monthly-filing');
+    const [payeSubSection] = React.useState<'monthly-filing' | 'annual-returns'>('monthly-filing');
     const [citSubSection, setCitSubSection] = React.useState<'quarterly' | 'file-returns'>('quarterly');
 
     const [activeMonth, setActiveMonth] = React.useState('January');
@@ -641,27 +641,6 @@ export default function BusinessTaxDetails() {
                                     onEstimatedRevenueChange={handleEstimatedRevenueChange}
                                     onProfitMarginChange={handleProfitMarginChange}
                                 />
-                            </div>
-                        )}
-
-                        {/* Review section */}
-                        {activeSection === 'review' && (
-                            <div data-animate className="bg-white rounded-2xl border border-neutral-100 p-8 text-center">
-                                <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-green-600">
-                                        <polyline points="20 6 9 17 4 12" />
-                                    </svg>
-                                </div>
-                                <h3 className="text-6 font-semibold text-neutral-800 mb-2">Ready to file?</h3>
-                                <p className="text-3 text-neutral-500 font-medium mb-6">
-                                    Review your information and submit your company tax return.
-                                </p>
-                                <button
-                                    onClick={() => router.push('/home')}
-                                    className="h-12 px-10 bg-taxable-blue text-white font-semibold rounded-xl text-3"
-                                >
-                                    Submit Tax Return
-                                </button>
                             </div>
                         )}
                     </div>

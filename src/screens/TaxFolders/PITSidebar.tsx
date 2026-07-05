@@ -12,7 +12,7 @@ export interface PITSidebarProps {
 const SECTIONS: { key: 'personal-info' | 'income-deductions' | 'review'; label: string }[] = [
     { key: 'personal-info', label: 'Personal Information' },
     { key: 'income-deductions', label: 'Income & Deductions' },
-    { key: 'review', label: 'Review & File' },
+    { key: 'review', label: 'Annual Filing' },
 ];
 
 const SidebarItem = ({

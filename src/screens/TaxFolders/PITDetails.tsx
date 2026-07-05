@@ -180,21 +180,38 @@ export default function PITDetails() {
     const INCOME_STEPS = [
         { key: 'income', step: 1, title: 'Income Sources' },
         { key: 'deductions', step: 2, title: 'Deductions & Reliefs' },
-        { key: 'review', step: 3, title: 'Review' },
     ];
-    const [incomeStep, setIncomeStep] = useState<'income' | 'deductions' | 'review'>('income');
+    const [incomeStep, setIncomeStep] = useState<'income' | 'deductions'>('income');
     const [completedIncomeSteps, setCompletedIncomeSteps] = useState<Set<number>>(new Set());
-    const [filedIncomeMonths, setFiledIncomeMonths] = useState<Set<number>>(new Set());
+    const [recordedMonths, setRecordedMonths] = useState<Set<number>>(new Set());
+    const [hasUnsavedIncome, setHasUnsavedIncome] = useState(false);
+    const [showUnsavedIncomeModal, setShowUnsavedIncomeModal] = useState(false);
+    const [pendingIncomeAction, setPendingIncomeAction] = useState<string | null>(null);
 
-    const goForward = (target: 'income' | 'deductions' | 'review') => {
-        const stepNum: Record<string, number> = { income: 1, deductions: 2, review: 3 };
+    const goForward = (target: 'income' | 'deductions') => {
+        const stepNum: Record<string, number> = { income: 1, deductions: 2 };
         const currentStepNum = stepNum[incomeStep];
         if (currentStepNum) setCompletedIncomeSteps(prev => new Set([...prev, currentStepNum]));
         setIncomeStep(target);
     };
-
-    const goBack = (target: 'income' | 'deductions' | 'review') => {
+    const goBack = (target: 'income' | 'deductions') => {
         setIncomeStep(target);
+    };
+
+    const handleUnsavedConfirm = () => {
+        if (pendingIncomeAction === 'month_change') {
+            setIncomeByMonth(prev => { const r = { ...prev }; delete r[activeMonthNum - 1]; return r; });
+            setDeductionsByMonth(prev => { const r = { ...prev }; delete r[activeMonthNum - 1]; return r; });
+        }
+        setHasUnsavedIncome(false);
+        setShowUnsavedIncomeModal(false);
+        setPendingIncomeAction(null);
+    };
+
+    const handleSaveMonth = () => {
+        setRecordedMonths(prev => new Set([...prev, activeMonthNum - 1]));
+        setHasUnsavedIncome(false);
+        toast.success(`Data recorded for ${INCOME_MONTH_NAMES[activeMonthNum - 1]}`);
     };
 
     const [incomeByMonth, setIncomeByMonth] = useState<Record<number, {
@@ -212,6 +229,7 @@ export default function PITDetails() {
 
     const setIncomeField = (field: string, value: string) => {
         setIncomeByMonth(prev => ({ ...prev, [activeMonthNum - 1]: { ...(prev[activeMonthNum - 1] ?? {}), [field]: value } }));
+        setHasUnsavedIncome(true);
     };
 
     const [deductionsByMonth, setDeductionsByMonth] = useState<Record<number, {
@@ -368,13 +386,18 @@ export default function PITDetails() {
     const incomeMonthSelector = (
         <Select value={INCOME_MONTH_NAMES[activeMonthNum - 1]} onValueChange={(v) => {
             const idx = INCOME_MONTH_NAMES.indexOf(v ?? '');
-            if (idx >= 0 && INCOME_MONTH_NAMES[idx]) setActiveMonth(INCOME_MONTH_NAMES[idx]!);
+            if (idx >= 0 && INCOME_MONTH_NAMES[idx]) {
+                if (hasUnsavedIncome) {
+                    setPendingIncomeAction('month_change');
+                    setShowUnsavedIncomeModal(true);
+                } else setActiveMonth(INCOME_MONTH_NAMES[idx]!);
+            }
         }}>
             <SelectTrigger className="w-fit min-w-[180px] h-10 rounded-xl bg-white border-neutral-50 text-3">
                 <div className="flex items-center gap-2 mr-6">
                     <span>{INCOME_MONTH_NAMES[activeMonthNum - 1]}</span>
-                    {filedIncomeMonths.has(activeMonthNum - 1) &&
-                        <Badge variant="secondary" className="bg-green-50 text-green-600 border-green-200 text-2 font-semibold px-2 py-0 h-5">Filed</Badge>
+                    {recordedMonths.has(activeMonthNum - 1) &&
+                        <Badge variant="secondary" className="bg-green-50 text-green-600 border-green-200 text-2 font-semibold px-2 py-0 h-5">Recorded</Badge>
                     }
                 </div>
             </SelectTrigger>
@@ -383,8 +406,8 @@ export default function PITDetails() {
                     <SelectItem key={m} value={m}>
                         <div className="flex items-center gap-2">
                             <span>{m}</span>
-                            {filedIncomeMonths.has(i) &&
-                                <Badge variant="secondary" className="bg-green-50 text-green-600 border-green-200 text-2 font-semibold px-2 py-0 h-5">Filed</Badge>
+                            {recordedMonths.has(i) &&
+                                <Badge variant="secondary" className="bg-green-50 text-green-600 border-green-200 text-2 font-semibold px-2 py-0 h-5">Recorded</Badge>
                             }
                         </div>
                     </SelectItem>
@@ -393,9 +416,7 @@ export default function PITDetails() {
         </Select>
     );
 
-    const incomeStepIndex = incomeStep === 'income' ? 1
-        : incomeStep === 'deductions' ? 2
-        : 3;
+    const incomeStepIndex = incomeStep === 'income' ? 1 : 2;
 
     // V2 derived calculations
     const currentIncome = incomeByMonth[activeMonthNum - 1] ?? {};
@@ -450,7 +471,7 @@ export default function PITDetails() {
                     </div>
 
                     <Stepper value={incomeStepIndex} onValueChange={(step) => {
-                        const map: Record<number, 'income' | 'deductions' | 'review'> = {1: 'income', 2: 'deductions', 3: 'review'};
+                        const map: Record<number, 'income' | 'deductions'> = {1: 'income', 2: 'deductions'};
                         if (step <= incomeStepIndex) goBack(map[step]);
                     }}>
                         {INCOME_STEPS.map((s, idx) => (
@@ -708,15 +729,6 @@ export default function PITDetails() {
         );
     };
 
-    const handleFileMonth = () => {
-        setFiledIncomeMonths(prev => new Set([...prev, activeMonthNum - 1]));
-        setShowFilingSheet(false);
-        if (activeMonthNum < 12) {
-            const nextIdx = activeMonthNum; // next month index (0-based)
-            setActiveMonth(INCOME_MONTH_NAMES[nextIdx]);
-        }
-        goBack('income');
-    };
 
     const monthScopedDeductions = useMemo(() => {
         const list = (deductions || []).map(normalizeDeduction).filter(d => !!d.type);
@@ -968,7 +980,7 @@ export default function PITDetails() {
             if (saved.incomeByMonth) setIncomeByMonth(saved.incomeByMonth);
             if (saved.deductionsByMonth) setDeductionsByMonth(saved.deductionsByMonth);
             if (saved.deductionFiles) setDeductionFiles(saved.deductionFiles);
-            if (saved.filedIncomeMonths) setFiledIncomeMonths(new Set(saved.filedIncomeMonths));
+            if (saved.recordedMonths) setRecordedMonths(new Set(saved.recordedMonths));
         } catch { /* ignore */ }
     }, []);
 
@@ -978,10 +990,10 @@ export default function PITDetails() {
         try {
             localStorage.setItem(STORAGE_KEY_PIT_INCOME, JSON.stringify({
                 incomeByMonth, deductionsByMonth, deductionFiles,
-                filedIncomeMonths: Array.from(filedIncomeMonths),
+                recordedMonths: Array.from(recordedMonths),
             }));
         } catch { /* ignore */ }
-    }, [incomeByMonth, deductionsByMonth, deductionFiles, filedIncomeMonths, STORAGE_KEY_PIT_INCOME]);
+    }, [incomeByMonth, deductionsByMonth, deductionFiles, recordedMonths, STORAGE_KEY_PIT_INCOME]);
 
     // Auto-save personal info to localStorage
     useEffect(() => {
@@ -1039,7 +1051,7 @@ export default function PITDetails() {
                     <div className="flex items-center gap-2 text-1 text-neutral-300 font-medium">
                         <span>{currentProfile.year} Individual Tax</span>
                         <span>/</span>
-                        <span className="text-neutral-300">{({ 'personal-info': 'Personal Information', 'income-deductions': 'Income & Deductions', 'review': 'Review & File' })[activeSection] || 'Personal Information'}</span>
+                         <span className="text-neutral-300">{({ 'personal-info': 'Personal Information', 'income-deductions': 'Income & Deductions', 'review': 'Annual Filing' })[activeSection] || 'Personal Information'}</span>
                     </div>
                 </div>
             </div>

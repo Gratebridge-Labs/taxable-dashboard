@@ -1,12 +1,18 @@
 'use client';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useLayoutEffect, useRef, startTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
+import Lenis from 'lenis';
+import gsap from 'gsap';
+import { Home2Fill } from '@mingcute/react';
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/components/Toast/ToastProvider';
 import { useTaxableApi } from '@/hooks/useTaxableApi';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PrimaryButton } from '@/screens/TaxFolders/TaxFolderShared';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import type { Profile, Income, Deduction, DeductionType } from '@/types/api';
 
 // Sub-components and Shared Utilities
@@ -17,13 +23,73 @@ import { IncomeDeductionsSection } from './IncomeDeductionsSection';
 import { PITModals } from './PITModals';
 import ReviewAndFile from './ReviewAndFile';
 
+// ── Welcome Modal ─────────────────────────────────────────────────────────────
+const PITWelcomeModal = ({ onClose }: { onClose: () => void }) => (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
+        <div className="relative bg-white rounded-2xl w-full max-w-[380px] p-7 shadow-2xl">
+            <div className="w-12 h-12 rounded-full border-2 border-neutral-200 flex items-center justify-center mb-5">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-800">
+                    <polyline points="20 6 9 17 4 12" />
+                </svg>
+            </div>
+            <h2 className="text-6 font-semibold text-neutral-800 mb-3">Welcome to your tax workspace!</h2>
+            <p className="text-2 text-neutral-500 font-medium leading-relaxed mb-1.5">
+                We've organized your tax filing into simple sections. Start with{' '}
+                <span className="text-neutral-800 font-semibold">Personal Info</span>{' '}
+                and work your way down.
+            </p>
+            <p className="text-2 text-neutral-500 font-medium leading-relaxed mb-7">
+                Your progress is saved automatically.
+            </p>
+            <PrimaryButton onClick={onClose} className="w-full">
+                Got it
+            </PrimaryButton>
+        </div>
+    </div>
+);
+
+const SkeletonLoader = () => (
+    <div className="min-h-screen bg-neutral-50">
+        <div className="max-w-[1200px] mx-auto px-4 md:px-8 pt-14 pb-8">
+            <div className="mb-8">
+                <Skeleton className="h-5 w-16 mb-2" />
+                <Skeleton className="h-4 w-48" />
+            </div>
+            <div className="flex items-start gap-10">
+                <div className="w-[250px] flex-shrink-0 space-y-2">
+                    <Skeleton className="h-4 w-24 mb-3" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="flex-1 space-y-6 max-w-[400px]">
+                    <Skeleton className="h-7 w-52" />
+                    <Skeleton className="h-10 w-full" />
+                    <div className="grid grid-cols-2 gap-4">
+                        <Skeleton className="h-10" />
+                        <Skeleton className="h-10" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <Skeleton className="h-10" />
+                        <Skeleton className="h-10" />
+                    </div>
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-12 w-32" />
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
 export default function PITDetails() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user, loading: authLoading, isAuthenticated } = useUser();
     const toast = useToast();
     const api = useTaxableApi();
-    const profileId = searchParams?.get('id');
+    const profileId = searchParams?.get('id') || '';
 
     // ─── Component State ──────────────────────────────────────────────────
     const [activeSection, setActiveSection] = useState<'personal-info' | 'income-deductions' | 'review'>('personal-info');
@@ -32,22 +98,34 @@ export default function PITDetails() {
     const [loading, setLoading] = useState(true);
     const [profileLoading, setProfileLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
     // Personal Info State
-    const [personalInfo, setPersonalInfo] = useState<PersonalInfo>({
+    const defaultPersonalInfo: PersonalInfo = {
         nin: '',
-        fullName: '',
+        firstName: '',
+        lastName: '',
         email: '',
         phone: '',
         dob: '',
         streetAddress: '',
         city: '',
         state: '',
-        residencyStatus: 'resident'
+        lga: '',
+        isResident: true,
+    };
+
+    const [personalInfo, setPersonalInfo] = useState<PersonalInfo>(() => {
+        try {
+            const id = searchParams?.get('id');
+            if (!id) return { ...defaultPersonalInfo };
+            const cached = localStorage.getItem(`taxable_pit_personal_${id}`);
+            if (cached) return { ...defaultPersonalInfo, ...JSON.parse(cached) };
+        } catch { /* ignore */ }
+        return { ...defaultPersonalInfo };
     });
     const [savingPersonalInfo, setSavingPersonalInfo] = useState(false);
-    const [saveSuccess, setSaveSuccess] = useState(false);
+    const [personalInfoSaved, setPersonalInfoSaved] = useState(false);
+    const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
     // Income & Deductions State
     const [periodMode, setPeriodMode] = useState<'monthly' | 'annually'>('monthly');
@@ -57,7 +135,7 @@ export default function PITDetails() {
 
     const [incomeData, setIncomeData] = useState<Income[]>([]);
     const [deductions, setDeductions] = useState<Deduction[]>([]);
-    const [taxSummary, setTaxSummary] = useState<any>(null);
+    const [_taxSummary, setTaxSummary] = useState<any>(null);
 
     const [currentMonthIncome, setCurrentMonthIncome] = useState({
         salary: '',
@@ -96,6 +174,40 @@ export default function PITDetails() {
     const [savingMonthlyIncome, setSavingMonthlyIncome] = useState(false);
     const [savingReliefs, setSavingReliefs] = useState(false);
 
+    // V2 Income & Deductions State (VAT-style stepper)
+    const _INCOME_STEPS = [
+        { key: 'income', step: 1, title: 'Income Sources' },
+        { key: 'deductions', step: 2, title: 'Deductions & Reliefs' },
+        { key: 'review', step: 3, title: 'Review' },
+    ];
+    const [incomeStep, setIncomeStep] = useState<'income' | 'deductions' | 'review'>('income');
+    const [_completedIncomeSteps, _setCompletedIncomeSteps] = useState<Set<number>>(new Set());
+    const [filedIncomeMonths, setFiledIncomeMonths] = useState<Set<number>>(new Set());
+
+    const _goForward = (target: 'income' | 'deductions' | 'review') => {
+        const stepNum: Record<string, number> = { income: 1, deductions: 2, review: 3 };
+        const currentStepNum = stepNum[incomeStep];
+        if (currentStepNum) _setCompletedIncomeSteps(prev => new Set([...prev, currentStepNum]));
+        setIncomeStep(target);
+    };
+
+    const _goBack = (target: 'income' | 'deductions' | 'review') => {
+        setIncomeStep(target);
+    };
+
+    const [incomeByMonth, setIncomeByMonth] = useState<Record<number, {
+        salaryTakeHome: string; businessRevenue: string; businessExpenses: string;
+        freelanceInvoiced: string; freelanceWHT: string;
+        investmentIncome: string; rentalIncome: string; digitalGains: string;
+    }>>({});
+
+    const [deductionsByMonth, setDeductionsByMonth] = useState<Record<number, {
+        rent: string; healthInsurance: string; pension: string; mortgageInterest: string;
+    }>>({});
+
+    const [deductionFiles, setDeductionFiles] = useState<Record<string, { name: string }[]>>({});
+    const STORAGE_KEY_PIT_INCOME = `taxable_pit_income_${profileId}`;
+
     // Summaries
     const [monthlyTaxByMonth, setMonthlyTaxByMonth] = useState<Record<number, number>>({});
     const [paidMonths] = useState<Set<number>>(new Set());
@@ -106,28 +218,7 @@ export default function PITDetails() {
     const [confirmFilingPrefOpen, setConfirmFilingPrefOpen] = useState(false);
     const [pendingPeriodMode, setPendingPeriodMode] = useState<'monthly' | 'annually' | null>(null);
     const [switchingFilingPref, setSwitchingFilingPref] = useState(false);
-
-    // Section completion status
-    const personalInfoComplete = useMemo(() => {
-        return !!(
-            personalInfo.fullName && 
-            personalInfo.nin && 
-            currentProfile?.dob && 
-            currentProfile?.street && 
-            currentProfile?.city && 
-            currentProfile?.state
-        );
-    }, [personalInfo.fullName, personalInfo.nin, currentProfile?.dob, currentProfile?.street, currentProfile?.city, currentProfile?.state]);
-
-    const incomeDeductionsComplete = useMemo(() => {
-        if (!incomeData || incomeData.length === 0) return false;
-        const hasIncome = incomeData.some((m: any[]) => Array.isArray(m) && m.length > 0);
-        return hasIncome;
-    }, [incomeData]);
-
-    const reviewComplete = useMemo(() => {
-        return incomeDeductionsComplete;
-    }, [incomeDeductionsComplete]);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     // ─── Data Loading ─────────────────────────────────────────────────────
     const loadProfileData = useCallback(async () => {
@@ -147,17 +238,23 @@ export default function PITDetails() {
             if (profile) {
                 setCurrentProfile(profile);
 
-                setPersonalInfo({
-                    nin: profile.nin || '',
-                    fullName: profile.fullName || user?.firstName || user?.name || 'User',
-                    email: user?.email || '',
-                    phone: user?.phone || '',
-                    dob: profile.dob || '',
-                    streetAddress: profile.street || '',
-                    city: profile.city || '',
-                    state: profile.state || '',
-                    residencyStatus: (profile as any).residencyStatus || 'resident'
-                });
+                setPersonalInfo(prev => ({
+                    nin: profile.nin || prev.nin,
+                    firstName: (profile as any).firstName || (profile.fullName && profile.fullName.split(' ')[0]) || prev.firstName,
+                    lastName: (profile as any).lastName || (profile.fullName && profile.fullName.split(' ').slice(1).join(' ')) || prev.lastName,
+                    email: prev.email,
+                    phone: prev.phone,
+                    dob: profile.dob || prev.dob,
+                    streetAddress: profile.street || prev.streetAddress,
+                    city: profile.city || prev.city,
+                    state: profile.state || prev.state,
+                    lga: (profile as any).lga || prev.lga,
+                    isResident: (profile as any).residencyStatus !== 'non-resident',
+                }));
+
+                if (profile.fullName) {
+                    setPersonalInfoSaved(true);
+                }
 
                 const pref = profile.filingPreference === 'annual' ? 'annually' : 'monthly';
                 setPeriodMode(pref);
@@ -238,18 +335,6 @@ export default function PITDetails() {
         }
     }, [authLoading, isAuthenticated, profileLoading, profileId]);
 
-    const handleUpdateProfileProp = async (prop: string, val: any) => {
-        if (!profileId || !currentProfile) return;
-        try {
-            const nextProfile = { ...currentProfile, [prop]: val };
-            await api.completeProfile(profileId, nextProfile as any);
-            setCurrentProfile(nextProfile);
-            toast.success('Profile updated');
-        } catch (err: any) {
-            toast.error(err.message || 'Update failed');
-        }
-    };
-
 
     const normalizeDeduction = useCallback((d: any) => {
         const type = (d?.type ?? d?.deductionType) as string | undefined;
@@ -261,6 +346,46 @@ export default function PITDetails() {
     }, []);
 
     const activeMonthNum = MONTHS.indexOf(activeMonth as any) + 1;
+
+    // V2 Income month selector + stepper
+    const INCOME_MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const _incomeMonthSelector = (
+        <Select value={INCOME_MONTH_NAMES[activeMonthNum - 1]} onValueChange={(v) => {
+            const idx = INCOME_MONTH_NAMES.indexOf(v ?? '');
+            if (idx >= 0 && INCOME_MONTH_NAMES[idx]) setActiveMonth(INCOME_MONTH_NAMES[idx]!);
+        }}>
+            <SelectTrigger className="w-fit min-w-[180px] h-10 rounded-xl bg-white border-neutral-50 text-3">
+                <div className="flex items-center gap-2 mr-6">
+                    <span>{INCOME_MONTH_NAMES[activeMonthNum - 1]}</span>
+                    {filedIncomeMonths.has(activeMonthNum - 1) &&
+                        <Badge variant="secondary" className="bg-green-50 text-green-600 border-green-200 text-2 font-semibold px-2 py-0 h-5">Filed</Badge>
+                    }
+                </div>
+            </SelectTrigger>
+            <SelectContent>
+                {INCOME_MONTH_NAMES.map((m, i) => (
+                    <SelectItem key={m} value={m}>
+                        <div className="flex items-center gap-2">
+                            <span>{m}</span>
+                            {filedIncomeMonths.has(i) &&
+                                <Badge variant="secondary" className="bg-green-50 text-green-600 border-green-200 text-2 font-semibold px-2 py-0 h-5">Filed</Badge>
+                            }
+                        </div>
+                    </SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
+    );
+
+    const _incomeStepIndex = incomeStep === 'income' ? 1
+        : incomeStep === 'deductions' ? 2
+        : 3;
+
+    // V2 derived calculations
+    const currentIncome = incomeByMonth[activeMonthNum - 1] ?? {};
+    const businessIncome = (Number((currentIncome as any).businessRevenue?.replace(/,/g, '')) || 0) - (Number((currentIncome as any).businessExpenses?.replace(/,/g, '')) || 0);
+    const freelanceNet = (Number((currentIncome as any).freelanceInvoiced?.replace(/,/g, '')) || 0) - (Number((currentIncome as any).freelanceWHT?.replace(/,/g, '')) || 0);
+    const _totalMonthlyIncome = (Number((currentIncome as any).salaryTakeHome?.replace(/,/g, '')) || 0) + Math.max(0, businessIncome) + Math.max(0, freelanceNet) + (Number((currentIncome as any).investmentIncome?.replace(/,/g, '')) || 0) + (Number((currentIncome as any).rentalIncome?.replace(/,/g, '')) || 0) + (Number((currentIncome as any).digitalGains?.replace(/,/g, '')) || 0);
 
     const monthScopedDeductions = useMemo(() => {
         const list = (deductions || []).map(normalizeDeduction).filter(d => !!d.type);
@@ -388,8 +513,6 @@ export default function PITDetails() {
                         
                         console.log(`✅ Tax calculated for ${activeMonth}: ₦${taxAmount.toLocaleString()}`);
                         
-                        // Force re-render of displayedTaxAmount
-                        setTaxUpdateTrigger(prev => prev + 1);
                     } else {
                         console.log(`⚠️ Tax calculation failed or returned no data:`, taxResult);
                     }
@@ -426,20 +549,20 @@ export default function PITDetails() {
         }
     }, [profileId, currentProfile, reliefs, documentUrls, deductions, normalizeDeduction, activeMonthNum, periodMode, api, toast]);
 
-    const handleSavePersonalInfo = async () => {
-        if (!profileId) return;
+    const handleSavePersonalInfo = useCallback(async () => {
         setSavingPersonalInfo(true);
         try {
             const normalizedNin = (personalInfo.nin || '').replace(/\D/g, '');
-            
+            const fullName = `${personalInfo.firstName} ${personalInfo.lastName}`.trim();
+
             await api.updatePersonalInfo(profileId, {
                 nin: normalizedNin || undefined,
-                fullName: personalInfo.fullName,
+                fullName: fullName,
                 dob: personalInfo.dob,
                 streetAddress: personalInfo.streetAddress,
                 city: personalInfo.city,
                 state: personalInfo.state,
-                residencyStatus: personalInfo.residencyStatus
+                residencyStatus: personalInfo.isResident ? 'resident' : 'non-resident',
             });
             
             if (currentProfile) {
@@ -450,74 +573,105 @@ export default function PITDetails() {
                     dob: personalInfo.dob || currentProfile.dob || undefined,
                 } as any);
             }
-            
-            setSaveSuccess(true);
+
+            setPersonalInfoSaved(true);
+
             setTimeout(() => {
-                setSaveSuccess(false);
                 setActiveSection('income-deductions');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 toast.success('Personal information saved successfully!');
             }, 500);
         } catch (err: any) {
+            console.error('[PIT] Save personal info failed:', err);
             toast.error(err.message || 'Failed to save personal information');
         } finally {
             setSavingPersonalInfo(false);
         }
-    };
-
-    const [taxUpdateTrigger, setTaxUpdateTrigger] = useState(0);
+    }, [profileId, personalInfo, currentProfile, api, toast]);
 
     const handleIncomeSaved = useCallback((monthNum: number) => {
         console.log(`📥 Income saved for month ${monthNum}`);
     }, []);
 
-    const displayedTaxAmount = useMemo(() => {
-        if (periodMode === 'monthly') {
-            // Get the most recent calculated month's tax (as an estimated annual liability)
-            const months = Object.entries(monthlyTaxByMonth);
-            if (months.length === 0) return '₦0';
-            
-            // Sort by month number and get the most recent
-            const sortedMonths = months.sort((a, b) => Number(a[0]) - Number(b[0]));
-            const mostRecentTax = sortedMonths[sortedMonths.length - 1]?.[1] || 0;
-            
-            // For display, show the most recent month's tax as the estimated liability
-            return `₦${mostRecentTax.toLocaleString()}`;
-        }
-        const annual = taxSummary?.taxSummary?.estimatedAnnualTax;
-        return annual ? `₦${annual.toLocaleString()}` : '₦0';
-    }, [periodMode, monthlyTaxByMonth, taxSummary, taxUpdateTrigger]);
+    const personalInfoComplete = !!(
+        personalInfo.firstName &&
+        personalInfo.lastName &&
+        personalInfo.nin &&
+        personalInfo.email &&
+        personalInfo.phone &&
+        personalInfo.dob &&
+        personalInfo.streetAddress &&
+        personalInfo.city &&
+        personalInfo.state &&
+        personalInfo.lga &&
+        personalInfoSaved
+    );
 
-    // Header stats
-    const headerTotalIncome = useMemo(() => {
-        let total = 0;
-        const source = periodMode === 'annually' ? [incomeData[0] || []] : incomeData;
-        source.forEach((monthData: any) => {
-            (Array.isArray(monthData) ? monthData : []).forEach((item: any) => {
-                if (item.type === 'employment') {
-                    total += (item.grossSalary || 0) + (item.bonuses || 0) + (item.commissions || 0);
-                } else if (item.type === 'freelance' || item.type === 'digital_assets') {
-                    total += item.value || 0;
-                }
+    // Lenis smooth scroll
+    useLayoutEffect(() => {
+        if (typeof window === 'undefined') return;
+        if ((window as any).__lenis) return;
+        const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (prefersReduced) return;
+        const lenis = new Lenis({ lerp: 0.1, wheelMultiplier: 0.8 });
+        (window as any).__lenis = lenis;
+        const raf = (time: number) => { lenis.raf(time); requestAnimationFrame(raf); };
+        requestAnimationFrame(raf);
+        return () => { lenis.destroy(); (window as any).__lenis = undefined; };
+    }, []);
+
+    // GSAP reveal animations
+    useLayoutEffect(() => {
+        const ctx = gsap.context(() => {
+            gsap.fromTo('[data-animate]', { opacity: 0, y: 16 }, { opacity: 1, y: 0, stagger: 0.1, duration: 0.5, ease: 'power2.out' });
+        }, containerRef);
+        return () => ctx.revert();
+    }, []);
+
+    // Restore income data from localStorage on mount
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY_PIT_INCOME);
+            if (!raw) return;
+            const saved = JSON.parse(raw);
+            if (saved.incomeByMonth) setIncomeByMonth(saved.incomeByMonth);
+            if (saved.deductionsByMonth) setDeductionsByMonth(saved.deductionsByMonth);
+            if (saved.deductionFiles) setDeductionFiles(saved.deductionFiles);
+            if (saved.filedIncomeMonths) setFiledIncomeMonths(new Set(saved.filedIncomeMonths));
+        } catch { /* ignore */ }
+    }, []);
+
+    // Auto-save income data to localStorage
+    useEffect(() => {
+        if (!profileId) return;
+        try {
+            localStorage.setItem(STORAGE_KEY_PIT_INCOME, JSON.stringify({
+                incomeByMonth, deductionsByMonth, deductionFiles,
+                filedIncomeMonths: Array.from(filedIncomeMonths),
+            }));
+        } catch { /* ignore */ }
+    }, [incomeByMonth, deductionsByMonth, deductionFiles, filedIncomeMonths, STORAGE_KEY_PIT_INCOME]);
+
+    // Auto-save personal info to localStorage
+    useEffect(() => {
+        if (!profileId) return;
+        try { localStorage.setItem(`taxable_pit_personal_${profileId}`, JSON.stringify(personalInfo)); } catch {}
+    }, [personalInfo, profileId]);
+
+    // Show welcome modal for new workspaces
+    useEffect(() => {
+        const isNew = searchParams?.get('new');
+        if (isNew === 'workspace') {
+            startTransition(() => {
+                setShowWelcomeModal(true);
             });
-        });
-        return total;
-    }, [incomeData, periodMode]);
+            router.replace(window.location.pathname);
+        }
+    }, []);
 
-    const headerTotalDeductible = useMemo(() => {
-        return (deductions as any[]).reduce((sum: number, d: any) => {
-            const raw = d.value ?? d.amount ?? 0;
-            return sum + (typeof raw === 'string' ? parseFloat(raw) : raw || 0);
-        }, 0);
-    }, [deductions]);
-
-    // Show loading while authentication is being checked
+    // Show skeleton while authentication is being checked
     if (authLoading) {
-        return (
-            <div className="min-h-screen bg-taxable-light flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-taxable-blue"></div>
-            </div>
-        );
+        return <SkeletonLoader />;
     }
 
     // Redirect to login if not authenticated
@@ -526,20 +680,16 @@ export default function PITDetails() {
         return null;
     }
 
-    // Show loading while profile data is being fetched
+    // Show skeleton while profile data is being fetched
     if (loading || profileLoading) {
-        return (
-            <div className="min-h-screen bg-taxable-light flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-taxable-blue"></div>
-            </div>
-        );
+        return <SkeletonLoader />;
     }
 
     if (error || !currentProfile) {
         return (
-            <div className="min-h-screen bg-taxable-light flex items-center justify-center p-4">
+            <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
                 <div className="text-center max-w-md">
-                    <h3 className="text-lg font-bold text-neutral-800 mb-2">{error || 'Profile not found'}</h3>
+                    <h3 className="text-lg font-semibold text-neutral-800 mb-2">{error || 'Profile not found'}</h3>
                     <button onClick={() => router.push('/tax-folders')} className="px-4 py-2 bg-taxable-blue text-white rounded-xl">Back to Tax Folders</button>
                 </div>
             </div>
@@ -547,81 +697,33 @@ export default function PITDetails() {
     }
 
     return (
-        <div className="min-h-screen bg-taxable-light pb-24 md:pb-20">
-            <DashboardHeader />
-
-            <main className="max-w-[1340px] mx-auto px-4 md:px-8 py-6 md:py-8">
-                <div className="flex flex-col gap-2 mb-6 border-b border-neutral-100 pb-4 md:pb-6">
-                    {/* Back button */}
-                    <button onClick={() => router.back()} className="flex items-center gap-1.5 text-2 font-bold text-neutral-800 hover:text-taxable-blue transition-colors w-fit mb-1">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
-                        Back
+        <div ref={containerRef} className="min-h-screen bg-white pb-24 md:pb-20">
+            {/* Breadcrumb nav bar */}
+            <div className="w-full bg-white border-b border-neutral-100 px-4 md:px-8 py-3">
+                <div className="max-w-[1200px] mx-auto w-full flex flex-col gap-1">
+                    <button onClick={() => router.push('/home')} className="flex items-center gap-2 text-3 font-semibold text-neutral-800 w-fit shrink-0">
+                        <Home2Fill className="w-5 h-5" color="#E5E5E5" />
+                        Home
                     </button>
-
-                    {/* Mobile header */}
-                    <div className="md:hidden flex justify-between items-end">
-                        <h1 className="text-base font-bold text-neutral-800">{personalInfo.fullName || 'User'}</h1>
-                        <div className="text-right">
-                            <h2 className="text-base font-bold text-neutral-800">{displayedTaxAmount}</h2>
-                            <p className="text-[11px] text-neutral-500 font-medium">Net Tax Payable</p>
-                        </div>
-                    </div>
-
-                    {/* Desktop header */}
-                    <div className="hidden md:flex justify-between items-end gap-6">
-                        {/* Left: name + status */}
-                        <div>
-                            <h1 className="text-[20px] font-bold text-neutral-800 leading-snug">
-                                {personalInfo.fullName || 'User'}, {currentProfile.year} Individual Tax
-                            </h1>
-                            <div className="flex items-center gap-2 mt-1.5">
-                                {incomeDeductionsComplete && (
-                                    <span className="flex items-center gap-1 text-1 font-semibold text-green-600">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                                        Tax Compliant
-                                    </span>
-                                )}
-                                {incomeDeductionsComplete && <span className="text-neutral-300 text-1">•</span>}
-                                <span className="text-1 font-medium text-neutral-500">
-                                    {headerTotalIncome > 0 ? `Total income` : 'No income data yet'}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Right: tax amount + breakdown */}
-                        <div className="text-right flex-shrink-0">
-                            <p className="text-1 text-neutral-400 font-medium mb-0.5">Net Tax Payable</p>
-                            <h2 className="text-[22px] font-extrabold text-neutral-800 leading-tight">{displayedTaxAmount}</h2>
-                            <div className="flex items-center justify-end gap-3 mt-1">
-                                <span className="text-1 text-neutral-400 font-medium">
-                                    Total income: <span className="font-bold text-neutral-700">₦{headerTotalIncome.toLocaleString()}</span>
-                                </span>
-                                <span className="text-neutral-200">|</span>
-                                <span className="text-1 text-neutral-400 font-medium">
-                                    Total deductible: <span className="font-bold text-neutral-700">₦{headerTotalDeductible.toLocaleString()}</span>
-                                </span>
-                            </div>
-                        </div>
+                    <div className="flex items-center gap-2 text-1 text-neutral-300 font-medium">
+                        <span>{currentProfile.year} Individual Tax</span>
+                        <span>/</span>
+                        <span className="text-neutral-300">{({ 'personal-info': 'Personal Information', 'income-deductions': 'Income & Deductions', 'review': 'Review & File' })[activeSection] || 'Personal Information'}</span>
                     </div>
                 </div>
+            </div>
 
-                <div className="flex items-start justify-start gap-8 mt-8">
+            <main className="max-w-[1200px] mx-auto px-4 md:px-8 pt-14 pb-8">
+                <div className="flex items-start gap-10">
                     <PITSidebar
                         activeSection={activeSection}
-                        incomeSubTab={incomeSubTab}
                         setActiveSection={setActiveSection}
-                        setIncomeSubTab={setIncomeSubTab}
-                        mobileSidebarOpen={mobileSidebarOpen}
-                        setMobileSidebarOpen={setMobileSidebarOpen}
-                        setHelpModalOpen={setHelpModalOpen}
                         personalInfoComplete={personalInfoComplete}
-                        incomeDeductionsComplete={incomeDeductionsComplete}
-                        reviewComplete={reviewComplete}
                     />
 
                     <div className="flex-1 min-w-0">
-                        {activeSection === 'personal-info' && (
-                            <PersonalInfoSection personalInfo={personalInfo} setPersonalInfo={setPersonalInfo as any} saveSuccess={saveSuccess} savingPersonalInfo={savingPersonalInfo} onSave={handleSavePersonalInfo} currentProfile={currentProfile} onUpdateProfileProp={handleUpdateProfileProp} />
+                         {activeSection === 'personal-info' && (
+                             <PersonalInfoSection personalInfo={personalInfo} setPersonalInfo={setPersonalInfo as any} savingPersonalInfo={savingPersonalInfo} onSave={handleSavePersonalInfo} />
                         )}
 
                         {activeSection === 'income-deductions' && (
@@ -726,6 +828,8 @@ export default function PITDetails() {
                     }
                 }}
             />
+
+            {showWelcomeModal && <PITWelcomeModal onClose={() => setShowWelcomeModal(false)} />}
         </div>
     );
 }

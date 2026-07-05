@@ -10,8 +10,10 @@ import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/components/Toast/ToastProvider';
 import { useTaxableApi } from '@/hooks/useTaxableApi';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PrimaryButton } from '@/screens/TaxFolders/TaxFolderShared';
+import { PrimaryButton, SecondaryButton, FormFieldRow, FormLabel, FilingSheet } from '@/screens/TaxFolders/TaxFolderShared';
+import { Stepper, StepperItem, StepperIndicator, StepperTitle, StepperSeparator, StepperTrigger } from '@/components/ui/stepper';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import type { Profile, Income, Deduction, DeductionType } from '@/types/api';
 
@@ -19,7 +21,6 @@ import type { Profile, Income, Deduction, DeductionType } from '@/types/api';
 import { MONTHS } from './PITShared';
 import { PITSidebar } from './PITSidebar';
 import { PersonalInfoSection, PersonalInfo } from './PersonalInfoSection';
-import { IncomeDeductionsSection } from './IncomeDeductionsSection';
 import { PITModals } from './PITModals';
 import ReviewAndFile from './ReviewAndFile';
 
@@ -131,20 +132,19 @@ export default function PITDetails() {
     const [periodMode, setPeriodMode] = useState<'monthly' | 'annually'>('monthly');
     const [activeMonth, setActiveMonth] = useState<string>('January');
     const [expandedMonth, setExpandedMonth] = useState<string | null>('January');
-    const [incomeSubTab, setIncomeSubTab] = useState<'income' | 'deductions'>('income');
+    const [_incomeSubTab, _setIncomeSubTab] = useState<'income' | 'deductions'>('income');
 
     const [incomeData, setIncomeData] = useState<Income[]>([]);
     const [deductions, setDeductions] = useState<Deduction[]>([]);
-    const [_taxSummary, setTaxSummary] = useState<any>(null);
 
-    const [currentMonthIncome, setCurrentMonthIncome] = useState({
+    const [_currentMonthIncome, _setCurrentMonthIncome] = useState({
         salary: '',
         bonuses: '',
         commissions: '',
         freelance: '',
         digitalAssets: ''
     });
-    const [annualIncome, setAnnualIncome] = useState({
+    const [_annualIncome, _setAnnualIncome] = useState({
         salary: '',
         bonuses: '',
         commissions: '',
@@ -164,34 +164,36 @@ export default function PITDetails() {
         pension: '',
         mortgage: ''
     });
-    const [uploadedFileNames, setUploadedFileNames] = useState({
+    const [_uploadedFileNames, _setUploadedFileNames] = useState({
         rentRelief: '',
         healthInsurance: '',
         pension: '',
         mortgage: ''
     });
 
-    const [savingMonthlyIncome, setSavingMonthlyIncome] = useState(false);
-    const [savingReliefs, setSavingReliefs] = useState(false);
+    const [_savingMonthlyIncome, _setSavingMonthlyIncome] = useState(false);
+    const [_savingReliefs, _setSavingReliefs] = useState(false);
+
+    const [_taxSummary, _setTaxSummary] = useState<any>(null);
 
     // V2 Income & Deductions State (VAT-style stepper)
-    const _INCOME_STEPS = [
+    const INCOME_STEPS = [
         { key: 'income', step: 1, title: 'Income Sources' },
         { key: 'deductions', step: 2, title: 'Deductions & Reliefs' },
         { key: 'review', step: 3, title: 'Review' },
     ];
     const [incomeStep, setIncomeStep] = useState<'income' | 'deductions' | 'review'>('income');
-    const [_completedIncomeSteps, _setCompletedIncomeSteps] = useState<Set<number>>(new Set());
+    const [completedIncomeSteps, setCompletedIncomeSteps] = useState<Set<number>>(new Set());
     const [filedIncomeMonths, setFiledIncomeMonths] = useState<Set<number>>(new Set());
 
-    const _goForward = (target: 'income' | 'deductions' | 'review') => {
+    const goForward = (target: 'income' | 'deductions' | 'review') => {
         const stepNum: Record<string, number> = { income: 1, deductions: 2, review: 3 };
         const currentStepNum = stepNum[incomeStep];
-        if (currentStepNum) _setCompletedIncomeSteps(prev => new Set([...prev, currentStepNum]));
+        if (currentStepNum) setCompletedIncomeSteps(prev => new Set([...prev, currentStepNum]));
         setIncomeStep(target);
     };
 
-    const _goBack = (target: 'income' | 'deductions' | 'review') => {
+    const goBack = (target: 'income' | 'deductions' | 'review') => {
         setIncomeStep(target);
     };
 
@@ -201,16 +203,30 @@ export default function PITDetails() {
         investmentIncome: string; rentalIncome: string; digitalGains: string;
     }>>({});
 
+    const fmtInput = (set: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+        const raw = e.target.value.replace(/[^0-9.]/g, '');
+        const parts = raw.split('.');
+        const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        set(parts.length > 1 ? integer + '.' + parts.slice(1).join('') : integer);
+    };
+
+    const setIncomeField = (field: string, value: string) => {
+        setIncomeByMonth(prev => ({ ...prev, [activeMonthNum - 1]: { ...(prev[activeMonthNum - 1] ?? {}), [field]: value } }));
+    };
+
     const [deductionsByMonth, setDeductionsByMonth] = useState<Record<number, {
         rent: string; healthInsurance: string; pension: string; mortgageInterest: string;
     }>>({});
 
     const [deductionFiles, setDeductionFiles] = useState<Record<string, { name: string }[]>>({});
+    const healthRef = useRef<HTMLInputElement>(null);
+    const pensionRef = useRef<HTMLInputElement>(null);
+    const mortgageRef = useRef<HTMLInputElement>(null);
     const STORAGE_KEY_PIT_INCOME = `taxable_pit_income_${profileId}`;
 
     // Summaries
     const [monthlyTaxByMonth, setMonthlyTaxByMonth] = useState<Record<number, number>>({});
-    const [paidMonths] = useState<Set<number>>(new Set());
+    const [_paidMonths] = useState<Set<number>>(new Set());
 
     // Modal States
     const [helpModalOpen, setHelpModalOpen] = useState(false);
@@ -308,7 +324,7 @@ export default function PITDetails() {
                     });
                 } else {
                     api.getTaxSummary(profileId).then((annRes: any) => {
-                        if (annRes.success) setTaxSummary(annRes.data);
+                        if (annRes.success) _setTaxSummary(annRes.data);
                     }).catch((err) => {
                         // Silent fail - annual tax summary may not be available yet due to insufficient data
                         console.warn('Failed to fetch annual tax summary:', err?.message);
@@ -349,7 +365,7 @@ export default function PITDetails() {
 
     // V2 Income month selector + stepper
     const INCOME_MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    const _incomeMonthSelector = (
+    const incomeMonthSelector = (
         <Select value={INCOME_MONTH_NAMES[activeMonthNum - 1]} onValueChange={(v) => {
             const idx = INCOME_MONTH_NAMES.indexOf(v ?? '');
             if (idx >= 0 && INCOME_MONTH_NAMES[idx]) setActiveMonth(INCOME_MONTH_NAMES[idx]!);
@@ -377,15 +393,330 @@ export default function PITDetails() {
         </Select>
     );
 
-    const _incomeStepIndex = incomeStep === 'income' ? 1
+    const incomeStepIndex = incomeStep === 'income' ? 1
         : incomeStep === 'deductions' ? 2
         : 3;
 
     // V2 derived calculations
     const currentIncome = incomeByMonth[activeMonthNum - 1] ?? {};
+    const setDeductionField = (field: string, value: string) => {
+        setDeductionsByMonth(prev => ({ ...prev, [activeMonthNum - 1]: { ...(prev[activeMonthNum - 1] ?? {}), [field]: value } }));
+    };
+    const currentDeductions = deductionsByMonth[activeMonthNum - 1] ?? {};
     const businessIncome = (Number((currentIncome as any).businessRevenue?.replace(/,/g, '')) || 0) - (Number((currentIncome as any).businessExpenses?.replace(/,/g, '')) || 0);
     const freelanceNet = (Number((currentIncome as any).freelanceInvoiced?.replace(/,/g, '')) || 0) - (Number((currentIncome as any).freelanceWHT?.replace(/,/g, '')) || 0);
-    const _totalMonthlyIncome = (Number((currentIncome as any).salaryTakeHome?.replace(/,/g, '')) || 0) + Math.max(0, businessIncome) + Math.max(0, freelanceNet) + (Number((currentIncome as any).investmentIncome?.replace(/,/g, '')) || 0) + (Number((currentIncome as any).rentalIncome?.replace(/,/g, '')) || 0) + (Number((currentIncome as any).digitalGains?.replace(/,/g, '')) || 0);
+    const fmt = (n: number) => n > 0 ? `₦${Math.round(n).toLocaleString()}` : '₦ 0';
+    const totalMonthlyIncome = (Number((currentIncome as any).salaryTakeHome?.replace(/,/g, '')) || 0) + Math.max(0, businessIncome) + Math.max(0, freelanceNet) + (Number((currentIncome as any).investmentIncome?.replace(/,/g, '')) || 0) + (Number((currentIncome as any).rentalIncome?.replace(/,/g, '')) || 0) + (Number((currentIncome as any).digitalGains?.replace(/,/g, '')) || 0);
+    const totalDeductions = ((v: any) => (Number((v as any).rent?.replace(/,/g, '')) || 0) + (Number((v as any).healthInsurance?.replace(/,/g, '')) || 0) + (Number((v as any).pension?.replace(/,/g, '')) || 0) + (Number((v as any).mortgageInterest?.replace(/,/g, '')) || 0))(currentDeductions);
+    const monthlyTaxable = Math.max(0, totalMonthlyIncome - totalDeductions);
+
+    const PAYE_BANDS = [
+        { limit: 800000, rate: 0 },
+        { limit: 2200000, rate: 0.15 },
+        { limit: 9000000, rate: 0.18 },
+        { limit: 13000000, rate: 0.21 },
+        { limit: 25000000, rate: 0.25 },
+        { limit: Infinity, rate: 0.25 },
+    ];
+
+    const calculatePAYE = (annualTaxable: number) => {
+        let remaining = annualTaxable;
+        let tax = 0;
+        for (const band of PAYE_BANDS) {
+            const chunk = Math.min(remaining, band.limit);
+            tax += chunk * band.rate;
+            remaining -= chunk;
+            if (remaining <= 0) break;
+        }
+        return { annualTax: Math.round(tax), monthlyTax: Math.round(tax / 12) };
+    };
+
+    const monthlyPAYE = calculatePAYE(monthlyTaxable * 12).monthlyTax;
+
+    const [showFilingSheet, setShowFilingSheet] = useState(false);
+
+    const renderIncomeSection = () => {
+        if (activeSection !== 'income-deductions') return null;
+        return (
+            <div className="w-full">
+                <div className="mb-12">
+                    <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-4">
+                            <h1 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em]">
+                                Income &amp; Deductions
+                            </h1>
+                            {incomeMonthSelector}
+                        </div>
+                    </div>
+
+                    <Stepper value={incomeStepIndex} onValueChange={(step) => {
+                        const map: Record<number, 'income' | 'deductions' | 'review'> = {1: 'income', 2: 'deductions', 3: 'review'};
+                        if (step <= incomeStepIndex) goBack(map[step]);
+                    }}>
+                        {INCOME_STEPS.map((s, idx) => (
+                            <StepperItem key={s.key} step={s.step} completed={completedIncomeSteps.has(s.step)} disabled={s.step > incomeStepIndex} className="[&:not(:last-child)]:flex-1 data-[state=inactive]:[&_h3]:text-neutral-400 [&_h3]:text-neutral-800">
+                                <StepperTrigger className="flex items-center gap-3 max-md:flex-col">
+                                    <StepperIndicator />
+                                    <div className="text-center md:text-left">
+                                        <StepperTitle className="text-2 font-medium">{s.title}</StepperTitle>
+                                    </div>
+                                </StepperTrigger>
+                                {idx < INCOME_STEPS.length - 1 && <StepperSeparator className="md:mx-4" />}
+                            </StepperItem>
+                        ))}
+                    </Stepper>
+                </div>
+
+                {/* Step 1: Income Sources */}
+                {incomeStep === 'income' && (
+                    <div className="max-w-[500px] mx-auto" data-animate>
+                        <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-6">Monthly Income Sources</h2>
+
+                        <div className="space-y-4">
+                            {(currentProfile?.primaryIncomeSources ?? []).includes('Salary / Employment') && (
+                                <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <div className="space-y-3">
+                                        <FormFieldRow className="justify-between">
+                                            <FormLabel tip="The actual cash amount transferred to your bank account by your employer after taxes and pensions are deducted.">Net Monthly Take-Home Pay</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={(currentIncome as any).salaryTakeHome ?? ''} onChange={fmtInput((v) => setIncomeField('salaryTakeHome', v))} className="w-[180px] text-left" />
+                                        </FormFieldRow>
+                                    </div>
+                                </div>
+                            )}
+
+                            {(currentProfile?.primaryIncomeSources ?? []).includes('Business/Self-employment') && (
+                                <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <h3 className="text-3 font-semibold text-neutral-800 mb-4">Business Income</h3>
+                                    <div className="space-y-3">
+                                        <FormFieldRow className="justify-between">
+                                            <FormLabel tip="Total monthly revenue from your business or self-employment activities.">Monthly Gross Revenue</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={(currentIncome as any).businessRevenue ?? ''} onChange={fmtInput((v) => setIncomeField('businessRevenue', v))} className="w-[180px] text-left" />
+                                        </FormFieldRow>
+                                        <FormFieldRow className="justify-between">
+                                            <FormLabel tip="Total monthly expenses incurred in running your business.">Monthly Business Expenses</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={(currentIncome as any).businessExpenses ?? ''} onChange={fmtInput((v) => setIncomeField('businessExpenses', v))} className="w-[180px] text-left" />
+                                        </FormFieldRow>
+                                    </div>
+                                </div>
+                            )}
+
+                            {(currentProfile?.primaryIncomeSources ?? []).includes('Freelance/Consulting') && (
+                                <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <h3 className="text-3 font-semibold text-neutral-800 mb-4">Freelance / Consulting</h3>
+                                    <div className="space-y-3">
+                                        <FormFieldRow className="justify-between">
+                                            <FormLabel tip="Total value of invoices that were paid by your clients this month.">Total Project Invoices Paid</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={(currentIncome as any).freelanceInvoiced ?? ''} onChange={fmtInput((v) => setIncomeField('freelanceInvoiced', v))} className="w-[180px] text-left" />
+                                        </FormFieldRow>
+                                        <FormFieldRow className="justify-between">
+                                            <FormLabel tip="Enter any tax amount your clients held back from your payment (usually 5%). We track this as a direct credit to lower your final PIT bill.">Less: WHT Deducted at Source</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={(currentIncome as any).freelanceWHT ?? ''} onChange={fmtInput((v) => setIncomeField('freelanceWHT', v))} className="w-[180px] text-left" />
+                                        </FormFieldRow>
+                                    </div>
+                                </div>
+                            )}
+
+                            {(currentProfile?.primaryIncomeSources ?? []).includes('Investment income') && (
+                                <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <div className="space-y-3">
+                                        <FormFieldRow className="justify-between">
+                                            <FormLabel tip="Dividends and interest earned on your investments this month.">Dividends / Interest Received</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={(currentIncome as any).investmentIncome ?? ''} onChange={fmtInput((v) => setIncomeField('investmentIncome', v))} className="w-[180px] text-left" />
+                                        </FormFieldRow>
+                                    </div>
+                                </div>
+                            )}
+
+                            {(currentProfile?.primaryIncomeSources ?? []).includes('Rental income') && (
+                                <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <div className="space-y-3">
+                                        <FormFieldRow className="justify-between">
+                                            <FormLabel tip="Total rent payments collected from your tenants this month.">Gross Rent Payments Collected</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={(currentIncome as any).rentalIncome ?? ''} onChange={fmtInput((v) => setIncomeField('rentalIncome', v))} className="w-[180px] text-left" />
+                                        </FormFieldRow>
+                                    </div>
+                                </div>
+                            )}
+
+                            {(currentProfile?.primaryIncomeSources ?? []).includes('Digital Assets/Crypto') && (
+                                <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <div className="space-y-3">
+                                        <FormFieldRow className="justify-between">
+                                            <FormLabel tip="Total realized profits from asset sales or trading inside the month.">Net Crypto / Digital Asset Gains</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={(currentIncome as any).digitalGains ?? ''} onChange={fmtInput((v) => setIncomeField('digitalGains', v))} className="w-[180px] text-left" />
+                                        </FormFieldRow>
+                                    </div>
+                                </div>
+                            )}
+
+                            {(currentProfile?.primaryIncomeSources ?? []).length === 0 && (
+                                <p className="text-2 text-neutral-500 font-medium">No income sources selected during onboarding.</p>
+                            )}
+                        </div>
+
+                        <div className="flex gap-3 mt-8">
+                            <SecondaryButton onClick={() => setActiveSection('personal-info')}>Back</SecondaryButton>
+                            <PrimaryButton onClick={() => goForward('deductions')}>
+                                Next: Deductions &amp; Reliefs
+                            </PrimaryButton>
+                        </div>
+                    </div>
+                )}
+
+                {/* Step 2: Deductions & Reliefs */}
+                {incomeStep === 'deductions' && (
+                    <div className="max-w-[500px] mx-auto" data-animate>
+                        <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-6">Deductions &amp; Reliefs</h2>
+
+                        <div className="space-y-4">
+                            {currentProfile?.paysRent && (
+                                <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <div className="space-y-3">
+                                        <FormFieldRow className="justify-between">
+                                            <FormLabel tip="Your monthly rent payment. The system caps this at 20% of actual rent or ₦500,000 per year, whichever is lower.">Monthly Rent Allocation</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={(currentDeductions as any).rent ?? ''} onChange={fmtInput((v) => setDeductionField('rent', v))} className="w-[180px] text-left" />
+                                        </FormFieldRow>
+                                    </div>
+                                </div>
+                            )}
+
+                            {currentProfile?.hasHealthInsurance && (
+                                <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <div className="space-y-3">
+                                        <FormFieldRow className="justify-between">
+                                            <FormLabel tip="The exact medical insurance premium amount you paid out of pocket this month.">Monthly HMO / Health Insurance Premium</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={(currentDeductions as any).healthInsurance ?? ''} onChange={fmtInput((v) => setDeductionField('healthInsurance', v))} className="w-[180px] text-left" />
+                                        </FormFieldRow>
+                                    </div>
+                                    <div className="mt-3">
+                                        <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                            <span className="text-1 text-neutral-400 font-medium">Upload insurance receipt</span>
+                                            <button onClick={() => healthRef.current?.click()} className="cursor-pointer text-2 font-semibold text-taxable-blue bg-transparent border-none p-0">Upload</button>
+                                            <input ref={healthRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setDeductionFiles(prev => ({ ...prev, ['health_' + (activeMonthNum - 1)]: [...(prev['health_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
+                                        </div>
+                                        {((deductionFiles['health_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
+                                            <div key={i} className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
+                                                <span className="text-1 text-neutral-600">{file.name}</span>
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-neutral-400 cursor-pointer ml-1" onClick={() => setDeductionFiles(prev => ({ ...prev, ['health_' + (activeMonthNum - 1)]: (prev['health_' + (activeMonthNum - 1)] ?? []).filter((_, j) => j !== i) }))}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {currentProfile?.hasPension && (
+                                <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <div className="space-y-3">
+                                        <FormFieldRow className="justify-between">
+                                            <FormLabel tip="Your personal contribution paid directly into your Pension Fund Administrator (PFA) account this month.">Monthly Pension Contribution</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={(currentDeductions as any).pension ?? ''} onChange={fmtInput((v) => setDeductionField('pension', v))} className="w-[180px] text-left" />
+                                        </FormFieldRow>
+                                    </div>
+                                    <div className="mt-3">
+                                        <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                            <span className="text-1 text-neutral-400 font-medium">Upload pension receipt</span>
+                                            <button onClick={() => pensionRef.current?.click()} className="cursor-pointer text-2 font-semibold text-taxable-blue bg-transparent border-none p-0">Upload</button>
+                                            <input ref={pensionRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setDeductionFiles(prev => ({ ...prev, ['pension_' + (activeMonthNum - 1)]: [...(prev['pension_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
+                                        </div>
+                                        {((deductionFiles['pension_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
+                                            <div key={i} className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
+                                                <span className="text-1 text-neutral-600">{file.name}</span>
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-neutral-400 cursor-pointer ml-1" onClick={() => setDeductionFiles(prev => ({ ...prev, ['pension_' + (activeMonthNum - 1)]: (prev['pension_' + (activeMonthNum - 1)] ?? []).filter((_, j) => j !== i) }))}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {currentProfile?.hasMortgage && (
+                                <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <div className="space-y-3">
+                                        <FormFieldRow className="justify-between">
+                                            <FormLabel tip="Only enter the interest portion of your monthly mortgage payment, as the principal repayment is not tax-deductible by law.">Monthly Mortgage Interest Paid</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={(currentDeductions as any).mortgageInterest ?? ''} onChange={fmtInput((v) => setDeductionField('mortgageInterest', v))} className="w-[180px] text-left" />
+                                        </FormFieldRow>
+                                    </div>
+                                    <div className="mt-3">
+                                        <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                            <span className="text-1 text-neutral-400 font-medium">Upload mortgage receipt</span>
+                                            <button onClick={() => mortgageRef.current?.click()} className="cursor-pointer text-2 font-semibold text-taxable-blue bg-transparent border-none p-0">Upload</button>
+                                            <input ref={mortgageRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setDeductionFiles(prev => ({ ...prev, ['mortgage_' + (activeMonthNum - 1)]: [...(prev['mortgage_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
+                                        </div>
+                                        {((deductionFiles['mortgage_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
+                                            <div key={i} className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
+                                                <span className="text-1 text-neutral-600">{file.name}</span>
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-neutral-400 cursor-pointer ml-1" onClick={() => setDeductionFiles(prev => ({ ...prev, ['mortgage_' + (activeMonthNum - 1)]: (prev['mortgage_' + (activeMonthNum - 1)] ?? []).filter((_, j) => j !== i) }))}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {!currentProfile?.paysRent && !currentProfile?.hasHealthInsurance && !currentProfile?.hasPension && !currentProfile?.hasMortgage && (
+                                <p className="text-2 text-neutral-500 font-medium">No deductions or reliefs selected during onboarding.</p>
+                            )}
+                        </div>
+
+                        <div className="flex gap-3 mt-8">
+                            <SecondaryButton onClick={() => goBack('income')}>Back</SecondaryButton>
+                            <PrimaryButton onClick={() => goForward('review')}>
+                                Next: Review
+                            </PrimaryButton>
+                        </div>
+                    </div>
+                )}
+
+                {/* Step 3: Review */}
+                {incomeStep === 'review' && (
+                    <div className="max-w-[500px] mx-auto" data-animate>
+                        <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-6">Review</h2>
+
+                        <div className="bg-neutral-50 rounded-3xl p-5 mb-6">
+                            <div className="flex items-center justify-between text-2 py-2">
+                                <span className="text-neutral-500 font-medium">Monthly Income</span>
+                                <span className="font-semibold text-neutral-800">{fmt(totalMonthlyIncome)}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-2 py-2">
+                                <span className="text-neutral-500 font-medium">Less Deductions</span>
+                                <span className="font-semibold text-neutral-800">-{fmt(totalDeductions)}</span>
+                            </div>
+                            <div className="border-t border-neutral-100 mt-1 pt-3">
+                                <div className="flex items-center justify-between text-2">
+                                    <span className="font-semibold text-neutral-800">Taxable Income</span>
+                                    <span className="font-semibold text-neutral-800">{fmt(monthlyTaxable)}</span>
+                                </div>
+                            </div>
+                            <div className="border-t border-neutral-100 mt-1 pt-3">
+                                <div className="flex items-center justify-between text-2">
+                                    <span className="font-semibold text-neutral-800">Estimated Monthly Tax (PAYE)</span>
+                                    <span className="text-3 font-semibold text-taxable-blue">{fmt(monthlyPAYE)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <SecondaryButton onClick={() => goBack('deductions')}>Back</SecondaryButton>
+                            <PrimaryButton onClick={() => setShowFilingSheet(true)}>
+                                File &amp; Remit ({fmt(monthlyPAYE)})
+                            </PrimaryButton>
+                        </div>
+
+                        <FilingSheet open={showFilingSheet} onClose={() => setShowFilingSheet(false)} onFile={handleFileMonth} />
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const handleFileMonth = () => {
+        setFiledIncomeMonths(prev => new Set([...prev, activeMonthNum - 1]));
+        setShowFilingSheet(false);
+        if (activeMonthNum < 12) {
+            const nextIdx = activeMonthNum; // next month index (0-based)
+            setActiveMonth(INCOME_MONTH_NAMES[nextIdx]);
+        }
+        goBack('income');
+    };
 
     const monthScopedDeductions = useMemo(() => {
         const list = (deductions || []).map(normalizeDeduction).filter(d => !!d.type);
@@ -408,8 +739,8 @@ export default function PITDetails() {
         const digitalAssets = monthItems.find((i: any) => i.type === 'digital_assets' || i.type === 'crypto')?.value?.toString() || '';
         
         const data = { salary, bonuses, commissions, freelance, digitalAssets };
-        if (periodMode === 'annually') setAnnualIncome(data);
-        else setCurrentMonthIncome(data);
+        if (periodMode === 'annually') _setAnnualIncome(data);
+        else _setCurrentMonthIncome(data);
     }, [incomeData, activeMonthNum, periodMode]);
 
     useEffect(() => {
@@ -438,7 +769,7 @@ export default function PITDetails() {
         setDocumentUrls(docUrlMap);
     }, [monthScopedDeductions]);
 
-    const handleSaveDeductions = useCallback(async () => {
+    const _handleSaveDeductions = useCallback(async () => {
         if (!profileId || !currentProfile) return;
         
         const missingFields: string[] = [];
@@ -453,7 +784,7 @@ export default function PITDetails() {
             return;
         }
         
-        setSavingReliefs(true);
+        _setSavingReliefs(true);
         try {
             const isMonthly = periodMode === 'monthly';
             const frequency = isMonthly ? 'monthly' : 'annual';
@@ -529,7 +860,7 @@ export default function PITDetails() {
                     const nextMonth = MONTHS[currentMonthIndex + 1];
                     setActiveMonth(nextMonth);
                     setExpandedMonth(nextMonth);
-                    setIncomeSubTab('income'); // Switch to income tab for next month
+                    _setIncomeSubTab('income'); // Switch to income tab for next month
                 }
             }
             
@@ -545,7 +876,7 @@ export default function PITDetails() {
         } catch (err: any) {
             toast.error(err.message || 'Failed to save deductions');
         } finally {
-            setSavingReliefs(false);
+            _setSavingReliefs(false);
         }
     }, [profileId, currentProfile, reliefs, documentUrls, deductions, normalizeDeduction, activeMonthNum, periodMode, api, toast]);
 
@@ -589,7 +920,7 @@ export default function PITDetails() {
         }
     }, [profileId, personalInfo, currentProfile, api, toast]);
 
-    const handleIncomeSaved = useCallback((monthNum: number) => {
+    const _handleIncomeSaved = useCallback((monthNum: number) => {
         console.log(`📥 Income saved for month ${monthNum}`);
     }, []);
 
@@ -726,50 +1057,9 @@ export default function PITDetails() {
                              <PersonalInfoSection personalInfo={personalInfo} setPersonalInfo={setPersonalInfo as any} savingPersonalInfo={savingPersonalInfo} onSave={handleSavePersonalInfo} />
                         )}
 
-                        {activeSection === 'income-deductions' && (
-                            <IncomeDeductionsSection
-                                currentProfile={currentProfile}
-                                profileId={profileId!}
-                                periodMode={periodMode}
-                                setPeriodMode={(m: any) => { setPendingPeriodMode(m); setConfirmFilingPrefOpen(true); }}
-                                activeMonth={activeMonth}
-                                setActiveMonth={(m: any) => setActiveMonth(m)}
-                                expandedMonth={expandedMonth}
-                                setExpandedMonth={(m: any) => setExpandedMonth(m)}
-                                incomeSubTab={incomeSubTab}
-                                setIncomeSubTab={setIncomeSubTab}
-                                paidMonths={paidMonths}
-                                currentMonthIncome={currentMonthIncome}
-                                setCurrentMonthIncome={setCurrentMonthIncome}
-                                annualIncome={annualIncome}
-                                setAnnualIncome={setAnnualIncome}
-                                savingMonthlyIncome={savingMonthlyIncome}
-                                setSavingMonthlyIncome={setSavingMonthlyIncome}
-                                setIncomeData={setIncomeData}
-                                reliefs={reliefs}
-                                setReliefs={setReliefs}
-                                documentUrls={documentUrls}
-                                setDocumentUrls={setDocumentUrls as any}
-                                uploadedFileNames={uploadedFileNames}
-                                setUploadedFileNames={setUploadedFileNames as any}
-                                deductions={deductions}
-                                monthScopedDeductions={monthScopedDeductions}
-                                savingReliefs={savingReliefs}
-                                activeMonthNum={activeMonthNum}
-                                handleSaveDeductions={handleSaveDeductions}
-                                setActiveSection={setActiveSection}
-                                incomeData={incomeData}
-                                updateAnnualIncomeData={api.updateAnnualIncomeData}
-                                updateMonthlyIncomeData={api.updateMonthlyIncomeData}
-                                getIncomeData={api.getIncomeData}
-                                uploadSimple={api.uploadSimple}
-                                toast={toast as any}
-                                setIncomeSaved={() => {}}
-                                onIncomeSaved={handleIncomeSaved}
-                            />
-                        )}
+                         {renderIncomeSection()}
 
-                        {activeSection === 'review' && (
+                          {activeSection === 'review' && (
                             <ReviewAndFile 
                                 profileId={profileId!} 
                                 filingPreference={periodMode === 'annually' ? 'annual' : 'monthly'} 
@@ -777,7 +1067,7 @@ export default function PITDetails() {
                                 monthlyTaxByMonth={monthlyTaxByMonth}
                                 onEdit={(section, tab) => {
                                     setActiveSection(section);
-                                    if (tab) setIncomeSubTab(tab);
+                                    if (tab) _setIncomeSubTab(tab);
                                     window.scrollTo({ top: 0, behavior: 'smooth' });
                                 }}
                             />
@@ -799,7 +1089,7 @@ export default function PITDetails() {
                         const filingPreference = pendingPeriodMode === 'annually' ? 'annual' : 'monthly';
                         await api.completeProfile(profileId, { ...currentProfile, filingPreference } as any);
                         setPeriodMode(pendingPeriodMode);
-                        setIncomeSubTab('income');
+                        _setIncomeSubTab('income');
                         setActiveMonth('January');
                         setExpandedMonth(pendingPeriodMode === 'monthly' ? 'January' : null);
                         if (currentProfile) setCurrentProfile({ ...currentProfile, filingPreference });

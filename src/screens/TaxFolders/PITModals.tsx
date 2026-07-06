@@ -9,7 +9,7 @@ export interface PITModalsProps {
     pendingPeriodMode: 'monthly' | 'annually' | null;
     setPendingPeriodMode: (mode: 'monthly' | 'annually' | null) => void;
     switchingFilingPref: boolean;
-    onConfirmFilingPref: () => Promise<void>;
+    onConfirmFilingPref: () => void;
 
     // Help Modal
     helpModalOpen: boolean;

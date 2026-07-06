@@ -1,7 +1,7 @@
 'use client';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect, useCallback, useMemo, useLayoutEffect, useRef, startTransition } from 'react';
+import React, { useState, useEffect, useCallback, useLayoutEffect, useRef, startTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Lenis from 'lenis';
 import gsap from 'gsap';
@@ -10,20 +10,22 @@ import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/components/Toast/ToastProvider';
 import { useTaxableApi } from '@/hooks/useTaxableApi';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PrimaryButton, SecondaryButton, FormFieldRow, FormLabel } from '@/screens/TaxFolders/TaxFolderShared';
+import { PrimaryButton, SecondaryButton, FormFieldRow, FormLabel, FilingSheet } from '@/screens/TaxFolders/TaxFolderShared';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Stepper, StepperItem, StepperIndicator, StepperTitle, StepperSeparator, StepperTrigger } from '@/components/ui/stepper';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
-import type { Profile, Income, Deduction, DeductionType } from '@/types/api';
+import type { Profile, Income, Deduction } from '@/types/api';
 
 // Sub-components and Shared Utilities
 import { MONTHS } from './PITShared';
 import { PITSidebar } from './PITSidebar';
 import { PersonalInfoSection, PersonalInfo } from './PersonalInfoSection';
 import { PITModals } from './PITModals';
-import ReviewAndFile from './ReviewAndFile';
 
 // ── Welcome Modal ─────────────────────────────────────────────────────────────
 const PITWelcomeModal = ({ onClose }: { onClose: () => void }) => (
@@ -135,45 +137,8 @@ export default function PITDetails() {
     const [expandedMonth, setExpandedMonth] = useState<string | null>('January');
     const [_incomeSubTab, _setIncomeSubTab] = useState<'income' | 'deductions'>('income');
 
-    const [incomeData, setIncomeData] = useState<Income[]>([]);
-    const [deductions, setDeductions] = useState<Deduction[]>([]);
-
-    const [_currentMonthIncome, _setCurrentMonthIncome] = useState({
-        salary: '',
-        bonuses: '',
-        commissions: '',
-        freelance: '',
-        digitalAssets: ''
-    });
-    const [_annualIncome, _setAnnualIncome] = useState({
-        salary: '',
-        bonuses: '',
-        commissions: '',
-        freelance: '',
-        digitalAssets: ''
-    });
-
-    const [reliefs, setReliefs] = useState({
-        rentRelief: '',
-        pension: '',
-        healthInsurance: '',
-        mortgage: ''
-    });
-    const [documentUrls, setDocumentUrls] = useState({
-        rentRelief: '',
-        healthInsurance: '',
-        pension: '',
-        mortgage: ''
-    });
-    const [_uploadedFileNames, _setUploadedFileNames] = useState({
-        rentRelief: '',
-        healthInsurance: '',
-        pension: '',
-        mortgage: ''
-    });
-
-    const [_savingMonthlyIncome, _setSavingMonthlyIncome] = useState(false);
-    const [_savingReliefs, _setSavingReliefs] = useState(false);
+    const [_incomeData, _setIncomeData] = useState<Income[]>([]);
+    const [_deductions, _setDeductions] = useState<Deduction[]>([]);
 
     const [_taxSummary, _setTaxSummary] = useState<any>(null);
 
@@ -254,15 +219,22 @@ export default function PITDetails() {
     const STORAGE_KEY_PIT_INCOME = `taxable_pit_income_${profileId}`;
 
     // Summaries
-    const [monthlyTaxByMonth, setMonthlyTaxByMonth] = useState<Record<number, number>>({});
-    const [_paidMonths] = useState<Set<number>>(new Set());
+    const [_monthlyTaxByMonth, _setMonthlyTaxByMonth] = useState<Record<number, number>>({});
+
+    // Annual Filing state
+    const [legalConfirmPIT1, setLegalConfirmPIT1] = useState(false);
+    const [legalConfirmPIT2, setLegalConfirmPIT2] = useState(false);
+    const [showFilingSheetPIT, setShowFilingSheetPIT] = useState(false);
+    const [annualReturnFiledPIT, setAnnualReturnFiledPIT] = useState(() => {
+        try { return localStorage.getItem(`taxable_pit_filed_${profileId}`) === 'true'; } catch { return false; }
+    });
 
     // Modal States
     const [helpModalOpen, setHelpModalOpen] = useState(false);
     const [bookingTaxAgent, setBookingTaxAgent] = useState(false);
     const [confirmFilingPrefOpen, setConfirmFilingPrefOpen] = useState(false);
     const [pendingPeriodMode, setPendingPeriodMode] = useState<'monthly' | 'annually' | null>(null);
-    const [switchingFilingPref, setSwitchingFilingPref] = useState(false);
+    const [switchingFilingPref, _setSwitchingFilingPref] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
     // ─── Data Loading ─────────────────────────────────────────────────────
@@ -312,8 +284,8 @@ export default function PITDetails() {
                     api.getDeductionList(profileId, profile.year)
                 ]);
 
-                if (incomeRes.success) setIncomeData(incomeRes.data.incomes || []);
-                if (deductionRes.success) setDeductions(deductionRes.data.deductions || []);
+                if (incomeRes.success) _setIncomeData(incomeRes.data.incomes || []);
+                if (deductionRes.success) _setDeductions(deductionRes.data.deductions || []);
 
                 // Determine starting section - Background auto-continue logic
                 if (!sectionInitialized) {
@@ -341,7 +313,7 @@ export default function PITDetails() {
                             api.calculateTaxByMonth(profileId, monthNum).then((sumRes: any) => {
                                 if (sumRes.success && sumRes.data) {
                                     const taxAmount = (sumRes.data as any).taxSummary?.monthlyTax || (sumRes.data as any).taxSummary?.totalTaxAmount || 0;
-                                    setMonthlyTaxByMonth(prev => ({ ...prev, [monthNum]: taxAmount }));
+                                    _setMonthlyTaxByMonth(prev => ({ ...prev, [monthNum]: taxAmount }));
                                 }
                             }).catch((err) => {
                                 // Silent fail - some months may not have sufficient data for tax calculation
@@ -379,15 +351,6 @@ export default function PITDetails() {
         }
     }, [authLoading, isAuthenticated, profileLoading, profileId]);
 
-
-    const normalizeDeduction = useCallback((d: any) => {
-        const type = (d?.type ?? d?.deductionType) as string | undefined;
-        const value = (d?.value ?? d?.amount) as number | undefined;
-        const frequency = (d?.frequency ?? 'annual') as string;
-        const month = (d?.month ?? null) as number | null;
-        const documentUrl = d?.documentUrl as string | undefined;
-        return { type, value, frequency, month, documentUrl, raw: d };
-    }, []);
 
     const activeMonthNum = MONTHS.indexOf(activeMonth as any) + 1;
 
@@ -432,6 +395,7 @@ export default function PITDetails() {
     const currentIncome = incomeByMonth[activeMonthNum - 1] ?? {};
     const setDeductionField = (field: string, value: string) => {
         setDeductionsByMonth(prev => ({ ...prev, [activeMonthNum - 1]: { ...(prev[activeMonthNum - 1] ?? {}), [field]: value } }));
+        setHasUnsavedIncome(true);
     };
     const currentDeductions = deductionsByMonth[activeMonthNum - 1] ?? {};
     const businessIncome = (Number((currentIncome as any).businessRevenue?.replace(/,/g, '')) || 0) - (Number((currentIncome as any).businessExpenses?.replace(/,/g, '')) || 0);
@@ -439,7 +403,7 @@ export default function PITDetails() {
     const fmt = (n: number) => n > 0 ? `₦${Math.round(n).toLocaleString()}` : '₦ 0';
     const totalMonthlyIncome = (Number((currentIncome as any).salaryTakeHome?.replace(/,/g, '')) || 0) + Math.max(0, businessIncome) + Math.max(0, freelanceNet) + (Number((currentIncome as any).investmentIncome?.replace(/,/g, '')) || 0) + (Number((currentIncome as any).rentalIncome?.replace(/,/g, '')) || 0) + (Number((currentIncome as any).digitalGains?.replace(/,/g, '')) || 0);
     const totalDeductions = ((v: any) => (Number((v as any).rent?.replace(/,/g, '')) || 0) + (Number((v as any).healthInsurance?.replace(/,/g, '')) || 0) + (Number((v as any).pension?.replace(/,/g, '')) || 0) + (Number((v as any).mortgageInterest?.replace(/,/g, '')) || 0))(currentDeductions);
-    const monthlyTaxable = Math.max(0, totalMonthlyIncome - totalDeductions);
+    const _monthlyTaxable = Math.max(0, totalMonthlyIncome - totalDeductions);
 
     const PAYE_BANDS = [
         { limit: 800000, rate: 0 },
@@ -462,8 +426,6 @@ export default function PITDetails() {
         return { annualTax: Math.round(tax), monthlyTax: Math.round(tax / 12) };
     };
 
-    const _monthlyPAYE = calculatePAYE(monthlyTaxable * 12).monthlyTax;
-
     // YTD totals (sum across all months)
     const ytdGrossIncome = Object.values(incomeByMonth).reduce((sum, m) => {
         const bi = (Number((m as any).businessRevenue?.replace(/,/g, '')) || 0) - (Number((m as any).businessExpenses?.replace(/,/g, '')) || 0);
@@ -476,6 +438,23 @@ export default function PITDetails() {
     const annualizedDeds = ytdDeductions;
     const annualTaxable = Math.max(0, annualizedGross - annualizedDeds);
     const estimatedAnnualTax = calculatePAYE(annualTaxable).annualTax;
+
+    const handleFilePITReturn = () => {
+        setAnnualReturnFiledPIT(true);
+        setShowFilingSheetPIT(false);
+        try { localStorage.setItem(`taxable_pit_filed_${profileId}`, 'true'); } catch {}
+        toast.success('Annual return filed successfully!');
+    };
+
+    const monthlyBreakdown = periodMode === 'monthly' ? INCOME_MONTH_NAMES.map((_, idx) => {
+        const inc = incomeByMonth[idx] ?? {};
+        const ded = deductionsByMonth[idx] ?? {};
+        const bi = (Number((inc as any).businessRevenue?.replace(/,/g, '')) || 0) - (Number((inc as any).businessExpenses?.replace(/,/g, '')) || 0);
+        const fn = (Number((inc as any).freelanceInvoiced?.replace(/,/g, '')) || 0) - (Number((inc as any).freelanceWHT?.replace(/,/g, '')) || 0);
+        const mi = (Number((inc as any).salaryTakeHome?.replace(/,/g, '')) || 0) + Math.max(0, bi) + Math.max(0, fn) + (Number((inc as any).investmentIncome?.replace(/,/g, '')) || 0) + (Number((inc as any).rentalIncome?.replace(/,/g, '')) || 0) + (Number((inc as any).digitalGains?.replace(/,/g, '')) || 0);
+        const md = (Number((ded as any).rent?.replace(/,/g, '')) || 0) + (Number((ded as any).healthInsurance?.replace(/,/g, '')) || 0) + (Number((ded as any).pension?.replace(/,/g, '')) || 0) + (Number((ded as any).mortgageInterest?.replace(/,/g, '')) || 0);
+        return { month: INCOME_MONTH_NAMES[idx], income: mi, deductions: md, taxable: Math.max(0, mi - md) };
+    }) : [];
 
     const renderIncomeSection = () => {
         if (activeSection !== 'income-deductions') return null;
@@ -759,7 +738,7 @@ export default function PITDetails() {
                         </div>
                         {monthCount > 1 && (
                             <div className="border-t border-neutral-100 pt-2 mt-2">
-                                <p className="text-1 text-neutral-400 font-medium">{periodMode === 'annually' ? '' : `${Object.keys(incomeByMonth).length} of 12 months tracked`}</p>
+                                 <p className="text-1 text-neutral-400 font-medium">{periodMode === 'annually' ? '' : Object.keys(incomeByMonth).length + ' of 12 months tracked'}</p>
                             </div>
                         )}
                     </div>
@@ -769,168 +748,6 @@ export default function PITDetails() {
         );
     };
 
-
-    const monthScopedDeductions = useMemo(() => {
-        const list = (deductions || []).map(normalizeDeduction).filter(d => !!d.type);
-        if (periodMode !== 'monthly') return list;
-        return list.filter(d => {
-            if (d.frequency === 'monthly') return d.month === activeMonthNum;
-            if (d.type === 'rent_relief') return true;
-            return false;
-        });
-    }, [deductions, normalizeDeduction, periodMode, activeMonthNum]);
-
-    useEffect(() => {
-        const index = periodMode === 'annually' ? 0 : activeMonthNum - 1;
-        const monthItems = (incomeData[index] as any) || [];
-
-        const salary = monthItems.find((i: any) => i.type === 'employment')?.grossSalary?.toString() || '';
-        const bonuses = monthItems.find((i: any) => i.type === 'employment')?.bonuses?.toString() || '';
-        const commissions = monthItems.find((i: any) => i.type === 'employment')?.commissions?.toString() || '';
-        const freelance = monthItems.find((i: any) => i.type === 'freelance')?.value?.toString() || '';
-        const digitalAssets = monthItems.find((i: any) => i.type === 'digital_assets' || i.type === 'crypto')?.value?.toString() || '';
-        
-        const data = { salary, bonuses, commissions, freelance, digitalAssets };
-        if (periodMode === 'annually') _setAnnualIncome(data);
-        else _setCurrentMonthIncome(data);
-    }, [incomeData, activeMonthNum, periodMode]);
-
-    useEffect(() => {
-        const reliefMap = { rentRelief: '', pension: '', healthInsurance: '', mortgage: '' };
-        const docUrlMap = { rentRelief: '', healthInsurance: '', pension: '', mortgage: '' };
-
-        monthScopedDeductions.forEach(d => {
-            if (!d.type) return;
-            const type = d.type;
-            if (type === 'rent_relief') {
-                reliefMap.rentRelief = (d.value ?? '').toString();
-                if (d.documentUrl) docUrlMap.rentRelief = d.documentUrl;
-            } else if (type === 'pension') {
-                reliefMap.pension = (d.value ?? '').toString();
-                if (d.documentUrl) docUrlMap.pension = d.documentUrl;
-            } else if (['insurance', 'nhis', 'health_insurance'].includes(type)) {
-                reliefMap.healthInsurance = (d.value ?? '').toString();
-                if (d.documentUrl) docUrlMap.healthInsurance = d.documentUrl;
-            } else if (['mortgage', 'mortgage_interest'].includes(type)) {
-                reliefMap.mortgage = (d.value ?? '').toString();
-                if (d.documentUrl) docUrlMap.mortgage = d.documentUrl;
-            }
-        });
-
-        setReliefs(reliefMap);
-        setDocumentUrls(docUrlMap);
-    }, [monthScopedDeductions]);
-
-    const _handleSaveDeductions = useCallback(async () => {
-        if (!profileId || !currentProfile) return;
-        
-        const missingFields: string[] = [];
-        if (!currentProfile.dob) missingFields.push('Date of Birth');
-        if (!currentProfile.street) missingFields.push('Street Address');
-        if (!currentProfile.city) missingFields.push('City');
-        if (!currentProfile.state) missingFields.push('State');
-        
-        if (missingFields.length > 0) {
-            toast.error(`Please complete your Personal Information first. Missing: ${missingFields.join(', ')}`);
-            setActiveSection('personal-info');
-            return;
-        }
-        
-        _setSavingReliefs(true);
-        try {
-            const isMonthly = periodMode === 'monthly';
-            const frequency = isMonthly ? 'monthly' : 'annual';
-            const monthToSend = isMonthly ? activeMonthNum : null;
-
-            const batchItems: any[] = [
-                ...(reliefs.rentRelief && parseFloat(reliefs.rentRelief) > 0 ? [{ deductionType: 'rent_relief' as DeductionType, amount: parseFloat(reliefs.rentRelief), documentUrl: documentUrls.rentRelief || undefined, frequency, month: monthToSend }] : []),
-                ...(reliefs.pension && parseFloat(reliefs.pension) > 0 ? [{ deductionType: 'pension' as DeductionType, amount: parseFloat(reliefs.pension), documentUrl: documentUrls.pension || undefined, frequency, month: monthToSend }] : []),
-                ...(reliefs.healthInsurance && parseFloat(reliefs.healthInsurance) > 0 ? [{ deductionType: 'insurance' as DeductionType, amount: parseFloat(reliefs.healthInsurance), documentUrl: documentUrls.healthInsurance || undefined, frequency, month: monthToSend }] : []),
-                ...(reliefs.mortgage && parseFloat(reliefs.mortgage) > 0 ? [{ deductionType: 'mortgage' as DeductionType, amount: parseFloat(reliefs.mortgage), documentUrl: documentUrls.mortgage || undefined, frequency, month: monthToSend }] : []),
-            ];
-
-            if (batchItems.length === 0) {
-                toast.warning('Please enter at least one deduction amount.');
-                return;
-            }
-
-            for (const item of batchItems) {
-                const wantType = item.deductionType as string;
-                const existing = (deductions || []).map(normalizeDeduction).find(d =>
-                    (d.type === wantType || d.type === (wantType === 'mortgage' ? 'mortgage_interest' : wantType)) &&
-                    (isMonthly ? (d.frequency === 'monthly' && d.month === activeMonthNum) : (d.frequency === 'annual' || d.month === null))
-                );
-
-                if (existing?.raw?._id) {
-                    await api.updateDeduction(existing.raw._id, { profileId, year: currentProfile.year, type: wantType as any, value: item.amount, frequency: item.frequency as any, month: item.month, documentUrl: item.documentUrl });
-                } else {
-                    await api.batchCreateDeductions({ profileId, year: currentProfile.year, deductions: [item] as any });
-                }
-            }
-
-            const res = await api.getDeductionList(profileId, currentProfile.year);
-            if (res.success) setDeductions(res.data.deductions || []);
-            toast.success('Deductions saved successfully!');
-            
-            // Auto-calculate tax for the current month after saving deductions
-            if (periodMode === 'monthly') {
-                console.log(`🔥 Starting tax calculation for ${activeMonth} (month ${activeMonthNum})`);
-                console.log(`📊 Current monthlyTaxByMonth state:`, monthlyTaxByMonth);
-                console.log(`📊 Current activeMonthNum: ${activeMonthNum}`);
-                try {
-                    const taxResult = await api.calculateTaxByMonth(profileId, activeMonthNum);
-                    console.log(`📡 Tax API response for ${activeMonth}:`, JSON.stringify(taxResult, null, 2));
-                    
-                    if (taxResult.success && taxResult.data) {
-                        // Get netTaxPayable from the calculation object
-                        const taxAmount = (taxResult.data as any).taxSummary?.monthlyTax || (taxResult.data as any).taxSummary?.totalTaxAmount || 0;
-                        
-                        console.log(`💰 Extracted tax amount: ₦${taxAmount}`);
-                        
-                        // Update the monthly tax for this specific month
-                        setMonthlyTaxByMonth(prev => {
-                            const updated = { ...prev, [activeMonthNum]: taxAmount };
-                            console.log(`📝 Updated monthlyTaxByMonth:`, updated);
-                            return updated;
-                        });
-                        
-                        console.log(`✅ Tax calculated for ${activeMonth}: ₦${taxAmount.toLocaleString()}`);
-                        
-                    } else {
-                        console.log(`⚠️ Tax calculation failed or returned no data:`, taxResult);
-                    }
-                } catch (err: any) {
-                    console.error(`❌ Failed to calculate tax for ${activeMonth}:`, err);
-                    // Don't show error to user - tax calculation failure shouldn't block deduction save
-                }
-            }
-            
-            // Auto-advance to next month for monthly filing after completing deductions
-            if (periodMode === 'monthly') {
-                const currentMonthIndex = MONTHS.indexOf(activeMonth as any);
-                if (currentMonthIndex < MONTHS.length - 1) {
-                    const nextMonth = MONTHS[currentMonthIndex + 1];
-                    setActiveMonth(nextMonth);
-                    setExpandedMonth(nextMonth);
-                    _setIncomeSubTab('income'); // Switch to income tab for next month
-                }
-            }
-            
-            // Background sync after a short delay to verify data consistency
-            setTimeout(async () => {
-                try {
-                    const res = await api.getDeductionList(profileId, currentProfile.year);
-                    if (res.success) setDeductions(res.data.deductions || []);
-                } catch (err) {
-                    console.warn('Background sync failed:', err);
-                }
-            }, 2000); // 2 seconds later
-        } catch (err: any) {
-            toast.error(err.message || 'Failed to save deductions');
-        } finally {
-            _setSavingReliefs(false);
-        }
-    }, [profileId, currentProfile, reliefs, documentUrls, deductions, normalizeDeduction, activeMonthNum, periodMode, api, toast]);
 
     const handleSavePersonalInfo = useCallback(async () => {
         setSavingPersonalInfo(true);
@@ -1041,6 +858,11 @@ export default function PITDetails() {
         try { localStorage.setItem(`taxable_pit_personal_${profileId}`, JSON.stringify(personalInfo)); } catch {}
     }, [personalInfo, profileId]);
 
+    // Persist annual return filed status
+    useEffect(() => {
+        try { localStorage.setItem(`taxable_pit_filed_${profileId}`, String(annualReturnFiledPIT)); } catch {}
+    }, [annualReturnFiledPIT, profileId]);
+
     // Show welcome modal for new workspaces
     useEffect(() => {
         const isNew = searchParams?.get('new');
@@ -1072,7 +894,7 @@ export default function PITDetails() {
         return (
             <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
                 <div className="text-center max-w-md">
-                    <h3 className="text-lg font-semibold text-neutral-800 mb-2">{error || 'Profile not found'}</h3>
+                    <h3 className="text-5 font-semibold text-neutral-800 mb-2">{error || 'Profile not found'}</h3>
                     <button onClick={() => router.push('/tax-folders')} className="px-4 py-2 bg-taxable-blue text-white rounded-xl">Back to Tax Folders</button>
                 </div>
             </div>
@@ -1112,18 +934,144 @@ export default function PITDetails() {
                          {renderIncomeSection()}
 
                           {activeSection === 'review' && (
-                            <ReviewAndFile 
-                                profileId={profileId!} 
-                                filingPreference={periodMode === 'annually' ? 'annual' : 'monthly'} 
-                                year={currentProfile.year} 
-                                monthlyTaxByMonth={monthlyTaxByMonth}
-                                onEdit={(section, tab) => {
-                                    setActiveSection(section);
-                                    if (tab) _setIncomeSubTab(tab);
-                                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                                }}
-                            />
-                        )}
+                            annualReturnFiledPIT ? (
+                                <div className="w-full max-w-[500px] mx-auto text-center py-12" data-animate>
+                                    <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-green-600">
+                                            <polyline points="20 6 9 17 4 12" />
+                                        </svg>
+                                    </div>
+                                    <h2 className="text-6 font-semibold text-neutral-800 mb-2">Annual Return Filed</h2>
+                                    <p className="text-2 text-neutral-500 font-medium mb-6">Your annual PIT return has been successfully submitted.</p>
+                                    <SecondaryButton onClick={() => setActiveSection('income-deductions')}>Back</SecondaryButton>
+                                </div>
+                            ) : (
+                            <div className="w-full max-w-[800px] mx-auto" data-animate>
+
+                                {/* Section 1: Summary Cards */}
+                                <div className="mb-14">
+                                    <h2 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em] mb-6">Annual Filing Summary</h2>
+                                    <div className="flex gap-4">
+                                        <div className="flex-1 bg-white border border-neutral-100 rounded-2xl p-4 text-left">
+                                            <p className="text-1 text-neutral-500 font-medium">Gross Income</p>
+                                            <p className="text-4 font-semibold text-neutral-800 mt-1">{fmt(ytdGrossIncome)}</p>
+                                        </div>
+                                        <div className="flex-1 bg-white border border-neutral-100 rounded-2xl p-4 text-left">
+                                            <p className="text-1 text-neutral-500 font-medium">Total Deductions</p>
+                                            <p className="text-4 font-semibold text-neutral-800 mt-1">-{fmt(ytdDeductions)}</p>
+                                        </div>
+                                        <div className="flex-1 bg-white border border-neutral-100 rounded-2xl p-4 text-left">
+                                            <p className="text-1 text-neutral-500 font-medium">Taxable Income</p>
+                                            <p className="text-4 font-semibold text-neutral-800 mt-1">{fmt(annualTaxable)}</p>
+                                        </div>
+                                        <div className="flex-1 bg-white border border-neutral-100 rounded-2xl p-4 text-left">
+                                            <p className="text-1 text-neutral-500 font-medium">Estimated PIT</p>
+                                            <p className="text-4 font-semibold text-neutral-800 mt-1">{fmt(estimatedAnnualTax)}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Section 2: Accordion */}
+                                <div className="mb-14">
+                                     <Accordion defaultValue={[]} className="space-y-1">
+                                        <AccordionItem value="summary" className="bg-neutral-50 border border-neutral-100 rounded-2xl">
+                                            <AccordionTrigger className="px-4 py-3 text-2 font-semibold text-neutral-800">
+                                                Tax Calculation Breakdown
+                                            </AccordionTrigger>
+                                            <AccordionContent className="px-4 pb-4">
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center justify-between text-2"><span className="text-neutral-500">Gross Income</span><span className="font-medium text-neutral-800">{fmt(ytdGrossIncome)}</span></div>
+                                                    <div className="flex items-center justify-between text-2"><span className="text-neutral-500">Total Deductions</span><span className="font-medium text-neutral-800">-{fmt(ytdDeductions)}</span></div>
+                                                    <div className="flex items-center justify-between text-2 pt-2 border-t border-neutral-100"><span className="font-semibold text-neutral-800">Taxable Income</span><span className="font-semibold text-neutral-800">{fmt(annualTaxable)}</span></div>
+
+                                                    <div className="border-t border-neutral-100 pt-3 mt-3">
+                                                        <h4 className="text-2 font-semibold text-neutral-700 mb-3">PAYE Bands Applied</h4>
+                                                        {(() => {
+                                                            let remaining = annualTaxable;
+                                                            const bandLabels = [
+                                                                { limit: 800000, rate: 0, label: 'First ₦800,000' },
+                                                                { limit: 2200000, rate: 0.15, label: 'Next ₦2,200,000' },
+                                                                { limit: 9000000, rate: 0.18, label: 'Next ₦9,000,000' },
+                                                                { limit: 13000000, rate: 0.21, label: 'Next ₦13,000,000' },
+                                                                { limit: 25000000, rate: 0.23, label: 'Next ₦25,000,000' },
+                                                                { limit: Infinity, rate: 0.25, label: 'Above ₦50,000,000' },
+                                                            ];
+                                                            return bandLabels.map((band, i) => {
+                                                                const chunk = Math.min(Math.max(0, remaining), band.limit);
+                                                                remaining -= chunk;
+                                                                if (chunk <= 0) return null;
+                                                                return (
+                                                                     <div key={i} className="flex items-center justify-between text-2 py-2">
+                                                                         <span className="text-neutral-500">{band.label} ({Math.round(band.rate * 100)}%)</span>
+                                                                         <span className="font-medium text-neutral-500">{fmt(Math.round(chunk * band.rate))}</span>
+                                                                    </div>
+                                                                );
+                                                            });
+                                                        })()}
+                                                        <div className="flex items-center justify-between text-2 pt-2 border-t border-neutral-100 mt-2">
+                                                            <span className="font-semibold text-neutral-800">Estimated PIT</span>
+                                                            <span className="font-semibold text-neutral-800">{fmt(estimatedAnnualTax)}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </AccordionContent>
+                                        </AccordionItem>
+
+                                        {periodMode === 'monthly' && (
+                                        <AccordionItem value="monthly" className="bg-neutral-50 border border-neutral-100 rounded-2xl">
+                                            <AccordionTrigger className="px-4 py-3 text-2 font-semibold text-neutral-800">
+                                                Monthly Breakdown
+                                            </AccordionTrigger>
+                                            <AccordionContent className="px-4 pb-4">
+                                                <div className="bg-white border border-neutral-50 rounded-2xl overflow-hidden">
+                                                    <Table>
+                                                        <TableHeader>
+                                                            <TableRow className="bg-neutral-50">
+                                                                <TableHead className="px-6 py-4 font-medium text-neutral-400">Month</TableHead>
+                                                                <TableHead className="px-6 py-4 font-medium text-neutral-400">Gross Income</TableHead>
+                                                                <TableHead className="px-6 py-4 font-medium text-neutral-400">Deductions</TableHead>
+                                                                <TableHead className="px-6 py-4 font-medium text-neutral-400">Taxable Income</TableHead>
+                                                            </TableRow>
+                                                        </TableHeader>
+                                                        <TableBody>
+                                                            {monthlyBreakdown.filter(m => m.income > 0).map(m => (
+                                                                <TableRow key={m.month} className="cursor-pointer">
+                                                                    <TableCell className="px-6 py-4 font-medium text-neutral-600">{m.month}</TableCell>
+                                                                    <TableCell className="px-6 py-4 font-medium text-neutral-600">{fmt(m.income)}</TableCell>
+                                                                    <TableCell className="px-6 py-4 font-medium text-neutral-600">{fmt(m.deductions)}</TableCell>
+                                                                    <TableCell className="px-6 py-4 font-medium text-neutral-600">{fmt(m.taxable)}</TableCell>
+                                                                </TableRow>
+                                                            ))}
+                                                        </TableBody>
+                                                    </Table>
+                                                </div>
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                        )}
+                                    </Accordion>
+                                </div>
+
+                                {/* Section 3: Legal Declaration + CTA */}
+                                <div className="space-y-3 mb-8">
+                                    <label className="flex items-start gap-3 cursor-pointer">
+                                        <Checkbox checked={legalConfirmPIT1} onCheckedChange={(c) => setLegalConfirmPIT1(c === true)} className="mt-0.5" />
+                                        <span className="text-2 text-neutral-600 font-medium leading-relaxed">I confirm that the income and deductions I've entered are accurate.</span>
+                                    </label>
+                                    <label className="flex items-start gap-3 cursor-pointer">
+                                        <Checkbox checked={legalConfirmPIT2} onCheckedChange={(c) => setLegalConfirmPIT2(c === true)} className="mt-0.5" />
+                                        <span className="text-2 text-neutral-600 font-medium leading-relaxed">I authorize Taxable to act as my designated tax agent to finalize this submission.</span>
+                                    </label>
+                                </div>
+
+                                <div className="mb-8">
+                                    <PrimaryButton onClick={() => setShowFilingSheetPIT(true)} disabled={!legalConfirmPIT1 || !legalConfirmPIT2}>
+                                        {estimatedAnnualTax > 0 ? `Pay & File PIT` : 'File PIT Return'}
+                                    </PrimaryButton>
+                                </div>
+
+                                <FilingSheet open={showFilingSheetPIT} onClose={() => setShowFilingSheetPIT(false)} onFile={handleFilePITReturn} />
+                            </div>
+                        ))}
                     </div>
                 </div>
             </main>
@@ -1134,24 +1082,15 @@ export default function PITDetails() {
                 pendingPeriodMode={pendingPeriodMode as any}
                 setPendingPeriodMode={setPendingPeriodMode}
                 switchingFilingPref={switchingFilingPref}
-                onConfirmFilingPref={async () => {
-                    if (!profileId || !pendingPeriodMode) return;
-                    setSwitchingFilingPref(true);
-                    try {
-                        const filingPreference = pendingPeriodMode === 'annually' ? 'annual' : 'monthly';
-                        await api.completeProfile(profileId, { ...currentProfile, filingPreference } as any);
-                        setPeriodMode(pendingPeriodMode);
-                        _setIncomeSubTab('income');
-                        setActiveMonth('January');
-                        setExpandedMonth(pendingPeriodMode === 'monthly' ? 'January' : null);
-                        if (currentProfile) setCurrentProfile({ ...currentProfile, filingPreference });
-                        toast.success(`Switched to ${pendingPeriodMode === 'monthly' ? 'Monthly' : 'Annual'} filing.`);
-                        setConfirmFilingPrefOpen(false);
-                    } catch (err: any) {
-                        toast.error(err.message || 'Failed to update filing preference');
-                    } finally {
-                        setSwitchingFilingPref(false);
-                    }
+                onConfirmFilingPref={() => {
+                    if (!pendingPeriodMode) return;
+                    setPeriodMode(pendingPeriodMode);
+                    _setIncomeSubTab('income');
+                    setActiveMonth('January');
+                    setExpandedMonth(pendingPeriodMode === 'monthly' ? 'January' : null);
+                    if (currentProfile) setCurrentProfile({ ...currentProfile, filingPreference: pendingPeriodMode === 'annually' ? 'annual' : 'monthly' });
+                    toast.success(`Switched to ${pendingPeriodMode === 'monthly' ? 'Monthly' : 'Annual'} view.`);
+                    setConfirmFilingPrefOpen(false);
                 }}
                 helpModalOpen={helpModalOpen}
                 setHelpModalOpen={setHelpModalOpen}

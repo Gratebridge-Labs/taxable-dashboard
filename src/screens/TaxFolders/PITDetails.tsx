@@ -213,6 +213,11 @@ export default function PITDetails() {
         setRecordedMonths(prev => new Set([...prev, activeMonthNum - 1]));
         setHasUnsavedIncome(false);
         toast.success(`Data recorded for ${INCOME_MONTH_NAMES[activeMonthNum - 1]}`);
+        if (activeMonthNum < 12) {
+            setActiveMonth(INCOME_MONTH_NAMES[activeMonthNum]);
+        }
+        setIncomeStep('income');
+        setCompletedIncomeSteps(new Set());
     };
 
     const [incomeByMonth, setIncomeByMonth] = useState<Record<number, {
@@ -232,6 +237,11 @@ export default function PITDetails() {
         setIncomeByMonth(prev => ({ ...prev, [activeMonthNum - 1]: { ...(prev[activeMonthNum - 1] ?? {}), [field]: value } }));
         setHasUnsavedIncome(true);
     };
+
+    const fieldSum = (field: string) => String(Object.values(incomeByMonth).reduce((s, m) => s + Number((m as any)[field]?.replace(/,/g, '') || 0), 0));
+    const fieldSumFmt = (field: string) => { const v = Number(fieldSum(field).replace(/,/g, '')); return v > 0 ? v.toLocaleString() : ''; };
+    const dedFieldSum = (field: string) => String(Object.values(deductionsByMonth).reduce((s, m) => s + Number((m as any)[field]?.replace(/,/g, '') || 0), 0));
+    const dedFieldSumFmt = (field: string) => { const v = Number(dedFieldSum(field).replace(/,/g, '')); return v > 0 ? v.toLocaleString() : ''; };
 
     const [deductionsByMonth, setDeductionsByMonth] = useState<Record<number, {
         rent: string; healthInsurance: string; pension: string; mortgageInterest: string;
@@ -292,7 +302,6 @@ export default function PITDetails() {
                 }
 
                 const pref = profile.filingPreference === 'annual' ? 'annually' : 'monthly';
-                setPeriodMode(pref);
                 if (pref === 'monthly' && !expandedMonth) {
                     setExpandedMonth('January');
                 }
@@ -453,7 +462,7 @@ export default function PITDetails() {
         return { annualTax: Math.round(tax), monthlyTax: Math.round(tax / 12) };
     };
 
-    const monthlyPAYE = calculatePAYE(monthlyTaxable * 12).monthlyTax;
+    const _monthlyPAYE = calculatePAYE(monthlyTaxable * 12).monthlyTax;
 
     // YTD totals (sum across all months)
     const ytdGrossIncome = Object.values(incomeByMonth).reduce((sum, m) => {
@@ -463,8 +472,8 @@ export default function PITDetails() {
     }, 0);
     const ytdDeductions = Object.values(deductionsByMonth).reduce((sum, m) => sum + (Number((m as any).rent?.replace(/,/g, '')) || 0) + (Number((m as any).healthInsurance?.replace(/,/g, '')) || 0) + (Number((m as any).pension?.replace(/,/g, '')) || 0) + (Number((m as any).mortgageInterest?.replace(/,/g, '')) || 0), 0);
     const monthCount = Object.keys(incomeByMonth).length || 1;
-    const annualizedGross = periodMode === 'annually' ? ytdGrossIncome : ytdGrossIncome * 12 / monthCount;
-    const annualizedDeds = periodMode === 'annually' ? ytdDeductions : ytdDeductions * 12 / monthCount;
+    const annualizedGross = ytdGrossIncome;
+    const annualizedDeds = ytdDeductions;
     const annualTaxable = Math.max(0, annualizedGross - annualizedDeds);
     const estimatedAnnualTax = calculatePAYE(annualTaxable).annualTax;
 
@@ -488,9 +497,9 @@ export default function PITDetails() {
                                 setPeriodMode(v as 'monthly' | 'annually');
                             }
                         }}>
-                            <TabsList className="h-9 bg-neutral-100 rounded-lg p-0.5">
-                                <TabsTrigger value="monthly" className="text-2 px-3 py-1 data-active:bg-white data-active:text-neutral-800 data-active:shadow-sm rounded-md text-neutral-500 font-medium">Monthly</TabsTrigger>
-                                <TabsTrigger value="annually" className="text-2 px-3 py-1 data-active:bg-white data-active:text-neutral-800 data-active:shadow-sm rounded-md text-neutral-500 font-medium">Annual</TabsTrigger>
+                            <TabsList className="h-9 bg-neutral-50 rounded-lg p-0.5">
+                                <TabsTrigger value="monthly" className="text-2 px-3 py-1 rounded-md !text-neutral-300 font-medium data-active:!bg-neutral-800 data-active:!text-white">Monthly</TabsTrigger>
+                                <TabsTrigger value="annually" className="text-2 px-3 py-1 rounded-md !text-neutral-300 font-medium data-active:!bg-neutral-800 data-active:!text-white">Annual</TabsTrigger>
                             </TabsList>
                         </Tabs>
                     </div>
@@ -498,7 +507,7 @@ export default function PITDetails() {
                     <Stepper value={incomeStepIndex} onValueChange={(step) => {
                         const map: Record<number, 'income' | 'deductions'> = {1: 'income', 2: 'deductions'};
                         if (step <= incomeStepIndex) goBack(map[step]);
-                    }}>
+                    }} className="max-w-[400px]">
                         {INCOME_STEPS.map((s, idx) => (
                             <StepperItem key={s.key} step={s.step} completed={completedIncomeSteps.has(s.step)} disabled={s.step > incomeStepIndex} className="[&:not(:last-child)]:flex-1 data-[state=inactive]:[&_h3]:text-neutral-400 [&_h3]:text-neutral-800">
                                 <StepperTrigger className="flex items-center gap-3 max-md:flex-col">
@@ -513,18 +522,20 @@ export default function PITDetails() {
                     </Stepper>
                 </div>
 
+                <div className="flex gap-16">
+                <div className="flex-1 min-w-0 max-w-[500px]">
+
                 {/* Step 1: Income Sources */}
                 {incomeStep === 'income' && (
-                    <div className="max-w-[500px] mx-auto" data-animate>
-                        <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-6">Monthly Income Sources</h2>
+                    <div data-animate>
 
                         <div className="space-y-4">
                             {(currentProfile?.primaryIncomeSources ?? []).includes('Salary / Employment') && (
                                 <div className="bg-neutral-50 rounded-3xl p-5">
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
-                                            <FormLabel tip="The actual cash amount transferred to your bank account by your employer after taxes and pensions are deducted.">Net Monthly Take-Home Pay</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={(currentIncome as any).salaryTakeHome ?? ''} onChange={fmtInput((v) => setIncomeField('salaryTakeHome', v))} className="w-[180px] text-left" />
+                                            <FormLabel tip="The actual cash amount transferred to your bank account by your employer after taxes and pensions are deducted.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} Take-Home Pay</FormLabel>
+                                             <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('salaryTakeHome') : (currentIncome as any).salaryTakeHome ?? ''} onChange={fmtInput((v) => setIncomeField('salaryTakeHome', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                 </div>
@@ -535,12 +546,12 @@ export default function PITDetails() {
                                     <h3 className="text-3 font-semibold text-neutral-800 mb-4">Business Income</h3>
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
-                                            <FormLabel tip="Total monthly revenue from your business or self-employment activities.">Monthly Gross Revenue</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={(currentIncome as any).businessRevenue ?? ''} onChange={fmtInput((v) => setIncomeField('businessRevenue', v))} className="w-[180px] text-left" />
+                                            <FormLabel tip="Total monthly revenue from your business or self-employment activities.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} Gross Revenue</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('businessRevenue') : (currentIncome as any).businessRevenue ?? ''} onChange={fmtInput((v) => setIncomeField('businessRevenue', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                         <FormFieldRow className="justify-between">
-                                            <FormLabel tip="Total monthly expenses incurred in running your business.">Monthly Business Expenses</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={(currentIncome as any).businessExpenses ?? ''} onChange={fmtInput((v) => setIncomeField('businessExpenses', v))} className="w-[180px] text-left" />
+                                            <FormLabel tip="Total monthly expenses incurred in running your business.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} Business Expenses</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('businessExpenses') : (currentIncome as any).businessExpenses ?? ''} onChange={fmtInput((v) => setIncomeField('businessExpenses', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                 </div>
@@ -552,11 +563,11 @@ export default function PITDetails() {
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Total value of invoices that were paid by your clients this month.">Total Project Invoices Paid</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={(currentIncome as any).freelanceInvoiced ?? ''} onChange={fmtInput((v) => setIncomeField('freelanceInvoiced', v))} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('freelanceInvoiced') : (currentIncome as any).freelanceInvoiced ?? ''} onChange={fmtInput((v) => setIncomeField('freelanceInvoiced', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Enter any tax amount your clients held back from your payment (usually 5%). We track this as a direct credit to lower your final PIT bill.">Less: WHT Deducted at Source</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={(currentIncome as any).freelanceWHT ?? ''} onChange={fmtInput((v) => setIncomeField('freelanceWHT', v))} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('freelanceWHT') : (currentIncome as any).freelanceWHT ?? ''} onChange={fmtInput((v) => setIncomeField('freelanceWHT', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                 </div>
@@ -567,7 +578,7 @@ export default function PITDetails() {
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Dividends and interest earned on your investments this month.">Dividends / Interest Received</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={(currentIncome as any).investmentIncome ?? ''} onChange={fmtInput((v) => setIncomeField('investmentIncome', v))} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('investmentIncome') : (currentIncome as any).investmentIncome ?? ''} onChange={fmtInput((v) => setIncomeField('investmentIncome', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                 </div>
@@ -578,7 +589,7 @@ export default function PITDetails() {
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Total rent payments collected from your tenants this month.">Gross Rent Payments Collected</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={(currentIncome as any).rentalIncome ?? ''} onChange={fmtInput((v) => setIncomeField('rentalIncome', v))} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('rentalIncome') : (currentIncome as any).rentalIncome ?? ''} onChange={fmtInput((v) => setIncomeField('rentalIncome', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                 </div>
@@ -589,7 +600,7 @@ export default function PITDetails() {
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Total realized profits from asset sales or trading inside the month.">Net Crypto / Digital Asset Gains</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={(currentIncome as any).digitalGains ?? ''} onChange={fmtInput((v) => setIncomeField('digitalGains', v))} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('digitalGains') : (currentIncome as any).digitalGains ?? ''} onChange={fmtInput((v) => setIncomeField('digitalGains', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                 </div>
@@ -618,8 +629,8 @@ export default function PITDetails() {
                                 <div className="bg-neutral-50 rounded-3xl p-5">
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
-                                            <FormLabel tip="Your monthly rent payment. The system caps this at 20% of actual rent or ₦500,000 per year, whichever is lower.">Monthly Rent Allocation</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={(currentDeductions as any).rent ?? ''} onChange={fmtInput((v) => setDeductionField('rent', v))} className="w-[180px] text-left" />
+                                            <FormLabel tip="Your monthly rent payment. The system caps this at 20% of actual rent or ₦500,000 per year, whichever is lower.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} Rent Allocation</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? dedFieldSumFmt('rent') : (currentDeductions as any).rent ?? ''} onChange={fmtInput((v) => setDeductionField('rent', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                 </div>
@@ -629,14 +640,14 @@ export default function PITDetails() {
                                 <div className="bg-neutral-50 rounded-3xl p-5">
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
-                                            <FormLabel tip="The exact medical insurance premium amount you paid out of pocket this month.">Monthly HMO / Health Insurance Premium</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={(currentDeductions as any).healthInsurance ?? ''} onChange={fmtInput((v) => setDeductionField('healthInsurance', v))} className="w-[180px] text-left" />
+                                            <FormLabel tip="The exact medical insurance premium amount you paid out of pocket this month.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} HMO / Health Insurance Premium</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? dedFieldSumFmt('healthInsurance') : (currentDeductions as any).healthInsurance ?? ''} onChange={fmtInput((v) => setDeductionField('healthInsurance', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                     <div className="mt-3">
                                         <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
                                             <span className="text-1 text-neutral-400 font-medium">Upload insurance receipt</span>
-                                            <button onClick={() => healthRef.current?.click()} className="cursor-pointer text-2 font-semibold text-taxable-blue bg-transparent border-none p-0">Upload</button>
+                                            <button onClick={() => healthRef.current?.click()} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0">Upload</button>
                                             <input ref={healthRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setDeductionFiles(prev => ({ ...prev, ['health_' + (activeMonthNum - 1)]: [...(prev['health_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
                                         </div>
                                         {((deductionFiles['health_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
@@ -653,14 +664,14 @@ export default function PITDetails() {
                                 <div className="bg-neutral-50 rounded-3xl p-5">
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
-                                            <FormLabel tip="Your personal contribution paid directly into your Pension Fund Administrator (PFA) account this month.">Monthly Pension Contribution</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={(currentDeductions as any).pension ?? ''} onChange={fmtInput((v) => setDeductionField('pension', v))} className="w-[180px] text-left" />
+                                            <FormLabel tip="Your personal contribution paid directly into your Pension Fund Administrator (PFA) account this month.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} Pension Contribution</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? dedFieldSumFmt('pension') : (currentDeductions as any).pension ?? ''} onChange={fmtInput((v) => setDeductionField('pension', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                     <div className="mt-3">
                                         <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
                                             <span className="text-1 text-neutral-400 font-medium">Upload pension receipt</span>
-                                            <button onClick={() => pensionRef.current?.click()} className="cursor-pointer text-2 font-semibold text-taxable-blue bg-transparent border-none p-0">Upload</button>
+                                            <button onClick={() => pensionRef.current?.click()} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0">Upload</button>
                                             <input ref={pensionRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setDeductionFiles(prev => ({ ...prev, ['pension_' + (activeMonthNum - 1)]: [...(prev['pension_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
                                         </div>
                                         {((deductionFiles['pension_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
@@ -677,14 +688,14 @@ export default function PITDetails() {
                                 <div className="bg-neutral-50 rounded-3xl p-5">
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
-                                            <FormLabel tip="Only enter the interest portion of your monthly mortgage payment, as the principal repayment is not tax-deductible by law.">Monthly Mortgage Interest Paid</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={(currentDeductions as any).mortgageInterest ?? ''} onChange={fmtInput((v) => setDeductionField('mortgageInterest', v))} className="w-[180px] text-left" />
+                                            <FormLabel tip="Only enter the interest portion of your monthly mortgage payment, as the principal repayment is not tax-deductible by law.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} Mortgage Interest Paid</FormLabel>
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? dedFieldSumFmt('mortgageInterest') : (currentDeductions as any).mortgageInterest ?? ''} onChange={fmtInput((v) => setDeductionField('mortgageInterest', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                     <div className="mt-3">
                                         <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
                                             <span className="text-1 text-neutral-400 font-medium">Upload mortgage receipt</span>
-                                            <button onClick={() => mortgageRef.current?.click()} className="cursor-pointer text-2 font-semibold text-taxable-blue bg-transparent border-none p-0">Upload</button>
+                                            <button onClick={() => mortgageRef.current?.click()} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0">Upload</button>
                                             <input ref={mortgageRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setDeductionFiles(prev => ({ ...prev, ['mortgage_' + (activeMonthNum - 1)]: [...(prev['mortgage_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
                                         </div>
                                         {((deductionFiles['mortgage_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
@@ -704,7 +715,13 @@ export default function PITDetails() {
 
                         <div className="flex gap-3 mt-8">
                             <SecondaryButton onClick={() => goBack('income')}>Back</SecondaryButton>
-                            <SecondaryButton onClick={() => handleSaveMonth()}>Save</SecondaryButton>
+                            {periodMode === 'monthly' && activeMonthNum === 12 ? (
+                                <PrimaryButton onClick={() => { handleSaveMonth(); setActiveSection('review'); }}>
+                                    Save &amp; File Annual Filing
+                                </PrimaryButton>
+                            ) : (
+                                <PrimaryButton onClick={() => handleSaveMonth()}>Save</PrimaryButton>
+                            )}
                             {periodMode === 'annually' && (
                                 <PrimaryButton onClick={() => { handleSaveMonth(); setActiveSection('review'); }}>
                                     Save &amp; File Annual Filing
@@ -714,44 +731,40 @@ export default function PITDetails() {
                     </div>
                 )}
 
-                {/* Step 3: Review */}
-                {incomeStep === 'review' && (
-                    <div className="max-w-[500px] mx-auto" data-animate>
-                        <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-6">Review</h2>
+                </div>
 
-                        <div className="bg-neutral-50 rounded-3xl p-5 mb-6">
-                            <div className="flex items-center justify-between text-2 py-2">
-                                <span className="text-neutral-500 font-medium">Monthly Income</span>
-                                <span className="font-semibold text-neutral-800">{fmt(totalMonthlyIncome)}</span>
-                            </div>
-                            <div className="flex items-center justify-between text-2 py-2">
-                                <span className="text-neutral-500 font-medium">Less Deductions</span>
-                                <span className="font-semibold text-neutral-800">-{fmt(totalDeductions)}</span>
-                            </div>
-                            <div className="border-t border-neutral-100 mt-1 pt-3">
-                                <div className="flex items-center justify-between text-2">
-                                    <span className="font-semibold text-neutral-800">Taxable Income</span>
-                                    <span className="font-semibold text-neutral-800">{fmt(monthlyTaxable)}</span>
-                                </div>
-                            </div>
-                            <div className="border-t border-neutral-100 mt-1 pt-3">
-                                <div className="flex items-center justify-between text-2">
-                                    <span className="font-semibold text-neutral-800">Estimated Monthly Tax (PAYE)</span>
-                                    <span className="text-3 font-semibold text-taxable-blue">{fmt(monthlyPAYE)}</span>
-                                </div>
+                {/* Right panel — Estimated Annual Summary */}
+                <div className="w-[280px] flex-shrink-0 sticky top-24 self-start border border-neutral-50 rounded-xl p-4">
+                    <h3 className="text-2 font-semibold text-neutral-800 mb-3">Estimated Annual Summary</h3>
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between text-2">
+                            <span className="text-neutral-500">Gross Income</span>
+                            <span className="font-medium text-neutral-500">{fmt(annualizedGross)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-2">
+                            <span className="text-neutral-500">Deductions</span>
+                            <span className="font-medium text-neutral-500">-{fmt(annualizedDeds)}</span>
+                        </div>
+                        <div className="border-t border-neutral-100 pt-2 mt-2">
+                            <div className="flex items-center justify-between text-2">
+                                <span className="font-semibold text-neutral-800">Taxable Income</span>
+                                <span className="font-semibold text-neutral-500">{fmt(annualTaxable)}</span>
                             </div>
                         </div>
-
-                        <div className="flex gap-3">
-                            <SecondaryButton onClick={() => goBack('deductions')}>Back</SecondaryButton>
-                            <PrimaryButton onClick={() => setShowFilingSheet(true)}>
-                                File &amp; Remit ({fmt(monthlyPAYE)})
-                            </PrimaryButton>
+                        <div className="border-t border-neutral-100 pt-2 mt-2">
+                            <div className="flex items-center justify-between text-2">
+                                <span className="font-semibold text-neutral-800">Estimated PIT</span>
+                                <span className="text-3 font-semibold text-neutral-800">{fmt(estimatedAnnualTax)}</span>
+                            </div>
                         </div>
-
-                        <FilingSheet open={showFilingSheet} onClose={() => setShowFilingSheet(false)} onFile={handleFileMonth} />
+                        {monthCount > 1 && (
+                            <div className="border-t border-neutral-100 pt-2 mt-2">
+                                <p className="text-1 text-neutral-400 font-medium">{periodMode === 'annually' ? '' : `${Object.keys(incomeByMonth).length} of 12 months tracked`}</p>
+                            </div>
+                        )}
                     </div>
-                )}
+                </div>
+                </div>
             </div>
         );
     };

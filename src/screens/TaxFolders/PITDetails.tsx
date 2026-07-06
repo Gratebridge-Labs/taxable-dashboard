@@ -10,7 +10,8 @@ import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/components/Toast/ToastProvider';
 import { useTaxableApi } from '@/hooks/useTaxableApi';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PrimaryButton, SecondaryButton, FormFieldRow, FormLabel, FilingSheet } from '@/screens/TaxFolders/TaxFolderShared';
+import { PrimaryButton, SecondaryButton, FormFieldRow, FormLabel } from '@/screens/TaxFolders/TaxFolderShared';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Stepper, StepperItem, StepperIndicator, StepperTitle, StepperSeparator, StepperTrigger } from '@/components/ui/stepper';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -454,7 +455,18 @@ export default function PITDetails() {
 
     const monthlyPAYE = calculatePAYE(monthlyTaxable * 12).monthlyTax;
 
-    const [showFilingSheet, setShowFilingSheet] = useState(false);
+    // YTD totals (sum across all months)
+    const ytdGrossIncome = Object.values(incomeByMonth).reduce((sum, m) => {
+        const bi = (Number((m as any).businessRevenue?.replace(/,/g, '')) || 0) - (Number((m as any).businessExpenses?.replace(/,/g, '')) || 0);
+        const fn = (Number((m as any).freelanceInvoiced?.replace(/,/g, '')) || 0) - (Number((m as any).freelanceWHT?.replace(/,/g, '')) || 0);
+        return sum + (Number((m as any).salaryTakeHome?.replace(/,/g, '')) || 0) + Math.max(0, bi) + Math.max(0, fn) + (Number((m as any).investmentIncome?.replace(/,/g, '')) || 0) + (Number((m as any).rentalIncome?.replace(/,/g, '')) || 0) + (Number((m as any).digitalGains?.replace(/,/g, '')) || 0);
+    }, 0);
+    const ytdDeductions = Object.values(deductionsByMonth).reduce((sum, m) => sum + (Number((m as any).rent?.replace(/,/g, '')) || 0) + (Number((m as any).healthInsurance?.replace(/,/g, '')) || 0) + (Number((m as any).pension?.replace(/,/g, '')) || 0) + (Number((m as any).mortgageInterest?.replace(/,/g, '')) || 0), 0);
+    const monthCount = Object.keys(incomeByMonth).length || 1;
+    const annualizedGross = periodMode === 'annually' ? ytdGrossIncome : ytdGrossIncome * 12 / monthCount;
+    const annualizedDeds = periodMode === 'annually' ? ytdDeductions : ytdDeductions * 12 / monthCount;
+    const annualTaxable = Math.max(0, annualizedGross - annualizedDeds);
+    const estimatedAnnualTax = calculatePAYE(annualTaxable).annualTax;
 
     const renderIncomeSection = () => {
         if (activeSection !== 'income-deductions') return null;
@@ -466,8 +478,21 @@ export default function PITDetails() {
                             <h1 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em]">
                                 Income &amp; Deductions
                             </h1>
-                            {incomeMonthSelector}
+                            {periodMode === 'monthly' && incomeMonthSelector}
                         </div>
+                        <Tabs value={periodMode} onValueChange={(v) => {
+                            if (v !== periodMode && v === 'annually' && monthCount > 1) {
+                                setPendingPeriodMode(v as 'monthly' | 'annually');
+                                setConfirmFilingPrefOpen(true);
+                            } else {
+                                setPeriodMode(v as 'monthly' | 'annually');
+                            }
+                        }}>
+                            <TabsList className="h-9 bg-neutral-100 rounded-lg p-0.5">
+                                <TabsTrigger value="monthly" className="text-2 px-3 py-1 data-active:bg-white data-active:text-neutral-800 data-active:shadow-sm rounded-md text-neutral-500 font-medium">Monthly</TabsTrigger>
+                                <TabsTrigger value="annually" className="text-2 px-3 py-1 data-active:bg-white data-active:text-neutral-800 data-active:shadow-sm rounded-md text-neutral-500 font-medium">Annual</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
                     </div>
 
                     <Stepper value={incomeStepIndex} onValueChange={(step) => {
@@ -576,7 +601,6 @@ export default function PITDetails() {
                         </div>
 
                         <div className="flex gap-3 mt-8">
-                            <SecondaryButton onClick={() => setActiveSection('personal-info')}>Back</SecondaryButton>
                             <PrimaryButton onClick={() => goForward('deductions')}>
                                 Next: Deductions &amp; Reliefs
                             </PrimaryButton>
@@ -680,9 +704,12 @@ export default function PITDetails() {
 
                         <div className="flex gap-3 mt-8">
                             <SecondaryButton onClick={() => goBack('income')}>Back</SecondaryButton>
-                            <PrimaryButton onClick={() => goForward('review')}>
-                                Next: Review
-                            </PrimaryButton>
+                            <SecondaryButton onClick={() => handleSaveMonth()}>Save</SecondaryButton>
+                            {periodMode === 'annually' && (
+                                <PrimaryButton onClick={() => { handleSaveMonth(); setActiveSection('review'); }}>
+                                    Save &amp; File Annual Filing
+                                </PrimaryButton>
+                            )}
                         </div>
                     </div>
                 )}
@@ -1130,6 +1157,26 @@ export default function PITDetails() {
                     }
                 }}
             />
+
+            {showUnsavedIncomeModal && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/30 p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-[380px] p-6 shadow-2xl">
+                        <h3 className="text-5 font-semibold text-neutral-800 mb-2">Unsaved Changes</h3>
+                        <p className="text-2 text-neutral-500 font-medium mb-6">You have unsaved changes for {INCOME_MONTH_NAMES[activeMonthNum - 1]}. Save before leaving?</p>
+                        <div className="flex gap-3 w-full">
+                            <SecondaryButton className="flex-1" onClick={() => { handleUnsavedConfirm(); setShowUnsavedIncomeModal(false); }}>
+                                Discard
+                            </SecondaryButton>
+                            <SecondaryButton className="flex-1" onClick={() => setShowUnsavedIncomeModal(false)}>
+                                Cancel
+                            </SecondaryButton>
+                            <PrimaryButton className="flex-1" onClick={() => { handleSaveMonth(); setShowUnsavedIncomeModal(false); }}>
+                                Save
+                            </PrimaryButton>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {showWelcomeModal && <PITWelcomeModal onClose={() => setShowWelcomeModal(false)} />}
         </div>

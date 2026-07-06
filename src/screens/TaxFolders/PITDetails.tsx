@@ -19,7 +19,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
-import type { Profile, Income, Deduction } from '@/types/api';
+import type { Profile } from '@/types/api';
 
 // Sub-components and Shared Utilities
 import { MONTHS } from './PITShared';
@@ -90,7 +90,7 @@ const SkeletonLoader = () => (
 export default function PITDetails() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { user, loading: authLoading, isAuthenticated } = useUser();
+    const { loading: authLoading, isAuthenticated } = useUser();
     const toast = useToast();
     const api = useTaxableApi();
     const profileId = searchParams?.get('id') || '';
@@ -134,13 +134,7 @@ export default function PITDetails() {
     // Income & Deductions State
     const [periodMode, setPeriodMode] = useState<'monthly' | 'annually'>('monthly');
     const [activeMonth, setActiveMonth] = useState<string>('January');
-    const [expandedMonth, setExpandedMonth] = useState<string | null>('January');
-    const [_incomeSubTab, _setIncomeSubTab] = useState<'income' | 'deductions'>('income');
-
-    const [_incomeData, _setIncomeData] = useState<Income[]>([]);
-    const [_deductions, _setDeductions] = useState<Deduction[]>([]);
-
-    const [_taxSummary, _setTaxSummary] = useState<any>(null);
+    const [_expandedMonth, _setExpandedMonth] = useState<string | null>('January');
 
     // V2 Income & Deductions State (VAT-style stepper)
     const INCOME_STEPS = [
@@ -150,6 +144,7 @@ export default function PITDetails() {
     const [incomeStep, setIncomeStep] = useState<'income' | 'deductions'>('income');
     const [completedIncomeSteps, setCompletedIncomeSteps] = useState<Set<number>>(new Set());
     const [recordedMonths, setRecordedMonths] = useState<Set<number>>(new Set());
+    const hasRecordedData = recordedMonths.size > 0;
     const [hasUnsavedIncome, setHasUnsavedIncome] = useState(false);
     const [showUnsavedIncomeModal, setShowUnsavedIncomeModal] = useState(false);
     const [pendingIncomeAction, setPendingIncomeAction] = useState<string | null>(null);
@@ -175,7 +170,13 @@ export default function PITDetails() {
     };
 
     const handleSaveMonth = () => {
-        setRecordedMonths(prev => new Set([...prev, activeMonthNum - 1]));
+        const monthData = incomeByMonth[activeMonthNum - 1] ?? {};
+        const hasData = Object.values(monthData).some(v => v !== undefined && v !== '' && Number((v as string)?.replace(/,/g, '') || 0) > 0);
+        if (hasData) {
+            setRecordedMonths(prev => new Set([...prev, activeMonthNum - 1]));
+        } else {
+            setRecordedMonths(prev => { const r = new Set(prev); r.delete(activeMonthNum - 1); return r; });
+        }
         setHasUnsavedIncome(false);
         toast.success(`Data recorded for ${INCOME_MONTH_NAMES[activeMonthNum - 1]}`);
         if (activeMonthNum < 12) {
@@ -217,9 +218,6 @@ export default function PITDetails() {
     const pensionRef = useRef<HTMLInputElement>(null);
     const mortgageRef = useRef<HTMLInputElement>(null);
     const STORAGE_KEY_PIT_INCOME = `taxable_pit_income_${profileId}`;
-
-    // Summaries
-    const [_monthlyTaxByMonth, _setMonthlyTaxByMonth] = useState<Record<number, number>>({});
 
     // Annual Filing state
     const [legalConfirmPIT1, setLegalConfirmPIT1] = useState(false);
@@ -273,63 +271,17 @@ export default function PITDetails() {
                     setPersonalInfoSaved(true);
                 }
 
-                const pref = profile.filingPreference === 'annual' ? 'annually' : 'monthly';
-                if (pref === 'monthly' && !expandedMonth) {
-                    setExpandedMonth('January');
-                }
-
-                // Fetch Income & Deductions
-                const [incomeRes, deductionRes] = await Promise.all([
-                    api.getIncomeData(profileId),
-                    api.getDeductionList(profileId, profile.year)
-                ]);
-
-                if (incomeRes.success) _setIncomeData(incomeRes.data.incomes || []);
-                if (deductionRes.success) _setDeductions(deductionRes.data.deductions || []);
-
                 // Determine starting section - Background auto-continue logic
                 if (!sectionInitialized) {
                     const hasPersonalInfo = !!(profile.nin && profile.fullName);
-                    const hasIncome = (incomeRes.data?.incomes || []).some((inc: any) => inc && inc.length > 0);
-                    const hasDeducts = (deductionRes.data?.deductions || []).length > 0;
 
                     // Auto-continue to the most appropriate section
                     if (!hasPersonalInfo) {
                         setActiveSection('personal-info');
-                    } else if (!hasIncome && !hasDeducts) {
-                        setActiveSection('income-deductions');
                     } else {
-                        setActiveSection('review');
+                        setActiveSection('income-deductions');
                     }
                     setSectionInitialized(true);
-                }
-
-                // Fetch Summaries for estimated tax display - Only calculate for months with data
-                if (pref === 'monthly') {
-                    // Only calculate tax for months that have income data
-                    (incomeRes.data?.incomes || []).forEach((monthData: any[], monthIndex: number) => {
-                        if (Array.isArray(monthData) && monthData.length > 0) {
-                            const monthNum = monthIndex + 1;
-                            api.calculateTaxByMonth(profileId, monthNum).then((sumRes: any) => {
-                                if (sumRes.success && sumRes.data) {
-                                    const taxAmount = (sumRes.data as any).taxSummary?.monthlyTax || (sumRes.data as any).taxSummary?.totalTaxAmount || 0;
-                                    _setMonthlyTaxByMonth(prev => ({ ...prev, [monthNum]: taxAmount }));
-                                }
-                            }).catch((err) => {
-                                // Silent fail - some months may not have sufficient data for tax calculation
-                                console.warn(`Failed to fetch tax summary for month ${monthNum}:`, err?.message);
-                                // Don't set tax amount for months with insufficient data
-                            });
-                        }
-                    });
-                } else {
-                    api.getTaxSummary(profileId).then((annRes: any) => {
-                        if (annRes.success) _setTaxSummary(annRes.data);
-                    }).catch((err) => {
-                        // Silent fail - annual tax summary may not be available yet due to insufficient data
-                        console.warn('Failed to fetch annual tax summary:', err?.message);
-                        // Don't set tax summary if data is insufficient
-                    });
                 }
             }
         } catch (err: any) {
@@ -338,7 +290,7 @@ export default function PITDetails() {
             setProfileLoading(false);
             setLoading(false);
         }
-    }, [profileId, user, sectionInitialized, api, authLoading, isAuthenticated]);
+    }, [profileId, sectionInitialized, api, authLoading, isAuthenticated]);
 
     useEffect(() => {
         loadProfileData();
@@ -363,7 +315,11 @@ export default function PITDetails() {
                 if (hasUnsavedIncome) {
                     setPendingIncomeAction('month_change');
                     setShowUnsavedIncomeModal(true);
-                } else setActiveMonth(INCOME_MONTH_NAMES[idx]!);
+                } else {
+                    setActiveMonth(INCOME_MONTH_NAMES[idx]!);
+                    setIncomeStep('income');
+                    setCompletedIncomeSteps(new Set());
+                }
             }
         }}>
             <SelectTrigger className="w-fit min-w-[180px] h-10 rounded-xl bg-white border-neutral-50 text-3">
@@ -469,6 +425,7 @@ export default function PITDetails() {
                             {periodMode === 'monthly' && incomeMonthSelector}
                         </div>
                         <Tabs value={periodMode} onValueChange={(v) => {
+                            if (v === 'annually' && hasRecordedData) return;
                             if (v !== periodMode && v === 'annually' && monthCount > 1) {
                                 setPendingPeriodMode(v as 'monthly' | 'annually');
                                 setConfirmFilingPrefOpen(true);
@@ -478,7 +435,7 @@ export default function PITDetails() {
                         }}>
                             <TabsList className="h-9 bg-neutral-50 rounded-lg p-0.5">
                                 <TabsTrigger value="monthly" className="text-2 px-3 py-1 rounded-md !text-neutral-300 font-medium data-active:!bg-neutral-800 data-active:!text-white">Monthly</TabsTrigger>
-                                <TabsTrigger value="annually" className="text-2 px-3 py-1 rounded-md !text-neutral-300 font-medium data-active:!bg-neutral-800 data-active:!text-white">Annual</TabsTrigger>
+                                <TabsTrigger value="annually" className="text-2 px-3 py-1 rounded-md !text-neutral-300 font-medium data-active:!bg-neutral-800 data-active:!text-white" disabled={hasRecordedData}>Annual</TabsTrigger>
                             </TabsList>
                         </Tabs>
                     </div>
@@ -514,7 +471,7 @@ export default function PITDetails() {
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="The actual cash amount transferred to your bank account by your employer after taxes and pensions are deducted.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} Take-Home Pay</FormLabel>
-                                             <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('salaryTakeHome') : (currentIncome as any).salaryTakeHome ?? ''} onChange={fmtInput((v) => setIncomeField('salaryTakeHome', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
+                                             <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('salaryTakeHome') : (currentIncome as any).salaryTakeHome ?? ''} onChange={fmtInput((v) => setIncomeField('salaryTakeHome', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                 </div>
@@ -526,11 +483,11 @@ export default function PITDetails() {
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Total monthly revenue from your business or self-employment activities.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} Gross Revenue</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('businessRevenue') : (currentIncome as any).businessRevenue ?? ''} onChange={fmtInput((v) => setIncomeField('businessRevenue', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('businessRevenue') : (currentIncome as any).businessRevenue ?? ''} onChange={fmtInput((v) => setIncomeField('businessRevenue', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Total monthly expenses incurred in running your business.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} Business Expenses</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('businessExpenses') : (currentIncome as any).businessExpenses ?? ''} onChange={fmtInput((v) => setIncomeField('businessExpenses', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('businessExpenses') : (currentIncome as any).businessExpenses ?? ''} onChange={fmtInput((v) => setIncomeField('businessExpenses', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                 </div>
@@ -542,11 +499,11 @@ export default function PITDetails() {
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Total value of invoices that were paid by your clients this month.">Total Project Invoices Paid</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('freelanceInvoiced') : (currentIncome as any).freelanceInvoiced ?? ''} onChange={fmtInput((v) => setIncomeField('freelanceInvoiced', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('freelanceInvoiced') : (currentIncome as any).freelanceInvoiced ?? ''} onChange={fmtInput((v) => setIncomeField('freelanceInvoiced', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Enter any tax amount your clients held back from your payment (usually 5%). We track this as a direct credit to lower your final PIT bill.">Less: WHT Deducted at Source</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('freelanceWHT') : (currentIncome as any).freelanceWHT ?? ''} onChange={fmtInput((v) => setIncomeField('freelanceWHT', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('freelanceWHT') : (currentIncome as any).freelanceWHT ?? ''} onChange={fmtInput((v) => setIncomeField('freelanceWHT', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                 </div>
@@ -557,7 +514,7 @@ export default function PITDetails() {
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Dividends and interest earned on your investments this month.">Dividends / Interest Received</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('investmentIncome') : (currentIncome as any).investmentIncome ?? ''} onChange={fmtInput((v) => setIncomeField('investmentIncome', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('investmentIncome') : (currentIncome as any).investmentIncome ?? ''} onChange={fmtInput((v) => setIncomeField('investmentIncome', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                 </div>
@@ -568,7 +525,7 @@ export default function PITDetails() {
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Total rent payments collected from your tenants this month.">Gross Rent Payments Collected</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('rentalIncome') : (currentIncome as any).rentalIncome ?? ''} onChange={fmtInput((v) => setIncomeField('rentalIncome', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('rentalIncome') : (currentIncome as any).rentalIncome ?? ''} onChange={fmtInput((v) => setIncomeField('rentalIncome', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                 </div>
@@ -579,7 +536,7 @@ export default function PITDetails() {
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Total realized profits from asset sales or trading inside the month.">Net Crypto / Digital Asset Gains</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('digitalGains') : (currentIncome as any).digitalGains ?? ''} onChange={fmtInput((v) => setIncomeField('digitalGains', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('digitalGains') : (currentIncome as any).digitalGains ?? ''} onChange={fmtInput((v) => setIncomeField('digitalGains', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                 </div>
@@ -609,7 +566,7 @@ export default function PITDetails() {
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Your monthly rent payment. The system caps this at 20% of actual rent or ₦500,000 per year, whichever is lower.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} Rent Allocation</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? dedFieldSumFmt('rent') : (currentDeductions as any).rent ?? ''} onChange={fmtInput((v) => setDeductionField('rent', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? dedFieldSumFmt('rent') : (currentDeductions as any).rent ?? ''} onChange={fmtInput((v) => setDeductionField('rent', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                 </div>
@@ -620,7 +577,7 @@ export default function PITDetails() {
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="The exact medical insurance premium amount you paid out of pocket this month.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} HMO / Health Insurance Premium</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? dedFieldSumFmt('healthInsurance') : (currentDeductions as any).healthInsurance ?? ''} onChange={fmtInput((v) => setDeductionField('healthInsurance', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? dedFieldSumFmt('healthInsurance') : (currentDeductions as any).healthInsurance ?? ''} onChange={fmtInput((v) => setDeductionField('healthInsurance', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                     <div className="mt-3">
@@ -644,7 +601,7 @@ export default function PITDetails() {
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Your personal contribution paid directly into your Pension Fund Administrator (PFA) account this month.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} Pension Contribution</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? dedFieldSumFmt('pension') : (currentDeductions as any).pension ?? ''} onChange={fmtInput((v) => setDeductionField('pension', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? dedFieldSumFmt('pension') : (currentDeductions as any).pension ?? ''} onChange={fmtInput((v) => setDeductionField('pension', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                     <div className="mt-3">
@@ -668,7 +625,7 @@ export default function PITDetails() {
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Only enter the interest portion of your monthly mortgage payment, as the principal repayment is not tax-deductible by law.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} Mortgage Interest Paid</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? dedFieldSumFmt('mortgageInterest') : (currentDeductions as any).mortgageInterest ?? ''} onChange={fmtInput((v) => setDeductionField('mortgageInterest', v))} disabled={periodMode === 'annually'} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? dedFieldSumFmt('mortgageInterest') : (currentDeductions as any).mortgageInterest ?? ''} onChange={fmtInput((v) => setDeductionField('mortgageInterest', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                     <div className="mt-3">
@@ -1085,9 +1042,8 @@ export default function PITDetails() {
                 onConfirmFilingPref={() => {
                     if (!pendingPeriodMode) return;
                     setPeriodMode(pendingPeriodMode);
-                    _setIncomeSubTab('income');
                     setActiveMonth('January');
-                    setExpandedMonth(pendingPeriodMode === 'monthly' ? 'January' : null);
+                    _setExpandedMonth(pendingPeriodMode === 'monthly' ? 'January' : null);
                     if (currentProfile) setCurrentProfile({ ...currentProfile, filingPreference: pendingPeriodMode === 'annually' ? 'annual' : 'monthly' });
                     toast.success(`Switched to ${pendingPeriodMode === 'monthly' ? 'Monthly' : 'Annual'} view.`);
                     setConfirmFilingPrefOpen(false);

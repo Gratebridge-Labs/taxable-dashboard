@@ -19,6 +19,7 @@
   --taxable-blue: #003787;
   --taxable-beige: #F1EEE8;
   --taxable-dark: #262626;
+  --taxable-navy: #0C0C0E;
   --taxable-lightgray: #e5e5e5db;
   --taxable-lightgray2: #F5F5F5;
   --taxable-gray: #737373;
@@ -64,12 +65,24 @@
 
   --color-taxable-blue: var(--taxable-blue);
   --color-taxable-beige: var(--taxable-beige);
-  --color-taxable-lightgray2: var(--taxable-lightgray2);
   --color-taxable-dark: var(--taxable-dark);
+  --color-taxable-navy: var(--taxable-navy);
+  --color-taxable-lightgray2: var(--taxable-lightgray2);
   --color-taxable-lightgray: var(--taxable-lightgray);
   --color-taxable-gray: var(--taxable-gray);
   --color-taxable-alert: var(--taxable-alert);
   --color-taxable-light: var(--taxable-light);
+
+  --color-neutral-50: var(--neutral-50);
+  --color-neutral-100: var(--neutral-100);
+  --color-neutral-200: var(--neutral-200);
+  --color-neutral-300: var(--neutral-300);
+  --color-neutral-400: var(--neutral-400);
+  --color-neutral-500: var(--neutral-500);
+  --color-neutral-600: var(--neutral-600);
+  --color-neutral-700: var(--neutral-700);
+  --color-neutral-800: var(--neutral-800);
+  --color-neutral-900: var(--neutral-900);
 
   --font-sans: var(--font-archivo);
 
@@ -146,16 +159,13 @@ body {
   font-family: var(--font-sans);
 }
 
-/* Hide scrollbar but keep scroll functionality */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 
 .no-scrollbar {
   -ms-overflow-style: none;
-  /* IE and Edge */
   scrollbar-width: none;
-  /* Firefox */
 }
 
 .dark {

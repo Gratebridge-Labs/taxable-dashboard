@@ -6,23 +6,31 @@ import { API_BASE_URL } from '@/lib/api-endpoints';
 
 const BASE_URL = API_BASE_URL;
 
+export class ApiError extends Error {
+    data: unknown;
+    constructor(message: string, data?: unknown) {
+        super(message);
+        this.name = 'ApiError';
+        this.data = data;
+    }
+}
+
 interface ApiConfig extends RequestInit {
     useToken?: boolean;
+    skipContentType?: boolean;
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ApiResponse = any;
 
 export const useApi = () => {
     const { token, logout, loading: authLoading } = useUser();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [data, setData] = useState<any>(null);
 
-    const request = useCallback(async (endpoint: string, config: ApiConfig = {}) => {
-        const { useToken = true, ...customConfig } = config;
-
-        if (useToken && authLoading) {
-            // Auth state still loading — wait
-        }
+    const request = useCallback(async (endpoint: string, config: ApiConfig = {}): Promise<ApiResponse> => {
+        const { useToken = true, skipContentType, ...customConfig } = config;
 
         setLoading(true);
         setError(null);
@@ -31,7 +39,7 @@ export const useApi = () => {
             'Accept': 'application/json',
         };
 
-        if (customConfig.method && ['POST', 'PUT', 'PATCH'].includes(customConfig.method)) {
+        if (!skipContentType && customConfig.method && ['POST', 'PUT', 'PATCH'].includes(customConfig.method)) {
             headers['Content-Type'] = 'application/json';
         }
 
@@ -41,10 +49,9 @@ export const useApi = () => {
                     setLoading(false);
                     return;
                 }
-                console.warn('No token found for authenticated request, redirecting to login');
                 router.push('/signin');
                 setLoading(false);
-                throw new Error('Authentication required');
+                throw new ApiError('Authentication required');
             }
             headers['Authorization'] = `Bearer ${token}`;
         }
@@ -54,11 +61,11 @@ export const useApi = () => {
                 ...customConfig,
                 headers: {
                     ...headers,
-                    ...customConfig.headers,
+                    ...customConfig.headers as Record<string, string>,
                 },
             });
 
-            let responseData;
+            let responseData: unknown;
             const contentType = response.headers.get('content-type');
             if (contentType && contentType.includes('application/json')) {
                 responseData = await response.json();
@@ -68,20 +75,19 @@ export const useApi = () => {
 
             if (!response.ok) {
                 if (response.status === 401) {
-                    console.log('Session expired, logging out');
                     logout();
                     router.push('/signin');
                 }
-                const errorMessage = responseData?.message || responseData?.error || `Error: ${response.status} ${response.statusText}`;
-                const error: any = new Error(errorMessage);
-                error.data = responseData;
-                throw error;
+                const rd = responseData as Record<string, unknown> | string;
+                const errorMessage = (typeof rd === 'object' && rd && (rd.message as string)) ||
+                    (typeof rd === 'object' && rd && (rd.error as string)) ||
+                    `Error: ${response.status} ${response.statusText}`;
+                throw new ApiError(errorMessage, responseData);
             }
 
-            setData(responseData);
-            return responseData;
-        } catch (err: any) {
-            const message = err.message || 'Something went wrong';
+            return responseData as ApiResponse;
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Something went wrong';
             setError(message);
             throw err;
         } finally {
@@ -89,22 +95,22 @@ export const useApi = () => {
         }
     }, [token, logout, router, authLoading]);
 
-    const get = useCallback((endpoint: string, config?: ApiConfig) =>
+    const get = useCallback((endpoint: string, config?: ApiConfig): Promise<ApiResponse> =>
         request(endpoint, { ...config, method: 'GET' }), [request]);
 
-    const post = useCallback((endpoint: string, body?: any, config?: ApiConfig) =>
+    const post = useCallback((endpoint: string, body?: unknown, config?: ApiConfig): Promise<ApiResponse> =>
         request(endpoint, { ...config, method: 'POST', body: JSON.stringify(body) }), [request]);
 
-    const put = useCallback((endpoint: string, body?: any, config?: ApiConfig) =>
+    const put = useCallback((endpoint: string, body?: unknown, config?: ApiConfig): Promise<ApiResponse> =>
         request(endpoint, { ...config, method: 'PUT', body: JSON.stringify(body) }), [request]);
 
-    const patch = useCallback((endpoint: string, body?: any, config?: ApiConfig) =>
+    const patch = useCallback((endpoint: string, body?: unknown, config?: ApiConfig): Promise<ApiResponse> =>
         request(endpoint, { ...config, method: 'PATCH', body: JSON.stringify(body) }), [request]);
 
-    const del = useCallback((endpoint: string, config?: ApiConfig) =>
+    const del = useCallback((endpoint: string, config?: ApiConfig): Promise<ApiResponse> =>
         request(endpoint, { ...config, method: 'DELETE' }), [request]);
 
-    const upload = useCallback(async (endpoint: string, formData: FormData, config: ApiConfig = {}) => {
+    const upload = useCallback(async (endpoint: string, formData: FormData, config: ApiConfig = {}): Promise<ApiResponse> => {
         const { useToken = true } = config;
         setLoading(true);
         setError(null);
@@ -121,7 +127,7 @@ export const useApi = () => {
                 }
                 router.push('/signin');
                 setLoading(false);
-                throw new Error('Authentication required');
+                throw new ApiError('Authentication required');
             }
             headers['Authorization'] = `Bearer ${token}`;
         }
@@ -132,31 +138,31 @@ export const useApi = () => {
                 ...config,
                 headers: {
                     ...headers,
-                    ...config.headers,
+                    ...config.headers as Record<string, string>,
                 },
                 body: formData,
             });
 
-            const responseData = await response.json();
+            const responseData = await response.json() as Record<string, unknown>;
 
             if (!response.ok) {
                 if (response.status === 401) {
                     logout();
                     router.push('/signin');
                 }
-                const errorMessage = responseData?.message || responseData?.error || `Error: ${response.status}`;
-                throw new Error(errorMessage);
+                const errorMessage = responseData?.message as string || responseData?.error as string || `Error: ${response.status}`;
+                throw new ApiError(errorMessage);
             }
 
-            setData(responseData);
-            return responseData;
-        } catch (err: any) {
-            setError(err.message);
+            return responseData as ApiResponse;
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Something went wrong';
+            setError(message);
             throw err;
         } finally {
             setLoading(false);
         }
     }, [token, logout, router, authLoading]);
 
-    return { get, post, put, patch, del, upload, loading, error, data };
+    return { get, post, put, patch, del, upload, loading, error };
 };

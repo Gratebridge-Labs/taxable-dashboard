@@ -1,6 +1,5 @@
 'use client';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
 
 export interface PITModalsProps {
@@ -10,7 +9,7 @@ export interface PITModalsProps {
     pendingPeriodMode: 'monthly' | 'annually' | null;
     setPendingPeriodMode: (mode: 'monthly' | 'annually' | null) => void;
     switchingFilingPref: boolean;
-    onConfirmFilingPref: () => Promise<void>;
+    onConfirmFilingPref: () => void;
 
     // Help Modal
     helpModalOpen: boolean;
@@ -36,14 +35,14 @@ export const PITModals = ({
         <>
             {/* Filing preference confirmation modal */}
             {confirmFilingPrefOpen && pendingPeriodMode && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 font-sans">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
                     <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
                         <div className="flex items-start justify-between gap-4">
                             <div>
-                                <h3 className="text-[15px] font-extrabold text-[#0C0C0E]">
+                                <h3 className="text-3 font-extrabold text-neutral-800">
                                     Switch to {pendingPeriodMode === 'monthly' ? 'Monthly' : 'Annual'} filing?
                                 </h3>
-                                <p className="mt-1 text-[13px] font-medium text-[#64748B]">
+                                <p className="mt-1 text-2 font-medium text-slate-500">
                                     This will update your tax profile and change how you enter income/deductions and how tax is calculated.
                                 </p>
                             </div>
@@ -54,7 +53,7 @@ export const PITModals = ({
                                     setConfirmFilingPrefOpen(false);
                                     setPendingPeriodMode(null);
                                 }}
-                                className="text-[#94A3B8] hover:text-[#0C0C0E]"
+                                className="text-slate-400 hover:text-neutral-800"
                                 aria-label="Close"
                             >
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -72,7 +71,7 @@ export const PITModals = ({
                                     setConfirmFilingPrefOpen(false);
                                     setPendingPeriodMode(null);
                                 }}
-                                className="h-11 w-full sm:w-auto rounded-xl border border-gray-200 bg-white px-5 text-[13px] font-semibold text-[#0C0C0E] hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="h-11 w-full sm:w-auto rounded-xl border border-neutral-200 bg-white px-5 text-2 font-semibold text-neutral-800 hover:bg-neutral-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 disabled={switchingFilingPref}
                             >
                                 Cancel
@@ -80,7 +79,7 @@ export const PITModals = ({
                             <button
                                 type="button"
                                 onClick={onConfirmFilingPref}
-                                className="h-11 w-full sm:w-auto rounded-xl bg-[#0C0C0E] px-5 text-[13px] font-semibold text-white shadow-sm hover:bg-black transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="h-11 w-full sm:w-auto rounded-xl bg-neutral-800 px-5 text-2 font-semibold text-white shadow-sm hover:bg-black transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                 disabled={switchingFilingPref}
                             >
                                 {switchingFilingPref ? 'Switching…' : `Switch to ${pendingPeriodMode === 'monthly' ? 'Monthly' : 'Annual'}`}
@@ -92,12 +91,12 @@ export const PITModals = ({
 
             {/* Help / Tax agent modal */}
             {helpModalOpen && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 font-sans">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
                     <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
                         <div className="flex items-start justify-between gap-4">
                             <div>
-                                <h3 className="text-[15px] font-extrabold text-[#0C0C0E]">I need help</h3>
-                                <p className="mt-1 text-[13px] font-medium text-[#64748B]">
+                                <h3 className="text-3 font-extrabold text-neutral-800">I need help</h3>
+                                <p className="mt-1 text-2 font-medium text-slate-500">
                                     If you’re unsure about your income, deductions, or payment data, you can book a Tax Agent to review your return for you.
                                 </p>
                             </div>
@@ -107,7 +106,7 @@ export const PITModals = ({
                                     if (bookingTaxAgent) return;
                                     setHelpModalOpen(false);
                                 }}
-                                className="text-[#94A3B8] hover:text-[#0C0C0E]"
+                                className="text-slate-400 hover:text-neutral-800"
                                 aria-label="Close"
                             >
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -117,10 +116,10 @@ export const PITModals = ({
                             </button>
                         </div>
 
-                        <div className="mt-4 rounded-xl border border-gray-100 bg-[#FAFAFA] px-3 py-3">
-                            <p className="text-[12px] font-semibold text-[#0C0C0E]">Cost</p>
-                            <p className="mt-0.5 text-[13px] font-extrabold text-[#0C0C0E]">₦30,000</p>
-                            <p className="mt-1 text-[12px] font-medium text-[#64748B]">
+                        <div className="mt-4 rounded-xl border border-neutral-100 bg-taxable-light px-3 py-3">
+                            <p className="text-1 font-semibold text-neutral-800">Cost</p>
+                            <p className="mt-0.5 text-2 font-extrabold text-neutral-800">₦30,000</p>
+                            <p className="mt-1 text-1 font-medium text-slate-500">
                                 You’ll be redirected to Paystack to complete payment.
                             </p>
                         </div>
@@ -130,7 +129,7 @@ export const PITModals = ({
                                 type="button"
                                 onClick={() => setHelpModalOpen(false)}
                                 disabled={bookingTaxAgent}
-                                className="h-11 w-full sm:w-auto rounded-xl border border-gray-200 bg-white px-5 text-[13px] font-semibold text-[#0C0C0E] hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="h-11 w-full sm:w-auto rounded-xl border border-neutral-200 bg-white px-5 text-2 font-semibold text-neutral-800 hover:bg-neutral-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Not now
                             </button>
@@ -138,7 +137,7 @@ export const PITModals = ({
                                 type="button"
                                 onClick={onBookTaxAgent}
                                 disabled={bookingTaxAgent}
-                                className="h-11 w-full sm:w-auto rounded-xl bg-[#0C0C0E] px-5 text-[13px] font-semibold text-white shadow-sm hover:bg-black transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="h-11 w-full sm:w-auto rounded-xl bg-neutral-800 px-5 text-2 font-semibold text-white shadow-sm hover:bg-black transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                                 {bookingTaxAgent ? 'Generating…' : 'Book a Tax Agent'}
                             </button>

@@ -1,12 +1,13 @@
 'use client';
 import React, { useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import OnboardingLayout from '@/components/OnboardingLayout/OnboardingLayout';
 import ProgressBar from '@/components/Onboarding/ProgressBar';
 import OptionCard from '@/components/Onboarding/OptionCard';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 
 export default function Step2() {
+    const router = useRouter();
     const { data, setIncomeSources } = useOnboarding();
     const [selections, setSelections] = useState<string[]>(data.incomeSources);
 
@@ -20,6 +21,7 @@ export default function Step2() {
 
     const handleNext = () => {
         setIncomeSources(selections);
+        router.push('/onboarding/step3');
     };
 
     const options = [
@@ -54,10 +56,10 @@ export default function Step2() {
     return (
         <OnboardingLayout>
             <div className="max-w-xl mx-auto w-full">
-                <h2 className="text-lg font-medium text-taxable-dark mb-2">Let's personalize Taxable for you</h2>
+                <h2 className="text-7 font-medium text-taxable-dark mb-2">Let's personalize Taxable for you</h2>
                 <ProgressBar currentStep={2} />
 
-                <h3 className="text-base font-medium text-taxable-dark mb-4">What's your primary income source?</h3>
+                <h3 className="text-5 font-medium text-taxable-dark mb-4">What's your primary income source?</h3>
 
                 <div className="flex flex-col gap-1 mb-8">
                     {options.map((option) => (
@@ -71,20 +73,13 @@ export default function Step2() {
                     ))}
                 </div>
 
-                <Link 
-                    href="/onboarding/step3" 
-                    className={`flex items-center justify-center w-full h-11 font-medium rounded-lg shadow-lg transition-transform active:scale-[0.99] ${
-                        isValid 
-                            ? 'bg-taxable-blue hover:opacity-90 text-white shadow-taxable-blue/10' 
-                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    }`}
-                    onClick={(e) => {
-                        if (!isValid) e.preventDefault();
-                        else handleNext();
-                    }}
+                <button
+                    onClick={handleNext}
+                    disabled={!isValid}
+                    className="w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400"
                 >
                     Next
-                </Link>
+                </button>
             </div>
         </OnboardingLayout>
     );

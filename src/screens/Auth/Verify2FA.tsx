@@ -1,46 +1,28 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import OnboardingLayout from '@/components/OnboardingLayout/OnboardingLayout';
-import LoadingScreen from '@/screens/Onboarding/LoadingScreen';
 import { useApi } from '@/hooks/useApi';
 import { useUser } from '@/contexts/UserContext';
+import { useFormEntrance } from '@/hooks/useFormEntrance';
+import { OtpInput } from '@/components/ui/otp-input';
+import { Spinner } from '@/components/ui/spinner';
 
 export default function Verify2FA() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { login } = useUser();
     const { post, error: apiError } = useApi();
+    const formRef = useFormEntrance<HTMLDivElement>({ stagger: 0.04 });
 
     const email = searchParams.get('email') || '';
-    const [otp, setOtp] = useState(['', '', '', '', '', '']);
+    const [otp, setOtp] = useState<string[]>(['', '', '', '', '', '']);
     const [isLoading, setIsLoading] = useState(false);
-    const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-    const handleOtpChange = (index: number, value: string) => {
-        if (value.length > 1) value = value[value.length - 1];
-
-        const newOtp = [...otp];
-        newOtp[index] = value;
-        setOtp(newOtp);
-
-        // Move to next input if value is entered
-        if (value && index < 5) {
-            inputRefs.current[index + 1]?.focus();
-        }
-    };
-
-    const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-        if (e.key === 'Backspace' && !otp[index] && index > 0) {
-            inputRefs.current[index - 1]?.focus();
-        }
-    };
-
-    const handleVerify = async (e?: React.FormEvent) => {
-        e?.preventDefault();
-        const code = otp.join('');
-        if (code.length < 6) return;
+    const handleVerify = async (code?: string) => {
+        const otpCode = code || otp.join('');
+        if (otpCode.length < 6 || isLoading) return;
 
         setIsLoading(true);
         try {
@@ -50,17 +32,15 @@ export default function Verify2FA() {
             const response = await post('/auth/login', {
                 email: storedEmail || email,
                 password: storedPassword,
-                twoFactorCode: code
+                twoFactorCode: otpCode
             }, { useToken: false });
 
             if (response?.data?.token) {
-                // Successful 2FA Login
                 login(response.data.token, response.data.user);
+                router.push('/home');
 
-                // Cleanup temporary storage
                 sessionStorage.removeItem('taxable_temp_email');
                 sessionStorage.removeItem('taxable_temp_password');
-                sessionStorage.removeItem('taxable_temp_token');
             } else {
                 setIsLoading(false);
             }
@@ -74,77 +54,43 @@ export default function Verify2FA() {
         <>
             <OnboardingLayout>
                 <div className="flex-1 flex flex-col justify-center relative">
-                    <div className="max-w-[480px] w-full mx-auto">
+                    <div ref={formRef} className="max-w-[420px] w-full mx-auto">
                         <div className="mb-10">
-                            <h2 className="text-[26px] font-bold text-taxable-dark mb-2.5">Two-Factor Authentication</h2>
-                            <p className="text-taxable-gray text-[15px] leading-relaxed font-medium">
+                            <h2 data-animate className="text-7 font-bold text-taxable-dark mb-1 tracking-[-0.02em]">Two-Factor Authentication</h2>
+                            <p data-animate className="text-neutral-400 text-2 leading-relaxed font-medium tracking-[-0.01em]">
                                 Please enter the 6-digit code from your authenticator app to secure your account.
                             </p>
                         </div>
 
-                        <form onSubmit={handleVerify} className="flex flex-col gap-10">
-                            <div className="flex gap-3 justify-between">
-                                {otp.map((digit, index) => (
-                                    <input
-                                        key={index}
-                                        ref={(el) => { inputRefs.current[index] = el; }}
-                                        type="text"
-                                        inputMode="numeric"
-                                        pattern="\d*"
-                                        maxLength={1}
-                                        value={digit}
-                                        onChange={(e) => handleOtpChange(index, e.target.value)}
-                                        onKeyDown={(e) => handleKeyDown(index, e)}
-                                        className="w-14 h-14 md:w-16 md:h-16 text-center text-2xl font-bold bg-[#F9FBFC] border border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-taxable-blue/10 focus:border-taxable-blue transition-all"
-                                    />
-                                ))}
+                        <form onSubmit={(e) => { e.preventDefault(); handleVerify(); }} className="flex flex-col gap-10">
+                            <div data-animate>
+                                <OtpInput
+                                    value={otp}
+                                    onChange={setOtp}
+                                    onComplete={handleVerify}
+                                    error={apiError}
+                                />
                             </div>
 
-                            {apiError && (
-                                <div className="text-sm text-red-500 font-medium -mt-6">
-                                    {apiError}
-                                </div>
-                            )}
-
+                            <div data-animate className="flex flex-col gap-3 items-center">
                             <button
                                 type="submit"
-                                disabled={otp.some(d => !d) || isLoading}
-                                className="w-full h-[54px] bg-taxable-blue text-white font-bold rounded-2xl shadow-lg shadow-taxable-blue/10 hover:opacity-95 disabled:opacity-50 transition-all text-[15px] flex items-center justify-center gap-2"
+                                disabled={otp.some(d => !d)}
+                                className="btn-auth w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400 text-3 flex items-center justify-center gap-2"
                             >
-                                {isLoading ? (
-                                    <>
-                                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        <span>Verifying...</span>
-                                    </>
-                                ) : (
-                                    "Verify & Sign In"
-                                )}
+                                {isLoading ? <Spinner /> : "Verify & Sign In"}
                             </button>
 
-                            <div className="text-center text-[15px]">
-                                <Link href="/signin" className="text-taxable-blue font-bold hover:underline">
+                            <div className="text-center text-2">
+                                <Link href="/signin" className="text-neutral-800 font-bold">
                                     Back to Login
                                 </Link>
+                            </div>
                             </div>
                         </form>
                     </div>
                 </div>
             </OnboardingLayout>
-
-            {isLoading && (
-                <LoadingScreen
-                    onComplete={() => router.push('/home')}
-                    title="Verifying 2FA..."
-                    steps={[
-                        { text: "Validating security code" },
-                        { text: "Securing your session" },
-                        { text: "Preparing your dashboard" }
-                    ]}
-                />
-            )}
         </>
     );
 }

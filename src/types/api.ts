@@ -20,7 +20,7 @@ export interface Profile {
   id: string;
   year: number;
   profileType: ProfileType;
-  status: string;
+  status: FilingStatus | 'draft';
   filingStatus: FilingStatus;
   filingPreference?: FilingPreference;
   createdAt: string;
@@ -438,7 +438,7 @@ export type DeductionType =
   | 'transport_allowance'
   | 'other';
 
-export type Income = any; // Alias for now to fix lint, or use IncomeDataItem[]
+export type Income = IncomeDataItem[];
 
 export interface Deduction {
   _id: string;
@@ -607,5 +607,44 @@ export interface UpdateIncomeDataResponse {
     filingPreference: FilingPreference;
     month?: number;
     incomes: IncomeDataItem[];
+  };
+}
+
+// ── Auth types ───────────────────────────────────────────
+
+export interface User {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  emailVerified?: boolean;
+  twoFactorEnabled?: boolean;
+  tin?: string;
+  whatsappReminders?: boolean;
+  name?: string;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  data: {
+    token: string;
+    user: User;
+  };
+}
+
+export interface AuthVerifyResponse {
+  success: boolean;
+  data: {
+    token?: string;
+    user?: User;
+    resetToken?: string;
+  };
+}
+
+export interface AuthResetPasswordResponse {
+  success: boolean;
+  data: {
+    message: string;
   };
 }

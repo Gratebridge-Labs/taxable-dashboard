@@ -48,10 +48,9 @@ export function BusinessSidebar({
 
   return (
     <>
-      {/* Mobile Toggle */}
       <button
         onClick={() => setMobileSidebarOpen(true)}
-        className="md:hidden fixed bottom-20 right-4 z-40 w-14 h-14 bg-[#003787] rounded-full shadow-lg flex items-center justify-center text-white"
+        className="md:hidden fixed bottom-20 right-4 z-40 w-14 h-14 bg-taxable-blue rounded-full shadow-lg flex items-center justify-center text-white"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <line x1="3" y1="12" x2="21" y2="12" />
@@ -60,7 +59,6 @@ export function BusinessSidebar({
         </svg>
       </button>
 
-      {/* Mobile Overlay */}
       {mobileSidebarOpen && (
         <div
           className="md:hidden fixed inset-0 bg-black/50 z-40"
@@ -68,29 +66,27 @@ export function BusinessSidebar({
         />
       )}
 
-      {/* Sidebar */}
       <div
         className={`
           md:w-[260px] md:flex-shrink-0 md:flex md:flex-col md:sticky md:top-24
-          fixed md:relative inset-y-0 left-0 z-50 bg-[#FAFAFA] md:bg-transparent
-          transform transition-transform duration-300 ease-in-out font-sans
+          fixed md:relative inset-y-0 left-0 z-50 bg-neutral-100 md:bg-transparent
+          
           ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
           w-[280px] flex flex-col p-4 shadow-xl md:shadow-none
         `}
       >
-        {/* Mobile Close */}
         <button
           onClick={() => setMobileSidebarOpen(false)}
           className="md:hidden absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-sm"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2.5">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-500" strokeWidth="2.5">
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
 
         <div className="bg-white rounded-[20px] p-[8px] border-[0.6px] border-neutral-100 flex flex-col gap-[2px]">
-          <span className="text-[13px] font-medium text-neutral-400 px-[8px] pt-[4px] pb-[4px]">
+          <span className="text-2 font-medium text-neutral-400 px-[8px] pt-[4px] pb-[4px]">
             {sections.length > 0 ? 'Sections' : 'Menu'}
           </span>
           {sections.map((section) => (
@@ -100,11 +96,11 @@ export function BusinessSidebar({
                   <button
                     onClick={() => handleSectionClick(section)}
                     className={`w-full flex items-center justify-between px-[8px] py-[12px] rounded-[10px] transition-all ${
-                      activeSection === section.key ? 'bg-neutral-50' : 'hover:bg-gray-50'
+                      activeSection === section.key ? 'bg-neutral-50' : ''
                     }`}
                   >
                     <span
-                      className={`text-[13px] ${
+                      className={`text-2 ${
                         activeSection === section.key ? 'font-semibold' : 'font-medium'
                       } text-neutral-800`}
                     >
@@ -135,11 +131,11 @@ export function BusinessSidebar({
                             key={child.key}
                             onClick={() => handleSubClick(section, child)}
                             className={`w-full flex items-center justify-between px-[8px] py-[10px] rounded-[10px] transition-all text-left ${
-                              isActive ? 'bg-neutral-50' : 'hover:bg-gray-50'
+                              isActive ? 'bg-neutral-50' : ''
                             }`}
                           >
                             <span
-                              className={`text-[13px] ${
+                              className={`text-2 ${
                                 isActive ? 'font-semibold text-neutral-800' : 'font-medium text-neutral-500'
                               }`}
                             >
@@ -156,11 +152,11 @@ export function BusinessSidebar({
                 <button
                   onClick={() => handleSectionClick(section)}
                   className={`w-full flex items-center justify-between px-[8px] py-[12px] rounded-[10px] transition-all ${
-                    activeSection === section.key ? 'bg-neutral-50' : 'hover:bg-gray-50'
+                    activeSection === section.key ? 'bg-neutral-50' : ''
                   }`}
                 >
                   <span
-                    className={`text-[13px] ${
+                    className={`text-2 ${
                       activeSection === section.key ? 'font-semibold' : 'font-medium'
                     } text-neutral-800`}
                   >

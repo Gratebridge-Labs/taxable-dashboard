@@ -1,5 +1,5 @@
-import BusinessVATWHT from '@/screens/TaxFolders/BusinessVATWHT';
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-    return <BusinessVATWHT />;
+    redirect('/tax-folders/business');
 }

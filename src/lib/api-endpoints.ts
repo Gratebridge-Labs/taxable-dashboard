@@ -1,4 +1,4 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.gettaxable.com/api';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api/proxy';
 
 export const TAXABLE_ENDPOINTS = {
   PROFILE: {

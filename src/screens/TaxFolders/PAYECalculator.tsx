@@ -3,15 +3,6 @@ import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
 
-// ── Nigerian PAYE Tax Bands (2026 Reform) ────────────────────────────────────
-// Annual thresholds
-const TAX_BANDS = [
-    { upTo: 800_000, rate: 0.00, label: 'First ₦800k/year (₦66,667/month): 0%' },
-    { upTo: 2_200_000, rate: 0.15, label: 'Next ₦2.2M: 15%' },
-    { upTo: 9_000_000, rate: 0.18, label: 'Next ₦9M: 18%' },
-    { upTo: Infinity, rate: 0.25, label: 'Above ₦12M: 25%' },
-];
-
 // Actually use Old rates which match the screenshot better
 const PAYE_BANDS = [
     { limit: 800_000, rate: 0.00 },
@@ -34,7 +25,6 @@ function calcPAYE(annualTaxable: number): {
         const slice = Math.min(remaining, band.limit - prevLimit);
         const tax = slice * band.rate;
         total += tax;
-        const monthlySlice = (band.limit - prevLimit) / 12;
         const monthlyLimit = prevLimit === 0
             ? `First ₦${fmtShort(band.limit / 12)}/month: ${(band.rate * 100).toFixed(0)}%`
             : `Next portion: ${(band.rate * 100).toFixed(0)}%`;
@@ -57,38 +47,6 @@ function fmtN(n: number): string {
     return `₦${Math.round(n).toLocaleString()}`;
 }
 
-// ── Input field ──────────────────────────────────────────────────────────────
-const AmountInput = ({
-    placeholder = '₦0',
-    value,
-    onChange,
-    suffix,
-    disabled,
-}: {
-    placeholder?: string;
-    value: string;
-    onChange: (v: string) => void;
-    suffix?: string;
-    disabled?: boolean;
-}) => {
-    return (
-        <div className="flex items-center gap-2">
-            <input
-                type="text"
-                placeholder={placeholder}
-                value={value}
-                disabled={disabled}
-                onChange={e => {
-                    const raw = e.target.value.replace(/[^0-9.]/g, '');
-                    onChange(raw);
-                }}
-                className={`flex-1 h-10 bg-transparent text-[14px] font-bold text-[#0C0C0E] placeholder:text-[#9CA3AF] border-none outline-none ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
-            />
-            {suffix && <span className="text-[12px] font-medium text-[#9CA3AF] flex-shrink-0">{suffix}</span>}
-        </div>
-    );
-};
-
 // ── Deduction row ─────────────────────────────────────────────────────────────
 const DeductionRow = ({
     label,
@@ -98,7 +56,7 @@ const DeductionRow = ({
     amount,
     onAmountChange,
     suffix,
-    disabled,
+    disabled: _disabled,
     autoCalc,
 }: {
     label: string;
@@ -116,7 +74,7 @@ const DeductionRow = ({
         <button
             type="button"
             onClick={onToggle}
-            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${checked ? 'border-[#003787] bg-[#003787]' : 'border-gray-300 bg-white'
+            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${checked ? 'border-taxable-blue bg-taxable-blue' : 'border-neutral-300 bg-white'
                 }`}
         >
             {checked && (
@@ -128,13 +86,13 @@ const DeductionRow = ({
 
         {/* Label */}
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
-            <span className={`text-[13px] font-semibold ${checked ? 'text-[#0C0C0E]' : 'text-[#6B7280]'}`}>{label}</span>
+            <span className={`text-2 font-semibold ${checked ? 'text-neutral-800' : 'text-neutral-500'}`}>{label}</span>
             {hint && (
                 <div className="relative group">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-400" strokeWidth="2">
                         <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
                     </svg>
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-800 text-white text-[11px] rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-neutral-800 text-white text-[11px] rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
                         {hint}
                     </div>
                 </div>
@@ -142,9 +100,9 @@ const DeductionRow = ({
         </div>
 
         {/* Amount */}
-        <div className={`w-40 flex-shrink-0 border rounded-lg px-3 py-2 flex items-center gap-2 ${checked ? 'border-gray-200 bg-white' : 'border-gray-100 bg-gray-50'
+        <div className={`w-40 flex-shrink-0 border rounded-lg px-3 py-2 flex items-center gap-2 ${checked ? 'border-neutral-200 bg-white' : 'border-neutral-100 bg-neutral-50'
             }`}>
-            <span className="text-[13px] font-bold text-[#0C0C0E] flex-shrink-0">₦</span>
+            <span className="text-2 font-bold text-neutral-800 flex-shrink-0">₦</span>
             <input
                 type="text"
                 value={checked ? amount : ''}
@@ -154,11 +112,11 @@ const DeductionRow = ({
                     const raw = e.target.value.replace(/[^0-9.]/g, '');
                     onAmountChange(raw);
                 }}
-                className={`flex-1 w-0 min-w-0 text-[13px] font-bold bg-transparent border-none outline-none placeholder:text-[#D1D5DB] ${(!checked || autoCalc) ? 'opacity-60 cursor-not-allowed' : ''
+                className={`flex-1 w-0 min-w-0 text-2 font-bold bg-transparent border-none outline-none placeholder:text-neutral-300 ${(!checked || autoCalc) ? 'opacity-60 cursor-not-allowed' : ''
                     }`}
             />
             {suffix && checked && (
-                <span className="text-[12px] text-[#9CA3AF] flex-shrink-0">{suffix}</span>
+                <span className="text-1 text-neutral-400 flex-shrink-0">{suffix}</span>
             )}
         </div>
     </div>
@@ -186,8 +144,6 @@ export default function PAYECalculator() {
     const gross = parseFloat(grossSalary.replace(/,/g, '')) || 0;
     const bonus = parseFloat(bonuses.replace(/,/g, '')) || 0;
     const monthlyGross = gross + bonus;
-    const annualGross = monthlyGross * 12;
-
     const pensionAmt = pensionOn ? Math.round(monthlyGross * 0.08) : 0;
     const nhfAmt = nhfOn ? Math.round(monthlyGross * 0.025) : 0;
     const lifeAmt = lifeInsOn ? (parseFloat(lifeInsAmt.replace(/,/g, '')) || 0) : 0;
@@ -205,7 +161,7 @@ export default function PAYECalculator() {
     const hasData = gross > 0;
 
     return (
-        <div className="min-h-screen bg-[#FAFAFA] font-sans pb-20">
+        <div className="min-h-screen bg-white pb-20 font-sans">
             <DashboardHeader />
 
             <main className="max-w-[760px] mx-auto px-4 md:px-8 py-8">
@@ -213,64 +169,64 @@ export default function PAYECalculator() {
                 <div className="flex items-center gap-3 mb-8">
                     <button
                         onClick={() => router.back()}
-                        className="flex items-center gap-1.5 text-[13px] font-bold text-[#0C0C0E] hover:text-[#003787] transition-colors"
+                        className="flex items-center gap-1.5 text-2 font-bold text-neutral-800  transition-colors"
                     >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                             <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
                         </svg>
                         Back
                     </button>
-                    <div className="flex items-center gap-1.5 text-[12px] text-[#9CA3AF] font-medium">
+                    <div className="flex items-center gap-1.5 text-1 text-neutral-400 font-medium">
                         <span>Dashboard</span>
                         <span>/</span>
-                        <span className="text-[#6B7280]">Calculate my monthly PAYE</span>
+                        <span className="text-neutral-500">Calculate my monthly PAYE</span>
                     </div>
                 </div>
 
                 {/* Title */}
                 <div className="mb-8">
-                    <h1 className="text-[28px] font-bold text-[#0C0C0E] mb-1">PAYE Calculator</h1>
-                    <p className="text-[14px] text-[#9CA3AF] font-medium">
+                    <h1 className="text-[28px] font-bold text-neutral-800 mb-1">PAYE Calculator</h1>
+                    <p className="text-[14px] text-neutral-400 font-medium">
                         Estimate how much income tax your employer should deduct from your salary each month.
                     </p>
                 </div>
 
                 {/* Salary section */}
                 <div className="mb-6">
-                    <h2 className="text-[16px] font-bold text-[#0C0C0E] mb-3">Your Salary</h2>
-                    <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                    <h2 className="text-[16px] font-bold text-neutral-800 mb-3">Your Salary</h2>
+                    <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden">
                         {/* Gross salary */}
                         <div className="px-5 py-4">
-                            <p className="text-[12px] font-semibold text-[#6B7280] mb-2">What's your monthly gross salary</p>
+                            <p className="text-1 font-semibold text-neutral-500 mb-2">What's your monthly gross salary</p>
                             <div className="flex items-center gap-2">
-                                <span className="text-[15px] font-bold text-[#0C0C0E]">₦</span>
+                                <span className="text-3 font-bold text-neutral-800">₦</span>
                                 <input
                                     type="text"
                                     placeholder="0"
                                     value={grossSalary}
                                     onChange={e => setGrossSalary(e.target.value.replace(/[^0-9.]/g, ''))}
-                                    className="flex-1 text-[15px] font-bold text-[#0C0C0E] placeholder:text-[#D1D5DB] bg-transparent border-none outline-none"
+                                    className="flex-1 text-3 font-bold text-neutral-800 placeholder:text-neutral-300 bg-transparent border-none outline-none"
                                 />
                             </div>
-                            <p className="text-[11px] text-[#9CA3AF] font-medium mt-1.5">
+                            <p className="text-[11px] text-neutral-400 font-medium mt-1.5">
                                 Enter the amount before any deductions. Don't include bonuses unless they're paid monthly
                             </p>
                         </div>
 
                         {/* Bonuses */}
                         <div className="px-5 py-4">
-                            <p className="text-[12px] font-semibold text-[#6B7280] mb-2">Monthly bonuses or allowances</p>
+                            <p className="text-1 font-semibold text-neutral-500 mb-2">Monthly bonuses or allowances</p>
                             <div className="flex items-center gap-2">
-                                <span className="text-[15px] font-bold text-[#0C0C0E]">₦</span>
+                                <span className="text-3 font-bold text-neutral-800">₦</span>
                                 <input
                                     type="text"
                                     placeholder="0"
                                     value={bonuses}
                                     onChange={e => setBonuses(e.target.value.replace(/[^0-9.]/g, ''))}
-                                    className="flex-1 text-[15px] font-bold text-[#0C0C0E] placeholder:text-[#D1D5DB] bg-transparent border-none outline-none"
+                                    className="flex-1 text-3 font-bold text-neutral-800 placeholder:text-neutral-300 bg-transparent border-none outline-none"
                                 />
                             </div>
-                            <p className="text-[11px] text-[#9CA3AF] font-medium mt-1.5">
+                            <p className="text-[11px] text-neutral-400 font-medium mt-1.5">
                                 Only include bonuses that are paid every month, like housing or transport allowances.
                             </p>
                         </div>
@@ -279,8 +235,8 @@ export default function PAYECalculator() {
 
                 {/* Deductions section */}
                 <div className="mb-6">
-                    <h2 className="text-[16px] font-bold text-[#0C0C0E] mb-3">Your Deductions</h2>
-                    <div className="bg-white border border-gray-200 rounded-2xl px-5 py-2">
+                    <h2 className="text-[16px] font-bold text-neutral-800 mb-3">Your Deductions</h2>
+                    <div className="bg-white border border-neutral-200 rounded-2xl px-5 py-2">
                         <DeductionRow
                             label="Pension (8%)"
                             hint="Mandatory pension contribution — 8% of gross salary, deducted before tax."
@@ -322,15 +278,15 @@ export default function PAYECalculator() {
 
                 {/* Result */}
                 <div className="mb-6">
-                    <p className="text-[13px] font-semibold text-[#6B7280] mb-1">Your monthly PAYE</p>
-                    <p className={`text-[40px] font-bold leading-none mb-1 ${hasData ? 'text-[#0C0C0E]' : 'text-[#D1D5DB]'}`}>
+                    <p className="text-2 font-semibold text-neutral-500 mb-1">Your monthly PAYE</p>
+                    <p className={`text-[40px] font-bold leading-none mb-1 ${hasData ? 'text-neutral-800' : 'text-neutral-300'}`}>
                         {hasData ? fmtN(monthlyPAYE) : '₦—'}
                     </p>
                     <div className="flex items-center gap-1.5 mt-2">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-400" strokeWidth="2">
                             <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
                         </svg>
-                        <p className="text-[12px] text-[#9CA3AF] font-medium">Your employer should deduct this much each month</p>
+                        <p className="text-1 text-neutral-400 font-medium">Your employer should deduct this much each month</p>
                     </div>
                 </div>
 
@@ -339,7 +295,7 @@ export default function PAYECalculator() {
                     <div className="mb-6">
                         <button
                             onClick={() => setShowBreakdown(s => !s)}
-                            className="flex items-center gap-1.5 text-[13px] font-bold text-[#003787] hover:opacity-80 transition-opacity"
+                            className="flex items-center gap-1.5 text-2 font-bold text-taxable-blue transition-opacity"
                         >
                             {showBreakdown ? 'Hide' : 'Show'} calculation breakdown
                             <svg
@@ -351,60 +307,60 @@ export default function PAYECalculator() {
                         </button>
 
                         {showBreakdown && (
-                            <div className="mt-4 bg-white border border-gray-200 rounded-2xl overflow-hidden text-[13px] font-medium animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="mt-4 bg-white border border-neutral-200 rounded-2xl overflow-hidden text-2 font-medium animate-in fade-in slide-in-from-top-2 duration-200">
                                 {/* Income rows */}
                                 <div className="space-y-0">
                                     <div className="flex justify-between items-center px-5 py-3">
-                                        <span className="text-[#6B7280]">Gross Salary</span>
-                                        <span className="font-bold text-[#0C0C0E]">{fmtN(monthlyGross)}</span>
+                                        <span className="text-neutral-500">Gross Salary</span>
+                                        <span className="font-bold text-neutral-800">{fmtN(monthlyGross)}</span>
                                     </div>
                                     {pensionOn && (
                                         <div className="flex justify-between items-center px-5 py-3">
-                                            <span className="text-[#6B7280]">Pension (8%)</span>
-                                            <span className="font-bold text-[#EF4444]">-{fmtN(pensionAmt)}</span>
+                                            <span className="text-neutral-500">Pension (8%)</span>
+                                            <span className="font-bold text-red-500">-{fmtN(pensionAmt)}</span>
                                         </div>
                                     )}
                                     {nhfOn && (
                                         <div className="flex justify-between items-center px-5 py-3">
-                                            <span className="text-[#6B7280]">NHF (2.5%)</span>
-                                            <span className="font-bold text-[#EF4444]">-{fmtN(nhfAmt)}</span>
+                                            <span className="text-neutral-500">NHF (2.5%)</span>
+                                            <span className="font-bold text-red-500">-{fmtN(nhfAmt)}</span>
                                         </div>
                                     )}
                                     {lifeInsOn && (
                                         <div className="flex justify-between items-center px-5 py-3">
-                                            <span className="text-[#6B7280]">Life Insurance</span>
-                                            <span className="font-bold text-[#EF4444]">-{fmtN(lifeAmt)}</span>
+                                            <span className="text-neutral-500">Life Insurance</span>
+                                            <span className="font-bold text-red-500">-{fmtN(lifeAmt)}</span>
                                         </div>
                                     )}
                                     {rentOn && (
                                         <div className="flex justify-between items-center px-5 py-3">
-                                            <span className="text-[#6B7280]">Rent Relief</span>
-                                            <span className="font-bold text-[#EF4444]">-{fmtN(rentRelief)} ({fmtN(parseFloat(rentAmt) || 0)} annual ÷ 12)</span>
+                                            <span className="text-neutral-500">Rent Relief</span>
+                                            <span className="font-bold text-red-500">-{fmtN(rentRelief)} ({fmtN(parseFloat(rentAmt) || 0)} annual ÷ 12)</span>
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Taxable income */}
-                                <div className="flex justify-between items-center px-5 py-3 bg-gray-50 border-t border-gray-100">
-                                    <span className="font-bold text-[#0C0C0E]">Taxable Income</span>
-                                    <span className="font-bold text-[#0C0C0E]">{fmtN(monthlyTaxable)}</span>
+                                <div className="flex justify-between items-center px-5 py-3 bg-neutral-50 border-t border-neutral-100">
+                                    <span className="font-bold text-neutral-800">Taxable Income</span>
+                                    <span className="font-bold text-neutral-800">{fmtN(monthlyTaxable)}</span>
                                 </div>
 
                                 {/* Tax bands */}
                                 <div className="px-5 pt-4 pb-2">
-                                    <p className="text-[12px] font-bold text-[#0C0C0E] mb-2">Progressive Tax Rates</p>
+                                    <p className="text-1 font-bold text-neutral-800 mb-2">Progressive Tax Rates</p>
                                     <div className="space-y-0">
                                         {taxBreakdown.map((band, i) => (
                                             <div key={i} className="flex justify-between items-center py-2">
-                                                <span className="text-[#6B7280]">{band.label}</span>
-                                                <span className="font-bold text-[#0C0C0E]">{fmtN(band.amount)}</span>
+                                                <span className="text-neutral-500">{band.label}</span>
+                                                <span className="font-bold text-neutral-800">{fmtN(band.amount)}</span>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
 
                                 {/* Total */}
-                                <div className="flex justify-between items-center px-5 py-4 bg-[#003787] text-white">
+                                <div className="flex justify-between items-center px-5 py-4 bg-taxable-blue text-white">
                                     <span className="font-bold">Total PAYE</span>
                                     <span className="font-bold text-lg">{fmtN(monthlyPAYE)}/month</span>
                                 </div>
@@ -415,21 +371,21 @@ export default function PAYECalculator() {
 
                 {/* Action buttons */}
                 <div className="flex gap-3 mb-4">
-                    <button className="flex-1 h-12 border border-gray-200 text-[#0C0C0E] font-bold rounded-xl hover:bg-gray-50 transition-colors text-[14px]">
+                    <button className="flex-1 h-12 border border-neutral-200 text-neutral-800 font-semibold rounded-xl text-3">
                         Download PDF
                     </button>
                     <button
                         onClick={() => router.push('/tax-folders/pit')}
-                        className="flex-[2] h-12 bg-[#003787] text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-[14px]"
+                        className="flex-[2] h-12 bg-taxable-blue text-white font-semibold rounded-xl text-3"
                     >
                         File PIT taxes
                     </button>
                 </div>
 
                 {/* Mismatch help */}
-                <p className="text-center text-[13px] text-[#6B7280] font-medium">
+                <p className="text-center text-2 text-neutral-500 font-medium">
                     This doesn't match my payslip.{' '}
-                    <a href="#" className="text-[#003787] font-bold hover:underline">Get help</a>
+                    <a href="#" className="text-taxable-blue font-bold">Get help</a>
                 </p>
             </main>
         </div>

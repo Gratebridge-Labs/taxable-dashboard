@@ -33,26 +33,26 @@ export const IncomeField = ({
     helpText?: string;
 }) => (
     <div className="space-y-2">
-        <label className="flex items-center gap-1.5 text-[14px] font-medium text-[#737373] mb-1" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>
+        <label className="flex items-center gap-1.5 text-[14px] font-medium text-taxable-gray mb-1" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>
             {label}
             {helpText && (
                 <div className="relative group">
-                    <span className="w-3.5 h-3.5 rounded-full bg-gray-100 text-[#94A3B8] flex items-center justify-center text-[10px] cursor-help">i</span>
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#0C0C0E] text-white text-[11px] rounded-lg w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 whitespace-normal">
+                    <span className="w-3.5 h-3.5 rounded-full bg-neutral-100 text-slate-400 flex items-center justify-center text-[10px] cursor-help">i</span>
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-800 text-white text-[11px] rounded-lg w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 whitespace-normal">
                         {helpText}
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#0C0C0E]"></div>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-neutral-800"></div>
                     </div>
                 </div>
             )}
         </label>
         <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] font-medium text-[#94A3B8]">₦</span>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] font-medium text-slate-400">₦</span>
             <input
                 type="text"
                 value={formatNumberWithCommas(value)}
                 onChange={(e) => onChange(stripNumberFormatting(e.target.value))}
                 placeholder={placeholder}
-                className="w-full h-12 border border-[#F5F5F5] bg-white rounded-2xl pl-8 pr-4 text-[14px] font-bold text-[#0C0C0E] focus:outline-none focus:ring-1 focus:ring-[#003787]/10 transition-all placeholder:text-[#94A3B8]/40"
+                className="w-full h-12 border border-neutral-100 bg-white rounded-2xl pl-8 pr-4 text-[14px] font-bold text-neutral-800 focus:outline-none focus:ring-1 focus:ring-taxable-blue/10 transition-all placeholder:text-slate-400/40"
             />
         </div>
     </div>
@@ -75,10 +75,10 @@ export interface DeductionItemProps {
 
 const InfoTooltip = ({ text }: { text: string }) => (
     <div className="relative group inline-block">
-        <span className="w-3.5 h-3.5 rounded-full bg-gray-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#0C0C0E] text-white text-[11px] rounded-lg w-52 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 whitespace-normal">
+        <span className="w-3.5 h-3.5 rounded-full bg-neutral-200 text-white flex items-center justify-center text-[10px] cursor-help">i</span>
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-800 text-white text-[11px] rounded-lg w-52 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 whitespace-normal">
             {text}
-            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#0C0C0E]"></div>
+            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-neutral-800"></div>
         </div>
     </div>
 );
@@ -116,38 +116,38 @@ export const DeductionItem = ({
     return (
         <div className="space-y-4">
             <div>
-                <label className="flex items-center gap-1.5 text-[14px] font-medium text-[#737373] mb-2" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>
+                <label className="flex items-center gap-1.5 text-[14px] font-medium text-taxable-gray mb-2" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>
                     {label}
                     {helpText && <InfoTooltip text={helpText} />}
                 </label>
                 <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] font-medium text-[#6B7280]">₦</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] font-medium text-neutral-500">₦</span>
                     <input
                         type="text"
                         value={formatNumberWithCommas(value)}
                         onChange={(e) => onChange(stripNumberFormatting(e.target.value))}
                         placeholder="NG"
-                        className="w-full h-12 border border-[#F5F5F5] bg-white rounded-2xl pl-8 pr-4 text-[14px] font-bold text-[#0C0C0E] focus:outline-none focus:ring-1 focus:ring-[#003787]/10 transition-all placeholder:text-gray-300"
+                        className="w-full h-12 border border-neutral-100 bg-white rounded-2xl pl-8 pr-4 text-[14px] font-bold text-neutral-800 focus:outline-none focus:ring-1 focus:ring-taxable-blue/10 transition-all placeholder:text-neutral-300"
                     />
                 </div>
             </div>
 
-            <div className="bg-[#FAFAFA] rounded-2xl p-4 border border-[#F5F5F5]">
-                <label className="flex items-center gap-1.5 text-[14px] font-medium text-[#737373] mb-4" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>
+            <div className="bg-taxable-light rounded-2xl p-4 border border-neutral-100">
+                <label className="flex items-center gap-1.5 text-[14px] font-medium text-taxable-gray mb-4" style={{ fontFamily: 'Archivo', lineHeight: '20px', letterSpacing: '-0.6%' }}>
                     {uploadLabel}
                     {uploadHelpText && <InfoTooltip text={uploadHelpText} />}
                 </label>
-                <div className="bg-[#FAFAFA] border border-[#F5F5F5] rounded-xl p-3 flex items-center justify-between">
+                <div className="bg-taxable-light border border-neutral-100 rounded-xl p-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2">
+                        <div className="w-10 h-10 bg-neutral-50 rounded-xl flex items-center justify-center">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-slate-400" strokeWidth="2">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                                 <polyline points="14 2 14 8 20 8" />
                             </svg>
                         </div>
                         <div>
                             <div className="flex items-center gap-1.5">
-                                <p className="text-[13px] font-bold text-[#0C0C0E]">{fileName}</p>
+                                <p className="text-2 font-bold text-neutral-800">{fileName}</p>
                                 {status === 'completed' && (
                                     <div className="w-3.5 h-3.5 rounded-full bg-green-500 flex items-center justify-center">
                                         <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4"><polyline points="20 6 9 17 4 12" /></svg>
@@ -159,13 +159,13 @@ export const DeductionItem = ({
                                     </div>
                                 )}
                             </div>
-                            <p className="text-[11px] text-[#94A3B8] font-medium">
+                            <p className="text-[11px] text-slate-400 font-medium">
                                 {status === 'completed' || status === 'verified' ? 'Uploaded • Completed' : 'PDF, JPG, or PNG (Max 20MB)'}
                             </p>
                         </div>
                     </div>
                     {status === 'completed' || status === 'verified' ? (
-                        <button onClick={onDeleteFile} className="text-gray-300 hover:text-red-500 transition-colors p-2">
+                        <button onClick={onDeleteFile} className="text-neutral-300 hover:text-red-500 transition-colors p-2">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                             </svg>
@@ -182,7 +182,7 @@ export const DeductionItem = ({
                             <button
                                 onClick={() => fileInputRef.current?.click()}
                                 disabled={uploading}
-                                className="h-10 px-5 border border-gray-100 bg-white rounded-xl text-[13px] font-bold text-[#0C0C0E] hover:bg-gray-50 transition-all disabled:opacity-50"
+                                className="h-10 px-5 border border-neutral-100 bg-white rounded-xl text-2 font-bold text-neutral-800 hover:bg-neutral-50 transition-all disabled:opacity-50"
                             >
                                 {uploading ? 'Uploading...' : 'Upload'}
                             </button>
@@ -190,14 +190,14 @@ export const DeductionItem = ({
                     )}
                 </div>
                 {statusMessage && (
-                    <p className={`mt-3 text-[11px] font-bold leading-relaxed ${status === 'verified' ? 'text-[#16A34A]' : 'text-[#DAA520]'}`}>
+                    <p className={`mt-3 text-[11px] font-bold leading-relaxed ${status === 'verified' ? 'text-green-600' : 'text-yellow-600'}`}>
                         {statusMessage}
                     </p>
                 )}
                 {!statusMessage && !fileName?.includes('Required') && (
                     <div className="mt-3 flex items-start gap-1.5 opacity-60">
-                        <Info size={12} className="text-[#94A3B8] flex-shrink-0 mt-0.5" />
-                        <p className="text-[11px] text-[#64748B] font-medium leading-relaxed">
+                        <Info size={12} className="text-slate-400 flex-shrink-0 mt-0.5" />
+                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
                             Once uploaded, our system will verify your document against NRS records to lock in your tax relief
                         </p>
                     </div>

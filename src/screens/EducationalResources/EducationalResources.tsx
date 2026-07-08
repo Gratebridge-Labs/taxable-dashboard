@@ -21,7 +21,7 @@ interface Blog {
 
 const VideoCard = ({ thumbnail, title, duration }: { thumbnail: string; title: string; duration: string }) => (
     <div className="group cursor-pointer">
-        <div className="relative aspect-[16/11] w-full rounded-[32px] overflow-hidden mb-5 shadow-xs group-hover:shadow-md transition-all duration-300">
+        <div className="relative aspect-[16/11] w-full rounded-4xl overflow-hidden mb-5 shadow-xs group-hover:shadow-md transition-all duration-300">
             <Image
                 src={thumbnail}
                 alt={title}
@@ -31,7 +31,7 @@ const VideoCard = ({ thumbnail, title, duration }: { thumbnail: string; title: s
             <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                 <div className="w-14 h-14 rounded-full bg-white/30 backdrop-blur-md flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                     <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="#003787" className="ml-1">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="ml-1 text-taxable-blue">
                             <path d="M5 3L19 12L5 21V3Z" />
                         </svg>
                     </div>
@@ -39,15 +39,15 @@ const VideoCard = ({ thumbnail, title, duration }: { thumbnail: string; title: s
             </div>
         </div>
         <div className="text-left px-1">
-            <h3 className="text-[19px] font-bold text-taxable-dark mb-1.5 leading-tight">{title}</h3>
-            <p className="text-[15px] text-taxable-gray font-medium">{duration}</p>
+            <h3 className="text-5 font-bold text-taxable-dark mb-1.5 leading-tight">{title}</h3>
+            <p className="text-3 text-taxable-gray font-medium">{duration}</p>
         </div>
     </div>
 );
 
 const BlogCard = ({ blog }: { blog: Blog }) => (
     <Link href={`/blog/${blog.slug}`} className="group cursor-pointer block">
-        <div className="relative aspect-[16/10] w-full rounded-[24px] overflow-hidden mb-5 bg-[#F8FAFC] border border-gray-100/50">
+        <div className="relative aspect-[16/10] w-full rounded-3xl overflow-hidden mb-5 bg-slate-50 border border-neutral-100/50">
             {(blog.featuredImage || blog.coverImage) ? (
                 <Image
                     src={blog.featuredImage || blog.coverImage || ''}
@@ -66,12 +66,12 @@ const BlogCard = ({ blog }: { blog: Blog }) => (
                 <span className="px-2.5 py-1 bg-blue-50 text-taxable-blue text-[11px] font-bold rounded-md uppercase tracking-wider">
                     {blog.category || 'Tax Guide'}
                 </span>
-                <span className="text-[13px] font-semibold text-gray-400">
+                <span className="text-2 font-semibold text-neutral-400">
                     {new Date(blog.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </span>
             </div>
             <h3 className="text-[20px] font-bold text-taxable-dark mb-2 leading-tight group-hover:text-taxable-blue transition-colors">{blog.title}</h3>
-            <p className="text-[15px] text-taxable-gray font-medium line-clamp-2 leading-relaxed">
+            <p className="text-3 text-taxable-gray font-medium line-clamp-2 leading-relaxed">
                 {blog.excerpt || blog.summary || blog.content?.replace(/<[^>]*>/g, '').slice(0, 120) + '...'}
             </p>
         </div>
@@ -82,15 +82,15 @@ const FAQAccordion = ({ question, answer }: { question: string; answer: string }
     const [isOpen, setIsOpen] = useState(false);
     return (
         <div className="mb-4">
-            <div className="bg-[#F9FBFC] rounded-[24px] overflow-hidden transition-all border border-transparent hover:border-gray-100">
+            <div className="bg-slate-50 rounded-3xl overflow-hidden transition-all border border-transparent hover:border-neutral-100">
                 <button
                     onClick={() => setIsOpen(!isOpen)}
                     className="w-full px-8 py-6 flex items-center justify-between text-left transition-all"
                 >
                     <div className="pr-4">
-                        <h3 className="text-[17px] font-bold text-taxable-dark leading-snug">{question}</h3>
+                        <h3 className="text-4 font-bold text-taxable-dark leading-snug">{question}</h3>
                         {!isOpen && (
-                            <p className="text-[15px] text-taxable-gray font-medium mt-1.5 line-clamp-1">
+                            <p className="text-3 text-taxable-gray font-medium mt-1.5 line-clamp-1">
                                 {answer}
                             </p>
                         )}
@@ -100,11 +100,12 @@ const FAQAccordion = ({ question, answer }: { question: string; answer: string }
                         height="20"
                         viewBox="0 0 24 24"
                         fill="none"
-                        stroke="#94A3B8"
+                        stroke="currentColor"
                         strokeWidth="2.5"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        className={`transition-transform duration-300 shrink-0 ${isOpen ? 'rotate-180' : ''}`}
+                        className="text-slate-400 transition-transform duration-300 shrink-0"
+                        style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
                     >
                         <polyline points="6 9 12 15 18 9" />
                     </svg>
@@ -224,19 +225,19 @@ export default function EducationalResources() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-[#FBFBFB]">
+        <div className="min-h-screen bg-neutral-50">
             <DashboardHeader />
 
             <main className="max-w-[1240px] mx-auto pt-6 md:pt-8 pb-20 px-4 md:px-6">
                 {/* Back Button & Breadcrumbs */}
                 <div className="mb-10">
                     <Link href="/home" className="flex items-center gap-2 group mb-4">
-                        <div className="w-10 h-10 rounded-full bg-[#F5F5F3] flex items-center justify-center transition-colors group-hover:bg-gray-200">
+                        <div className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center transition-colors group-hover:bg-neutral-200">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-taxable-dark">
                                 <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
                             </svg>
                         </div>
-                        <span className="text-[17px] font-bold text-taxable-dark">Back</span>
+                        <span className="text-4 font-bold text-taxable-dark">Back</span>
                     </Link>
                     <div className="flex items-center gap-2 text-[14px] font-medium text-taxable-gray">
                         <Link href="/home" className="hover:text-taxable-dark transition-colors">Home</Link>
@@ -249,14 +250,14 @@ export default function EducationalResources() {
                 <div className="flex items-start justify-between mb-12">
                     <div className="flex-1">
                         <h1 className="text-[22px] md:text-[28px] font-bold text-taxable-dark mb-2 md:mb-3">Help Center & Resources</h1>
-                        <p className="text-[15px] md:text-[17px] text-taxable-gray font-medium max-w-[500px] leading-relaxed">
+                        <p className="text-3 md:text-4 text-taxable-gray font-medium max-w-[500px] leading-relaxed">
                             Everything you need to understand Nigerian taxes and make the most of Taxable
                         </p>
                     </div>
                     <div className="relative shrink-0 ml-4" ref={dropdownRef}>
                         <button
                             onClick={() => setIsSupportDropdownOpen(!isSupportDropdownOpen)}
-                            className="h-[46px] md:h-[52px] px-4 md:px-8 bg-white border border-gray-100 rounded-[18px] text-[14px] md:text-[15px] font-bold text-taxable-dark shadow-xs hover:shadow-md transition-all flex items-center whitespace-nowrap"
+                            className="h-[46px] md:h-[52px] px-4 md:px-8 bg-white border border-neutral-100 rounded-2xl text-[14px] md:text-3 font-bold text-taxable-dark shadow-xs hover:shadow-md transition-all flex items-center whitespace-nowrap"
                         >
                             <span className="hidden sm:inline">Contact support</span>
                             <span className="sm:hidden">Support</span>
@@ -265,22 +266,22 @@ export default function EducationalResources() {
                         {isSupportDropdownOpen && (
                             <>
                                 <div className="fixed inset-0 z-40" onClick={() => setIsSupportDropdownOpen(false)} />
-                                <div className="absolute top-full mt-2 right-0 w-[280px] bg-white border border-gray-100 rounded-[32px] shadow-xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="absolute top-full mt-2 right-0 w-[280px] bg-white border border-neutral-100 rounded-4xl shadow-xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                                     <div className="flex flex-col gap-1">
-                                        <button className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-gray-50 transition-colors text-taxable-dark text-[16px] font-bold text-left">
-                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A3A3A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" /></svg>
+                                        <button className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-neutral-50 transition-colors text-taxable-dark text-[16px] font-bold text-left">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-400" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" /></svg>
                                             Chat with support
                                         </button>
-                                        <a href="mailto:support@taxable.ng" className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-gray-50 transition-colors text-taxable-dark text-[16px] font-bold">
-                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A3A3A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
+                                        <a href="mailto:support@taxable.ng" className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-neutral-50 transition-colors text-taxable-dark text-[16px] font-bold">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-400" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
                                             support@taxable.ng
                                         </a>
-                                        <button className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-gray-50 transition-colors text-taxable-dark text-[16px] font-bold text-left">
-                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A3A3A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="10" r="3" /><path d="M7 20.662V19c0-1.657 2.239-3 5-3s5 1.343 5 3v1.662" /></svg>
+                                        <button className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-neutral-50 transition-colors text-taxable-dark text-[16px] font-bold text-left">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-400" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="10" r="3" /><path d="M7 20.662V19c0-1.657 2.239-3 5-3s5 1.343 5 3v1.662" /></svg>
                                             Consult an Accountant
                                         </button>
-                                        <button className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-gray-50 transition-colors text-taxable-dark text-[16px] font-bold text-left">
-                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A3A3A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /><path d="M8 6h10" /><path d="M8 10h10" /><path d="M8 14h10" /></svg>
+                                        <button className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-neutral-50 transition-colors text-taxable-dark text-[16px] font-bold text-left">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-400" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /><path d="M8 6h10" /><path d="M8 10h10" /><path d="M8 14h10" /></svg>
                                             Visit FIRS Resources
                                         </button>
                                     </div>
@@ -296,12 +297,12 @@ export default function EducationalResources() {
                 </div>
 
                 {/* Navigation Tabs */}
-                <div className="flex gap-8 md:gap-12 border-b border-gray-100 mb-8 md:mb-12 overflow-x-auto no-scrollbar scroll-smooth">
+                <div className="flex gap-8 md:gap-12 border-b border-neutral-100 mb-8 md:mb-12 overflow-x-auto no-scrollbar scroll-smooth">
                     {tabs.map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`pb-4 md:pb-5 text-[15px] md:text-[17px] font-bold transition-all relative whitespace-nowrap ${activeTab === tab ? 'text-taxable-blue' : 'text-taxable-gray'
+                            className={`pb-4 md:pb-5 text-3 md:text-4 font-bold transition-all relative whitespace-nowrap ${activeTab === tab ? 'text-taxable-blue' : 'text-taxable-gray'
                                 }`}
                         >
                             {tab}
@@ -324,18 +325,18 @@ export default function EducationalResources() {
                 {activeTab === 'Frequently Asked Questions' && (
                     <div className="flex flex-col lg:flex-row gap-8 lg:gap-14 items-start">
                         {/* FAQ Sidebar */}
-                        <div className="w-full lg:w-[303px] bg-white rounded-[24px] border border-gray-100 p-4 shadow-xs shrink-0 lg:sticky lg:top-28">
-                            <h4 className="text-[15px] font-bold text-taxable-dark mb-4 px-3">Select</h4>
+                        <div className="w-full lg:w-[303px] bg-white rounded-3xl border border-neutral-100 p-4 shadow-xs shrink-0 lg:sticky lg:top-28">
+                            <h4 className="text-3 font-bold text-taxable-dark mb-4 px-3">Select</h4>
                             <div className="flex flex-col gap-1.5">
                                 {faqCategories.map((category) => (
                                     <button
                                         key={category}
                                         onClick={() => setActiveFAQCategory(category)}
-                                        className={`w-full h-12 flex items-center justify-between px-3 transition-all rounded-xl ${activeFAQCategory === category ? 'bg-[#F1F5F9] text-taxable-dark' : 'hover:bg-gray-50 text-taxable-gray'
+                                        className={`w-full h-12 flex items-center justify-between px-3 transition-all rounded-xl ${activeFAQCategory === category ? 'bg-slate-100 text-taxable-dark' : 'hover:bg-neutral-50 text-taxable-gray'
                                             }`}
                                     >
                                         <span className={`text-[14.5px] ${activeFAQCategory === category ? 'font-bold' : 'font-semibold'}`}>{category}</span>
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={`transition-colors ${activeFAQCategory === category ? 'text-taxable-dark' : 'text-gray-300'}`}>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={`transition-colors ${activeFAQCategory === category ? 'text-taxable-dark' : 'text-neutral-300'}`}>
                                             <polyline points="9 18 15 12 9 6" />
                                         </svg>
                                     </button>
@@ -360,10 +361,10 @@ export default function EducationalResources() {
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-14 animate-pulse">
                                 {[1, 2, 3].map(i => (
                                     <div key={i}>
-                                        <div className="aspect-[16/10] bg-gray-100 rounded-[24px] mb-5" />
-                                        <div className="h-4 bg-gray-100 rounded w-1/4 mb-3" />
-                                        <div className="h-6 bg-gray-100 rounded w-3/4 mb-2" />
-                                        <div className="h-4 bg-gray-100 rounded w-full" />
+                                        <div className="aspect-[16/10] bg-neutral-100 rounded-3xl mb-5" />
+                                        <div className="h-4 bg-neutral-100 rounded w-1/4 mb-3" />
+                                        <div className="h-6 bg-neutral-100 rounded w-3/4 mb-2" />
+                                        <div className="h-4 bg-neutral-100 rounded w-full" />
                                     </div>
                                 ))}
                             </div>
@@ -374,9 +375,9 @@ export default function EducationalResources() {
                                 ))}
                             </div>
                         ) : (
-                            <div className="py-24 text-center bg-white rounded-[32px] border border-gray-100">
+                            <div className="py-24 text-center bg-white rounded-4xl border border-neutral-100">
                                 <div className="flex items-center justify-center mx-auto mb-6">
-                                    <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center">
+                                    <div className="w-20 h-20 bg-neutral-50 rounded-full flex items-center justify-center">
                                         <Image src="/icons/docs.svg" alt="empty" width={40} height={40} className="opacity-40" style={{ width: 'auto', height: 'auto' }} />
                                     </div>
                                 </div>

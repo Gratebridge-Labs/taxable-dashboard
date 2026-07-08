@@ -2,7 +2,7 @@
 
 import React, { use, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
-import { ShieldCheck, EyeOff, Lock, ChevronDown, Search, Check, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, EyeOff, Lock, ChevronDown, Search, CheckCircle2 } from 'lucide-react';
 
 const API_BASE_URL = 'https://api.gettaxable.com/api';
 
@@ -106,7 +106,7 @@ export default function UploadPage({ params }: PageProps) {
         if (!isMounted) return;
 
         setSession(data.data);
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!isMounted) return;
 
         if (err instanceof Error) {
@@ -138,7 +138,7 @@ export default function UploadPage({ params }: PageProps) {
     return map;
   }, [session]);
 
-  const filteredBanks = useMemo(() => {
+  const _filteredBanks = useMemo(() => {
     if (!session?.banks) return [];
     const q = bankSearchQuery.trim().toLowerCase();
     if (!q) return session.banks;
@@ -157,7 +157,7 @@ export default function UploadPage({ params }: PageProps) {
     }
   }, [bankDropdownOpen]);
 
-  const handleToggleBank = async (bankId: string) => {
+  const _handleToggleBank = async (bankId: string) => {
     if (!session) return;
 
     const isSelected = session.selectedBanks.includes(bankId);
@@ -247,8 +247,8 @@ export default function UploadPage({ params }: PageProps) {
 
         setSession(refreshed.data);
         setUploadMessage('File uploaded successfully.');
-      } catch (err: any) {
-        setUploadMessage(err.message || 'Upload failed. Please try again.');
+      } catch (err: unknown) {
+        setUploadMessage(err instanceof Error ? err.message : 'Upload failed. Please try again.');
       } finally {
         setUploadingFileId(null);
       }
@@ -368,9 +368,9 @@ export default function UploadPage({ params }: PageProps) {
   const showIntroCard = step === 0 || loadingSession || isExpired;
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center px-4 py-10">
+    <div className="min-h-screen bg-taxable-light flex items-center justify-center px-4 py-10">
       <div className="max-w-md w-full">
-        <div className="w-full rounded-3xl bg-white shadow-md border border-gray-100 px-7 py-8">
+        <div className="w-full rounded-3xl bg-white shadow-md border border-neutral-100 px-7 py-8">
           {/* Full intro (title, Trust/Private/Secure) only on initial card or loading/error */}
           {showIntroCard && (
             <>
@@ -383,19 +383,19 @@ export default function UploadPage({ params }: PageProps) {
                     height={28}
                     className="rounded-full"
                   />
-                  <span className="text-[12px] font-semibold px-2 py-0.5 rounded-full bg-[#F3F4FF] text-[#003787] uppercase tracking-wide">
+                  <span className="text-1 font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-taxable-blue uppercase tracking-wide">
                     TEST MODE
                   </span>
                 </div>
 
                 <p className="text-xs font-semibold text-taxable-gray mb-1">
-                  Secure upload powered by <span className="text-[#003787]">Taxable</span>
+                  Secure upload powered by <span className="text-taxable-blue">Taxable</span>
                 </p>
 
                 <h1 className="text-[22px] font-bold text-taxable-dark leading-snug mb-2">
                   {title}
                 </h1>
-                <p className="text-[13px] text-taxable-gray font-medium leading-relaxed">
+                <p className="text-2 text-taxable-gray font-medium leading-relaxed">
                   {subtitle}
                 </p>
               </div>
@@ -403,15 +403,15 @@ export default function UploadPage({ params }: PageProps) {
               <div className="space-y-3 text-left mb-6">
                 <div className="flex gap-3">
                   <div className="mt-0.5 shrink-0">
-                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#E0ECFF] text-[#003787]">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-taxable-blue">
                       <ShieldCheck className="h-4 w-4" strokeWidth={2.25} />
                     </span>
                   </div>
                   <div>
-                    <p className="text-[13px] font-semibold text-taxable-dark mb-0.5">
+                    <p className="text-2 font-semibold text-taxable-dark mb-0.5">
                       Trust
                     </p>
-                    <p className="text-[12px] text-taxable-gray leading-relaxed">
+                    <p className="text-1 text-taxable-gray leading-relaxed">
                       Thousands of Nigerians use Taxable to handle their tax documents securely.
                     </p>
                   </div>
@@ -419,15 +419,15 @@ export default function UploadPage({ params }: PageProps) {
 
                 <div className="flex gap-3">
                   <div className="mt-0.5 shrink-0">
-                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#E6F9F3] text-[#047857]">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
                       <EyeOff className="h-4 w-4" strokeWidth={2.25} />
                     </span>
                   </div>
                   <div>
-                    <p className="text-[13px] font-semibold text-taxable-dark mb-0.5">
+                    <p className="text-2 font-semibold text-taxable-dark mb-0.5">
                       Private
                     </p>
-                    <p className="text-[12px] text-taxable-gray leading-relaxed">
+                    <p className="text-1 text-taxable-gray leading-relaxed">
                       Your files are encrypted and only used to prepare your tax report. We never
                       share them without your consent.
                     </p>
@@ -436,15 +436,15 @@ export default function UploadPage({ params }: PageProps) {
 
                 <div className="flex gap-3">
                   <div className="mt-0.5 shrink-0">
-                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#EFF6FF] text-[#1D4ED8]">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 text-blue-700">
                       <Lock className="h-4 w-4" strokeWidth={2.25} />
                     </span>
                   </div>
                   <div>
-                    <p className="text-[13px] font-semibold text-taxable-dark mb-0.5">
+                    <p className="text-2 font-semibold text-taxable-dark mb-0.5">
                       Secure
                     </p>
-                    <p className="text-[12px] text-taxable-gray leading-relaxed">
+                    <p className="text-1 text-taxable-gray leading-relaxed">
                       Industry-standard AES-256 encryption and strict access controls keep your
                       data safe.
                     </p>
@@ -469,17 +469,17 @@ export default function UploadPage({ params }: PageProps) {
           )}
 
           {loadingSession && (
-            <div className="rounded-2xl border border-dashed border-gray-200 bg-[#F9FAFB] px-4 py-6 text-center text-[13px] text-taxable-gray">
+            <div className="rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 px-4 py-6 text-center text-2 text-taxable-gray">
               Loading your secure upload link&hellip;
             </div>
           )}
 
           {!loadingSession && isExpired && (
             <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-5 text-center">
-              <p className="text-[13px] font-semibold text-red-700 mb-1">
+              <p className="text-2 font-semibold text-red-700 mb-1">
                 This upload link is no longer available.
               </p>
-              <p className="text-[12px] text-red-600 leading-relaxed">
+              <p className="text-1 text-red-600 leading-relaxed">
                 Your session may have expired or the link is invalid. Please contact the person
                 who sent you this link to request a new one.
               </p>
@@ -492,7 +492,7 @@ export default function UploadPage({ params }: PageProps) {
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-xl bg-[#003787] px-4 text-[14px] font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+                className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-xl bg-taxable-blue px-4 text-[14px] font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
               >
                 Link documents
               </button>
@@ -508,13 +508,13 @@ export default function UploadPage({ params }: PageProps) {
           {!loadingSession && session && !isExpired && step === 1 && (
             <>
               <div className="flex items-center justify-between mb-4">
-                <p className="text-[12px] text-taxable-gray font-medium">
+                <p className="text-1 text-taxable-gray font-medium">
                   {hasReliefStep ? 'Step 1 of 2' : 'Step 1'}
                 </p>
                 <button
                   type="button"
                   onClick={() => setStep(0)}
-                  className="text-[12px] font-semibold text-[#003787] hover:underline"
+                  className="text-1 font-semibold text-taxable-blue hover:underline"
                 >
                   Back
                 </button>
@@ -522,7 +522,7 @@ export default function UploadPage({ params }: PageProps) {
               <h2 className="text-[18px] font-bold text-taxable-dark mb-1">
                 Bank statements
               </h2>
-              <p className="text-[13px] text-taxable-gray mb-4">
+              <p className="text-2 text-taxable-gray mb-4">
                 Select a bank, upload at least one statement, then add another bank if you have more.
               </p>
 
@@ -535,9 +535,9 @@ export default function UploadPage({ params }: PageProps) {
                         setBankDropdownOpen((o) => !o);
                         if (!bankDropdownOpen) setBankSearchQuery('');
                       }}
-                      className="flex w-full items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-left shadow-sm hover:border-gray-300 transition-colors"
+                      className="flex w-full items-center justify-between gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-left shadow-sm hover:border-neutral-300 transition-colors"
                     >
-                      <span className="text-[13px] text-taxable-dark truncate">
+                      <span className="text-2 text-taxable-dark truncate">
                         Select your bank
                       </span>
                       <ChevronDown
@@ -545,20 +545,20 @@ export default function UploadPage({ params }: PageProps) {
                       />
                     </button>
                     {bankDropdownOpen && (
-                      <div className="absolute top-full left-0 right-0 z-10 mt-1 rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden">
-                        <div className="flex items-center gap-2 border-b border-gray-100 px-3 py-2 bg-[#FAFAFA]">
+                      <div className="absolute top-full left-0 right-0 z-10 mt-1 rounded-xl border border-neutral-200 bg-white shadow-lg overflow-hidden">
+                        <div className="flex items-center gap-2 border-b border-neutral-100 px-3 py-2 bg-taxable-light">
                           <Search className="h-4 w-4 text-taxable-gray shrink-0" />
                           <input
                             type="text"
                             value={bankSearchQuery}
                             onChange={(e) => setBankSearchQuery(e.target.value)}
                             placeholder="Search banks..."
-                            className="flex-1 min-w-0 bg-transparent text-[13px] text-taxable-dark placeholder:text-taxable-gray outline-none py-1"
+                            className="flex-1 min-w-0 bg-transparent text-2 text-taxable-dark placeholder:text-taxable-gray outline-none py-1"
                           />
                         </div>
                         <div className="max-h-56 overflow-y-auto py-1">
                           {filteredBanksNotYetAdded.length === 0 ? (
-                            <p className="px-3 py-4 text-[12px] text-taxable-gray text-center">
+                            <p className="px-3 py-4 text-1 text-taxable-gray text-center">
                               No banks match your search.
                             </p>
                           ) : (
@@ -568,10 +568,10 @@ export default function UploadPage({ params }: PageProps) {
                                 type="button"
                                 onClick={() => handleAddBank(bank.id)}
                                 disabled={savingBanks}
-                                className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-[#F5F5F5] transition-colors"
+                                className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-neutral-100 transition-colors"
                               >
                                 {bank.logo ? (
-                                  <span className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full bg-white border border-gray-100">
+                                  <span className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full bg-white border border-neutral-100">
                                     <Image
                                       src={bank.logo}
                                       alt=""
@@ -581,22 +581,22 @@ export default function UploadPage({ params }: PageProps) {
                                     />
                                   </span>
                                 ) : (
-                                  <span className="h-6 w-6 shrink-0 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-semibold text-taxable-gray">
+                                  <span className="h-6 w-6 shrink-0 rounded-full bg-neutral-100 flex items-center justify-center text-[10px] font-semibold text-taxable-gray">
                                     {bank.name.charAt(0)}
                                   </span>
                                 )}
-                                <span className="flex-1 text-[13px] font-medium text-taxable-dark truncate">
+                                <span className="flex-1 text-2 font-medium text-taxable-dark truncate">
                                   {bank.name}
                                 </span>
                               </button>
                             ))
                           )}
                         </div>
-                        <div className="border-t border-gray-100 px-3 py-2 bg-[#FAFAFA]">
+                        <div className="border-t border-neutral-100 px-3 py-2 bg-taxable-light">
                           <button
                             type="button"
                             onClick={() => setBankDropdownOpen(false)}
-                            className="w-full rounded-lg border border-gray-200 py-2 text-[12px] font-semibold text-taxable-dark hover:bg-gray-50"
+                            className="w-full rounded-lg border border-neutral-200 py-2 text-1 font-semibold text-taxable-dark hover:bg-neutral-50"
                           >
                             Cancel
                           </button>
@@ -616,7 +616,7 @@ export default function UploadPage({ params }: PageProps) {
                         return (
                           <div
                             key={bankId}
-                            className="rounded-2xl border border-gray-100 bg-[#F9FAFB] px-4 py-3"
+                            className="rounded-2xl border border-neutral-100 bg-neutral-50 px-4 py-3"
                           >
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
@@ -631,28 +631,28 @@ export default function UploadPage({ params }: PageProps) {
                                     />
                                   </span>
                                 )}
-                                <p className="text-[13px] font-semibold text-taxable-dark">
+                                <p className="text-2 font-semibold text-taxable-dark">
                                   {bank?.name || bankId}
                                 </p>
                               </div>
                               {isUploadingThisBank ? (
-                                <span className="rounded-full bg-[#EFF6FF] px-2 py-0.5 text-[11px] font-semibold text-[#1D4ED8]">
+                                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">
                                   Uploading&hellip;
                                 </span>
                               ) : existingFiles.length > 0 ? (
-                                <span className="rounded-full bg-[#E6F9F3] px-2 py-0.5 text-[11px] font-semibold text-[#047857]">
+                                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
                                   {existingFiles.length} file
                                   {existingFiles.length > 1 ? 's' : ''} uploaded
                                 </span>
                               ) : (
-                                <span className="rounded-full bg-[#FFF7ED] px-2 py-0.5 text-[11px] font-semibold text-[#C05621]">
+                                <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-semibold text-orange-700">
                                   Upload required
                                 </span>
                               )}
                             </div>
 
-                            <label className="flex cursor-pointer flex-col items-start gap-1 rounded-xl border border-dashed border-gray-300 bg-white px-3 py-3 text-left hover:border-[#003787] transition-colors">
-                              <span className="text-[12px] font-semibold text-taxable-dark">
+                            <label className="flex cursor-pointer flex-col items-start gap-1 rounded-xl border border-dashed border-neutral-300 bg-white px-3 py-3 text-left hover:border-taxable-blue transition-colors">
+                              <span className="text-1 font-semibold text-taxable-dark">
                                 Upload bank statement
                               </span>
                               <span className="text-[11px] text-taxable-gray">
@@ -684,30 +684,30 @@ export default function UploadPage({ params }: PageProps) {
                             setBankDropdownOpen((o) => !o);
                             if (!bankDropdownOpen) setBankSearchQuery('');
                           }}
-                          className="flex w-full items-center justify-between gap-2 rounded-xl border border-dashed border-[#003787] bg-[#F3F4FF] px-3 py-2.5 text-left hover:bg-[#E8EAFF] transition-colors"
+                          className="flex w-full items-center justify-between gap-2 rounded-xl border border-dashed border-taxable-blue bg-indigo-50 px-3 py-2.5 text-left hover:bg-indigo-100 transition-colors"
                         >
-                          <span className="text-[13px] font-semibold text-[#003787]">
+                          <span className="text-2 font-semibold text-taxable-blue">
                             I have another bank
                           </span>
                           <ChevronDown
-                            className={`h-4 w-4 shrink-0 text-[#003787] transition-transform ${bankDropdownOpen ? 'rotate-180' : ''}`}
+                            className={`h-4 w-4 shrink-0 text-taxable-blue transition-transform ${bankDropdownOpen ? 'rotate-180' : ''}`}
                           />
                         </button>
                         {bankDropdownOpen && (
-                          <div className="absolute top-full left-0 right-0 z-10 mt-1 rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden">
-                            <div className="flex items-center gap-2 border-b border-gray-100 px-3 py-2 bg-[#FAFAFA]">
+                          <div className="absolute top-full left-0 right-0 z-10 mt-1 rounded-xl border border-neutral-200 bg-white shadow-lg overflow-hidden">
+                            <div className="flex items-center gap-2 border-b border-neutral-100 px-3 py-2 bg-taxable-light">
                               <Search className="h-4 w-4 text-taxable-gray shrink-0" />
                               <input
                                 type="text"
                                 value={bankSearchQuery}
                                 onChange={(e) => setBankSearchQuery(e.target.value)}
                                 placeholder="Search banks..."
-                                className="flex-1 min-w-0 bg-transparent text-[13px] text-taxable-dark placeholder:text-taxable-gray outline-none py-1"
+                                className="flex-1 min-w-0 bg-transparent text-2 text-taxable-dark placeholder:text-taxable-gray outline-none py-1"
                               />
                             </div>
                             <div className="max-h-56 overflow-y-auto py-1">
                               {filteredBanksNotYetAdded.length === 0 ? (
-                                <p className="px-3 py-4 text-[12px] text-taxable-gray text-center">
+                                <p className="px-3 py-4 text-1 text-taxable-gray text-center">
                                   No more banks to add.
                                 </p>
                               ) : (
@@ -717,10 +717,10 @@ export default function UploadPage({ params }: PageProps) {
                                     type="button"
                                     onClick={() => handleAddBank(bank.id)}
                                     disabled={savingBanks}
-                                    className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-[#F5F5F5] transition-colors"
+                                    className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-neutral-100 transition-colors"
                                   >
                                     {bank.logo ? (
-                                      <span className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full bg-white border border-gray-100">
+                                      <span className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full bg-white border border-neutral-100">
                                         <Image
                                           src={bank.logo}
                                           alt=""
@@ -730,22 +730,22 @@ export default function UploadPage({ params }: PageProps) {
                                         />
                                       </span>
                                     ) : (
-                                      <span className="h-6 w-6 shrink-0 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-semibold text-taxable-gray">
+                                      <span className="h-6 w-6 shrink-0 rounded-full bg-neutral-100 flex items-center justify-center text-[10px] font-semibold text-taxable-gray">
                                         {bank.name.charAt(0)}
                                       </span>
                                     )}
-                                    <span className="flex-1 text-[13px] font-medium text-taxable-dark truncate">
+                                    <span className="flex-1 text-2 font-medium text-taxable-dark truncate">
                                       {bank.name}
                                     </span>
                                   </button>
                                 ))
                               )}
                             </div>
-                            <div className="border-t border-gray-100 px-3 py-2 bg-[#FAFAFA]">
+                            <div className="border-t border-neutral-100 px-3 py-2 bg-taxable-light">
                               <button
                                 type="button"
                                 onClick={() => setBankDropdownOpen(false)}
-                                className="w-full rounded-lg border border-gray-200 py-2 text-[12px] font-semibold text-taxable-dark hover:bg-gray-50"
+                                className="w-full rounded-lg border border-neutral-200 py-2 text-1 font-semibold text-taxable-dark hover:bg-neutral-50"
                               >
                                 Cancel
                               </button>
@@ -754,7 +754,7 @@ export default function UploadPage({ params }: PageProps) {
                         )}
                       </div>
                     ) : (
-                      <p className="mt-4 text-[12px] text-taxable-gray">
+                      <p className="mt-4 text-1 text-taxable-gray">
                         Upload at least one statement for{' '}
                         <span className="font-semibold text-taxable-dark">
                           {banksById.get(session.selectedBanks[session.selectedBanks.length - 1])?.name ?? 'your bank'}
@@ -767,7 +767,7 @@ export default function UploadPage({ params }: PageProps) {
               </section>
 
               {!step1CanProceed && session.selectedBanks.length > 0 && (
-                <p className="mb-2 text-[12px] text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+                <p className="mb-2 text-1 text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
                   Upload at least one statement for each bank above before continuing.
                 </p>
               )}
@@ -777,7 +777,7 @@ export default function UploadPage({ params }: PageProps) {
                     type="button"
                     onClick={() => setStep(2)}
                     disabled={!step1CanProceed}
-                    className="flex-1 inline-flex h-11 items-center justify-center rounded-xl bg-[#003787] px-4 text-[14px] font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 inline-flex h-11 items-center justify-center rounded-xl bg-taxable-blue px-4 text-[14px] font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next
                   </button>
@@ -786,7 +786,7 @@ export default function UploadPage({ params }: PageProps) {
                     type="button"
                     onClick={() => setStep(3)}
                     disabled={!step1CanProceed}
-                    className="flex-1 inline-flex h-11 items-center justify-center rounded-xl bg-[#003787] px-4 text-[14px] font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 inline-flex h-11 items-center justify-center rounded-xl bg-taxable-blue px-4 text-[14px] font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Done
                   </button>
@@ -799,13 +799,13 @@ export default function UploadPage({ params }: PageProps) {
           {!loadingSession && session && !isExpired && step === 2 && (
             <>
               <div className="flex items-center justify-between mb-4">
-                <p className="text-[12px] text-taxable-gray font-medium">
+                <p className="text-1 text-taxable-gray font-medium">
                   Step 2 of 2
                 </p>
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="text-[12px] font-semibold text-[#003787] hover:underline"
+                  className="text-1 font-semibold text-taxable-blue hover:underline"
                 >
                   Back
                 </button>
@@ -813,7 +813,7 @@ export default function UploadPage({ params }: PageProps) {
               <h2 className="text-[18px] font-bold text-taxable-dark mb-1">
                 Relief documents
               </h2>
-              <p className="text-[13px] text-taxable-gray mb-4">
+              <p className="text-2 text-taxable-gray mb-4">
                 If you claimed tax reliefs, upload supporting documents for each so we can validate them.
               </p>
 
@@ -829,11 +829,11 @@ export default function UploadPage({ params }: PageProps) {
                       return (
                         <div
                           key={relief.deductionId}
-                          className="rounded-2xl border border-gray-100 bg-[#F9FAFB] px-4 py-3"
+                          className="rounded-2xl border border-neutral-100 bg-neutral-50 px-4 py-3"
                         >
                           <div className="mb-2 flex items-start justify-between gap-2">
                             <div>
-                              <p className="text-[13px] font-semibold text-taxable-dark">
+                              <p className="text-2 font-semibold text-taxable-dark">
                                 {relief.label}
                               </p>
                               <p className="text-[11px] text-taxable-gray">
@@ -843,10 +843,10 @@ export default function UploadPage({ params }: PageProps) {
                             <span
                               className={`rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0 ${
                                 isUploadingThisRelief
-                                  ? 'bg-[#EFF6FF] text-[#1D4ED8]'
+                                  ? 'bg-blue-50 text-blue-700'
                                   : relief.hasSupportingDocument
-                                  ? 'bg-[#E6F9F3] text-[#047857]'
-                                  : 'bg-[#FFF7ED] text-[#C05621]'
+                                  ? 'bg-emerald-50 text-emerald-700'
+                                  : 'bg-orange-50 text-orange-700'
                               }`}
                             >
                               {isUploadingThisRelief
@@ -863,8 +863,8 @@ export default function UploadPage({ params }: PageProps) {
                             </p>
                           )}
 
-                          <label className="flex cursor-pointer flex-col items-start gap-1 rounded-xl border border-dashed border-gray-300 bg-white px-3 py-3 text-left hover:border-[#003787] transition-colors">
-                            <span className="text-[12px] font-semibold text-taxable-dark">
+                          <label className="flex cursor-pointer flex-col items-start gap-1 rounded-xl border border-dashed border-neutral-300 bg-white px-3 py-3 text-left hover:border-taxable-blue transition-colors">
+                            <span className="text-1 font-semibold text-taxable-dark">
                               Upload supporting document
                             </span>
                             <span className="text-[11px] text-taxable-gray">
@@ -890,7 +890,7 @@ export default function UploadPage({ params }: PageProps) {
               </div>
 
               {!step2CanProceed && (
-                <p className="mt-4 mb-2 text-[12px] text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+                <p className="mt-4 mb-2 text-1 text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
                   Upload at least one supporting document for each relief above before finishing.
                 </p>
               )}
@@ -898,7 +898,7 @@ export default function UploadPage({ params }: PageProps) {
                 type="button"
                 onClick={() => setStep(3)}
                 disabled={!step2CanProceed}
-                className="mt-6 w-full inline-flex h-11 items-center justify-center rounded-xl bg-[#003787] px-4 text-[14px] font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-6 w-full inline-flex h-11 items-center justify-center rounded-xl bg-taxable-blue px-4 text-[14px] font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Done
               </button>
@@ -908,7 +908,7 @@ export default function UploadPage({ params }: PageProps) {
           {/* Step 3: Success — data collected */}
           {!loadingSession && session && !isExpired && step === 3 && (
             <div className="flex flex-col items-center text-center py-6">
-              <span className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-[#E6F9F3] text-[#047857] mb-4">
+              <span className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 mb-4">
                 <CheckCircle2 className="h-10 w-10" strokeWidth={2} />
               </span>
               <h2 className="text-[20px] font-bold text-taxable-dark mb-2">
@@ -921,7 +921,7 @@ export default function UploadPage({ params }: PageProps) {
                 href="https://gettaxable.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-11 items-center justify-center rounded-xl bg-[#003787] px-5 text-[14px] font-semibold text-white hover:opacity-90 transition-opacity"
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-taxable-blue px-5 text-[14px] font-semibold text-white hover:opacity-90 transition-opacity"
               >
                 Go to gettaxable.com
               </a>

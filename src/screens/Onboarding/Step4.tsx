@@ -20,14 +20,14 @@ const FILING_TYPES: Record<string, 'Individual' | 'Business'> = {
 
 export default function Step4() {
     const router = useRouter();
-    const { data, setFilingPreference, setYear, clearData } = useOnboarding();
+    const { data, setFilingPreference, clearData } = useOnboarding();
     const { fetchProfiles } = useProfile();
-    const { createProfile, completeProfile, getAllowedYears } = useTaxableApi();
+    const { createProfile, completeProfile } = useTaxableApi();
     
     const [selections, setSelections] = useState<string[]>(
         data.year === 2025 ? ['Annually'] : (data.filingPreference ? [data.filingPreference.charAt(0).toUpperCase() + data.filingPreference.slice(1)] : ['Monthly'])
     );
-    const [yearToUse, setYearToUse] = useState(data.year || new Date().getFullYear());
+    const [yearToUse] = useState(data.year || new Date().getFullYear());
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -58,8 +58,8 @@ export default function Step4() {
                     router.push('/tax-folders');
                 }, 100);
             }
-        } catch (err: any) {
-            setError(err.message || 'Failed to create profile');
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Failed to create profile');
             setIsLoading(false);
         }
     };
@@ -86,10 +86,10 @@ export default function Step4() {
         <>
             <OnboardingLayout>
                 <div className="max-w-xl mx-auto w-full">
-                    <h2 className="text-lg font-medium text-taxable-dark mb-2">Let's personalize Taxable for you</h2>
+                    <h2 className="text-7 font-medium text-taxable-dark mb-2">Let's personalize Taxable for you</h2>
                     <ProgressBar currentStep={4} />
 
-                    <h3 className="text-base font-medium text-taxable-dark mb-4">How do you prefer to track your taxes?</h3>
+                    <h3 className="text-5 font-medium text-taxable-dark mb-4">How do you prefer to track your taxes?</h3>
 
                     <div className="flex flex-col gap-1 mb-8">
                         {options.map((option) => (
@@ -105,7 +105,7 @@ export default function Step4() {
                     </div>
 
                     {error && (
-                        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
+                        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-2">
                             {error}
                         </div>
                     )}
@@ -113,7 +113,7 @@ export default function Step4() {
                     <button
                         onClick={handleGetStarted}
                         disabled={isLoading}
-                        className="flex items-center justify-center w-full h-11 bg-taxable-blue hover:opacity-90 text-white font-medium rounded-lg shadow-lg shadow-taxable-blue/10 transition-transform active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400"
                     >
                         {isLoading ? 'Creating Profile...' : 'Get Started'}
                     </button>

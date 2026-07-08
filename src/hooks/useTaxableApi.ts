@@ -1,42 +1,21 @@
 'use client';
 import { useCallback } from 'react';
-import taxableApi, { taxableApi as api } from '@/lib/taxable-api';
+import taxableApi from '@/lib/taxable-api';
 import { useUser } from '@/contexts/UserContext';
 import type {
-  Profile,
   ProfileCompleteRequest,
   PersonalInfoRequest,
-  AllowedYearsResponse,
-  IncomeSourcesResponse,
-  IncomeListResponse,
   AddIncomeRequest,
-  IncomeResponse,
-  IncomeSummaryResponse,
-  TaxSummaryResponse,
-  CalculateTaxResponse,
-  CalculationHistoryResponse,
-  CreatePaymentLinkResponse,
-  CreateSubscriptionLinkRequest,
-  SubscriptionStatusResponse,
+CreateSubscriptionLinkRequest,
   VerifyDeductionRequest,
-  DeductionVerificationResponse,
-  ProfileListResponse,
-  DeductionListResponse,
   BatchDeductionRequest,
   UpdateDeductionRequest,
-  DeductionResponse,
-  DeleteDeductionResponse,
-  IncomeDataResponse,
   UpdateIncomeDataRequest,
-  UpdateIncomeDataResponse,
-  UploadResponse,
-  PaymentLinkResponse,
-  PaymentRecordsResponse,
 } from '@/types/api';
 
 export const useTaxableApi = () => {
   const { token } = useUser();
-  
+
   const createProfile = useCallback(async (year: number, profileType: 'Individual' | 'Business') => {
     if (!token) throw new Error('Authentication required');
     return taxableApi.createProfile(token, year, profileType);

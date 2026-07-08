@@ -14,7 +14,7 @@ export default function ProgressBar({ currentStep, totalSteps = 4 }: ProgressBar
                 return (
                     <div
                         key={index}
-                        className={`h-1.5 w-12 rounded-full transition-colors ${isActive ? 'bg-[#FFCFCF]' : 'bg-gray-100'
+                        className={`h-1.5 w-12 rounded-full transition-colors ${isActive ? 'bg-taxable-alert' : 'bg-neutral-100'
                             }`}
                     />
                 );

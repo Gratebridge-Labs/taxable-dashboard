@@ -9,7 +9,7 @@ interface VideoCardProps {
 export function VideoCard({ thumbnail, title, duration }: VideoCardProps) {
     return (
         <div>
-            <div className="relative h-[265px] w-full rounded-3xl overflow-hidden mb-4 shadow-xs">
+            <div className="relative h-[265px] w-full rounded-2xl overflow-hidden mb-4 shadow-xs">
                 <Image
                     src={thumbnail}
                     alt={title}
@@ -26,8 +26,8 @@ export function VideoCard({ thumbnail, title, duration }: VideoCardProps) {
                 </div>
             </div>
             <div className="text-left px-0.5">
-                <h3 className="text-4 font-semibold text-taxable-dark mb-1 leading-tight">{title}</h3>
-                <p className="text-sm text-taxable-gray font-medium">{duration}</p>
+                <h3 className="text-4 font-semibold text-neutral-800 mb-1 leading-tight">{title}</h3>
+                <p className="text-1 text-neutral-500 font-medium">{duration}</p>
             </div>
         </div>
     );

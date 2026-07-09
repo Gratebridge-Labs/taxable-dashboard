@@ -51,7 +51,7 @@ export default function CreateNewPassword() {
             <OnboardingLayout>
                 <div ref={formRef} className="max-w-[420px] mx-auto w-full px-4">
                     <div className="mb-10 text-left">
-                        <h2 data-animate className="text-7 font-medium text-taxable-dark mb-1 tracking-[-0.02em]">Create a new password</h2>
+                        <h2 data-animate className="text-7 font-semibold text-neutral-800 mb-1 tracking-[-0.02em]">Create a new password</h2>
                         <p data-animate className="text-neutral-400 text-2 font-medium tracking-[-0.01em]">Choose a strong password for your account.</p>
                     </div>
 
@@ -83,7 +83,7 @@ export default function CreateNewPassword() {
                             <button
                                 type="submit"
                                 disabled={!password || password !== confirmPassword}
-                                className="btn-auth w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400 text-3 flex items-center justify-center"
+                                className="w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400 text-3 flex items-center justify-center"
                             >
                                 {isLoading ? <Spinner /> : "Reset Password"}
                             </button>

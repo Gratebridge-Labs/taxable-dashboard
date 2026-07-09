@@ -7,9 +7,11 @@ import { useApi } from '@/hooks/useApi';
 import { useUser } from '@/contexts/UserContext';
 import { useFormEntrance } from '@/hooks/useFormEntrance';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Spinner } from '@/components/ui/spinner';
+import { toast } from 'sonner';
 
 export default function Signup() {
     const router = useRouter();
@@ -38,9 +40,13 @@ export default function Signup() {
             if (response?.data?.token) {
                 login(response.data.token, response.data.user);
                 router.push('/home');
+            } else {
+                setIsLoading(false);
+                toast.error('Signup succeeded but login failed. Please try signing in.');
             }
-        } catch (err) {
+        } catch (err: unknown) {
             console.error("Signup failed:", err);
+            toast.error(err instanceof Error ? err.message : 'Signup failed. Please try again.');
             setIsLoading(false);
         }
     };
@@ -51,10 +57,10 @@ export default function Signup() {
                 <div ref={formRef} className="max-w-[420px] mx-auto w-full">
                     <div className="flex justify-between items-start mb-10">
                         <div>
-                            <h2 data-animate className="text-7 font-medium text-taxable-dark mb-1 leading-[1.1] tracking-[-0.02em]">Welcome to Taxable</h2>
+                            <h2 data-animate className="text-7 font-semibold text-neutral-800 mb-1 leading-[1.1] tracking-[-0.02em]">Welcome to Taxable</h2>
                             <p data-animate className="text-2 font-medium text-neutral-400 tracking-[-0.01em]">Let&apos;s get your tax compliance sorted in minutes</p>
                         </div>
-                        <Link href="/signin" className="px-5 py-2.5 rounded-xl border border-neutral-200 text-taxable-dark font-bold bg-white text-2 whitespace-nowrap shrink-0">
+                        <Link href="/signin" className="px-5 py-2.5 rounded-xl border border-neutral-200 text-neutral-800 font-semibold bg-white text-2 whitespace-nowrap shrink-0">
                             Log in
                         </Link>
                     </div>
@@ -101,15 +107,9 @@ export default function Signup() {
                                 value={formData.phone}
                                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                             />
-                            <div className="flex items-center gap-3 pt-1 cursor-pointer" onClick={() => setFormData({ ...formData, whatsappReminders: !formData.whatsappReminders })}>
-                                <div className={`w-[18px] h-[18px] rounded border flex items-center justify-center transition-colors ${formData.whatsappReminders ? 'bg-taxable-blue border-taxable-blue' : 'border-neutral-300'}`}>
-                                    {formData.whatsappReminders && (
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
-                                            <polyline points="20 6 9 17 4 12" />
-                                        </svg>
-                                    )}
-                                </div>
-                                <span className="text-2 font-medium text-neutral-400">Receive tax deadline reminders via WhatsApp</span>
+                            <div className="flex items-center gap-3 pt-1">
+                                <Checkbox id="whatsapp" checked={formData.whatsappReminders} onCheckedChange={(c) => setFormData({ ...formData, whatsappReminders: c === true })} />
+                                <label htmlFor="whatsapp" className="text-2 font-medium text-neutral-400 cursor-pointer">Receive tax deadline reminders via WhatsApp</label>
                             </div>
                         </div>
 
@@ -131,7 +131,7 @@ export default function Signup() {
                             <button
                                 type="submit"
                                 disabled={!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.password}
-                                className="btn-auth w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400 text-3 flex items-center justify-center"
+                                className="w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400 text-3 flex items-center justify-center"
                             >
                                 {isLoading ? <Spinner /> : "Create Account"}
                             </button>

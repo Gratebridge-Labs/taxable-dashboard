@@ -147,7 +147,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                 const profile = await createProfile(parseInt(taxYear), 'Business');
                 await fetchProfiles();
                 onClose();
-                router.push(`/tax-folders/business?year=${taxYear}&new=workspace&profileId=${profile.profileId}`);
+                router.push(`/tax-folders/business?year=${taxYear}&new=workspace&profileId=${profile.profileId}&taxId=${encodeURIComponent(taxId)}`);
             } catch (err: unknown) {
                 console.error('[SetupSidebar] Failed to create business profile:', err);
                 setError(err instanceof Error ? err.message : 'Failed to create business profile');
@@ -302,13 +302,25 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                             <div className="pt-10">
                                                 <label className="block text-2 font-medium mb-2 text-neutral-500">
                                                     {filingType === 'Business' ? 'Tax ID (RC/BN)' : 'Tax ID (Your NIN)'}{' '}
-                                                    <InformationFill className="w-3.5 h-3.5 inline-block ml-1 align-middle" color="#E5E5E5" />
+                                                    <span className="relative group inline-flex items-center ml-1 align-middle cursor-default">
+                                                        <InformationFill className="w-3.5 h-3.5" color="#E5E5E5" />
+                                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-800 text-white text-2 rounded-lg w-52 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                                                            {filingType === 'Business' ? 'Your business registration number issued by CAC (Corporate Affairs Commission).' : 'Your 11-digit National Identification Number issued by NIMC.'}
+                                                        </div>
+                                                    </span>
                                                 </label>
                                                 <Input
                                                     type="text"
-                                                    placeholder={filingType === 'Business' ? 'Enter your business registration number' : 'Enter your NIN'}
+                                                    placeholder={filingType === 'Business' ? 'e.g., RC 1234567 / BN 123456' : 'Enter your NIN'}
                                                     value={taxId}
-                                                    onChange={e => setTaxId(e.target.value.replace(/[^0-9]/g, '').slice(0, 11))}
+                                                    onChange={e => {
+                                                        if (filingType === 'Business') {
+                                                            const v = e.target.value.toUpperCase().replace(/[^A-Z0-9 ]/g, '').slice(0, 15);
+                                                            setTaxId(v);
+                                                        } else {
+                                                            setTaxId(e.target.value.replace(/[^0-9]/g, '').slice(0, 11));
+                                                        }
+                                                    }}
                                                     className={ninError ? 'border-red-500' : ''}
                                                 />
                                                 {ninError && (

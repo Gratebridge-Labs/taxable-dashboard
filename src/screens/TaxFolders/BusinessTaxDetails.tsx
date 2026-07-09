@@ -54,9 +54,9 @@ const INDUSTRIES = [
 // Sidebar sections for Business
 const BUSINESS_SECTIONS = [
     { key: 'company-info', label: 'Company Information', locked: false, route: null },
-    { key: 'paye', label: 'PAYE', locked: false, route: null },
-    { key: 'vat', label: 'VAT', locked: false, route: null },
-    { key: 'wht', label: 'WHT', locked: false, route: null },
+    { key: 'paye', label: 'PAYE (Payroll Tax)', locked: false, route: null },
+    { key: 'vat', label: 'VAT (Sales Tax)', locked: false, route: null },
+    { key: 'wht', label: 'WHT (Deductions)', locked: false, route: null },
     { key: 'company-income-tax', label: 'Company Income Tax', locked: false, route: null },
 ];
 
@@ -205,6 +205,17 @@ export default function BusinessTaxDetails() {
             router.replace(window.location.pathname);
         }
     }, []);
+
+    // Pre-fill RC/BN from onboarding taxId
+    const taxIdParam = searchParams.get('taxId');
+    useEffect(() => {
+        if (taxIdParam && !rcbn) {
+            startTransition(() => {
+                setRcbn(taxIdParam);
+            });
+            hasUnsavedChanges.current = true;
+        }
+    }, [taxIdParam, rcbn]);
 
     // Restore company info from sessionStorage on client mount
     useEffect(() => {
@@ -386,8 +397,8 @@ export default function BusinessTaxDetails() {
                                         {sec.key === 'company-income-tax' && activeSection === 'company-income-tax' && (
                                             <div className="ml-9 mb-1">
                                                 {[
-                                                    ...(payQuarterly ? [{ id: 'quarterly', label: 'Quarterly Assessments' }] : []),
-                                                    { id: 'file-returns', label: 'File Annual Returns' },
+                                                    ...(payQuarterly ? [{ id: 'quarterly', label: 'Quarterly Payments' }] : []),
+                                                    { id: 'file-returns', label: 'Annual Filing' },
                                                 ].map(sub => (
                                                     <button key={sub.id}
                                                         onClick={() => setCitSubSection(sub.id as 'quarterly' | 'file-returns')}
@@ -417,7 +428,7 @@ export default function BusinessTaxDetails() {
                                     <div>
                                         <label className="block text-2 font-medium text-neutral-500 mb-1">
                                             RC/BN number
-                                            <HintIcon tip="RC/BN Number — Your CAC-issued RC number (registered companies) or BN number (business names). Found on your CAC certificate." />
+                                            <HintIcon tip="Your business registration number issued by CAC (Corporate Affairs Commission)." />
                                         </label>
                                         <Input
                                             type="text"

@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AddEmployeeDrawer, PayeStaff } from '@/screens/TaxFolders/AddEmployeeDrawer';
@@ -190,10 +191,6 @@ export function PayeMonthlyFiling({
                                 <span className="text-3 font-medium text-neutral-800">Copy from {sourceMonth} 2026</span>
                             </label>
                         )}
-                        <label className="flex items-center gap-3 py-3.5 cursor-pointer">
-                            <RadioGroupItem value="manual" />
-                            <span className="text-3 font-medium text-neutral-800">Manual entry (add staff one by one)</span>
-                        </label>
                         <label className="flex items-center gap-3 py-3.5 cursor-not-allowed opacity-40">
                             <RadioGroupItem value="csv" disabled />
                             <span className="text-3 font-medium text-neutral-800">Upload CSV/Excel (bulk upload)</span>
@@ -294,7 +291,7 @@ export function PayeMonthlyFiling({
                     onRemove={onRemoveStaff}
                     onSave={(updated) => { if (editingStaff) onSaveStaff(editingStaff, updated); }}
                 />
-                {showCopyModal && pendingCopy && (
+                {showCopyModal && pendingCopy && createPortal(
                     <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/20" onClick={() => setShowCopyModal(false)}>
                         <div className="bg-white rounded-2xl p-6 max-w-[400px] mx-4 w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
                             <div className="flex flex-col items-center text-center">
@@ -312,8 +309,7 @@ export function PayeMonthlyFiling({
                                 </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    </div>, document.body)}
             </>
         );
     }

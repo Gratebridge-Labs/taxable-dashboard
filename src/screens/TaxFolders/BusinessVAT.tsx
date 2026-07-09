@@ -40,16 +40,16 @@ export interface VATFilingData {
     nonAllowableOverheads: string;
     nonAllowableCapEx: string;
     broughtForwardCredit: string;
-    salesScheduleUploaded: boolean;
-    purchaseInvoicesUploaded: boolean;
-    disclaimerAccepted: boolean;
+    salesScheduleUploaded: string;
+    purchaseInvoicesUploaded: string;
+    disclaimerAccepted: string;
     filed: boolean;
 }
 
 const defaultFilingData = (): VATFilingData => ({
     standardSales: '', exemptSales: '', wvatCredit: '', allowableInputVAT: '',
     nonAllowableOverheads: '', nonAllowableCapEx: '', broughtForwardCredit: '',
-    salesScheduleUploaded: false, purchaseInvoicesUploaded: false, disclaimerAccepted: false,
+    salesScheduleUploaded: '', purchaseInvoicesUploaded: '', disclaimerAccepted: '',
     filed: false,
 });
 
@@ -100,16 +100,31 @@ export function BusinessVATContent({ profileId, taxYear }: { profileId?: string;
         set(parts.length > 1 ? integer + '.' + parts.slice(1).join('') : integer);
     };
 
-    // Auto-populate brought-forward credit from previous month
+    // Auto-populate brought-forward credit from previous month's net position
     useEffect(() => {
-        if (activeMonth > 0 && !data.broughtForwardCredit) {
-            const prev = monthData[activeMonth - 1];
-            if (prev && prev.filed && netPosition < 0) {
-                setField('broughtForwardCredit')(String(Math.abs(Math.round(netPosition))));
+        if (activeMonth > 0) {
+            const current = monthData[activeMonth];
+            if (current && !current.broughtForwardCredit) {
+                const prev = monthData[activeMonth - 1];
+                if (prev?.filed) {
+                    const prevOutput = (Number(prev.standardSales.replace(/,/g, '')) || 0) * VAT_RATE;
+                    const prevNet = prevOutput
+                        - (Number(prev.allowableInputVAT.replace(/,/g, '')) || 0)
+                        - (Number(prev.wvatCredit.replace(/,/g, '')) || 0)
+                        - (Number(prev.broughtForwardCredit.replace(/,/g, '')) || 0);
+                    if (prevNet < 0) {
+                        setMonthData(prevMap => ({
+                            ...prevMap,
+                            [activeMonth]: {
+                                ...(prevMap[activeMonth] ?? defaultFilingData()),
+                                broughtForwardCredit: String(Math.abs(Math.round(prevNet))),
+                            },
+                        }));
+                    }
+                }
             }
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeMonth]);
+    }, [activeMonth, monthData]);
 
     useEffect(() => {
         setDismissCashBanner(false);
@@ -426,7 +441,7 @@ export function BusinessVATContent({ profileId, taxYear }: { profileId?: string;
                 <div className="max-w-[500px] mx-auto" data-animate>
                     <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-4">Adjustments</h2>
 
-                    <div className="bg-neutral-50 rounded-3xl p-5 mb-0">
+                    <div className="bg-neutral-50 rounded-3xl p-5 mb-6">
                         <FormFieldRow className="justify-between mb-0">
                             <FormLabel tip="VAT credit carried forward from the previous month. Auto-populated if available.">Brought-Forward VAT Credit</FormLabel>
                             <Input type="text" value={data.broughtForwardCredit} onChange={fmtInput(setField('broughtForwardCredit'))} placeholder="N0" className="w-[150px] text-left" />
@@ -485,7 +500,7 @@ export function BusinessVATContent({ profileId, taxYear }: { profileId?: string;
                     )}
 
                     <label className="flex items-start gap-3 mb-8 cursor-pointer">
-                        <Checkbox checked={data.disclaimerAccepted} onCheckedChange={() => setField('disclaimerAccepted')(data.disclaimerAccepted ? '' : 'true')} className="mt-0.5" />
+                        <Checkbox checked={data.disclaimerAccepted === 'true'} onCheckedChange={() => setField('disclaimerAccepted')(data.disclaimerAccepted ? '' : 'true')} className="mt-0.5" />
                         <span className="text-2 font-medium text-neutral-600 leading-relaxed">I confirm these records are accurate under the Nigeria Tax Act.</span>
                     </label>
 

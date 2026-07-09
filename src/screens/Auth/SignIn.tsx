@@ -46,14 +46,6 @@ export default function SignIn() {
             }
         } catch (err: unknown) {
             console.error("Login failed:", err);
-
-            if (err instanceof Error && err.message === "Two-factor authentication code is required") {
-                sessionStorage.setItem('taxable_temp_email', email);
-                sessionStorage.setItem('taxable_temp_password', password);
-                router.push(`/verify-2fa?email=${encodeURIComponent(email)}`);
-                return;
-            }
-
             setIsLoading(false);
         }
     };
@@ -63,7 +55,7 @@ export default function SignIn() {
             <OnboardingLayout>
                 <div ref={formRef} className="max-w-[420px] mx-auto w-full">
                     <div className="mb-10">
-                        <h2 data-animate className="text-7 font-semibold text-taxable-dark mb-1 tracking-[-0.02em]">Sign in to Taxable</h2>
+                        <h2 data-animate className="text-7 font-semibold text-neutral-800 mb-1 tracking-[-0.02em]">Sign in to Taxable</h2>
                         <p data-animate className="text-neutral-400 text-2 font-medium tracking-[-0.01em]">Let&apos;s get your tax compliance sorted in minutes</p>
                     </div>
 
@@ -101,7 +93,7 @@ export default function SignIn() {
                         <button
                             type="submit"
                             disabled={!email || !password}
-                            className="btn-auth w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400 text-3 flex items-center justify-center"
+                            className="w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400 text-3 flex items-center justify-center"
                         >
                             {isLoading ? <Spinner /> : "Sign In"}
                         </button>

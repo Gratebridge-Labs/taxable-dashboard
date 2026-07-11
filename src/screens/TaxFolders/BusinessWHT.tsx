@@ -257,7 +257,18 @@ function WHTFormContent({
             <div className="bg-neutral-50 rounded-3xl p-5">
                 <h3 className="text-3 font-semibold text-neutral-800 mb-4">Invoice or Payment Receipt</h3>
                 {disabled ? (
-                    <p className={`text-3 font-medium ${readOnlyStyle}`}>{form.receipt || 'No receipt uploaded'}</p>
+                    fileAttachments.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                            {fileAttachments.map((f, i) => (
+                                <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
+                                    <FileTextIcon className="w-3.5 h-3.5 text-neutral-400" />
+                                    <span className="text-1 text-neutral-600">{f.name}</span>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className={`text-3 font-medium ${readOnlyStyle}`}>No receipt uploaded</p>
+                    )
                 ) : (
                     <>
                         <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
@@ -486,27 +497,28 @@ const WHTRemittance = ({ profileId, taxYear }: { profileId: string; taxYear: str
                     </div>
                     <div data-lenis-prevent className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-20">
                         <div className="max-w-[450px] mx-auto w-full space-y-6">
-                            <div className="grid grid-cols-1 overflow-hidden">
-                                <div className={`col-start-1 row-start-1 transition-transform duration-300 ease-in-out ${isEditing ? '-translate-x-full' : 'translate-x-0'}`}>
-                                    {editId !== null && (
-                                        <div className="space-y-6">
-                                            <WHTFormContent form={form} set={set} autoWHT={autoWHT} disabled={true} readOnlyStyle="bg-neutral-50 text-neutral-400" fileAttachments={fileAttachments} setFileAttachments={setFileAttachments} />
-                                        </div>
-                                    )}
+                            {editId === null ? (
+                                <div className="space-y-6">
+                                    <WHTFormContent form={form} set={set} autoWHT={autoWHT} disabled={false} readOnlyStyle="" fileAttachments={fileAttachments} setFileAttachments={setFileAttachments} />
                                 </div>
-                                <div className={`col-start-1 row-start-1 transition-transform duration-300 ease-in-out ${isEditing ? 'translate-x-0' : 'translate-x-full'}`}>
-                                    {isEditing && (
-                                        <div className="space-y-6">
-                                            <WHTFormContent form={form} set={set} autoWHT={autoWHT} disabled={false} readOnlyStyle="" fileAttachments={fileAttachments} setFileAttachments={setFileAttachments} />
-                                        </div>
-                                    )}
-                                </div>
-                                {editId === null && (
-                                    <div className="col-start-1 row-start-1 space-y-6">
-                                        <WHTFormContent form={form} set={set} autoWHT={autoWHT} disabled={false} readOnlyStyle="" fileAttachments={fileAttachments} setFileAttachments={setFileAttachments} />
+                            ) : (
+                                <div className="grid grid-cols-1 overflow-hidden">
+                                    <div className={`col-start-1 row-start-1 transition-transform duration-300 ease-in-out ${isEditing ? '-translate-x-full' : 'translate-x-0'}`}>
+                                        {editId !== null && (
+                                            <div className="space-y-6">
+                                                <WHTFormContent form={form} set={set} autoWHT={autoWHT} disabled={true} readOnlyStyle="bg-neutral-50 text-neutral-400" fileAttachments={fileAttachments} setFileAttachments={setFileAttachments} />
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
+                                    <div className={`col-start-1 row-start-1 transition-transform duration-300 ease-in-out ${isEditing ? 'translate-x-0' : 'translate-x-full'}`}>
+                                        {isEditing && (
+                                            <div className="space-y-6">
+                                                <WHTFormContent form={form} set={set} autoWHT={autoWHT} disabled={false} readOnlyStyle="" fileAttachments={fileAttachments} setFileAttachments={setFileAttachments} />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                     <div className="max-w-[450px] mx-auto w-full pt-4 border-t border-neutral-100 mt-2">
@@ -684,7 +696,25 @@ const WHTRemittance = ({ profileId, taxYear }: { profileId: string; taxYear: str
                                                 <TableCell className="px-6 py-4 font-medium text-neutral-600">{d.whtRate ? `${d.whtRate}%` : '—'}</TableCell>
                                                 <TableCell className="px-6 py-4 font-medium text-neutral-600">{wht > 0 ? fmt(wht) : '—'}</TableCell>
                                                 <TableCell className="px-6 py-4">
-                                                    <span className="max-w-[120px] truncate block text-neutral-600" title={d.receipt}>{d.receipt || '—'}</span>
+                                                    {d.receipt ? (
+                                                        (() => {
+                                                            const files = d.receipt.split(', ');
+                                                            const first = files[0];
+                                                            return (
+                                                                <div className="flex items-center gap-1">
+                                                                    <div className="flex items-center gap-1 px-1.5 py-0.5 bg-neutral-50 border border-neutral-100 rounded-md">
+                                                                        <FileTextIcon className="w-3 h-3 text-neutral-400" />
+                                                                        <span className="text-1 text-neutral-600 truncate max-w-[80px]">{first}</span>
+                                                                    </div>
+                                                                    {files.length > 1 && (
+                                                                        <span className="text-1 text-neutral-400 font-medium whitespace-nowrap">+{files.length - 1}</span>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })()
+                                                    ) : (
+                                                        <span className="text-neutral-600">—</span>
+                                                    )}
                                                 </TableCell>
                                             </TableRow>
                                         );

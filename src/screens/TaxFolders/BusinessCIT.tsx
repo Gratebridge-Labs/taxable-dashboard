@@ -22,6 +22,61 @@ import { InformationFill } from '@mingcute/react';
 const fmt = (n: number) => `₦${Math.round(n).toLocaleString()}`;
 const num = (s: string) => Number(s.replace(/,/g, '')) || 0;
 
+// ── File Upload Section (standalone child component) ──────────────────────────
+function FileUploadSection({
+    label, description, accept, required,
+}: {
+    label: string;
+    description: string;
+    accept: string;
+    required?: boolean;
+}) {
+    const [files, setFiles] = useState<{ name: string }[]>([]);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        const el = inputRef.current;
+        if (!el) return;
+        const handler = (e: Event) => {
+            const fl = (e.target as HTMLInputElement).files;
+            if (!fl) return;
+            setFiles(prev => [...prev, ...Array.from(fl).map(f => ({ name: f.name }))]);
+            (e.target as HTMLInputElement).value = '';
+        };
+        el.addEventListener('change', handler);
+        return () => el.removeEventListener('change', handler);
+    }, []);
+
+    return (
+        <div className="bg-neutral-50 rounded-2xl p-5">
+            <h3 className="text-3 font-semibold text-neutral-800 mb-4">
+                {label} {required && <span className="text-red-500">*</span>}
+                {!required && <span className="text-neutral-400 font-medium text-1">(Optional)</span>}
+            </h3>
+            <p className="text-2 font-medium text-neutral-500 mb-3">{description}</p>
+            <div className="bg-white relative flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                <div className="flex items-center gap-2.5">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-neutral-400"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                    <span className="text-1 text-neutral-400 font-medium">{(accept || '').split(',').join(', ').toUpperCase()} accepted</span>
+                </div>
+                <span className="text-2 font-semibold text-taxable-blue pointer-events-none">Upload</span>
+                <input ref={inputRef} type="file" accept={accept} className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" />
+            </div>
+            {files.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                    {files.map((f, i) => (
+                        <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-neutral-400"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                            <span className="text-1 text-neutral-600">{f.name}</span>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-neutral-400 cursor-pointer" onClick={() => setFiles(prev => prev.filter((_, j) => j !== i))}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
 // ── Hint Icon ─────────────────────────────────────────────────────────────────
 const HintIcon = ({ tip }: { tip: string }) => (
     <span className="relative group inline-flex items-center ml-1 align-middle cursor-default">
@@ -246,10 +301,6 @@ export function BusinessCITContent({
     const [totalRevenue, setTotalRevenue] = useState('');
     const [cogs, setCogs] = useState('');
     const [opex, setOpex] = useState('');
-    const [auditedFiles, setAuditedFiles] = useState<{ name: string }[]>([]);
-    const [trialBalanceFiles, setTrialBalanceFiles] = useState<{ name: string }[]>([]);
-    const auditedInputRef = useRef<HTMLInputElement>(null);
-    const trialBalanceInputRef = useRef<HTMLInputElement>(null);
 
     // Tax Adjustments
     const [govFines, setGovFines] = useState('');
@@ -323,8 +374,6 @@ export function BusinessCITContent({
                 if (saved.totalRevenue) setTotalRevenue(saved.totalRevenue);
                 if (saved.cogs) setCogs(saved.cogs);
                 if (saved.opex) setOpex(saved.opex);
-                if (saved.auditedFiles) setAuditedFiles(saved.auditedFiles);
-                if (saved.trialBalanceFiles) setTrialBalanceFiles(saved.trialBalanceFiles);
                 if (saved.govFines) setGovFines(saved.govFines);
                 if (saved.accountingDepreciation) setAccountingDepreciation(saved.accountingDepreciation);
                 if (saved.generalProvisions) setGeneralProvisions(saved.generalProvisions);
@@ -342,14 +391,14 @@ export function BusinessCITContent({
     useEffect(() => {
         try {
             localStorage.setItem(citKey, JSON.stringify({
-                totalRevenue, cogs, opex, auditedFiles, trialBalanceFiles,
+                totalRevenue, cogs, opex,
                 govFines, accountingDepreciation, generalProvisions,
                 class1Assets, class2Assets, class3Assets,
                 whtCredits, quarterPayments, deferredQuarters: Array.from(deferredQuarters),
             }));
         } catch { /* ignore */ }
     }, [
-        totalRevenue, cogs, opex, auditedFiles, trialBalanceFiles,
+        totalRevenue, cogs, opex,
         govFines, accountingDepreciation, generalProvisions,
         class1Assets, class2Assets, class3Assets,
         whtCredits, quarterPayments, deferredQuarters,
@@ -784,60 +833,17 @@ export function BusinessCITContent({
                                     </FormFieldRow>
                                 </div>
 
-                                 {/* Section 3: Upload Supporting Documents */}
-                                 <div className="bg-neutral-50 rounded-2xl p-5">
-                                     <h3 className="text-3 font-semibold text-neutral-800 mb-4">Upload Supporting Documents</h3>
-                                     <div className="space-y-6">
-                                        <div>
-                                            <p className="text-2 font-medium text-neutral-500 mb-2">Audited Financial Statements <span className="text-red-500">*</span></p>
-                                            <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
-                                                <div className="flex items-center gap-2.5">
-                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-neutral-400"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
-                                                    <span className="text-1 text-neutral-400 font-medium">Upload Audited Financial Statements</span>
-                                                </div>
-                                                <button onClick={() => auditedInputRef.current?.click()} className="cursor-pointer text-2 font-semibold text-taxable-blue bg-transparent border-none p-0">
-                                                    Upload
-                                                </button>
-                                                <input ref={auditedInputRef} type="file" accept=".pdf" className="hidden" onChange={(e) => { const files = e.target.files; if (!files) return; setAuditedFiles(prev => [...prev, ...Array.from(files).map(f => ({ name: f.name }))]); e.target.value = ''; }} />
-                                            </div>
-                                            {auditedFiles.length > 0 && (
-                                                <div className="mt-2 flex flex-wrap gap-2">
-                                                    {auditedFiles.map((f, i) => (
-                                                        <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
-                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-neutral-400"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
-                                                            <span className="text-1 text-neutral-600">{f.name}</span>
-                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-neutral-400 cursor-pointer" onClick={() => setAuditedFiles(prev => prev.filter((_, j) => j !== i))}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <p className="text-2 font-medium text-neutral-500 mb-2">Trial Balance / General Ledger <span className="text-neutral-400 font-medium text-1">(Optional)</span></p>
-                                            <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
-                                                <div className="flex items-center gap-2.5">
-                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-neutral-400"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
-                                                    <span className="text-1 text-neutral-400 font-medium">Upload Trial Balance</span>
-                                                </div>
-                                                <button onClick={() => trialBalanceInputRef.current?.click()} className="cursor-pointer text-2 font-semibold text-taxable-blue bg-transparent border-none p-0">
-                                                    Upload
-                                                </button>
-                                                <input ref={trialBalanceInputRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={(e) => { const files = e.target.files; if (!files) return; setTrialBalanceFiles(prev => [...prev, ...Array.from(files).map(f => ({ name: f.name }))]); e.target.value = ''; }} />
-                                            </div>
-                                            {trialBalanceFiles.length > 0 && (
-                                                <div className="mt-2 flex flex-wrap gap-2">
-                                                    {trialBalanceFiles.map((f, i) => (
-                                                        <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
-                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-neutral-400"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
-                                                            <span className="text-1 text-neutral-600">{f.name}</span>
-                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-neutral-400 cursor-pointer" onClick={() => setTrialBalanceFiles(prev => prev.filter((_, j) => j !== i))}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
+                                 <FileUploadSection
+                                     label="Audited Financial Statements"
+                                     description="Upload your audited financial statements for the tax year."
+                                     accept=".pdf"
+                                     required
+                                 />
+                                 <FileUploadSection
+                                     label="Trial Balance / General Ledger"
+                                     description="Upload your trial balance or general ledger for additional verification."
+                                     accept=".csv,.xlsx,.xls"
+                                 />
                             </div>
 
                             <div className="flex gap-3 mt-8">
@@ -1194,7 +1200,9 @@ export function BusinessCITContent({
                                             </div>
                                             <div className="flex items-center justify-between text-2">
                                                 <span className="text-neutral-500">Attached Financial Statement File</span>
-                                                <span className="font-medium text-neutral-800">{auditedFiles.length > 0 ? `📄 ${auditedFiles[0].name}` : '—'}</span>
+                                                <span className={`font-medium ${completedAnnualSteps.has(1) ? 'text-green-600' : 'text-neutral-400'}`}>
+                                                    {completedAnnualSteps.has(1) ? '✓ Provided' : '—'}
+                                                </span>
                                             </div>
                                         </div>
                                     </AccordionContent>

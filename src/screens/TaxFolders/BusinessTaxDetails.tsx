@@ -633,7 +633,7 @@ export default function BusinessTaxDetails() {
                         {/* WHT section */}
                         {activeSection === 'wht' && (
                             <div data-animate className="w-full">
-                                <BusinessWHTContent />
+                                <BusinessWHTContent profileId={profileId} taxYear={taxYear} />
                             </div>
                         )}
 

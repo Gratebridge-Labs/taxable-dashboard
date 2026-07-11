@@ -163,13 +163,6 @@ export default function Home() {
                 ) : (
                     <>
                         <div className="animate-in fade-in duration-700">
-                            <div className="mb-8 flex flex-col md:flex-row justify-between items-start gap-6">
-                                <div data-animate>
-                                    <h1 className="text-7 font-semibold text-neutral-800 mb-2 tracking-tight">
-                                        Welcome, {user?.firstName}
-                                    </h1>
-                                </div>
-                            </div>
 
                             {/* Dynamic Tax Filings Sections */}
                             {Object.entries(

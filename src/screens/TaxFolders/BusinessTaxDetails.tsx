@@ -644,6 +644,7 @@ export default function BusinessTaxDetails() {
                                     activeSubMenu={citSubSection}
                                     onSubMenuChange={setCitSubSection}
                                     payQuarterly={payQuarterly}
+                                    profileId={profileId}
                                     taxYear={taxYear}
                                     estimatedAnnualRevenue={estimatedAnnualRevenue}
                                     profitMargin={profitMargin}

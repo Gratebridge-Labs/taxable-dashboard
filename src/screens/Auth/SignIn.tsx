@@ -45,7 +45,12 @@ export default function SignIn() {
                 setIsLoading(false);
             }
         } catch (err: unknown) {
-            console.error("Login failed:", err);
+            const message = err instanceof Error ? err.message : '';
+            console.error("Login failed:", message);
+            if (message.toLowerCase().includes('verify')) {
+                router.push(`/verify-otp?email=${encodeURIComponent(email)}&type=signup`);
+                return;
+            }
             setIsLoading(false);
         }
     };

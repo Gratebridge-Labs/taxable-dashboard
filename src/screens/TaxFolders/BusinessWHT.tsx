@@ -42,10 +42,10 @@ const defaultDeduction = (): Omit<WHTDeduction, 'id'> => ({
     gross: '', whtRate: '', whtDeducted: '', netPaid: '', date: '',
 });
 
-const STORAGE_KEY_WHT_DEDUCTIONS = 'taxable_wht_deductions';
-const STORAGE_KEY_WHT_FILED = 'taxable_wht_filed';
-const STORAGE_KEY_WHT_MONTH = 'taxable_wht_month';
-const STORAGE_KEY_WHT_CREDITS = 'taxable_wht_credits';
+const storageKeyDeductions = (pid: string, year: string) => `taxable_wht_deductions_${pid}_${year}`;
+const storageKeyFiled = (pid: string, year: string) => `taxable_wht_filed_${pid}_${year}`;
+const storageKeyMonth = (pid: string, year: string) => `taxable_wht_month_${pid}_${year}`;
+const storageKeyCredits = (pid: string, year: string) => `taxable_wht_credits_${pid}_${year}`;
 
 // ── WHT Deduction Form (shared for WHT Credit Balance) ────────────────────────
 const WHTDeductionForm = ({ onSave, onCancel, initial }: {
@@ -296,7 +296,11 @@ function WHTFormContent({
 }
 
 // ── WHT Remittance ─────────────────────────────────────────────────────────────
-const WHTRemittance = () => {
+const WHTRemittance = ({ profileId, taxYear }: { profileId: string; taxYear: string }) => {
+    const dedKey = storageKeyDeductions(profileId, taxYear);
+    const monthKey = storageKeyMonth(profileId, taxYear);
+    const filedKey = storageKeyFiled(profileId, taxYear);
+
     const {
         dataByMonth: deductionsByMonth, setDataByMonth,
         activeMonth, setActiveMonth,
@@ -305,17 +309,22 @@ const WHTRemittance = () => {
         pendingRemove, setPendingRemove,
         pendingPayee,
         saveItem, handleConfirmRemove,
-    } = useWhtDeductions(STORAGE_KEY_WHT_DEDUCTIONS, STORAGE_KEY_WHT_MONTH);
+    } = useWhtDeductions(dedKey, monthKey);
 
     useEffect(() => {
-        if (!localStorage.getItem('wht_v3_cleared')) {
-            localStorage.removeItem('taxable_wht_deductions');
-            localStorage.removeItem('taxable_wht_filed');
-            localStorage.removeItem('taxable_wht_month');
-            localStorage.removeItem('taxable_wht_credits');
-            localStorage.setItem('wht_v3_cleared', 'true');
+        const oldKeys = ['taxable_wht_deductions', 'taxable_wht_filed', 'taxable_wht_month', 'taxable_wht_credits'];
+        const migKey = `wht_migrated_${profileId}_${taxYear}`;
+        if (!localStorage.getItem(migKey)) {
+            for (const k of oldKeys) {
+                const oldVal = localStorage.getItem(k);
+                if (oldVal) {
+                    localStorage.setItem(k + '_' + profileId + '_' + taxYear, oldVal);
+                    localStorage.removeItem(k);
+                }
+            }
+            localStorage.setItem(migKey, 'true');
         }
-    }, []);
+    }, [profileId, taxYear]);
 
     const [showFormSheet, setShowFormSheet] = useState(false);
     const [editId, setEditId] = useState<number | null>(null);
@@ -326,8 +335,8 @@ const WHTRemittance = () => {
     const [entryMethod, setEntryMethod] = useState<'manual' | 'csv' | 'software'>('manual');
     const [filedMonths, setFiledMonths] = useState<Set<number>>(() => {
         try {
-            if (!localStorage.getItem('wht_v3_cleared')) localStorage.removeItem(STORAGE_KEY_WHT_FILED);
-            const v = JSON.parse(localStorage.getItem(STORAGE_KEY_WHT_FILED)!);
+            if (!localStorage.getItem('wht_v3_cleared')) localStorage.removeItem(filedKey);
+            const v = JSON.parse(localStorage.getItem(filedKey)!);
             return v ? new Set(v) : new Set();
         } catch { return new Set(); }
     });
@@ -345,7 +354,7 @@ const WHTRemittance = () => {
     const canSave = form.payee.trim() && form.tin.trim() && form.whtType.trim() && form.gross.trim() && form.tin.length >= 10 && form.tin.length <= 14 && form.whtRate.trim() && fileAttachments.length > 0;
 
     useEffect(() => {
-        localStorage.setItem(STORAGE_KEY_WHT_FILED, JSON.stringify(Array.from(filedMonths)));
+        localStorage.setItem(filedKey, JSON.stringify(Array.from(filedMonths)));
     }, [filedMonths]);
 
     const handleSave = () => {
@@ -475,17 +484,17 @@ const WHTRemittance = () => {
                             {editId ? (isEditing ? (form.payee || 'Edit Deduction') : 'Deduction Details') : 'Add WHT Deduction'}
                         </h2>
                     </div>
-                    <div data-lenis-prevent className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                    <div data-lenis-prevent className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-20">
                         <div className="max-w-[450px] mx-auto w-full space-y-6">
-                            <div className="relative overflow-hidden">
-                                <div className={`transition-transform duration-300 ease-in-out ${isEditing ? '-translate-x-full' : 'translate-x-0'}`}>
+                            <div className="grid grid-cols-1 overflow-hidden">
+                                <div className={`col-start-1 row-start-1 transition-transform duration-300 ease-in-out ${isEditing ? '-translate-x-full' : 'translate-x-0'}`}>
                                     {editId !== null && (
                                         <div className="space-y-6">
                                             <WHTFormContent form={form} set={set} autoWHT={autoWHT} disabled={true} readOnlyStyle="bg-neutral-50 text-neutral-400" fileAttachments={fileAttachments} setFileAttachments={setFileAttachments} />
                                         </div>
                                     )}
                                 </div>
-                                <div className={`absolute inset-0 transition-transform duration-300 ease-in-out ${isEditing ? 'translate-x-0' : 'translate-x-full'}`}>
+                                <div className={`col-start-1 row-start-1 transition-transform duration-300 ease-in-out ${isEditing ? 'translate-x-0' : 'translate-x-full'}`}>
                                     {isEditing && (
                                         <div className="space-y-6">
                                             <WHTFormContent form={form} set={set} autoWHT={autoWHT} disabled={false} readOnlyStyle="" fileAttachments={fileAttachments} setFileAttachments={setFileAttachments} />
@@ -493,7 +502,7 @@ const WHTRemittance = () => {
                                     )}
                                 </div>
                                 {editId === null && (
-                                    <div className="space-y-6">
+                                    <div className="col-start-1 row-start-1 space-y-6">
                                         <WHTFormContent form={form} set={set} autoWHT={autoWHT} disabled={false} readOnlyStyle="" fileAttachments={fileAttachments} setFileAttachments={setFileAttachments} />
                                     </div>
                                 )}
@@ -709,7 +718,7 @@ const WHTRemittance = () => {
 };
 
 // ── WHT Credit Notes ───────────────────────────────────────────────────────────
-const WHTCreditBalance = () => {
+const WHTCreditBalance = ({ profileId, taxYear }: { profileId: string; taxYear: string }) => {
     const {
         dataByMonth: creditsByMonth,
         activeMonth, setActiveMonth,
@@ -719,7 +728,7 @@ const WHTCreditBalance = () => {
         pendingRemove, setPendingRemove,
         pendingPayee,
         saveItem, handleConfirmRemove,
-    } = useWhtDeductions(STORAGE_KEY_WHT_CREDITS);
+    } = useWhtDeductions(storageKeyCredits(profileId, taxYear));
 
     const [showForm, setShowForm] = useState(false);
     const [editId, setEditId] = useState<number | null>(null);
@@ -887,9 +896,11 @@ const WHTCreditBalance = () => {
 
 // ── Embeddable content component (no page shell) ──────────────────────────────
 export function BusinessWHTContent({
-    activeSubMenu,
+    activeSubMenu, profileId = 'default', taxYear = '2026',
 }: {
     activeSubMenu?: 'remit-wht' | 'wht-balance';
+    profileId?: string;
+    taxYear?: string;
 }) {
     const [internalSubSection, _setInternalSubSection] = useState<'remit-wht' | 'wht-balance'>('remit-wht');
     const subSection = activeSubMenu ?? internalSubSection;
@@ -897,8 +908,8 @@ export function BusinessWHTContent({
     return (
         <div className="w-full">
             <div className="flex-1 min-w-0">
-                {subSection === 'remit-wht' && <WHTRemittance />}
-                {subSection === 'wht-balance' && <WHTCreditBalance />}
+                {subSection === 'remit-wht' && <WHTRemittance profileId={profileId} taxYear={taxYear} />}
+                {subSection === 'wht-balance' && <WHTCreditBalance profileId={profileId} taxYear={taxYear} />}
             </div>
         </div>
     );

@@ -41,8 +41,13 @@ export default function Signup() {
                 login(response.data.token, response.data.user);
                 router.push('/home');
             } else {
+                toast.success('Verify your email', {
+                    description: `We've sent a verification code to ${formData.email}`,
+                });
                 setIsLoading(false);
-                toast.error('Signup succeeded but login failed. Please try signing in.');
+                setTimeout(() => {
+                    router.push(`/verify-otp?email=${encodeURIComponent(formData.email)}&type=signup`);
+                }, 1500);
             }
         } catch (err: unknown) {
             console.error("Signup failed:", err);

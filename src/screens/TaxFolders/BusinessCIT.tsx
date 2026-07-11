@@ -160,14 +160,15 @@ const CIT_SUBSECTIONS = [
     { key: 'file-returns', label: 'File Annual Returns' },
 ];
 
-const STORAGE_KEY_CIT = 'taxable_cit_data';
-const STORAGE_KEY_CIT_FILED = 'taxable_cit_annual_filed';
+const storageKeyCIT = (pid: string) => `taxable_cit_data_${pid}`;
+const storageKeyCITFiled = (pid: string) => `taxable_cit_annual_filed_${pid}`;
 
 // ── Embeddable content component (no page shell) ──────────────────────────────
 export function BusinessCITContent({
     activeSubMenu,
     onSubMenuChange,
     payQuarterly,
+    profileId = 'default',
     taxYear = '2025',
     estimatedAnnualRevenue,
     profitMargin,
@@ -177,6 +178,7 @@ export function BusinessCITContent({
     activeSubMenu?: 'quarterly' | 'file-returns';
     onSubMenuChange?: (s: 'quarterly' | 'file-returns') => void;
     payQuarterly?: boolean;
+    profileId?: string;
     taxYear?: string;
     estimatedAnnualRevenue?: string;
     profitMargin?: string;
@@ -196,6 +198,21 @@ export function BusinessCITContent({
         }
     };
 
+    const citKey = storageKeyCIT(profileId);
+    const filedKey = storageKeyCITFiled(profileId);
+
+    // One-time migration from old unscoped keys
+    useEffect(() => {
+        const migKey = `cit_migrated_${profileId}`;
+        if (!localStorage.getItem(migKey)) {
+            const oldData = localStorage.getItem('taxable_cit_data');
+            if (oldData) { localStorage.setItem(citKey, oldData); localStorage.removeItem('taxable_cit_data'); }
+            const oldFiled = localStorage.getItem('taxable_cit_annual_filed');
+            if (oldFiled) { localStorage.setItem(filedKey, oldFiled); localStorage.removeItem('taxable_cit_annual_filed'); }
+            localStorage.setItem(migKey, 'true');
+        }
+    }, [profileId, citKey, filedKey]);
+
     const goForward = (target: 'financials' | 'tax-adjustments' | 'wht-credits' | 'review') => {
         const stepNum: Record<string, number> = { financials: 1, 'tax-adjustments': 2, 'wht-credits': 3, review: 4 };
         const currentStepNum = stepNum[annualStep];
@@ -205,7 +222,7 @@ export function BusinessCITContent({
 
     const [showFilingReviewSheet, setShowFilingReviewSheet] = useState(false);
     const [annualReturnFiled, setAnnualReturnFiled] = useState(() => {
-        try { return localStorage.getItem(STORAGE_KEY_CIT_FILED) === 'true'; } catch { return false; }
+        try { return localStorage.getItem(filedKey) === 'true'; } catch { return false; }
     });
     const [legalConfirm1, setLegalConfirm1] = useState(false);
     const [legalConfirm2, setLegalConfirm2] = useState(false);
@@ -293,13 +310,13 @@ export function BusinessCITContent({
 
     // Persist annual filed status
     useEffect(() => {
-        try { localStorage.setItem(STORAGE_KEY_CIT_FILED, String(annualReturnFiled)); } catch { /* ignore */ }
+        try { localStorage.setItem(filedKey, String(annualReturnFiled)); } catch { /* ignore */ }
     }, [annualReturnFiled]);
 
     // Restore CIT data from localStorage on mount
     useEffect(() => {
         try {
-            const raw = localStorage.getItem(STORAGE_KEY_CIT);
+            const raw = localStorage.getItem(citKey);
             if (!raw) return;
             const saved = JSON.parse(raw);
             startTransition(() => {
@@ -324,7 +341,7 @@ export function BusinessCITContent({
     // Persist CIT data on changes
     useEffect(() => {
         try {
-            localStorage.setItem(STORAGE_KEY_CIT, JSON.stringify({
+            localStorage.setItem(citKey, JSON.stringify({
                 totalRevenue, cogs, opex, auditedFiles, trialBalanceFiles,
                 govFines, accountingDepreciation, generalProvisions,
                 class1Assets, class2Assets, class3Assets,

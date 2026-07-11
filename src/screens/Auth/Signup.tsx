@@ -35,7 +35,8 @@ export default function Signup() {
         setIsLoading(true);
 
         try {
-            const response = await post('/auth/register', formData, { useToken: false });
+            const { whatsappReminders: _wr, ...payload } = formData;
+            const response = await post('/auth/register', payload, { useToken: false });
 
             if (response?.data?.token) {
                 login(response.data.token, response.data.user);

@@ -168,6 +168,16 @@ body {
   scrollbar-width: none;
 }
 
+/* OverlayScrollbars — Taxable theme */
+.os-theme-taxable {
+  --os-size: 8px;
+  --os-track-bg: transparent;
+  --os-handle-bg: rgba(163, 163, 163, 0.4);
+  --os-handle-bg-hover: rgba(163, 163, 163, 0.7);
+  --os-handle-bg-active: rgba(115, 115, 115, 0.8);
+  --os-handle-radius: 999px;
+}
+
 .dark {
  --background: oklch(0.145 0 0);
  --foreground: oklch(0.985 0 0);

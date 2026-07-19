@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import "overlayscrollbars/overlayscrollbars.css";
 import { ErrorBoundary } from "@/components/ErrorBoundary/ErrorBoundary";
 import { UserProvider } from "@/contexts/UserContext";
 import { ProfileProvider } from "@/contexts/ProfileContext";
 import { ToastProvider } from "@/components/Toast/ToastProvider";
 import { Toaster } from "@/components/ui/sonner";
+import { ScrollbarProvider } from "@/components/ScrollbarProvider/ScrollbarProvider";
 
 const archivo = localFont({
   src: [
@@ -44,11 +46,13 @@ export default function RootLayout({
         <ErrorBoundary>
           <Toaster />
           <ToastProvider>
-            <UserProvider>
-              <ProfileProvider>
-                {children}
-              </ProfileProvider>
-            </UserProvider>
+            <ScrollbarProvider>
+              <UserProvider>
+                <ProfileProvider>
+                  {children}
+                </ProfileProvider>
+              </UserProvider>
+            </ScrollbarProvider>
           </ToastProvider>
         </ErrorBoundary>
       </body>

@@ -214,9 +214,17 @@ export default function PITDetails() {
     }>>({});
 
     const [deductionFiles, setDeductionFiles] = useState<Record<string, { name: string }[]>>({});
+    const [incomeFiles, setIncomeFiles] = useState<Record<string, { name: string }[]>>({});
     const healthRef = useRef<HTMLInputElement>(null);
     const pensionRef = useRef<HTMLInputElement>(null);
     const mortgageRef = useRef<HTMLInputElement>(null);
+    const salaryRef = useRef<HTMLInputElement>(null);
+    const businessRef = useRef<HTMLInputElement>(null);
+    const freelanceRef = useRef<HTMLInputElement>(null);
+    const investmentRef = useRef<HTMLInputElement>(null);
+    const rentalRef = useRef<HTMLInputElement>(null);
+    const cryptoRef = useRef<HTMLInputElement>(null);
+    const rentRef = useRef<HTMLInputElement>(null);
     const STORAGE_KEY_PIT_INCOME = `taxable_pit_income_${profileId}`;
 
     // Annual Filing state
@@ -474,6 +482,19 @@ export default function PITDetails() {
                                              <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('salaryTakeHome') : (currentIncome as any).salaryTakeHome ?? ''} onChange={fmtInput((v) => setIncomeField('salaryTakeHome', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
+                                    <div className="mt-3">
+                                        <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                            <span className="text-1 text-neutral-400 font-medium">Upload payslip / proof of employment</span>
+                                            <button onClick={() => salaryRef.current?.click()} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0">Upload</button>
+                                            <input ref={salaryRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setIncomeFiles(prev => ({ ...prev, ['salary_' + (activeMonthNum - 1)]: [...(prev['salary_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
+                                        </div>
+                                        {((incomeFiles['salary_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
+                                            <div key={i} className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
+                                                <span className="text-1 text-neutral-600">{file.name}</span>
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-neutral-400 cursor-pointer ml-1" onClick={() => setIncomeFiles(prev => ({ ...prev, ['salary_' + (activeMonthNum - 1)]: (prev['salary_' + (activeMonthNum - 1)] ?? []).filter((_, j) => j !== i) }))}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
 
@@ -489,6 +510,19 @@ export default function PITDetails() {
                                             <FormLabel tip="Total monthly expenses incurred in running your business.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} Business Expenses</FormLabel>
                                             <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('businessExpenses') : (currentIncome as any).businessExpenses ?? ''} onChange={fmtInput((v) => setIncomeField('businessExpenses', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
                                         </FormFieldRow>
+                                    </div>
+                                    <div className="mt-3">
+                                        <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                            <span className="text-1 text-neutral-400 font-medium">Upload invoices / bank statements</span>
+                                            <button onClick={() => businessRef.current?.click()} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0">Upload</button>
+                                            <input ref={businessRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setIncomeFiles(prev => ({ ...prev, ['business_' + (activeMonthNum - 1)]: [...(prev['business_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
+                                        </div>
+                                        {((incomeFiles['business_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
+                                            <div key={i} className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
+                                                <span className="text-1 text-neutral-600">{file.name}</span>
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-neutral-400 cursor-pointer ml-1" onClick={() => setIncomeFiles(prev => ({ ...prev, ['business_' + (activeMonthNum - 1)]: (prev['business_' + (activeMonthNum - 1)] ?? []).filter((_, j) => j !== i) }))}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             )}
@@ -506,6 +540,19 @@ export default function PITDetails() {
                                             <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('freelanceWHT') : (currentIncome as any).freelanceWHT ?? ''} onChange={fmtInput((v) => setIncomeField('freelanceWHT', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
+                                    <div className="mt-3">
+                                        <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                            <span className="text-1 text-neutral-400 font-medium">Upload invoices / contracts</span>
+                                            <button onClick={() => freelanceRef.current?.click()} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0">Upload</button>
+                                            <input ref={freelanceRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setIncomeFiles(prev => ({ ...prev, ['freelance_' + (activeMonthNum - 1)]: [...(prev['freelance_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
+                                        </div>
+                                        {((incomeFiles['freelance_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
+                                            <div key={i} className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
+                                                <span className="text-1 text-neutral-600">{file.name}</span>
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-neutral-400 cursor-pointer ml-1" onClick={() => setIncomeFiles(prev => ({ ...prev, ['freelance_' + (activeMonthNum - 1)]: (prev['freelance_' + (activeMonthNum - 1)] ?? []).filter((_, j) => j !== i) }))}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
 
@@ -516,6 +563,19 @@ export default function PITDetails() {
                                             <FormLabel tip="Dividends and interest earned on your investments this month.">Dividends / Interest Received</FormLabel>
                                             <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('investmentIncome') : (currentIncome as any).investmentIncome ?? ''} onChange={fmtInput((v) => setIncomeField('investmentIncome', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
                                         </FormFieldRow>
+                                    </div>
+                                    <div className="mt-3">
+                                        <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                            <span className="text-1 text-neutral-400 font-medium">Upload investment statements</span>
+                                            <button onClick={() => investmentRef.current?.click()} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0">Upload</button>
+                                            <input ref={investmentRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setIncomeFiles(prev => ({ ...prev, ['investment_' + (activeMonthNum - 1)]: [...(prev['investment_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
+                                        </div>
+                                        {((incomeFiles['investment_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
+                                            <div key={i} className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
+                                                <span className="text-1 text-neutral-600">{file.name}</span>
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-neutral-400 cursor-pointer ml-1" onClick={() => setIncomeFiles(prev => ({ ...prev, ['investment_' + (activeMonthNum - 1)]: (prev['investment_' + (activeMonthNum - 1)] ?? []).filter((_, j) => j !== i) }))}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             )}
@@ -528,6 +588,19 @@ export default function PITDetails() {
                                             <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('rentalIncome') : (currentIncome as any).rentalIncome ?? ''} onChange={fmtInput((v) => setIncomeField('rentalIncome', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
+                                    <div className="mt-3">
+                                        <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                            <span className="text-1 text-neutral-400 font-medium">Upload lease agreement / receipts</span>
+                                            <button onClick={() => rentalRef.current?.click()} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0">Upload</button>
+                                            <input ref={rentalRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setIncomeFiles(prev => ({ ...prev, ['rental_' + (activeMonthNum - 1)]: [...(prev['rental_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
+                                        </div>
+                                        {((incomeFiles['rental_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
+                                            <div key={i} className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
+                                                <span className="text-1 text-neutral-600">{file.name}</span>
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-neutral-400 cursor-pointer ml-1" onClick={() => setIncomeFiles(prev => ({ ...prev, ['rental_' + (activeMonthNum - 1)]: (prev['rental_' + (activeMonthNum - 1)] ?? []).filter((_, j) => j !== i) }))}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
 
@@ -536,8 +609,21 @@ export default function PITDetails() {
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Total realized profits from asset sales or trading inside the month.">Net Crypto / Digital Asset Gains</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('digitalGains') : (currentIncome as any).digitalGains ?? ''} onChange={fmtInput((v) => setIncomeField('digitalGains', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
+                                                <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('digitalGains') : (currentIncome as any).digitalGains ?? ''} onChange={fmtInput((v) => setIncomeField('digitalGains', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
                                         </FormFieldRow>
+                                    </div>
+                                    <div className="mt-3">
+                                        <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                            <span className="text-1 text-neutral-400 font-medium">Upload exchange / trading statements</span>
+                                            <button onClick={() => cryptoRef.current?.click()} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0">Upload</button>
+                                            <input ref={cryptoRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setIncomeFiles(prev => ({ ...prev, ['crypto_' + (activeMonthNum - 1)]: [...(prev['crypto_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
+                                        </div>
+                                        {((incomeFiles['crypto_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
+                                            <div key={i} className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
+                                                <span className="text-1 text-neutral-600">{file.name}</span>
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-neutral-400 cursor-pointer ml-1" onClick={() => setIncomeFiles(prev => ({ ...prev, ['crypto_' + (activeMonthNum - 1)]: (prev['crypto_' + (activeMonthNum - 1)] ?? []).filter((_, j) => j !== i) }))}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             )}
@@ -568,6 +654,19 @@ export default function PITDetails() {
                                             <FormLabel tip="Your monthly rent payment. The system caps this at 20% of actual rent or ₦500,000 per year, whichever is lower.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} Rent Allocation</FormLabel>
                                             <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? dedFieldSumFmt('rent') : (currentDeductions as any).rent ?? ''} onChange={fmtInput((v) => setDeductionField('rent', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
                                         </FormFieldRow>
+                                    </div>
+                                    <div className="mt-3">
+                                        <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                            <span className="text-1 text-neutral-400 font-medium">Upload rent receipt / lease agreement</span>
+                                            <button onClick={() => rentRef.current?.click()} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0">Upload</button>
+                                            <input ref={rentRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setDeductionFiles(prev => ({ ...prev, ['rent_' + (activeMonthNum - 1)]: [...(prev['rent_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
+                                        </div>
+                                        {((deductionFiles['rent_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
+                                            <div key={i} className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
+                                                <span className="text-1 text-neutral-600">{file.name}</span>
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-neutral-400 cursor-pointer ml-1" onClick={() => setDeductionFiles(prev => ({ ...prev, ['rent_' + (activeMonthNum - 1)]: (prev['rent_' + (activeMonthNum - 1)] ?? []).filter((_, j) => j !== i) }))}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             )}
@@ -794,6 +893,7 @@ export default function PITDetails() {
             if (saved.incomeByMonth) setIncomeByMonth(saved.incomeByMonth);
             if (saved.deductionsByMonth) setDeductionsByMonth(saved.deductionsByMonth);
             if (saved.deductionFiles) setDeductionFiles(saved.deductionFiles);
+            if (saved.incomeFiles) setIncomeFiles(saved.incomeFiles);
             if (saved.recordedMonths) setRecordedMonths(new Set(saved.recordedMonths));
         } catch { /* ignore */ }
     }, []);
@@ -803,11 +903,11 @@ export default function PITDetails() {
         if (!profileId) return;
         try {
             localStorage.setItem(STORAGE_KEY_PIT_INCOME, JSON.stringify({
-                incomeByMonth, deductionsByMonth, deductionFiles,
+                incomeByMonth, deductionsByMonth, deductionFiles, incomeFiles,
                 recordedMonths: Array.from(recordedMonths),
             }));
         } catch { /* ignore */ }
-    }, [incomeByMonth, deductionsByMonth, deductionFiles, recordedMonths, STORAGE_KEY_PIT_INCOME]);
+    }, [incomeByMonth, deductionsByMonth, deductionFiles, incomeFiles, recordedMonths, STORAGE_KEY_PIT_INCOME]);
 
     // Auto-save personal info to localStorage
     useEffect(() => {

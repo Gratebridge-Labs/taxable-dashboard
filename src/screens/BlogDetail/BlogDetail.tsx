@@ -96,9 +96,9 @@ export default function BlogDetail() {
             <div className="min-h-screen bg-white">
                 <DashboardHeader />
                 <div className="max-w-[800px] mx-auto pt-20 px-6 text-center">
-                    <h2 className="text-2xl font-bold text-taxable-dark mb-4">Post not found</h2>
+                    <h2 className="text-2xl font-semibold text-taxable-dark mb-4">Post not found</h2>
                     <p className="text-taxable-gray mb-8">The article you're looking for might have been moved or removed.</p>
-                    <Link href="/educational-resources" className="inline-flex items-center gap-2 px-6 py-3 bg-taxable-blue text-white rounded-xl font-bold transition-transform hover:scale-105">
+                    <Link href="/educational-resources" className="inline-flex items-center gap-2 px-6 py-3 bg-taxable-blue text-white rounded-xl font-semibold">
                         <MoveLeft size={20} />
                         Back to Resources
                     </Link>
@@ -130,36 +130,36 @@ export default function BlogDetail() {
                     <div className="w-8 h-8 rounded-full bg-neutral-50 flex items-center justify-center group-hover:bg-neutral-100 transition-colors">
                         <MoveLeft size={16} />
                     </div>
-                    <span className="text-sm font-bold">Back to resources</span>
+                    <span className="text-2 font-semibold">Back to resources</span>
                 </Link>
 
                 {/* Meta & Title */}
                 <div className="mb-10">
                     <div className="flex items-center gap-3 mb-6">
-                        <span className="px-3 py-1 bg-blue-50 text-taxable-blue text-1 font-bold rounded-full uppercase tracking-wider">
+                        <span className="px-3 py-1 bg-blue-50 text-taxable-blue text-1 font-semibold rounded-full uppercase tracking-wider">
                             {blog.category || 'Tax Guide'}
                         </span>
-                        <div className="flex items-center gap-2 text-neutral-400 text-sm font-medium border-l border-neutral-200 pl-3">
+                        <div className="flex items-center gap-2 text-neutral-400 text-2 font-medium border-l border-neutral-200 pl-3">
                             <Calendar size={14} />
                             {formatDate(blog.updatedAt)}
                         </div>
                     </div>
-                    <h1 className="text-[32px] md:text-[44px] font-extrabold text-taxable-dark leading-[1.15] mb-8">
+                    <h1 className="text-10 md:text-12 font-extrabold text-taxable-dark leading-[1.15] mb-8">
                         {blog.title}
                     </h1>
 
                     {/* Author & Share */}
                     <div className="flex items-center justify-between py-6 border-y border-neutral-50 mb-10">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-taxable-blue/10 flex items-center justify-center text-taxable-blue font-bold">
+                            <div className="w-10 h-10 rounded-full bg-taxable-blue/10 flex items-center justify-center text-taxable-blue font-semibold">
                                 {blog.author?.fullName.charAt(0) || 'T'}
                             </div>
                             <div>
-                                <p className="text-sm font-bold text-taxable-dark">{blog.author?.fullName || 'Taxable Team'}</p>
+                                <p className="text-2 font-semibold text-taxable-dark">{blog.author?.fullName || 'Taxable Team'}</p>
                                 <p className="text-1 text-taxable-gray font-medium">{blog.author?.role || 'Tax Expert'}</p>
                             </div>
                         </div>
-                        <button className="w-10 h-10 rounded-full border border-neutral-100 flex items-center justify-center text-taxable-gray hover:text-taxable-blue hover:border-taxable-blue transition-all">
+                        <button className="w-10 h-10 rounded-full border border-neutral-100 flex items-center justify-center text-taxable-gray">
                             <Share2 size={18} />
                         </button>
                     </div>
@@ -179,7 +179,7 @@ export default function BlogDetail() {
                 )}
 
                 {/* Content */}
-                <article className="prose prose-lg max-w-none prose-headings:text-taxable-dark prose-headings:font-bold prose-p:text-taxable-gray prose-p:leading-relaxed prose-a:text-taxable-blue prose-strong:text-taxable-dark">
+                <article className="prose prose-lg max-w-none prose-headings:text-taxable-dark prose-headings:font-semibold prose-p:text-taxable-gray prose-p:leading-relaxed prose-a:text-taxable-blue prose-strong:text-taxable-dark">
                     <ReactMarkdown>{blog.content}</ReactMarkdown>
                 </article>
 
@@ -192,12 +192,12 @@ export default function BlogDetail() {
                 >
                     <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
                         <div className="max-w-[440px]">
-                            <h3 className="text-2xl md:text-3xl font-bold mb-3">
+                            <h3 className="text-2xl md:text-3xl font-semibold mb-3">
                                 {blog.buttonType === 'consultation'
                                     ? "Need professional tax advice?"
                                     : "Take control of your taxes today"}
                             </h3>
-                            <p className="text-neutral-400 text-[16px] md:text-[18px] leading-relaxed">
+                            <p className="text-neutral-400 text-4 md:text-5 leading-relaxed">
                                 {blog.buttonType === 'consultation'
                                     ? "Our expert accountants are ready to help you navigate complex Nigerian tax laws."
                                     : "Join thousands of Nigerians using Taxable to simplify their tax compliance."}
@@ -205,12 +205,12 @@ export default function BlogDetail() {
                         </div>
 
                         {blog.buttonType === 'consultation' ? (
-                            <button className="h-[56px] px-8 bg-white text-taxable-dark font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-neutral-100 transition-all shrink-0">
+                            <button className="h-[56px] px-8 bg-white text-taxable-dark font-semibold rounded-2xl flex items-center justify-center gap-2 shrink-0">
                                 <MessageSquare size={20} />
                                 Book a consultation
                             </button>
                         ) : (
-                            <Link href="/signup" className="h-[56px] px-8 bg-taxable-blue text-white font-bold rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 transition-all shrink-0">
+                            <Link href="/signup" className="h-[56px] px-8 bg-taxable-blue text-white font-semibold rounded-2xl flex items-center justify-center gap-2 shrink-0">
                                 Get started
                                 <ArrowRight size={20} />
                             </Link>

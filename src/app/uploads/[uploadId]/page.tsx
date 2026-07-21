@@ -392,7 +392,7 @@ export default function UploadPage({ params }: PageProps) {
                   Secure upload powered by <span className="text-taxable-blue">Taxable</span>
                 </p>
 
-                <h1 className="text-[22px] font-bold text-taxable-dark leading-snug mb-2">
+                <h1 className="text-7 font-semibold text-taxable-dark leading-snug mb-2">
                   {title}
                 </h1>
                 <p className="text-2 text-taxable-gray font-medium leading-relaxed">
@@ -464,7 +464,7 @@ export default function UploadPage({ params }: PageProps) {
                 height={24}
                 className="rounded-full shrink-0"
               />
-              <span className="text-[14px] font-semibold text-taxable-dark">Taxable</span>
+              <span className="text-3 font-semibold text-taxable-dark">Taxable</span>
             </div>
           )}
 
@@ -492,11 +492,11 @@ export default function UploadPage({ params }: PageProps) {
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-xl bg-taxable-blue px-4 text-[14px] font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+                className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-xl bg-taxable-blue px-4 text-3 font-semibold text-white shadow-sm"
               >
                 Link documents
               </button>
-              <p className="mt-3 text-center text-[11px] text-taxable-gray leading-relaxed">
+              <p className="mt-3 text-center text-1 text-taxable-gray leading-relaxed">
                 By continuing, you agree that Taxable may securely store and process your
                 documents for the purpose of preparing your tax report. You can request deletion
                 of your files at any time.
@@ -519,7 +519,7 @@ export default function UploadPage({ params }: PageProps) {
                   Back
                 </button>
               </div>
-              <h2 className="text-[18px] font-bold text-taxable-dark mb-1">
+              <h2 className="text-5 font-semibold text-taxable-dark mb-1">
                 Bank statements
               </h2>
               <p className="text-2 text-taxable-gray mb-4">
@@ -581,7 +581,7 @@ export default function UploadPage({ params }: PageProps) {
                                     />
                                   </span>
                                 ) : (
-                                  <span className="h-6 w-6 shrink-0 rounded-full bg-neutral-100 flex items-center justify-center text-[10px] font-semibold text-taxable-gray">
+                                  <span className="h-6 w-6 shrink-0 rounded-full bg-neutral-100 flex items-center justify-center text-1 font-semibold text-taxable-gray">
                                     {bank.name.charAt(0)}
                                   </span>
                                 )}
@@ -636,16 +636,16 @@ export default function UploadPage({ params }: PageProps) {
                                 </p>
                               </div>
                               {isUploadingThisBank ? (
-                                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">
+                                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-1 font-semibold text-blue-700">
                                   Uploading&hellip;
                                 </span>
                               ) : existingFiles.length > 0 ? (
-                                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-1 font-semibold text-emerald-700">
                                   {existingFiles.length} file
                                   {existingFiles.length > 1 ? 's' : ''} uploaded
                                 </span>
                               ) : (
-                                <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-semibold text-orange-700">
+                                <span className="rounded-full bg-orange-50 px-2 py-0.5 text-1 font-semibold text-orange-700">
                                   Upload required
                                 </span>
                               )}
@@ -655,14 +655,14 @@ export default function UploadPage({ params }: PageProps) {
                               <span className="text-1 font-semibold text-taxable-dark">
                                 Upload bank statement
                               </span>
-                              <span className="text-[11px] text-taxable-gray">
+                              <span className="text-1 text-taxable-gray">
                                 PDF or image files, up to 20MB each.
                               </span>
                               <input
                                 type="file"
                                 multiple
                                 accept={allowedFileTypes}
-                                className="mt-1 text-[11px]"
+                                className="mt-1 text-1"
                                 disabled={isUploadingThisBank}
                                 onChange={(event) =>
                                   handleUpload(event.target.files, 'bank_statement', {
@@ -730,7 +730,7 @@ export default function UploadPage({ params }: PageProps) {
                                         />
                                       </span>
                                     ) : (
-                                      <span className="h-6 w-6 shrink-0 rounded-full bg-neutral-100 flex items-center justify-center text-[10px] font-semibold text-taxable-gray">
+                                      <span className="h-6 w-6 shrink-0 rounded-full bg-neutral-100 flex items-center justify-center text-1 font-semibold text-taxable-gray">
                                         {bank.name.charAt(0)}
                                       </span>
                                     )}
@@ -777,7 +777,7 @@ export default function UploadPage({ params }: PageProps) {
                     type="button"
                     onClick={() => setStep(2)}
                     disabled={!step1CanProceed}
-                    className="flex-1 inline-flex h-11 items-center justify-center rounded-xl bg-taxable-blue px-4 text-[14px] font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 inline-flex h-11 items-center justify-center rounded-xl bg-taxable-blue px-4 text-3 font-semibold text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next
                   </button>
@@ -786,7 +786,7 @@ export default function UploadPage({ params }: PageProps) {
                     type="button"
                     onClick={() => setStep(3)}
                     disabled={!step1CanProceed}
-                    className="flex-1 inline-flex h-11 items-center justify-center rounded-xl bg-taxable-blue px-4 text-[14px] font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 inline-flex h-11 items-center justify-center rounded-xl bg-taxable-blue px-4 text-3 font-semibold text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Done
                   </button>
@@ -810,7 +810,7 @@ export default function UploadPage({ params }: PageProps) {
                   Back
                 </button>
               </div>
-              <h2 className="text-[18px] font-bold text-taxable-dark mb-1">
+              <h2 className="text-5 font-semibold text-taxable-dark mb-1">
                 Relief documents
               </h2>
               <p className="text-2 text-taxable-gray mb-4">
@@ -836,12 +836,12 @@ export default function UploadPage({ params }: PageProps) {
                               <p className="text-2 font-semibold text-taxable-dark">
                                 {relief.label}
                               </p>
-                              <p className="text-[11px] text-taxable-gray">
+                              <p className="text-1 text-taxable-gray">
                                 {formatAmount(relief.amount)} claimed
                               </p>
                             </div>
                             <span
-                              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0 ${
+                              className={`rounded-full px-2 py-0.5 text-1 font-semibold shrink-0 ${
                                 isUploadingThisRelief
                                   ? 'bg-blue-50 text-blue-700'
                                   : relief.hasSupportingDocument
@@ -858,7 +858,7 @@ export default function UploadPage({ params }: PageProps) {
                           </div>
 
                           {files.length > 0 && !isUploadingThisRelief && (
-                            <p className="mb-1 text-[11px] font-medium text-taxable-gray">
+                            <p className="mb-1 text-1 font-medium text-taxable-gray">
                               {files.length} file{files.length > 1 ? 's' : ''} uploaded
                             </p>
                           )}
@@ -867,7 +867,7 @@ export default function UploadPage({ params }: PageProps) {
                             <span className="text-1 font-semibold text-taxable-dark">
                               Upload supporting document
                             </span>
-                            <span className="text-[11px] text-taxable-gray">
+                            <span className="text-1 text-taxable-gray">
                               PDF or image files, up to 20MB each.
                             </span>
                             <input
@@ -875,7 +875,7 @@ export default function UploadPage({ params }: PageProps) {
                               type="file"
                               multiple
                               accept={allowedFileTypes}
-                              className="mt-1 text-[11px]"
+                              className="mt-1 text-1"
                               disabled={isUploadingThisRelief}
                               onChange={(event) =>
                                 handleUpload(event.target.files, 'relief', {
@@ -898,7 +898,7 @@ export default function UploadPage({ params }: PageProps) {
                 type="button"
                 onClick={() => setStep(3)}
                 disabled={!step2CanProceed}
-                className="mt-6 w-full inline-flex h-11 items-center justify-center rounded-xl bg-taxable-blue px-4 text-[14px] font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-6 w-full inline-flex h-11 items-center justify-center rounded-xl bg-taxable-blue px-4 text-3 font-semibold text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Done
               </button>
@@ -911,17 +911,17 @@ export default function UploadPage({ params }: PageProps) {
               <span className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 mb-4">
                 <CheckCircle2 className="h-10 w-10" strokeWidth={2} />
               </span>
-              <h2 className="text-[20px] font-bold text-taxable-dark mb-2">
+              <h2 className="text-6 font-semibold text-taxable-dark mb-2">
                 Data collected
               </h2>
-              <p className="text-[14px] text-taxable-gray font-medium leading-relaxed max-w-[280px] mb-6">
+              <p className="text-3 text-taxable-gray font-medium leading-relaxed max-w-[280px] mb-6">
                 Your documents have been received. We&apos;ll use them to prepare your tax report. You can close this page.
               </p>
               <a
                 href="https://gettaxable.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-11 items-center justify-center rounded-xl bg-taxable-blue px-5 text-[14px] font-semibold text-white hover:opacity-90 transition-opacity"
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-taxable-blue px-5 text-3 font-semibold text-white"
               >
                 Go to gettaxable.com
               </a>
@@ -931,10 +931,10 @@ export default function UploadPage({ params }: PageProps) {
           {(step === 1 || step === 2) && (uploadMessage || uploadingFileId) && (
             <div className="mt-3 text-center">
               {uploadMessage && (
-                <p className="text-[11px] font-medium text-taxable-gray">{uploadMessage}</p>
+                <p className="text-1 font-medium text-taxable-gray">{uploadMessage}</p>
               )}
               {uploadingFileId && (
-                <p className="mt-0.5 text-[11px] text-taxable-gray">
+                <p className="mt-0.5 text-1 text-taxable-gray">
                   Uploading file&hellip; please keep this page open.
                 </p>
               )}

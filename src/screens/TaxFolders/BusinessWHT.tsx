@@ -147,15 +147,15 @@ const PayeeCard = ({ d, onRemove, onEdit }: { d: WHTDeduction; onRemove: () => v
                 </div>
                 <div>
                     <p className="text-1 font-semibold text-neutral-400 mb-0.5">Gross</p>
-                    <p className="text-2 font-bold text-neutral-800">{fmt(gross)}</p>
+                    <p className="text-2 font-semibold text-neutral-800">{fmt(gross)}</p>
                 </div>
                 <div>
                     <p className="text-1 font-semibold text-neutral-400 mb-0.5">WHT</p>
-                    <p className="text-2 font-bold text-neutral-800">{fmt(wht)}</p>
+                    <p className="text-2 font-semibold text-neutral-800">{fmt(wht)}</p>
                 </div>
                 <div>
                     <p className="text-1 font-semibold text-neutral-400 mb-0.5">Net</p>
-                    <p className="text-2 font-bold text-neutral-800">{fmt(net)}</p>
+                    <p className="text-2 font-semibold text-neutral-800">{fmt(net)}</p>
                 </div>
                 <div>
                     <p className="text-1 font-semibold text-neutral-400 mb-0.5">Date</p>
@@ -467,7 +467,7 @@ const WHTRemittance = ({ profileId, taxYear }: { profileId: string; taxYear: str
                     <div className="bg-white rounded-2xl p-6 max-w-[400px] mx-4 w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
                         <div className="flex flex-col items-center text-center">
                             <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-red-600">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-destructive">
                                     <polyline points="3 6 5 6 21 6" />
                                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                                 </svg>
@@ -478,7 +478,7 @@ const WHTRemittance = ({ profileId, taxYear }: { profileId: string; taxYear: str
                             </p>
                             <div className="flex gap-3 w-full">
                                 <SecondaryButton className="flex-1" onClick={() => setPendingRemove(null)}>Cancel</SecondaryButton>
-                                <button onClick={handleConfirmRemove} className="flex-1 h-12 bg-red-600 text-white font-semibold rounded-xl text-3">
+                                <button onClick={handleConfirmRemove} className="flex-1 h-12 bg-destructive text-white font-semibold rounded-xl text-3">
                                     Remove
                                 </button>
                             </div>
@@ -525,7 +525,7 @@ const WHTRemittance = ({ profileId, taxYear }: { profileId: string; taxYear: str
                         <div className="flex gap-3">
                             {editId !== null && !isEditing ? (
                                 <>
-                                    <button onClick={() => setShowRemoveConfirm(true)} className="flex-1 h-12 border border-red-200 bg-red-50 text-red-600 font-semibold rounded-xl text-3">
+                                    <button onClick={() => setShowRemoveConfirm(true)} className="flex-1 h-12 border border-red-200 bg-red-50 text-destructive font-semibold rounded-xl text-3">
                                         Remove Deduction
                                     </button>
                                     <PrimaryButton className="flex-1" onClick={() => setIsEditing(true)}>
@@ -561,7 +561,7 @@ const WHTRemittance = ({ profileId, taxYear }: { profileId: string; taxYear: str
                             <div className="bg-white rounded-2xl p-6 max-w-[400px] mx-4 w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
                                 <div className="flex flex-col items-center text-center">
                                     <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-red-600">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-destructive">
                                             <polyline points="3 6 5 6 21 6" />
                                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                                         </svg>
@@ -572,7 +572,7 @@ const WHTRemittance = ({ profileId, taxYear }: { profileId: string; taxYear: str
                                     </p>
                                     <div className="flex gap-3 w-full">
                                         <SecondaryButton className="flex-1" onClick={() => setShowRemoveConfirm(false)}>Cancel</SecondaryButton>
-                                        <button onClick={handleRemoveFromDrawer} className="flex-1 h-12 bg-red-600 text-white font-semibold rounded-xl text-3">
+                                        <button onClick={handleRemoveFromDrawer} className="flex-1 h-12 bg-destructive text-white font-semibold rounded-xl text-3">
                                             Remove
                                         </button>
                                     </div>
@@ -901,7 +901,7 @@ const WHTCreditBalance = ({ profileId, taxYear }: { profileId: string; taxYear: 
                     <div className="bg-white rounded-2xl p-6 max-w-[400px] mx-4 w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
                         <div className="flex flex-col items-center text-center">
                             <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-red-600">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-destructive">
                                     <polyline points="3 6 5 6 21 6" />
                                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                                 </svg>
@@ -912,7 +912,7 @@ const WHTCreditBalance = ({ profileId, taxYear }: { profileId: string; taxYear: 
                             </p>
                             <div className="flex gap-3 w-full">
                                 <SecondaryButton className="flex-1" onClick={() => setPendingRemove(null)}>Cancel</SecondaryButton>
-                                <button onClick={handleConfirmRemove} className="flex-1 h-12 bg-red-600 text-white font-semibold rounded-xl text-3">
+                                <button onClick={handleConfirmRemove} className="flex-1 h-12 bg-destructive text-white font-semibold rounded-xl text-3">
                                     Remove
                                 </button>
                             </div>

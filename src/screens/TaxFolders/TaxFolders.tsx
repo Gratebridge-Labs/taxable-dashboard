@@ -58,7 +58,7 @@ const TaxFolderCard = ({ profile, taxAmount, description, status, statusText, is
             <div className="w-[322px] h-[323px] bg-white rounded-[34px] border border-neutral-100 p-6 transition-all flex flex-col shadow-none hover:shadow-none" style={{ boxShadow: 'none' }}>
                 <div className={`w-full h-[145px] rounded-3xl flex items-center justify-center mb-5 ${isInactive ? 'bg-neutral-100' : 'bg-taxable-light'}`}>
                     <Image
-                        src={isInactive ? "/icons/inactive_folder.svg" : "/icons/folder.svg"}
+                        src={isInactive ? "/icons/folder-inactive.svg" : "/icons/folder.svg"}
                         alt="folder"
                         width={60}
                         height={58}
@@ -67,8 +67,8 @@ const TaxFolderCard = ({ profile, taxAmount, description, status, statusText, is
                 </div>
 
                 <div className="flex-1 flex flex-col items-start text-left">
-                    <h3 className="text-5 font-bold text-taxable-dark mb-1.5">{title}</h3>
-                    <p className="text-sm font-semibold text-taxable-dark mb-1">{taxAmount || 'Calculating...'}</p>
+                    <h3 className="text-5 font-semibold text-taxable-dark mb-1.5">{title}</h3>
+                    <p className="text-2 font-semibold text-taxable-dark mb-1">{taxAmount || 'Calculating...'}</p>
                     <p className="text-2 text-taxable-gray font-medium leading-relaxed mb-4 truncate w-full">
                         {description || defaultDescription}
                     </p>
@@ -197,15 +197,15 @@ export default function TaxFolders() {
 
             <main className="max-w-[1280px] mx-auto px-12 py-12">
                 <div className="mb-14">
-                    <h1 className="text-[28px] font-semibold text-taxable-dark mb-2 tracking-tight">
+                    <h1 className="text-8 font-semibold text-taxable-dark mb-2 tracking-tight">
                         Hello, {userName}, Welcome back
                     </h1>
                     {hasProfiles ? (
-                        <p className="text-base text-taxable-gray font-medium">
+                        <p className="text-3 text-taxable-gray font-medium">
                             You have {currentYearProfiles.length} tax filing{currentYearProfiles.length !== 1 ? 's' : ''} ready for {new Date().getFullYear()}. Click any card to begin.
                         </p>
                     ) : (
-                        <p className="text-base text-taxable-gray font-medium">
+                        <p className="text-3 text-taxable-gray font-medium">
                             You don't have any tax filings yet. Create one to get started.
                         </p>
                     )}
@@ -220,8 +220,8 @@ export default function TaxFolders() {
                         {currentYearProfiles.length > 0 && (
                             <section className="mb-16">
                                 <div className="flex justify-between items-center mb-10">
-                                    <h2 className="text-2xl font-bold text-taxable-dark">{new Date().getFullYear()} Tax Filings</h2>
-                                    <button className="h-12 px-6 bg-taxable-blue hover:opacity-90 text-white font-semibold rounded-xl transition-all">
+                                    <h2 className="text-2xl font-semibold text-taxable-dark">{new Date().getFullYear()} Tax Filings</h2>
+                                    <button className="h-12 px-6 bg-taxable-blue text-white font-semibold rounded-xl">
                                         Create another tax filing
                                     </button>
                                 </div>
@@ -243,8 +243,8 @@ export default function TaxFolders() {
                         {previousYearProfiles.length > 0 && (
                             <section>
                                 <div className="flex justify-between items-center mb-10">
-                                    <h2 className="text-2xl font-bold text-taxable-dark">Previous Years</h2>
-                                    <button className="h-12 px-6 bg-white border border-neutral-200 hover:bg-neutral-50 text-taxable-dark font-semibold rounded-xl transition-all">
+                                    <h2 className="text-2xl font-semibold text-taxable-dark">Previous Years</h2>
+                                    <button className="h-12 px-6 bg-white border border-neutral-200 text-taxable-dark font-semibold rounded-xl">
                                         Add another tax type
                                     </button>
                                 </div>
@@ -272,7 +272,7 @@ export default function TaxFolders() {
                         <h3 className="text-xl font-semibold text-taxable-dark mb-2">No Tax Filings Yet</h3>
                         <p className="text-taxable-gray mb-6">Create your first tax filing to get started</p>
                         <Link href="/onboarding/step1">
-                            <button className="h-12 px-6 bg-taxable-blue hover:opacity-90 text-white font-semibold rounded-xl transition-all">
+                            <button className="h-12 px-6 bg-taxable-blue text-white font-semibold rounded-xl">
                                 Create Tax Filing
                             </button>
                         </Link>

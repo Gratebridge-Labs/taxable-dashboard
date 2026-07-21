@@ -224,7 +224,7 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
                         <div className="flex gap-3 mt-8">
                             {isViewMode && !isEditing && (
                                 <>
-                                    <button onClick={() => setShowRemoveConfirm(true)} className="flex-1 h-12 border border-red-200 bg-red-50 text-red-600 font-semibold rounded-xl text-3">
+                                    <button onClick={() => setShowRemoveConfirm(true)} className="flex-1 h-12 border border-red-200 bg-red-50 text-destructive font-semibold rounded-xl text-3">
                                         Remove Staff
                                     </button>
                                     <PrimaryButton onClick={handleEditClick} className="flex-1">
@@ -262,7 +262,7 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
                         <div className="bg-white rounded-2xl p-6 max-w-[400px] mx-4 w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
                             <div className="flex flex-col items-center text-center">
                                 <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-red-600">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-destructive">
                                         <polyline points="3 6 5 6 21 6" />
                                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                                     </svg>
@@ -275,7 +275,7 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
                                     <SecondaryButton className="flex-1" onClick={() => setShowRemoveConfirm(false)}>
                                         Cancel
                                     </SecondaryButton>
-                                    <button onClick={handleRemove} className="flex-1 h-12 bg-red-600 text-white font-semibold rounded-xl text-3">
+                                    <button onClick={handleRemove} className="flex-1 h-12 bg-destructive text-white font-semibold rounded-xl text-3">
                                         Remove
                                     </button>
                                 </div>

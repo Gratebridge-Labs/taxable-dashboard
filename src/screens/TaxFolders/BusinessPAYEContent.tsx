@@ -23,10 +23,10 @@ const HintIcon = ({ tip }: { tip: string }) => (
 // ── PAYE Calculation (2026 Nigeria Tax Act) ─────────────────────────
 const PAYE_BANDS = [
     { limit: 800000, rate: 0 },
-    { limit: 2200000, rate: 0.15 },
-    { limit: 9000000, rate: 0.18 },
-    { limit: 13000000, rate: 0.21 },
-    { limit: 25000000, rate: 0.23 },
+    { limit: 3000000, rate: 0.15 },
+    { limit: 12000000, rate: 0.18 },
+    { limit: 25000000, rate: 0.21 },
+    { limit: 50000000, rate: 0.23 },
     { limit: Infinity, rate: 0.25 },
 ];
 

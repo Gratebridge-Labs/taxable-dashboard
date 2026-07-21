@@ -76,7 +76,7 @@ export default function CreateNewPassword() {
                         </div>
 
                         {apiError && (
-                            <p data-animate className="text-2 text-red-500 font-medium">{apiError}</p>
+                            <p data-animate className="text-2 text-destructive font-medium">{apiError}</p>
                         )}
 
                         <div data-animate>

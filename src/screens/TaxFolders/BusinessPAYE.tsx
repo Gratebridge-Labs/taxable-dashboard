@@ -25,12 +25,14 @@ const INITIAL_STAFF = [
 
 type Staff = typeof INITIAL_STAFF[number];
 
-// ── PAYE Calculation ──────────────────────────────────────────────────────────
+// ── PAYE Calculation (2026 Nigeria Tax Act) ─────────────────────────
 const PAYE_BANDS = [
     { limit: 800_000, rate: 0.00 },
-    { limit: 2_200_000, rate: 0.07 },
-    { limit: 9_000_000, rate: 0.11 },
-    { limit: Infinity, rate: 0.15 },
+    { limit: 3_000_000, rate: 0.15 },
+    { limit: 12_000_000, rate: 0.18 },
+    { limit: 25_000_000, rate: 0.21 },
+    { limit: 50_000_000, rate: 0.23 },
+    { limit: Infinity, rate: 0.25 },
 ];
 
 function calcMonthlyPAYE(annualGross: number, pensionOn: boolean, nhfOn: boolean): number {
@@ -70,7 +72,7 @@ const AddStaffModal = ({ onClose, onAdd }: { onClose: () => void; onAdd: (s: Sta
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-white rounded-2xl w-full max-w-[480px] p-7 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-                <h3 className="text-3 font-bold text-neutral-800 mb-5">Add staff member</h3>
+                <h3 className="text-3 font-semibold text-neutral-800 mb-5">Add staff member</h3>
                 <div className="grid grid-cols-2 gap-4 mb-5">
                     {([
                         ['name', 'Full name'], ['email', 'Email'], ['phone', 'Phone'], ['position', 'Job position'],
@@ -119,7 +121,7 @@ const FilingModal = ({
                             <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
                         </svg>
                     </button>
-                    <h3 className="text-3 font-bold text-neutral-800">How do you want to file?</h3>
+                    <h3 className="text-3 font-semibold text-neutral-800">How do you want to file?</h3>
                 </div>
 
                 {/* Options */}
@@ -270,18 +272,18 @@ export default function BusinessPAYE() {
 
                 {/* Page title + tab toggle */}
                 <div className="flex items-center justify-between mb-6">
-                    <h1 className="text-7 font-bold text-neutral-800">Pay As You Earn (PAYE)</h1>
+                    <h1 className="text-7 font-semibold text-neutral-800">Pay As You Earn (PAYE)</h1>
                     {step === 'table' && (
                         <div className="flex items-center border border-neutral-200 rounded-xl overflow-hidden bg-white">
                             <button
                                 onClick={() => { setView('monthly'); setStep('method'); }}
-                                className={`px-4 py-2 text-3 font-bold transition-colors ${view === 'monthly' ? 'bg-neutral-800 text-white' : 'text-neutral-500 '}`}
+                                className={`px-4 py-2 text-3 font-semibold transition-colors ${view === 'monthly' ? 'bg-neutral-800 text-white' : 'text-neutral-500 '}`}
                             >
                                 Monthly Filing
                             </button>
                             <button
                                 onClick={() => setView('annual')}
-                                className={`px-4 py-2 text-3 font-bold transition-colors ${view === 'annual' ? 'bg-neutral-800 text-white' : 'text-neutral-500 '}`}
+                                className={`px-4 py-2 text-3 font-semibold transition-colors ${view === 'annual' ? 'bg-neutral-800 text-white' : 'text-neutral-500 '}`}
                             >
                                 Annual Returns
                             </button>
@@ -292,7 +294,7 @@ export default function BusinessPAYE() {
                 {/* ── Step: Method selection ── */}
                 {view === 'monthly' && step === 'method' && (
                     <div data-animate className="max-w-[480px] mx-auto">
-                        <h2 className="text-6 font-bold text-neutral-800 mb-1">How do you want to add payroll data?</h2>
+                        <h2 className="text-6 font-semibold text-neutral-800 mb-1">How do you want to add payroll data?</h2>
                         <p className="text-3 text-neutral-500 font-medium mb-6">Upload or enter your payroll for this month</p>
 
                         <RadioGroup value={entryMethod} onValueChange={(v) => setEntryMethod(v as 'manual' | 'csv' | 'software')} className="space-y-0 mb-8">
@@ -347,7 +349,7 @@ export default function BusinessPAYE() {
 
                         {/* Table header */}
                         <div className="flex items-center justify-between mb-3">
-                            <h2 className="text-3 font-bold text-neutral-800">
+                            <h2 className="text-3 font-semibold text-neutral-800">
                                 Staff Payroll ({MONTHS[activeMonth]} 2026)
                             </h2>
                             <div className="flex items-center gap-2">
@@ -376,10 +378,10 @@ export default function BusinessPAYE() {
                                     <thead className="bg-neutral-100 border-b border-neutral-100">
                                         <tr>
                                             {['Surname', 'Email Address', 'Phone number', 'Job position', 'Nationality', 'JRB Tax ID', 'Gross income'].map(col => (
-                                                <th key={col} className="px-4 py-3 font-bold text-neutral-500 whitespace-nowrap">{col}</th>
+                                                <th key={col} className="px-4 py-3 font-semibold text-neutral-500 whitespace-nowrap">{col}</th>
                                             ))}
                                             {/* Pension checkbox header */}
-                                            <th className="px-4 py-3 font-bold text-neutral-500 whitespace-nowrap">
+                                            <th className="px-4 py-3 font-semibold text-neutral-500 whitespace-nowrap">
                                                 <div className="flex items-center gap-1.5">
                                                     <div className="w-3.5 h-3.5 rounded border-2 border-taxable-blue bg-taxable-blue flex items-center justify-center flex-shrink-0">
                                                         <svg width="8" height="8" viewBox="0 0 12 12" fill="none">
@@ -390,13 +392,13 @@ export default function BusinessPAYE() {
                                                 </div>
                                             </th>
                                             {/* NHF checkbox header */}
-                                            <th className="px-4 py-3 font-bold text-neutral-500 whitespace-nowrap">
+                                            <th className="px-4 py-3 font-semibold text-neutral-500 whitespace-nowrap">
                                                 <div className="flex items-center gap-1.5">
                                                     <div className="w-3.5 h-3.5 rounded border-2 border-neutral-300 bg-white flex-shrink-0" />
                                                     NHF (2.5%)
                                                 </div>
                                             </th>
-                                            <th className="px-4 py-3 font-bold text-neutral-500 whitespace-nowrap">Chargeable income</th>
+                                            <th className="px-4 py-3 font-semibold text-neutral-500 whitespace-nowrap">Chargeable income</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-neutral-50">
@@ -412,7 +414,7 @@ export default function BusinessPAYE() {
                                                     <td className="px-4 py-3 text-neutral-500 whitespace-nowrap">{emp.position}</td>
                                                     <td className="px-4 py-3 text-neutral-500 whitespace-nowrap">{emp.nationality}</td>
                                                     <td className="px-4 py-3 text-neutral-500 whitespace-nowrap">{emp.taxId}</td>
-                                                    <td className="px-4 py-3 font-bold text-neutral-800 whitespace-nowrap">{fmtN(emp.gross)}</td>
+                                                    <td className="px-4 py-3 font-semibold text-neutral-800 whitespace-nowrap">{fmtN(emp.gross)}</td>
                                                     {/* Pension */}
                                                     <td className="px-4 py-3 whitespace-nowrap">
                                                         <div className="flex items-center gap-2">
@@ -474,7 +476,7 @@ export default function BusinessPAYE() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-2 font-semibold text-neutral-500 mb-0.5">Total PAYE due this month</p>
-                                <p className="text-7 font-bold text-neutral-800">{fmtN(totalPAYE)}</p>
+                                <p className="text-7 font-semibold text-neutral-800">{fmtN(totalPAYE)}</p>
                             </div>
                             <button
                                 onClick={() => setShowFilingModal(true)}
@@ -510,7 +512,7 @@ export default function BusinessPAYE() {
                     return (
                         <div data-animate className="max-w-[680px] mx-auto">
                             {/* Title */}
-                            <h2 className="text-6 font-bold text-neutral-800 mb-1">PAYE · Annual Returns (2026)</h2>
+                            <h2 className="text-6 font-semibold text-neutral-800 mb-1">PAYE · Annual Returns (2026)</h2>
                             <p className="text-3 text-neutral-500 font-medium mb-6">Your annual PAYE reconciliation is ready</p>
 
                             {/* Summary bullets */}
@@ -543,7 +545,7 @@ export default function BusinessPAYE() {
                             {/* Payer ID */}
                             <div className="mb-6">
                                 <div className="flex items-center gap-1.5 mb-1.5">
-                                    <label className="text-3 font-bold text-neutral-800">Payer ID</label>
+                                    <label className="text-3 font-semibold text-neutral-800">Payer ID</label>
                                     <div className="relative group">
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-400" strokeWidth="2">
                                             <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
@@ -565,7 +567,7 @@ export default function BusinessPAYE() {
                                     </svg>
                                     <p className="text-2 text-neutral-400 font-medium">
                                         Don't have an IRS ID?{' '}
-                                        <a href="#" className="text-taxable-blue font-bold hover:underline">Apply here</a>
+                                        <a href="#" className="text-taxable-blue font-semibold hover:underline">Apply here</a>
                                     </p>
                                 </div>
                             </div>
@@ -583,7 +585,7 @@ export default function BusinessPAYE() {
                             {/* View Breakdown toggle */}
                             <button
                                 onClick={() => setShowBreakdown(s => !s)}
-                                className="flex items-center gap-1.5 text-3 font-bold text-taxable-blue mb-4"
+                                className="flex items-center gap-1.5 text-3 font-semibold text-taxable-blue mb-4"
                             >
                                 View Breakdown
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"
@@ -600,7 +602,7 @@ export default function BusinessPAYE() {
                                             <button
                                                 key={tab}
                                                 onClick={() => setBreakdownTab(tab)}
-                                                className={`flex-1 py-3.5 text-3 font-bold transition-colors border-b-2 ${breakdownTab === tab
+                                                className={`flex-1 py-3.5 text-3 font-semibold transition-colors border-b-2 ${breakdownTab === tab
                                                     ? 'border-taxable-blue text-taxable-blue'
                                                     : 'border-transparent text-neutral-400'
                                                     }`}
@@ -617,7 +619,7 @@ export default function BusinessPAYE() {
                                                 <thead className="bg-neutral-100 border-b border-neutral-100">
                                                     <tr>
                                                         {['Month', 'Gross Payroll', 'PAYE Due', 'Date Filed', 'Status'].map(h => (
-                                                            <th key={h} className="px-5 py-3 font-bold text-neutral-500">{h}</th>
+                                                            <th key={h} className="px-5 py-3 font-semibold text-neutral-500">{h}</th>
                                                         ))}
                                                     </tr>
                                                 </thead>
@@ -629,7 +631,7 @@ export default function BusinessPAYE() {
                                                             <td className="px-5 py-3 text-neutral-800 font-medium">{fmtN(monthlyPAYE)}</td>
                                                             <td className="px-5 py-3 text-neutral-500">{FILED_DATES[i]}</td>
                                                             <td className="px-5 py-3">
-                                                                <span className="flex items-center gap-1 text-green-600 font-bold">
+                                                                <span className="flex items-center gap-1 text-green-600 font-semibold">
                                                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                                                         <polyline points="20 6 9 17 4 12" />
                                                                     </svg>
@@ -645,14 +647,14 @@ export default function BusinessPAYE() {
                                                 <div className="flex gap-8">
                                                     <div>
                                                         <p className="text-1 font-semibold text-neutral-500 mb-0.5">Total Gross</p>
-                                                        <p className="text-5 font-bold text-neutral-800">{fmtN(totalGrossPayroll)}</p>
+                                                        <p className="text-5 font-semibold text-neutral-800">{fmtN(totalGrossPayroll)}</p>
                                                     </div>
                                                     <div>
                                                         <p className="text-1 font-semibold text-neutral-500 mb-0.5">PAYE Remitted</p>
-                                                        <p className="text-5 font-bold text-neutral-800">{fmtN(totalAnnualPAYE)}</p>
+                                                        <p className="text-5 font-semibold text-neutral-800">{fmtN(totalAnnualPAYE)}</p>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-4 text-2 font-bold text-green-600">
+                                                <div className="flex items-center gap-4 text-2 font-semibold text-green-600">
                                                     <span className="flex items-center gap-1">
                                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                                             <polyline points="20 6 9 17 4 12" />
@@ -681,7 +683,7 @@ export default function BusinessPAYE() {
                                                 <thead className="border-b border-neutral-100">
                                                     <tr>
                                                         {['Employee Name', 'Chargeable Income', 'Levy'].map(h => (
-                                                            <th key={h} className="pb-2 font-bold text-neutral-500">{h}</th>
+                                                            <th key={h} className="pb-2 font-semibold text-neutral-500">{h}</th>
                                                         ))}
                                                     </tr>
                                                 </thead>
@@ -690,14 +692,14 @@ export default function BusinessPAYE() {
                                                         <tr key={i} className="">
                                                             <td className="py-3 font-semibold text-neutral-800">{e.name}</td>
                                                             <td className="py-3 text-neutral-800 font-medium">{fmtN(e.chargeable)}</td>
-                                                            <td className="py-3 font-bold text-neutral-800">{fmtN(e.levy)}</td>
+                                                            <td className="py-3 font-semibold text-neutral-800">{fmtN(e.levy)}</td>
                                                         </tr>
                                                     ))}
                                                 </tbody>
                                             </table>
                                             <div className="border-t border-neutral-100 pt-4">
                                                 <p className="text-2 font-semibold text-neutral-500 mb-1">Total Levy</p>
-                                                <p className="text-7 font-bold text-neutral-800">{fmtN(totalLevy)}</p>
+                                                <p className="text-7 font-semibold text-neutral-800">{fmtN(totalLevy)}</p>
                                             </div>
                                         </div>
                                     )}

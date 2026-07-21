@@ -56,7 +56,7 @@ export default function Verify2FA() {
                 <div className="flex-1 flex flex-col justify-center relative">
                     <div ref={formRef} className="max-w-[420px] w-full mx-auto">
                         <div className="mb-10">
-                            <h2 data-animate className="text-7 font-bold text-taxable-dark mb-1 tracking-[-0.02em]">Two-Factor Authentication</h2>
+                            <h2 data-animate className="text-7 font-semibold text-taxable-dark mb-1 tracking-[-0.02em]">Two-Factor Authentication</h2>
                             <p data-animate className="text-neutral-400 text-2 leading-relaxed font-medium tracking-[-0.01em]">
                                 Please enter the 6-digit code from your authenticator app to secure your account.
                             </p>
@@ -76,13 +76,13 @@ export default function Verify2FA() {
                             <button
                                 type="submit"
                                 disabled={otp.some(d => !d)}
-                                className="btn-auth w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400 text-3 flex items-center justify-center gap-2"
+                                className="w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400 text-3 flex items-center justify-center gap-2"
                             >
                                 {isLoading ? <Spinner /> : "Verify & Sign In"}
                             </button>
 
                             <div className="text-center text-2">
-                                <Link href="/signin" className="text-neutral-800 font-bold">
+                                <Link href="/signin" className="text-neutral-800 font-semibold">
                                     Back to Login
                                 </Link>
                             </div>

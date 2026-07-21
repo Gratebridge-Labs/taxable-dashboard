@@ -89,7 +89,7 @@ export default function SignIn() {
                         </div>
 
                         {apiError && (
-                            <div data-animate className="text-2 text-red-500 font-medium">
+                            <div data-animate className="text-2 text-destructive font-medium">
                                 {apiError}
                             </div>
                         )}

@@ -42,7 +42,7 @@ export const PITModals = ({
                                 <h3 className="text-3 font-extrabold text-neutral-800">
                                     Switch to {pendingPeriodMode === 'monthly' ? 'Monthly' : 'Annual'} filing?
                                 </h3>
-                                <p className="mt-1 text-2 font-medium text-slate-500">
+                                <p className="mt-1 text-2 font-medium text-neutral-500">
                                     This will update your tax profile and change how you enter income/deductions and how tax is calculated.
                                 </p>
                             </div>
@@ -53,7 +53,7 @@ export const PITModals = ({
                                     setConfirmFilingPrefOpen(false);
                                     setPendingPeriodMode(null);
                                 }}
-                                className="text-slate-400 hover:text-neutral-800"
+                                className="text-neutral-400 hover:text-neutral-800"
                                 aria-label="Close"
                             >
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -96,7 +96,7 @@ export const PITModals = ({
                         <div className="flex items-start justify-between gap-4">
                             <div>
                                 <h3 className="text-3 font-extrabold text-neutral-800">I need help</h3>
-                                <p className="mt-1 text-2 font-medium text-slate-500">
+                                <p className="mt-1 text-2 font-medium text-neutral-500">
                                     If you’re unsure about your income, deductions, or payment data, you can book a Tax Agent to review your return for you.
                                 </p>
                             </div>
@@ -106,7 +106,7 @@ export const PITModals = ({
                                     if (bookingTaxAgent) return;
                                     setHelpModalOpen(false);
                                 }}
-                                className="text-slate-400 hover:text-neutral-800"
+                                className="text-neutral-400 hover:text-neutral-800"
                                 aria-label="Close"
                             >
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -119,7 +119,7 @@ export const PITModals = ({
                         <div className="mt-4 rounded-xl border border-neutral-100 bg-taxable-light px-3 py-3">
                             <p className="text-1 font-semibold text-neutral-800">Cost</p>
                             <p className="mt-0.5 text-2 font-extrabold text-neutral-800">₦30,000</p>
-                            <p className="mt-1 text-1 font-medium text-slate-500">
+                            <p className="mt-1 text-1 font-medium text-neutral-500">
                                 You’ll be redirected to Paystack to complete payment.
                             </p>
                         </div>

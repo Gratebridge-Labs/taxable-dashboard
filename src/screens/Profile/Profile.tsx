@@ -421,7 +421,7 @@ export default function Profile() {
                                     </div>
 
                                     {apiError && (
-                                        <div className="text-2 text-red-500 font-medium bg-red-50 p-3 rounded-xl">{apiError}</div>
+                                        <div className="text-2 text-destructive font-medium bg-red-50 p-3 rounded-xl">{apiError}</div>
                                     )}
 
                                     {successMessage && (

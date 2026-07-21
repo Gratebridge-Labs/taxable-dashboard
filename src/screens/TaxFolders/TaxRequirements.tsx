@@ -17,7 +17,7 @@ const TaxCard = ({ title, description, badge = "Not started", buttonLabel = "Sta
         </div>
 
         <h3 className="text-xl font-semibold text-taxable-dark mb-2.5">{title}</h3>
-        <p className="text-base text-taxable-gray font-medium leading-relaxed mb-6">
+        <p className="text-3 text-taxable-gray font-medium leading-relaxed mb-6">
             {description}
         </p>
 

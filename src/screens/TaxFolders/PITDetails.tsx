@@ -7,7 +7,7 @@ import Lenis from 'lenis';
 import gsap from 'gsap';
 import { Home2Fill } from '@mingcute/react';
 import { useUser } from '@/contexts/UserContext';
-import { useToast } from '@/components/Toast/ToastProvider';
+import { toast } from 'sonner';
 import { useTaxableApi } from '@/hooks/useTaxableApi';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PrimaryButton, SecondaryButton, FormFieldRow, FormLabel, FilingSheet } from '@/screens/TaxFolders/TaxFolderShared';
@@ -91,7 +91,6 @@ export default function PITDetails() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { loading: authLoading, isAuthenticated } = useUser();
-    const toast = useToast();
     const api = useTaxableApi();
     const profileId = searchParams?.get('id') || '';
 
@@ -374,7 +373,7 @@ export default function PITDetails() {
         { limit: 2200000, rate: 0.15 },
         { limit: 9000000, rate: 0.18 },
         { limit: 13000000, rate: 0.21 },
-        { limit: 25000000, rate: 0.25 },
+        { limit: 25000000, rate: 0.23 },
         { limit: Infinity, rate: 0.25 },
     ];
 
@@ -843,10 +842,9 @@ export default function PITDetails() {
         } finally {
             setSavingPersonalInfo(false);
         }
-    }, [profileId, personalInfo, currentProfile, api, toast]);
+    }, [profileId, personalInfo, currentProfile, api]);
 
-    const _handleIncomeSaved = useCallback((monthNum: number) => {
-        console.log(`📥 Income saved for month ${monthNum}`);
+    const _handleIncomeSaved = useCallback((_monthNum: number) => {
     }, []);
 
     const personalInfoComplete = !!(

@@ -3,12 +3,14 @@ import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
 
-// Actually use Old rates which match the screenshot better
+// 2026 Nigeria Tax Act PAYE bands
 const PAYE_BANDS = [
     { limit: 800_000, rate: 0.00 },
-    { limit: 2_200_000, rate: 0.07 },
-    { limit: 9_000_000, rate: 0.11 },
-    { limit: Infinity, rate: 0.15 },
+    { limit: 3_000_000, rate: 0.15 },
+    { limit: 12_000_000, rate: 0.18 },
+    { limit: 25_000_000, rate: 0.21 },
+    { limit: 50_000_000, rate: 0.23 },
+    { limit: Infinity, rate: 0.25 },
 ];
 
 function calcPAYE(annualTaxable: number): {
@@ -92,7 +94,7 @@ const DeductionRow = ({
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-400" strokeWidth="2">
                         <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
                     </svg>
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-neutral-800 text-white text-[11px] rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-neutral-800 text-white text-1 rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
                         {hint}
                     </div>
                 </div>
@@ -102,7 +104,7 @@ const DeductionRow = ({
         {/* Amount */}
         <div className={`w-40 flex-shrink-0 border rounded-lg px-3 py-2 flex items-center gap-2 ${checked ? 'border-neutral-200 bg-white' : 'border-neutral-100 bg-neutral-50'
             }`}>
-            <span className="text-2 font-bold text-neutral-800 flex-shrink-0">₦</span>
+            <span className="text-2 font-semibold text-neutral-800 flex-shrink-0">₦</span>
             <input
                 type="text"
                 value={checked ? amount : ''}
@@ -112,7 +114,7 @@ const DeductionRow = ({
                     const raw = e.target.value.replace(/[^0-9.]/g, '');
                     onAmountChange(raw);
                 }}
-                className={`flex-1 w-0 min-w-0 text-2 font-bold bg-transparent border-none outline-none placeholder:text-neutral-300 ${(!checked || autoCalc) ? 'opacity-60 cursor-not-allowed' : ''
+                className={`flex-1 w-0 min-w-0 text-2 font-semibold bg-transparent border-none outline-none placeholder:text-neutral-300 ${(!checked || autoCalc) ? 'opacity-60 cursor-not-allowed' : ''
                     }`}
             />
             {suffix && checked && (
@@ -169,7 +171,7 @@ export default function PAYECalculator() {
                 <div className="flex items-center gap-3 mb-8">
                     <button
                         onClick={() => router.back()}
-                        className="flex items-center gap-1.5 text-2 font-bold text-neutral-800  transition-colors"
+                        className="flex items-center gap-1.5 text-2 font-semibold text-neutral-800  transition-colors"
                     >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                             <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
@@ -185,30 +187,30 @@ export default function PAYECalculator() {
 
                 {/* Title */}
                 <div className="mb-8">
-                    <h1 className="text-[28px] font-bold text-neutral-800 mb-1">PAYE Calculator</h1>
-                    <p className="text-[14px] text-neutral-400 font-medium">
+                    <h1 className="text-8 font-semibold text-neutral-800 mb-1">PAYE Calculator</h1>
+                    <p className="text-3 text-neutral-400 font-medium">
                         Estimate how much income tax your employer should deduct from your salary each month.
                     </p>
                 </div>
 
                 {/* Salary section */}
                 <div className="mb-6">
-                    <h2 className="text-[16px] font-bold text-neutral-800 mb-3">Your Salary</h2>
+                    <h2 className="text-4 font-semibold text-neutral-800 mb-3">Your Salary</h2>
                     <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden">
                         {/* Gross salary */}
                         <div className="px-5 py-4">
                             <p className="text-1 font-semibold text-neutral-500 mb-2">What's your monthly gross salary</p>
                             <div className="flex items-center gap-2">
-                                <span className="text-3 font-bold text-neutral-800">₦</span>
+                                <span className="text-3 font-semibold text-neutral-800">₦</span>
                                 <input
                                     type="text"
                                     placeholder="0"
                                     value={grossSalary}
                                     onChange={e => setGrossSalary(e.target.value.replace(/[^0-9.]/g, ''))}
-                                    className="flex-1 text-3 font-bold text-neutral-800 placeholder:text-neutral-300 bg-transparent border-none outline-none"
+                                    className="flex-1 text-3 font-semibold text-neutral-800 placeholder:text-neutral-300 bg-transparent border-none outline-none"
                                 />
                             </div>
-                            <p className="text-[11px] text-neutral-400 font-medium mt-1.5">
+                            <p className="text-1 text-neutral-400 font-medium mt-1.5">
                                 Enter the amount before any deductions. Don't include bonuses unless they're paid monthly
                             </p>
                         </div>
@@ -217,16 +219,16 @@ export default function PAYECalculator() {
                         <div className="px-5 py-4">
                             <p className="text-1 font-semibold text-neutral-500 mb-2">Monthly bonuses or allowances</p>
                             <div className="flex items-center gap-2">
-                                <span className="text-3 font-bold text-neutral-800">₦</span>
+                                <span className="text-3 font-semibold text-neutral-800">₦</span>
                                 <input
                                     type="text"
                                     placeholder="0"
                                     value={bonuses}
                                     onChange={e => setBonuses(e.target.value.replace(/[^0-9.]/g, ''))}
-                                    className="flex-1 text-3 font-bold text-neutral-800 placeholder:text-neutral-300 bg-transparent border-none outline-none"
+                                    className="flex-1 text-3 font-semibold text-neutral-800 placeholder:text-neutral-300 bg-transparent border-none outline-none"
                                 />
                             </div>
-                            <p className="text-[11px] text-neutral-400 font-medium mt-1.5">
+                            <p className="text-1 text-neutral-400 font-medium mt-1.5">
                                 Only include bonuses that are paid every month, like housing or transport allowances.
                             </p>
                         </div>
@@ -235,7 +237,7 @@ export default function PAYECalculator() {
 
                 {/* Deductions section */}
                 <div className="mb-6">
-                    <h2 className="text-[16px] font-bold text-neutral-800 mb-3">Your Deductions</h2>
+                    <h2 className="text-4 font-semibold text-neutral-800 mb-3">Your Deductions</h2>
                     <div className="bg-white border border-neutral-200 rounded-2xl px-5 py-2">
                         <DeductionRow
                             label="Pension (8%)"
@@ -279,7 +281,7 @@ export default function PAYECalculator() {
                 {/* Result */}
                 <div className="mb-6">
                     <p className="text-2 font-semibold text-neutral-500 mb-1">Your monthly PAYE</p>
-                    <p className={`text-[40px] font-bold leading-none mb-1 ${hasData ? 'text-neutral-800' : 'text-neutral-300'}`}>
+                    <p className={`text-11 font-semibold leading-none mb-1 ${hasData ? 'text-neutral-800' : 'text-neutral-300'}`}>
                         {hasData ? fmtN(monthlyPAYE) : '₦—'}
                     </p>
                     <div className="flex items-center gap-1.5 mt-2">
@@ -295,7 +297,7 @@ export default function PAYECalculator() {
                     <div className="mb-6">
                         <button
                             onClick={() => setShowBreakdown(s => !s)}
-                            className="flex items-center gap-1.5 text-2 font-bold text-taxable-blue transition-opacity"
+                            className="flex items-center gap-1.5 text-2 font-semibold text-taxable-blue transition-opacity"
                         >
                             {showBreakdown ? 'Hide' : 'Show'} calculation breakdown
                             <svg
@@ -312,48 +314,48 @@ export default function PAYECalculator() {
                                 <div className="space-y-0">
                                     <div className="flex justify-between items-center px-5 py-3">
                                         <span className="text-neutral-500">Gross Salary</span>
-                                        <span className="font-bold text-neutral-800">{fmtN(monthlyGross)}</span>
+                                        <span className="font-semibold text-neutral-800">{fmtN(monthlyGross)}</span>
                                     </div>
                                     {pensionOn && (
                                         <div className="flex justify-between items-center px-5 py-3">
                                             <span className="text-neutral-500">Pension (8%)</span>
-                                            <span className="font-bold text-red-500">-{fmtN(pensionAmt)}</span>
+                                            <span className="font-semibold text-destructive">-{fmtN(pensionAmt)}</span>
                                         </div>
                                     )}
                                     {nhfOn && (
                                         <div className="flex justify-between items-center px-5 py-3">
                                             <span className="text-neutral-500">NHF (2.5%)</span>
-                                            <span className="font-bold text-red-500">-{fmtN(nhfAmt)}</span>
+                                            <span className="font-semibold text-destructive">-{fmtN(nhfAmt)}</span>
                                         </div>
                                     )}
                                     {lifeInsOn && (
                                         <div className="flex justify-between items-center px-5 py-3">
                                             <span className="text-neutral-500">Life Insurance</span>
-                                            <span className="font-bold text-red-500">-{fmtN(lifeAmt)}</span>
+                                            <span className="font-semibold text-destructive">-{fmtN(lifeAmt)}</span>
                                         </div>
                                     )}
                                     {rentOn && (
                                         <div className="flex justify-between items-center px-5 py-3">
                                             <span className="text-neutral-500">Rent Relief</span>
-                                            <span className="font-bold text-red-500">-{fmtN(rentRelief)} ({fmtN(parseFloat(rentAmt) || 0)} annual ÷ 12)</span>
+                                            <span className="font-semibold text-destructive">-{fmtN(rentRelief)} ({fmtN(parseFloat(rentAmt) || 0)} annual ÷ 12)</span>
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Taxable income */}
                                 <div className="flex justify-between items-center px-5 py-3 bg-neutral-50 border-t border-neutral-100">
-                                    <span className="font-bold text-neutral-800">Taxable Income</span>
-                                    <span className="font-bold text-neutral-800">{fmtN(monthlyTaxable)}</span>
+                                    <span className="font-semibold text-neutral-800">Taxable Income</span>
+                                    <span className="font-semibold text-neutral-800">{fmtN(monthlyTaxable)}</span>
                                 </div>
 
                                 {/* Tax bands */}
                                 <div className="px-5 pt-4 pb-2">
-                                    <p className="text-1 font-bold text-neutral-800 mb-2">Progressive Tax Rates</p>
+                                    <p className="text-1 font-semibold text-neutral-800 mb-2">Progressive Tax Rates</p>
                                     <div className="space-y-0">
                                         {taxBreakdown.map((band, i) => (
                                             <div key={i} className="flex justify-between items-center py-2">
                                                 <span className="text-neutral-500">{band.label}</span>
-                                                <span className="font-bold text-neutral-800">{fmtN(band.amount)}</span>
+                                                <span className="font-semibold text-neutral-800">{fmtN(band.amount)}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -361,8 +363,8 @@ export default function PAYECalculator() {
 
                                 {/* Total */}
                                 <div className="flex justify-between items-center px-5 py-4 bg-taxable-blue text-white">
-                                    <span className="font-bold">Total PAYE</span>
-                                    <span className="font-bold text-lg">{fmtN(monthlyPAYE)}/month</span>
+                                    <span className="font-semibold">Total PAYE</span>
+                                    <span className="font-semibold text-lg">{fmtN(monthlyPAYE)}/month</span>
                                 </div>
                             </div>
                         )}
@@ -385,7 +387,7 @@ export default function PAYECalculator() {
                 {/* Mismatch help */}
                 <p className="text-center text-2 text-neutral-500 font-medium">
                     This doesn't match my payslip.{' '}
-                    <a href="#" className="text-taxable-blue font-bold">Get help</a>
+                    <a href="#" className="text-taxable-blue font-semibold">Get help</a>
                 </p>
             </main>
         </div>

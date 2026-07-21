@@ -5,7 +5,6 @@ import "overlayscrollbars/overlayscrollbars.css";
 import { ErrorBoundary } from "@/components/ErrorBoundary/ErrorBoundary";
 import { UserProvider } from "@/contexts/UserContext";
 import { ProfileProvider } from "@/contexts/ProfileContext";
-import { ToastProvider } from "@/components/Toast/ToastProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { ScrollbarProvider } from "@/components/ScrollbarProvider/ScrollbarProvider";
 
@@ -45,15 +44,13 @@ export default function RootLayout({
       >
         <ErrorBoundary>
           <Toaster />
-          <ToastProvider>
-            <ScrollbarProvider>
-              <UserProvider>
-                <ProfileProvider>
-                  {children}
-                </ProfileProvider>
-              </UserProvider>
-            </ScrollbarProvider>
-          </ToastProvider>
+          <ScrollbarProvider>
+            <UserProvider>
+              <ProfileProvider>
+                {children}
+              </ProfileProvider>
+            </UserProvider>
+          </ScrollbarProvider>
         </ErrorBoundary>
       </body>
     </html>

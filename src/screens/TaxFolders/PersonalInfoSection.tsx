@@ -11,9 +11,24 @@ import { Calendar } from '@/components/ui/calendar';
 import { Spinner } from '@/components/ui/spinner';
 import { format } from 'date-fns';
 
-const NIGERIA_CITIES = ['Lagos', 'Abuja', 'Port Harcourt', 'Ibadan', 'Kano', 'Enugu', 'Abeokuta', 'Warri', 'Jos', 'Kaduna'];
-const NIGERIA_STATES = ['Lagos', 'FCT (Abuja)', 'Rivers', 'Oyo', 'Kano', 'Enugu', 'Ogun', 'Delta', 'Plateau', 'Kaduna'];
-const NIGERIA_LGAS = ['Alimosho', 'Ajeromi-Ifelodun', 'Kosofe', 'Mushin', 'Oshodi-Isolo', 'Ojo', 'Ikorodu', 'Surulere', 'Agege', 'Ifako-Ijaiye', 'Somolu', 'Amuwo-Odofin', 'Lagos Mainland', 'Ikeja', 'Eti-Osa', 'Badagry', 'Apapa', 'Epe', 'Ibeju-Lekki'];
+const NIGERIA_STATES = [
+    'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue',
+    'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT',
+    'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi',
+    'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo',
+    'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara',
+];
+const NIGERIA_CITIES = [
+    'Lagos', 'Abuja', 'Port Harcourt', 'Kano', 'Ibadan', 'Benin City',
+    'Enugu', 'Aba', 'Onitsha', 'Warri', 'Calabar', 'Uyo', 'Kaduna',
+    'Jos', 'Maiduguri', 'Akure', 'Abeokuta', 'Asaba', 'Owerri', 'Ile-Ife',
+];
+const NIGERIA_LGAS = [
+    'Agege', 'Ajeromi-Ifelodun', 'Alimosho', 'Amuwo-Odofin', 'Apapa',
+    'Badagry', 'Epe', 'Eti-Osa', 'Ibeju-Lekki', 'Ifako-Ijaiye',
+    'Ikeja', 'Ikorodu', 'Kosofe', 'Lagos Island', 'Lagos Mainland',
+    'Mushin', 'Ojo', 'Oshodi-Isolo', 'Somolu', 'Surulere',
+];
 
 export interface PersonalInfo {
     nin: string;

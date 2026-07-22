@@ -1,7 +1,6 @@
 'use client';
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, startTransition } from 'react';
 import gsap from 'gsap';
-import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
@@ -15,7 +14,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { BusinessVATContent } from './BusinessVAT';
 import { BusinessWHTContent } from './BusinessWHT';
 import { FilingSheet } from '@/screens/TaxFolders/TaxFolderShared';
-import { PrimaryButton, SecondaryButton } from '@/screens/TaxFolders/TaxFolderShared';
+import { PrimaryButton, SecondaryButton, SidebarItem } from '@/screens/TaxFolders/TaxFolderShared';
 import { BusinessCITContent } from './BusinessCIT';
 import { Home2Fill } from '@mingcute/react';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
@@ -59,40 +58,6 @@ const BUSINESS_SECTIONS = [
     { key: 'wht', label: 'WHT (Deductions)', locked: false, route: null },
     { key: 'company-income-tax', label: 'Company Income Tax', locked: false, route: null },
 ];
-
-// ── Helper ────────────────────────────────────────────────────────────────────
-const SidebarItem = ({
-    label, active = false, completed = false, locked = false, onClick
-}: {
-    label: string; active?: boolean; completed?: boolean; locked?: boolean; onClick: () => void
-}) => (
-    <button
-        onClick={onClick}
-        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl mb-1 ${active ? 'bg-neutral-100' : ''}`}
-    >
-        <div className="flex items-center gap-3 text-left">
-            <span className={`flex items-center ${locked ? 'opacity-40' : ''}`}>
-                <Image src={locked ? "/icons/folder-inactive.svg" : "/icons/folder.svg"} alt="" width={16} height={15} />
-            </span>
-            <div className="flex items-center gap-2">
-                <span className={`text-2 font-medium ${locked ? 'text-neutral-400' : active ? 'text-neutral-800' : 'text-neutral-500'}`}>
-                    {label}
-                </span>
-                {completed && (
-                    <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                    </div>
-                )}
-            </div>
-        </div>
-        <svg className="w-3.5 h-3.5 flex-shrink-0 text-neutral-500"
-            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-        </svg>
-    </button>
-);
 
 // ── Welcome Modal ─────────────────────────────────────────────────────────────
 const WelcomeModal = ({ onClose }: { onClose: () => void }) => (

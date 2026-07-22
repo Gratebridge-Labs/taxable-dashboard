@@ -20,6 +20,8 @@ import { PrimaryButton, SecondaryButton } from '@/screens/TaxFolders/TaxFolderSh
 import { BusinessCITContent } from './BusinessCIT';
 import { InformationFill, Home2Fill } from '@mingcute/react';
 import { toast } from 'sonner';
+import { useTaxableApi } from '@/hooks/useTaxableApi';
+import type { BusinessCompanyInfoRequest } from '@/types/api';
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
 const NIGERIA_STATES = [
@@ -137,6 +139,7 @@ export default function BusinessTaxDetails() {
     const profileId = searchParams.get('profileId') || 'default';
     const taxYear = searchParams.get('year') || '2026';
     const STORAGE_KEY = `taxable_business_info_${profileId}`;
+    const { getBusinessCompanyInfo, updateBusinessCompanyInfo } = useTaxableApi();
 
     // SessionStorage persistence — restore on client mount to avoid hydration mismatch
     const [showWelcomeModal, setShowWelcomeModal] = React.useState(false);
@@ -239,6 +242,51 @@ export default function BusinessTaxDetails() {
         } catch { /* ignore */ }
     }, []);
 
+    // Fetch saved company info from the server (source of truth) and prefill the form
+    useEffect(() => {
+        if (!profileId || profileId === 'default') return;
+        let cancelled = false;
+
+        (async () => {
+            try {
+                const res = await getBusinessCompanyInfo(profileId);
+                if (cancelled || !res?.success || !res.data) return;
+
+                const { companyInfo, citEstimate } = res.data;
+                const fmtAmount = (n: number) =>
+                    Number.isFinite(n) ? Math.round(n).toLocaleString('en-US') : '';
+
+                startTransition(() => {
+                    if (companyInfo?.RCNumber) setRcbn(companyInfo.RCNumber);
+                    if (companyInfo?.companyName) setCompanyName(companyInfo.companyName);
+                    if (companyInfo?.industrySector) setIndustry(companyInfo.industrySector);
+                    if (companyInfo?.dateOfIncorporation) setIncorporationDateObj(new Date(companyInfo.dateOfIncorporation));
+                    if (companyInfo?.businessAddress?.street) setAddress(companyInfo.businessAddress.street);
+                    if (companyInfo?.businessAddress?.city) setCity(companyInfo.businessAddress.city);
+                    if (companyInfo?.businessAddress?.state) setState(companyInfo.businessAddress.state);
+                    if (companyInfo?.businessAddress?.lga) setLga(companyInfo.businessAddress.lga);
+
+                    if (citEstimate) {
+                        if (typeof citEstimate.payCitQuarterly === 'boolean') setPayQuarterly(citEstimate.payCitQuarterly);
+                        if (typeof citEstimate.estimatedGrossRevenue === 'number') setEstimatedAnnualRevenue(fmtAmount(citEstimate.estimatedGrossRevenue));
+                        if (typeof citEstimate.estimatedProfitMargin === 'number') setProfitMargin(`${citEstimate.estimatedProfitMargin}%`);
+                    }
+
+                    // Company info already exists on the server → unlock the other sections
+                    if (companyInfo?.companyName) setCompanyInfoSaved(true);
+                });
+
+                // Server data is authoritative and matches persisted values now
+                hasUnsavedChanges.current = false;
+            } catch (err: unknown) {
+                // No saved company info yet (or fetch failed) — keep local/blank state
+                console.error('[BusinessTaxDetails] Failed to load company info:', err instanceof Error ? err.message : 'Unknown error');
+            }
+        })();
+
+        return () => { cancelled = true; };
+    }, [profileId, getBusinessCompanyInfo]);
+
     const containerRef = useRef<HTMLDivElement>(null);
 
     const animateSection = useCallback(() => {
@@ -300,23 +348,53 @@ export default function BusinessTaxDetails() {
 
     const handleSaveAndContinue = async () => {
         setSubmitting(true);
-        hasUnsavedChanges.current = false;
 
+        // Cache locally regardless of network outcome
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
             rcbn, companyName, industry, incorporationDateObj, address, city, state, lga,
             payQuarterly, estimatedAnnualRevenue, profitMargin,
         }));
 
-        toast.success('Company information saved');
-        setCompanyInfoSaved(true);
-        await new Promise(res => setTimeout(res, 500));
-        const sections = ['company-info', 'paye', 'vat', 'wht', 'company-income-tax'];
-        const idx = sections.indexOf(activeSection);
-        if (idx < sections.length - 1) {
-            setActiveSection(sections[idx + 1]);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+        try {
+            if (profileId && profileId !== 'default') {
+                const payload: BusinessCompanyInfoRequest = {
+                    companyName: companyName || undefined,
+                    industrySector: industry || undefined,
+                    dateOfIncorporation: incorporationDateObj ? format(incorporationDateObj, 'yyyy-MM-dd') : undefined,
+                    businessAddress: {
+                        street: address || undefined,
+                        city: city || undefined,
+                        state: state || undefined,
+                        lga: lga || undefined,
+                    },
+                    payCitQuarterly: payQuarterly,
+                };
+
+                if (payQuarterly) {
+                    if (rev > 0) payload.estimatedGrossRevenue = rev;
+                    const marginValue = profitMargin ? Number(profitMargin.replace('%', '')) : NaN;
+                    if (Number.isFinite(marginValue)) payload.estimatedProfitMargin = marginValue;
+                }
+
+                await updateBusinessCompanyInfo(profileId, payload);
+            }
+
+            hasUnsavedChanges.current = false;
+            toast.success('Company information saved');
+            setCompanyInfoSaved(true);
+
+            const sections = ['company-info', 'paye', 'vat', 'wht', 'company-income-tax'];
+            const idx = sections.indexOf(activeSection);
+            if (idx < sections.length - 1) {
+                setActiveSection(sections[idx + 1]);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        } catch (err: unknown) {
+            console.error('[BusinessTaxDetails] Failed to save company info:', err instanceof Error ? err.message : 'Unknown error');
+            toast.error(err instanceof Error ? err.message : 'Failed to save company information. Please try again.');
+        } finally {
+            setSubmitting(false);
         }
-        setSubmitting(false);
     };
 
     const handleQuarterlyNav = () => {

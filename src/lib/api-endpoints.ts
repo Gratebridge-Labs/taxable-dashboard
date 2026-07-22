@@ -16,6 +16,9 @@ export const TAXABLE_ENDPOINTS = {
     ALLOWED_YEARS: '/taxableprofile/web/allowed-years',
     INCOME_SOURCES: '/taxableprofile/web/income-sources',
   },
+  BUSINESS: {
+    COMPANY_INFO: (profileId: string) => `/taxableprofile/business/${profileId}/company-info`,
+  },
   UPLOAD: '/upload',
   UPLOAD_SIMPLE: '/upload/simple',
   INCOME_DATA: {

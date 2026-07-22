@@ -144,7 +144,15 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
         if (filingType === 'Business') {
             setLoadingStep(0);
             try {
-                const profile = await createProfile(parseInt(taxYear), 'Business');
+                const profile = await createProfile(parseInt(taxYear), 'Business', {
+                    intent: filingIntent === 'returns' ? 'file_returns' : 'calculate_paye',
+                    taxId: taxId || undefined,
+                    taxTypes: {
+                        paye: businessServices.includes('PAYE'),
+                        vatWht: businessServices.includes('VAT/WHT'),
+                        cit: businessServices.includes('CIT'),
+                    },
+                });
                 await fetchProfiles();
                 onClose();
                 router.push(`/tax-folders/business?year=${taxYear}&new=workspace&profileId=${profile.profileId}&taxId=${encodeURIComponent(taxId)}`);

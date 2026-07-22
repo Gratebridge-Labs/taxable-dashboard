@@ -12,6 +12,9 @@ import type {
   TaxSummaryResponse,
   CalculateTaxResponse,
   CalculationHistoryResponse,
+  CreateProfileOptions,
+  BusinessCompanyInfoResponse,
+  BusinessCompanyInfoRequest,
   CreateSubscriptionLinkRequest,
   CreatePaymentLinkResponse,
   SubscriptionStatusResponse,
@@ -78,14 +81,31 @@ class TaxableApiService {
     return data as T;
   }
 
-  async createProfile(token: string, year: number, profileType: 'Individual' | 'Business'): Promise<Profile> {
+  async createProfile(token: string, year: number, profileType: 'Individual' | 'Business', options?: CreateProfileOptions): Promise<Profile> {
     const response = await fetch(`${this.baseUrl}${TAXABLE_ENDPOINTS.PROFILE.CREATE}`, {
       method: 'POST',
       headers: this.getHeaders(token),
-      body: JSON.stringify({ year, profileType }),
+      body: JSON.stringify({ year, profileType, ...(options ?? {}) }),
     });
     const data = await this.handleResponse<{ success: boolean; data: Profile }>(response);
     return data.data;
+  }
+
+  async getBusinessCompanyInfo(token: string, profileId: string): Promise<BusinessCompanyInfoResponse> {
+    const response = await fetch(`${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.COMPANY_INFO(profileId)}`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+    return this.handleResponse<BusinessCompanyInfoResponse>(response);
+  }
+
+  async updateBusinessCompanyInfo(token: string, profileId: string, data: BusinessCompanyInfoRequest): Promise<BusinessCompanyInfoResponse> {
+    const response = await fetch(`${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.COMPANY_INFO(profileId)}`, {
+      method: 'PUT',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse<BusinessCompanyInfoResponse>(response);
   }
 
   async getAllowedYears(): Promise<AllowedYearsResponse> {

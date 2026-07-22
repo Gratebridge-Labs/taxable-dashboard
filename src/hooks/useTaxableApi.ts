@@ -6,6 +6,8 @@ import type {
   ProfileCompleteRequest,
   PersonalInfoRequest,
   AddIncomeRequest,
+  CreateProfileOptions,
+  BusinessCompanyInfoRequest,
 CreateSubscriptionLinkRequest,
   VerifyDeductionRequest,
   BatchDeductionRequest,
@@ -16,9 +18,9 @@ CreateSubscriptionLinkRequest,
 export const useTaxableApi = () => {
   const { token } = useUser();
 
-  const createProfile = useCallback(async (year: number, profileType: 'Individual' | 'Business') => {
+  const createProfile = useCallback(async (year: number, profileType: 'Individual' | 'Business', options?: CreateProfileOptions) => {
     if (!token) throw new Error('Authentication required');
-    return taxableApi.createProfile(token, year, profileType);
+    return taxableApi.createProfile(token, year, profileType, options);
   }, [token]);
 
   const getAllowedYears = useCallback(async () => {
@@ -144,6 +146,16 @@ export const useTaxableApi = () => {
     return taxableApi.getProfile(token, profileId);
   }, [token]);
 
+  const getBusinessCompanyInfo = useCallback(async (profileId: string) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.getBusinessCompanyInfo(token, profileId);
+  }, [token]);
+
+  const updateBusinessCompanyInfo = useCallback(async (profileId: string, data: BusinessCompanyInfoRequest) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.updateBusinessCompanyInfo(token, profileId, data);
+  }, [token]);
+
   const deleteProfile = useCallback(async (profileId: string) => {
     if (!token) throw new Error('Authentication required');
     return taxableApi.deleteProfile(token, profileId);
@@ -227,6 +239,8 @@ export const useTaxableApi = () => {
     verifyDeduction,
     getProfileList,
     getProfile,
+    getBusinessCompanyInfo,
+    updateBusinessCompanyInfo,
     deleteProfile,
     getDeductionList,
     uploadFile,

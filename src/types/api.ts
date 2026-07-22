@@ -48,6 +48,33 @@ export interface Profile {
   fullName?: string;
   email?: string;
   phone?: string;
+  displayName?: string;
+  isComplete?: boolean;
+  canFile?: boolean;
+  intent?: string;
+  businessCompanyInfo?: {
+    RCNumber?: string;
+    [key: string]: unknown;
+  };
+  businessSetup?: {
+    payeEnabled?: boolean;
+    vatEnabled?: boolean;
+    whtEnabled?: boolean;
+    citEnabled?: boolean;
+    [key: string]: unknown;
+  };
+}
+
+export interface CreateProfileTaxTypes {
+  paye: boolean;
+  vatWht: boolean;
+  cit: boolean;
+}
+
+export interface CreateProfileOptions {
+  intent?: string;
+  taxId?: string;
+  taxTypes?: CreateProfileTaxTypes;
 }
 
 export interface ProfileCompleteRequest {
@@ -556,7 +583,54 @@ export interface ProfileListResponse {
   message?: string;
   data: {
     profiles: Profile[];
-    total: number;
+    count?: number;
+    total?: number;
+  };
+}
+
+export interface BusinessAddress {
+  street?: string;
+  city?: string;
+  state?: string;
+  lga?: string;
+  country?: string;
+}
+
+export interface BusinessCompanyInfoData {
+  businessAddress?: BusinessAddress;
+  companyName?: string;
+  RCNumber?: string;
+  industrySector?: string;
+  dateOfIncorporation?: string;
+}
+
+export interface BusinessCitEstimate {
+  payCitQuarterly?: boolean;
+  estimatedGrossRevenue?: number;
+  estimatedProfitMargin?: number;
+  estimatedAnnualProfit?: number;
+  estimatedAnnualCit?: number;
+  quarterlyInstallment?: number;
+}
+
+export interface BusinessCompanyInfoRequest {
+  companyName?: string;
+  industrySector?: string;
+  dateOfIncorporation?: string;
+  businessAddress?: BusinessAddress;
+  payCitQuarterly?: boolean;
+  estimatedGrossRevenue?: number;
+  estimatedProfitMargin?: number;
+}
+
+export interface BusinessCompanyInfoResponse {
+  success: boolean;
+  message?: string;
+  data: {
+    profileId: string;
+    year?: number;
+    companyInfo: BusinessCompanyInfoData;
+    citEstimate?: BusinessCitEstimate;
   };
 }
 

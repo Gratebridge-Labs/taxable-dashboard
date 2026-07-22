@@ -35,7 +35,11 @@ export default function Signup() {
         setIsLoading(true);
 
         try {
-            const { whatsappReminders: _wr, ...payload } = formData;
+            const { whatsappReminders, ...rest } = formData;
+            const payload = {
+                ...rest,
+                receiveTaxDeadlineReminders: whatsappReminders,
+            };
             const response = await post('/auth/register', payload, { useToken: false });
 
             if (response?.data?.token) {

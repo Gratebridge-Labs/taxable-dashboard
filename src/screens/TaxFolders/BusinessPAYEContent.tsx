@@ -8,17 +8,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { PrimaryButton, SecondaryButton, SecondaryButtonSm } from '@/screens/TaxFolders/TaxFolderShared';
-import { InformationFill } from '@mingcute/react';
-
-// ── Hint Icon ──────────────────────────────────────────────────────────
-const HintIcon = ({ tip }: { tip: string }) => (
-    <span className="relative group inline-flex items-center ml-1 align-middle cursor-default">
-        <InformationFill className="w-3.5 h-3.5" color="#E5E5E5" />
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2 bg-neutral-800 text-white text-1 leading-snug rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-40 font-medium">
-            {tip}
-        </div>
-    </span>
-);
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 
 // ── PAYE Calculation (2026 Nigeria Tax Act) ─────────────────────────
 const PAYE_BANDS = [
@@ -169,7 +159,7 @@ export function PayeMonthlyFiling({
                     </RadioGroup>
 
                     <div className="mb-8">
-                        <div className="block text-2 font-medium text-neutral-500 mb-2">Select starting month <HintIcon tip="The first month you'll file PAYE for this business on Taxable." /></div>
+                        <div className="block text-2 font-medium text-neutral-500 mb-2">Select starting month <InfoTooltip text="The first month you'll file PAYE for this business on Taxable." /></div>
                         <Select value={onboardingMonth} onValueChange={(v) => v && setOnboardingMonth(v)}>
                             <SelectTrigger className="w-[300px] h-10 rounded-xl bg-white text-3">
                                 <SelectValue placeholder="Choose a month" />

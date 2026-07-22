@@ -7,6 +7,7 @@ import { UserProvider } from "@/contexts/UserContext";
 import { ProfileProvider } from "@/contexts/ProfileContext";
 import { Toaster } from "@/components/ui/sonner";
 import { ScrollbarProvider } from "@/components/ScrollbarProvider/ScrollbarProvider";
+import { LenisProvider } from "@/components/LenisProvider/LenisProvider";
 
 const archivo = localFont({
   src: [
@@ -45,11 +46,13 @@ export default function RootLayout({
         <ErrorBoundary>
           <Toaster />
           <ScrollbarProvider>
-            <UserProvider>
-              <ProfileProvider>
-                {children}
-              </ProfileProvider>
-            </UserProvider>
+            <LenisProvider>
+              <UserProvider>
+                <ProfileProvider>
+                  {children}
+                </ProfileProvider>
+              </UserProvider>
+            </LenisProvider>
           </ScrollbarProvider>
         </ErrorBoundary>
       </body>

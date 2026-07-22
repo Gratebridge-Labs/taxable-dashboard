@@ -1,7 +1,6 @@
 'use client';
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import gsap from 'gsap';
-import Lenis from 'lenis';
 import { useRouter } from 'next/navigation';
 import SetupSidebar from '@/components/SetupSidebar/SetupSidebar';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
@@ -71,26 +70,6 @@ export default function Home() {
         }, containerRef);
         return () => ctx.revert();
     }, [isInitialLoading, authLoading]);
-
-    useEffect(() => {
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-        const lenis = new Lenis({ lerp: 0.1 });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (window as any).__lenis = lenis;
-
-        function raf(time: number) {
-            lenis.raf(time);
-            requestAnimationFrame(raf);
-        }
-        requestAnimationFrame(raf);
-
-        return () => {
-            lenis.destroy();
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (window as any).__lenis = undefined;
-        };
-    }, []);
 
     const router = useRouter();
     const [resumeProfileId, setResumeProfileId] = useState<string | null>(null);

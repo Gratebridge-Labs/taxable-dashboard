@@ -34,7 +34,8 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
             });
 
             if (response.ok) {
-                const result = await response.json();
+                const text = await response.text();
+                const result = JSON.parse(text);
                 if (result.success && result.data.user) {
                     setUser(result.data.user);
                     sessionStorage.setItem('taxable_user', JSON.stringify(result.data.user));

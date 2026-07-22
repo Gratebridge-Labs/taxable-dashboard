@@ -2,7 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { Dispatch, SetStateAction, useState } from 'react';
-import { InformationFill } from '@mingcute/react';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { Input } from '@/components/ui/input';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -11,18 +11,24 @@ import { Calendar } from '@/components/ui/calendar';
 import { Spinner } from '@/components/ui/spinner';
 import { format } from 'date-fns';
 
-const InfoTooltip = ({ text }: { text: string }) => (
-    <span className="relative group inline-flex items-center ml-1 align-middle cursor-default">
-        <InformationFill className="w-3.5 h-3.5" color="#E5E5E5" />
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-800 text-white text-1 leading-snug rounded-lg w-52 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-            {text}
-        </div>
-    </span>
-);
-
-const NIGERIA_CITIES = ['Lagos', 'Abuja', 'Port Harcourt', 'Ibadan', 'Kano', 'Enugu', 'Abeokuta', 'Warri', 'Jos', 'Kaduna'];
-const NIGERIA_STATES = ['Lagos', 'FCT (Abuja)', 'Rivers', 'Oyo', 'Kano', 'Enugu', 'Ogun', 'Delta', 'Plateau', 'Kaduna'];
-const NIGERIA_LGAS = ['Alimosho', 'Ajeromi-Ifelodun', 'Kosofe', 'Mushin', 'Oshodi-Isolo', 'Ojo', 'Ikorodu', 'Surulere', 'Agege', 'Ifako-Ijaiye', 'Somolu', 'Amuwo-Odofin', 'Lagos Mainland', 'Ikeja', 'Eti-Osa', 'Badagry', 'Apapa', 'Epe', 'Ibeju-Lekki'];
+const NIGERIA_STATES = [
+    'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue',
+    'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT',
+    'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi',
+    'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo',
+    'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara',
+];
+const NIGERIA_CITIES = [
+    'Lagos', 'Abuja', 'Port Harcourt', 'Kano', 'Ibadan', 'Benin City',
+    'Enugu', 'Aba', 'Onitsha', 'Warri', 'Calabar', 'Uyo', 'Kaduna',
+    'Jos', 'Maiduguri', 'Akure', 'Abeokuta', 'Asaba', 'Owerri', 'Ile-Ife',
+];
+const NIGERIA_LGAS = [
+    'Agege', 'Ajeromi-Ifelodun', 'Alimosho', 'Amuwo-Odofin', 'Apapa',
+    'Badagry', 'Epe', 'Eti-Osa', 'Ibeju-Lekki', 'Ifako-Ijaiye',
+    'Ikeja', 'Ikorodu', 'Kosofe', 'Lagos Island', 'Lagos Mainland',
+    'Mushin', 'Ojo', 'Oshodi-Isolo', 'Somolu', 'Surulere',
+];
 
 export interface PersonalInfo {
     nin: string;

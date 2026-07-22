@@ -1,7 +1,6 @@
 'use client';
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useState, useLayoutEffect, useRef } from 'react';
 import gsap from 'gsap';
-import Lenis from 'lenis';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -190,27 +189,6 @@ export default function BusinessPAYE() {
         { id: 'csv', label: 'Upload CSV/Excel (bulk upload)', disabled: true },
         { id: 'software', label: 'Connect payroll software (QuickBooks, Zoho)', disabled: true },
     ];
-
-    useEffect(() => {
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-        if ((window as unknown as { __lenis?: Lenis }).__lenis) return;
-
-        const lenis = new Lenis({ lerp: 0.1 });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (window as any).__lenis = lenis;
-
-        function raf(time: number) {
-            lenis.raf(time);
-            requestAnimationFrame(raf);
-        }
-        requestAnimationFrame(raf);
-
-        return () => {
-            lenis.destroy();
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (window as any).__lenis = undefined;
-        };
-    }, []);
 
     const contentRef = useRef<HTMLDivElement>(null);
 

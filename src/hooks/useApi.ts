@@ -21,7 +21,7 @@ interface ApiConfig extends RequestInit {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ApiResponse = any;
+type ApiResponse = Record<string, any>;
 
 export const useApi = () => {
     const { token, logout, loading: authLoading } = useUser();
@@ -47,7 +47,7 @@ export const useApi = () => {
             if (!token) {
                 if (authLoading) {
                     setLoading(false);
-                    return;
+                    return {} as ApiResponse;
                 }
                 router.push('/signin');
                 setLoading(false);
@@ -65,12 +65,12 @@ export const useApi = () => {
                 },
             });
 
+            const text = await response.text();
             let responseData: unknown;
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-                responseData = await response.json();
-            } else {
-                responseData = await response.text();
+            try {
+                responseData = JSON.parse(text);
+            } catch {
+                responseData = text;
             }
 
             if (!response.ok) {
@@ -123,7 +123,7 @@ export const useApi = () => {
             if (!token) {
                 if (authLoading) {
                     setLoading(false);
-                    return;
+                    return {} as ApiResponse;
                 }
                 router.push('/signin');
                 setLoading(false);
@@ -143,7 +143,13 @@ export const useApi = () => {
                 body: formData,
             });
 
-            const responseData = await response.json() as Record<string, unknown>;
+            const uploadText = await response.text();
+            let responseData: Record<string, unknown>;
+            try {
+                responseData = JSON.parse(uploadText) as Record<string, unknown>;
+            } catch {
+                throw new ApiError(`Error: ${response.status} ${response.statusText}`);
+            }
 
             if (!response.ok) {
                 if (response.status === 401) {

@@ -9,18 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Drawer, DrawerContent, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
 import { FileTextIcon, XIcon } from 'lucide-react';
-import { InformationFill } from '@mingcute/react';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { WHTDeduction, useWhtDeductions } from './useWhtDeductions';
-
-// ── Hint Icon ──────────────────────────────────────────────────────────
-const HintIcon = ({ tip }: { tip: string }) => (
-    <span className="relative group inline-flex items-center ml-1 align-middle cursor-default">
-        <InformationFill className="w-3.5 h-3.5" color="#E5E5E5" />
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2 bg-neutral-800 text-white text-1 leading-snug rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-40 font-medium">
-            {tip}
-        </div>
-    </span>
-);
 import {
     SectionHeading, DescriptionText, PrimaryButton, SecondaryButton, SecondaryButtonSm,
     FilingSheet, FormFieldRow, FormLabel,
@@ -604,7 +594,7 @@ const WHTRemittance = ({ profileId, taxYear }: { profileId: string; taxYear: str
                             })}
                         </RadioGroup>
                         <div className="mb-6">
-                            <label className="block text-2 font-medium text-neutral-500 mb-2">Select starting month <HintIcon tip="The first month you'll file WHT for." /></label>
+                            <label className="block text-2 font-medium text-neutral-500 mb-2">Select starting month <InfoTooltip text="The first month you'll file WHT for." /></label>
                             <Select value={MONTHS[activeMonth]} onValueChange={(v) => { if (v) setActiveMonth(MONTHS.indexOf(v)); }}>
                                 <SelectTrigger className="w-full max-w-[300px] h-10 rounded-xl bg-white border-neutral-50 text-3">
                                     <div className="flex items-center gap-2">

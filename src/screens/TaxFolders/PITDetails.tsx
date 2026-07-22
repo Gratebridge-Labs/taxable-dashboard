@@ -3,7 +3,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useCallback, useLayoutEffect, useRef, startTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Lenis from 'lenis';
 import gsap from 'gsap';
 import { Home2Fill } from '@mingcute/react';
 import { useUser } from '@/contexts/UserContext';
@@ -31,7 +30,7 @@ import { PITModals } from './PITModals';
 const PITWelcomeModal = ({ onClose }: { onClose: () => void }) => (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
         <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-        <div className="relative bg-white rounded-2xl w-full max-w-[380px] p-7 shadow-2xl">
+        <div className="relative bg-white rounded-2xl w-full max-w-[380px] p-7 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
             <div className="w-12 h-12 rounded-full border-2 border-neutral-200 flex items-center justify-center mb-5">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-800">
                     <polyline points="20 6 9 17 4 12" />
@@ -96,7 +95,8 @@ export default function PITDetails() {
 
     // ─── Component State ──────────────────────────────────────────────────
     const [activeSection, setActiveSection] = useState<'personal-info' | 'income-deductions' | 'review'>('personal-info');
-    const [sectionInitialized, setSectionInitialized] = useState(false);
+    const sectionInitializedRef = useRef(false);
+    const personalInfoDirtyRef = useRef(false);
     const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
     const [loading, setLoading] = useState(true);
     const [profileLoading, setProfileLoading] = useState(true);
@@ -133,7 +133,6 @@ export default function PITDetails() {
     // Income & Deductions State
     const [periodMode, setPeriodMode] = useState<'monthly' | 'annually'>('monthly');
     const [activeMonth, setActiveMonth] = useState<string>('January');
-    const [_expandedMonth, _setExpandedMonth] = useState<string | null>('January');
 
     // V2 Income & Deductions State (VAT-style stepper)
     const INCOME_STEPS = [
@@ -147,6 +146,7 @@ export default function PITDetails() {
     const [hasUnsavedIncome, setHasUnsavedIncome] = useState(false);
     const [showUnsavedIncomeModal, setShowUnsavedIncomeModal] = useState(false);
     const [pendingIncomeAction, setPendingIncomeAction] = useState<string | null>(null);
+    const pendingMonthRef = useRef<number | null>(null);
 
     const goForward = (target: 'income' | 'deductions') => {
         const stepNum: Record<string, number> = { income: 1, deductions: 2 };
@@ -162,6 +162,12 @@ export default function PITDetails() {
         if (pendingIncomeAction === 'month_change') {
             setIncomeByMonth(prev => { const r = { ...prev }; delete r[activeMonthNum - 1]; return r; });
             setDeductionsByMonth(prev => { const r = { ...prev }; delete r[activeMonthNum - 1]; return r; });
+            if (pendingMonthRef.current !== null) {
+                setActiveMonth(INCOME_MONTH_NAMES[pendingMonthRef.current]!);
+                setIncomeStep('income');
+                setCompletedIncomeSteps(new Set());
+                pendingMonthRef.current = null;
+            }
         }
         setHasUnsavedIncome(false);
         setShowUnsavedIncomeModal(false);
@@ -239,8 +245,16 @@ export default function PITDetails() {
     const [bookingTaxAgent, setBookingTaxAgent] = useState(false);
     const [confirmFilingPrefOpen, setConfirmFilingPrefOpen] = useState(false);
     const [pendingPeriodMode, setPendingPeriodMode] = useState<'monthly' | 'annually' | null>(null);
-    const [switchingFilingPref, _setSwitchingFilingPref] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+
+    const navigateSection = useCallback((section: 'personal-info' | 'income-deductions' | 'review') => {
+        if (activeSection === 'personal-info' && personalInfoDirtyRef.current && !personalInfoSaved) {
+            toast.warning('You have unsaved personal info changes. Save before leaving.');
+            return;
+        }
+        setActiveSection(section);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [activeSection, personalInfoSaved]);
 
     // ─── Data Loading ─────────────────────────────────────────────────────
     const loadProfileData = useCallback(async () => {
@@ -248,9 +262,6 @@ export default function PITDetails() {
         
         // Wait for auth to be ready (avoid race condition on reload)
         if (authLoading || !isAuthenticated) {
-            // Reset loading states - auth is still loading, don't show stuck loading
-            setProfileLoading(false);
-            setLoading(false);
             return;
         }
         
@@ -275,20 +286,20 @@ export default function PITDetails() {
                 }));
 
                 if (profile.fullName) {
-                    setPersonalInfoSaved(true);
+            setPersonalInfoSaved(true);
+            personalInfoDirtyRef.current = false;
                 }
 
                 // Determine starting section - Background auto-continue logic
-                if (!sectionInitialized) {
+                if (!sectionInitializedRef.current) {
                     const hasPersonalInfo = !!(profile.nin && profile.fullName);
 
-                    // Auto-continue to the most appropriate section
                     if (!hasPersonalInfo) {
                         setActiveSection('personal-info');
                     } else {
                         setActiveSection('income-deductions');
                     }
-                    setSectionInitialized(true);
+                    sectionInitializedRef.current = true;
                 }
             }
         } catch (err: any) {
@@ -297,7 +308,7 @@ export default function PITDetails() {
             setProfileLoading(false);
             setLoading(false);
         }
-    }, [profileId, sectionInitialized, api, authLoading, isAuthenticated]);
+    }, [profileId, api, authLoading, isAuthenticated]);
 
     useEffect(() => {
         loadProfileData();
@@ -320,6 +331,7 @@ export default function PITDetails() {
             const idx = INCOME_MONTH_NAMES.indexOf(v ?? '');
             if (idx >= 0 && INCOME_MONTH_NAMES[idx]) {
                 if (hasUnsavedIncome) {
+                    pendingMonthRef.current = idx;
                     setPendingIncomeAction('month_change');
                     setShowUnsavedIncomeModal(true);
                 } else {
@@ -364,9 +376,8 @@ export default function PITDetails() {
     const businessIncome = (Number((currentIncome as any).businessRevenue?.replace(/,/g, '')) || 0) - (Number((currentIncome as any).businessExpenses?.replace(/,/g, '')) || 0);
     const freelanceNet = (Number((currentIncome as any).freelanceInvoiced?.replace(/,/g, '')) || 0) - (Number((currentIncome as any).freelanceWHT?.replace(/,/g, '')) || 0);
     const fmt = (n: number) => n > 0 ? `₦${Math.round(n).toLocaleString()}` : '₦ 0';
-    const totalMonthlyIncome = (Number((currentIncome as any).salaryTakeHome?.replace(/,/g, '')) || 0) + Math.max(0, businessIncome) + Math.max(0, freelanceNet) + (Number((currentIncome as any).investmentIncome?.replace(/,/g, '')) || 0) + (Number((currentIncome as any).rentalIncome?.replace(/,/g, '')) || 0) + (Number((currentIncome as any).digitalGains?.replace(/,/g, '')) || 0);
-    const totalDeductions = ((v: any) => (Number((v as any).rent?.replace(/,/g, '')) || 0) + (Number((v as any).healthInsurance?.replace(/,/g, '')) || 0) + (Number((v as any).pension?.replace(/,/g, '')) || 0) + (Number((v as any).mortgageInterest?.replace(/,/g, '')) || 0))(currentDeductions);
-    const _monthlyTaxable = Math.max(0, totalMonthlyIncome - totalDeductions);
+    const _totalMonthlyIncome = (Number((currentIncome as any).salaryTakeHome?.replace(/,/g, '')) || 0) + Math.max(0, businessIncome) + Math.max(0, freelanceNet) + (Number((currentIncome as any).investmentIncome?.replace(/,/g, '')) || 0) + (Number((currentIncome as any).rentalIncome?.replace(/,/g, '')) || 0) + (Number((currentIncome as any).digitalGains?.replace(/,/g, '')) || 0);
+    const _totalDeductions = ((v: any) => (Number((v as any).rent?.replace(/,/g, '')) || 0) + (Number((v as any).healthInsurance?.replace(/,/g, '')) || 0) + (Number((v as any).pension?.replace(/,/g, '')) || 0) + (Number((v as any).mortgageInterest?.replace(/,/g, '')) || 0))(currentDeductions);
 
     const PAYE_BANDS = [
         { limit: 800000, rate: 0 },
@@ -749,17 +760,12 @@ export default function PITDetails() {
 
                         <div className="flex gap-3 mt-8">
                             <SecondaryButton onClick={() => goBack('income')}>Back</SecondaryButton>
-                            {periodMode === 'monthly' && activeMonthNum === 12 ? (
+                            {periodMode === 'annually' || activeMonthNum === 12 ? (
                                 <PrimaryButton onClick={() => { handleSaveMonth(); setActiveSection('review'); }}>
                                     Save &amp; File Annual Filing
                                 </PrimaryButton>
                             ) : (
                                 <PrimaryButton onClick={() => handleSaveMonth()}>Save</PrimaryButton>
-                            )}
-                            {periodMode === 'annually' && (
-                                <PrimaryButton onClick={() => { handleSaveMonth(); setActiveSection('review'); }}>
-                                    Save &amp; File Annual Filing
-                                </PrimaryButton>
                             )}
                         </div>
                     </div>
@@ -844,8 +850,6 @@ export default function PITDetails() {
         }
     }, [profileId, personalInfo, currentProfile, api]);
 
-    const _handleIncomeSaved = useCallback((_monthNum: number) => {
-    }, []);
 
     const personalInfoComplete = !!(
         personalInfo.firstName &&
@@ -861,26 +865,32 @@ export default function PITDetails() {
         personalInfoSaved
     );
 
-    // Lenis smooth scroll
-    useLayoutEffect(() => {
+    // GSAP reveal animations
+    const animateSection = useCallback(() => {
         if (typeof window === 'undefined') return;
-        if ((window as any).__lenis) return;
-        const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (prefersReduced) return;
-        const lenis = new Lenis({ lerp: 0.1, wheelMultiplier: 0.8 });
-        (window as any).__lenis = lenis;
-        const raf = (time: number) => { lenis.raf(time); requestAnimationFrame(raf); };
-        requestAnimationFrame(raf);
-        return () => { lenis.destroy(); (window as any).__lenis = undefined; };
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            gsap.set('[data-animate]', { opacity: 1, y: 0 });
+            return;
+        }
+        gsap.fromTo(
+            '[data-animate]',
+            { opacity: 0, y: 16 },
+            { opacity: 1, y: 0, duration: 0.4, stagger: 0.05, ease: 'power2.out' }
+        );
     }, []);
 
-    // GSAP reveal animations
     useLayoutEffect(() => {
+        if (typeof window === 'undefined') return;
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         const ctx = gsap.context(() => {
-            gsap.fromTo('[data-animate]', { opacity: 0, y: 16 }, { opacity: 1, y: 0, stagger: 0.1, duration: 0.5, ease: 'power2.out' });
+            animateSection();
         }, containerRef);
         return () => ctx.revert();
-    }, []);
+    }, [animateSection]);
+
+    useEffect(() => {
+        animateSection();
+    }, [activeSection, animateSection]);
 
     // Restore income data from localStorage on mount
     useEffect(() => {
@@ -918,6 +928,17 @@ export default function PITDetails() {
         try { localStorage.setItem(`taxable_pit_filed_${profileId}`, String(annualReturnFiledPIT)); } catch {}
     }, [annualReturnFiledPIT, profileId]);
 
+    // Warn about unsaved changes before page refresh
+    useEffect(() => {
+        const handler = (e: BeforeUnloadEvent) => {
+            if (hasUnsavedIncome || personalInfoDirtyRef.current) {
+                e.preventDefault();
+            }
+        };
+        window.addEventListener('beforeunload', handler);
+        return () => window.removeEventListener('beforeunload', handler);
+    }, [hasUnsavedIncome]);
+
     // Show welcome modal for new workspaces
     useEffect(() => {
         const isNew = searchParams?.get('new');
@@ -927,6 +948,11 @@ export default function PITDetails() {
             });
             router.replace(window.location.pathname);
         }
+    }, []);
+
+    const markPersonalInfoDirty = useCallback((v: React.SetStateAction<PersonalInfo>) => {
+        personalInfoDirtyRef.current = true;
+        setPersonalInfo(v);
     }, []);
 
     // Show skeleton while authentication is being checked
@@ -947,7 +973,7 @@ export default function PITDetails() {
 
     if (error || !currentProfile) {
         return (
-            <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
+            <div className="min-h-screen bg-white flex items-center justify-center p-4">
                 <div className="text-center max-w-md">
                     <h3 className="text-5 font-semibold text-neutral-800 mb-2">{error || 'Profile not found'}</h3>
                     <button onClick={() => router.push('/tax-folders')} className="px-4 py-2 bg-taxable-blue text-white rounded-xl">Back to Tax Folders</button>
@@ -977,13 +1003,15 @@ export default function PITDetails() {
                 <div className="flex items-start gap-10">
                     <PITSidebar
                         activeSection={activeSection}
-                        setActiveSection={setActiveSection}
+                        setActiveSection={navigateSection}
                         personalInfoComplete={personalInfoComplete}
                     />
 
                     <div className="flex-1 min-w-0">
                          {activeSection === 'personal-info' && (
-                             <PersonalInfoSection personalInfo={personalInfo} setPersonalInfo={setPersonalInfo as any} savingPersonalInfo={savingPersonalInfo} onSave={handleSavePersonalInfo} />
+                             <div data-animate>
+                                 <PersonalInfoSection personalInfo={personalInfo} setPersonalInfo={markPersonalInfoDirty} savingPersonalInfo={savingPersonalInfo} onSave={handleSavePersonalInfo} />
+                             </div>
                         )}
 
                          {renderIncomeSection()}
@@ -1009,25 +1037,25 @@ export default function PITDetails() {
                                     <div className="flex gap-4">
                                         <div className="flex-1 bg-white border border-neutral-100 rounded-2xl p-4 text-left">
                                             <p className="text-1 text-neutral-500 font-medium">Gross Income</p>
-                                            <p className="text-4 font-semibold text-neutral-800 mt-1">{fmt(ytdGrossIncome)}</p>
+                                            <p className="text-5 font-semibold text-neutral-800 mt-1">{fmt(ytdGrossIncome)}</p>
                                         </div>
                                         <div className="flex-1 bg-white border border-neutral-100 rounded-2xl p-4 text-left">
                                             <p className="text-1 text-neutral-500 font-medium">Total Deductions</p>
-                                            <p className="text-4 font-semibold text-neutral-800 mt-1">-{fmt(ytdDeductions)}</p>
+                                            <p className="text-5 font-semibold text-neutral-800 mt-1">-{fmt(ytdDeductions)}</p>
                                         </div>
                                         <div className="flex-1 bg-white border border-neutral-100 rounded-2xl p-4 text-left">
                                             <p className="text-1 text-neutral-500 font-medium">Taxable Income</p>
-                                            <p className="text-4 font-semibold text-neutral-800 mt-1">{fmt(annualTaxable)}</p>
+                                            <p className="text-5 font-semibold text-neutral-800 mt-1">{fmt(annualTaxable)}</p>
                                         </div>
                                         <div className="flex-1 bg-white border border-neutral-100 rounded-2xl p-4 text-left">
                                             <p className="text-1 text-neutral-500 font-medium">Estimated PIT</p>
-                                            <p className="text-4 font-semibold text-neutral-800 mt-1">{fmt(estimatedAnnualTax)}</p>
+                                            <p className="text-5 font-semibold text-neutral-800 mt-1">{fmt(estimatedAnnualTax)}</p>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Section 2: Accordion */}
-                                <div className="mb-14">
+                                <div className="mb-14" data-animate>
                                      <Accordion defaultValue={[]} className="space-y-1">
                                         <AccordionItem value="summary" className="bg-neutral-50 border border-neutral-100 rounded-2xl">
                                             <AccordionTrigger className="px-4 py-3 text-2 font-semibold text-neutral-800">
@@ -1107,7 +1135,7 @@ export default function PITDetails() {
                                 </div>
 
                                 {/* Section 3: Legal Declaration + CTA */}
-                                <div className="space-y-3 mb-8">
+                                <div className="space-y-3 mb-8" data-animate>
                                     <label className="flex items-start gap-3 cursor-pointer">
                                         <Checkbox checked={legalConfirmPIT1} onCheckedChange={(c) => setLegalConfirmPIT1(c === true)} className="mt-0.5" />
                                         <span className="text-2 text-neutral-600 font-medium leading-relaxed">I confirm that the income and deductions I've entered are accurate.</span>
@@ -1136,12 +1164,11 @@ export default function PITDetails() {
                 setConfirmFilingPrefOpen={setConfirmFilingPrefOpen}
                 pendingPeriodMode={pendingPeriodMode as any}
                 setPendingPeriodMode={setPendingPeriodMode}
-                switchingFilingPref={switchingFilingPref}
+                switchingFilingPref={false}
                 onConfirmFilingPref={() => {
                     if (!pendingPeriodMode) return;
                     setPeriodMode(pendingPeriodMode);
                     setActiveMonth('January');
-                    _setExpandedMonth(pendingPeriodMode === 'monthly' ? 'January' : null);
                     if (currentProfile) setCurrentProfile({ ...currentProfile, filingPreference: pendingPeriodMode === 'annually' ? 'annual' : 'monthly' });
                     toast.success(`Switched to ${pendingPeriodMode === 'monthly' ? 'Monthly' : 'Annual'} view.`);
                     setConfirmFilingPrefOpen(false);

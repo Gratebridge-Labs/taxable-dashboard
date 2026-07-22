@@ -1,8 +1,9 @@
 'use client';
 import React from 'react';
+import Image from 'next/image';
 import { Drawer, DrawerContent, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { InformationFill } from '@mingcute/react';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 
 // ── Primary Button ─────────────────────────────────────────────────
 interface PrimaryButtonProps {
@@ -80,13 +81,7 @@ export function FormLabel({ children, tip }: { children: React.ReactNode; tip: s
   return (
     <label className="block text-2 font-medium text-neutral-700 mb-1">
       {children}
-      <div className="relative group inline-flex items-center ml-1">
-        <InformationFill className="w-3.5 h-3.5" color="#E5E5E5" />
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-900 text-white text-2 rounded-lg w-52 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 whitespace-normal pointer-events-none">
-          {tip}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-neutral-900" />
-        </div>
-      </div>
+      <InfoTooltip text={tip} arrow />
     </label>
   );
 }
@@ -105,6 +100,46 @@ export function DescriptionText({ children }: { children: React.ReactNode }) {
 export function FormFieldRow({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return <div className={`flex items-center gap-4 mb-4 ${className}`}>{children}</div>;
 }
+
+// ── Sidebar Item (shared between PIT and BusinessTax) ──────────────
+export interface SidebarItemProps {
+    label: string;
+    active?: boolean;
+    completed?: boolean;
+    locked?: boolean;
+    onClick: () => void;
+}
+
+export const SidebarItem = ({
+    label, active = false, completed = false, locked = false, onClick
+}: SidebarItemProps) => (
+    <button
+        onClick={onClick}
+        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl mb-1 ${active ? 'bg-neutral-100' : ''}`}
+    >
+        <div className="flex items-center gap-3 text-left">
+            <span className={`flex items-center ${locked ? 'opacity-40' : ''}`}>
+                <Image src={locked ? '/icons/folder-inactive.svg' : '/icons/folder.svg'} alt="" width={16} height={15} />
+            </span>
+            <div className="flex items-center gap-2">
+                <span className={`text-2 font-medium ${locked ? 'text-neutral-400' : active ? 'text-neutral-800' : 'text-neutral-500'}`}>
+                    {label}
+                </span>
+                {completed && (
+                    <div className="w-4 h-4 bg-green-600 rounded flex items-center justify-center">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                    </div>
+                )}
+            </div>
+        </div>
+        <svg className="w-3.5 h-3.5 flex-shrink-0 text-neutral-500"
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+    </button>
+);
 
 // ── Filing Sheet (Drawer) ──────────────────────────────────────────
 interface FilingSheetProps {

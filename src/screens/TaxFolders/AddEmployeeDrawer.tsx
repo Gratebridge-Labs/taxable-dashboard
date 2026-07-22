@@ -4,17 +4,7 @@ import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PrimaryButton, SecondaryButton } from '@/screens/TaxFolders/TaxFolderShared';
-import { InformationFill } from '@mingcute/react';
-
-// ── Hint Icon ──────────────────────────────────────────────────────────
-const HintIcon = ({ tip }: { tip: string }) => (
-    <span className="relative group inline-flex items-center ml-1 align-middle cursor-default">
-        <InformationFill className="w-3.5 h-3.5" color="#E5E5E5" />
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2 bg-neutral-800 text-white text-1 leading-snug rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-40 font-medium">
-            {tip}
-        </div>
-    </span>
-);
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 
 export interface PayeStaff {
     id: string;
@@ -341,7 +331,7 @@ function FormContent(props: FormContentProps) {
                     <Input type="text" value={props.position} onChange={e => props.onPositionChange(e.target.value)} disabled={props.disabled} placeholder="Enter job position" className={rs} />
                 </div>
                 <div>
-                    <label className="block text-2 font-medium text-neutral-500 mb-1">JTB Tax ID <HintIcon tip="The employee's Tax Identification Number (TIN) issued by the Joint Tax Board (JTB)." /></label>
+                    <label className="block text-2 font-medium text-neutral-500 mb-1">JTB Tax ID <InfoTooltip text="The employee's Tax Identification Number (TIN) issued by the Joint Tax Board (JTB)." /></label>
                     <Input type="text" value={props.taxId} onChange={e => props.onTaxIdChange(e.target.value)} disabled={props.disabled} placeholder="Enter tax ID" className={rs} />
                 </div>
                 <div className="col-span-2">
@@ -361,7 +351,7 @@ function FormContent(props: FormContentProps) {
 
             {/* Deductions section */}
             <div className="mb-8">
-                <div className="text-2 font-semibold text-neutral-800 mb-3">Deductions <HintIcon tip="Select the statutory deductions applicable to this employee. These are subtracted from gross income before tax is calculated." /></div>
+                <div className="text-2 font-semibold text-neutral-800 mb-3">Deductions <InfoTooltip text="Select the statutory deductions applicable to this employee. These are subtracted from gross income before tax is calculated." /></div>
                 <div className="flex flex-col gap-3">
                     <div className="flex items-center gap-6">
                         <label className={`flex items-center gap-2 ${props.disabled ? 'cursor-default' : 'cursor-pointer'}`}>

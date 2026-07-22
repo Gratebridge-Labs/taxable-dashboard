@@ -2,7 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { Dispatch, SetStateAction, useState } from 'react';
-import { InformationFill } from '@mingcute/react';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { Input } from '@/components/ui/input';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -10,15 +10,6 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Spinner } from '@/components/ui/spinner';
 import { format } from 'date-fns';
-
-const InfoTooltip = ({ text }: { text: string }) => (
-    <span className="relative group inline-flex items-center ml-1 align-middle cursor-default">
-        <InformationFill className="w-3.5 h-3.5" color="#E5E5E5" />
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-800 text-white text-1 leading-snug rounded-lg w-52 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-            {text}
-        </div>
-    </span>
-);
 
 const NIGERIA_CITIES = ['Lagos', 'Abuja', 'Port Harcourt', 'Ibadan', 'Kano', 'Enugu', 'Abeokuta', 'Warri', 'Jos', 'Kaduna'];
 const NIGERIA_STATES = ['Lagos', 'FCT (Abuja)', 'Rivers', 'Oyo', 'Kano', 'Enugu', 'Ogun', 'Delta', 'Plateau', 'Kaduna'];

@@ -6,16 +6,7 @@ import { AlertTriangle } from 'lucide-react';
 import { useTaxableApi } from '@/lib';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-
-const InfoTooltip = ({ text }: { text: string }) => (
-    <div className="relative group inline-flex ml-1">
-        <span className="w-3.5 h-3.5 rounded-full bg-neutral-200 text-white flex items-center justify-center text-1 cursor-help">i</span>
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-800 text-white text-1 rounded-lg w-52 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 whitespace-normal">
-            {text}
-            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-neutral-800"></div>
-        </div>
-    </div>
-);
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 
 interface ReviewAndFileProps {
     profileId?: string;

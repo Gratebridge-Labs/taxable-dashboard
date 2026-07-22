@@ -3,7 +3,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useCallback, useLayoutEffect, useRef, startTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Lenis from 'lenis';
 import gsap from 'gsap';
 import { Home2Fill } from '@mingcute/react';
 import { useUser } from '@/contexts/UserContext';
@@ -861,26 +860,32 @@ export default function PITDetails() {
         personalInfoSaved
     );
 
-    // Lenis smooth scroll
-    useLayoutEffect(() => {
+    // GSAP reveal animations
+    const animateSection = useCallback(() => {
         if (typeof window === 'undefined') return;
-        if ((window as any).__lenis) return;
-        const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (prefersReduced) return;
-        const lenis = new Lenis({ lerp: 0.1, wheelMultiplier: 0.8 });
-        (window as any).__lenis = lenis;
-        const raf = (time: number) => { lenis.raf(time); requestAnimationFrame(raf); };
-        requestAnimationFrame(raf);
-        return () => { lenis.destroy(); (window as any).__lenis = undefined; };
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            gsap.set('[data-animate]', { opacity: 1, y: 0 });
+            return;
+        }
+        gsap.fromTo(
+            '[data-animate]',
+            { opacity: 0, y: 16 },
+            { opacity: 1, y: 0, duration: 0.4, stagger: 0.05, ease: 'power2.out' }
+        );
     }, []);
 
-    // GSAP reveal animations
     useLayoutEffect(() => {
+        if (typeof window === 'undefined') return;
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         const ctx = gsap.context(() => {
-            gsap.fromTo('[data-animate]', { opacity: 0, y: 16 }, { opacity: 1, y: 0, stagger: 0.1, duration: 0.5, ease: 'power2.out' });
+            animateSection();
         }, containerRef);
         return () => ctx.revert();
-    }, []);
+    }, [animateSection]);
+
+    useEffect(() => {
+        animateSection();
+    }, [activeSection, animateSection]);
 
     // Restore income data from localStorage on mount
     useEffect(() => {
@@ -947,7 +952,7 @@ export default function PITDetails() {
 
     if (error || !currentProfile) {
         return (
-            <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
+            <div className="min-h-screen bg-white flex items-center justify-center p-4">
                 <div className="text-center max-w-md">
                     <h3 className="text-5 font-semibold text-neutral-800 mb-2">{error || 'Profile not found'}</h3>
                     <button onClick={() => router.push('/tax-folders')} className="px-4 py-2 bg-taxable-blue text-white rounded-xl">Back to Tax Folders</button>
@@ -983,7 +988,9 @@ export default function PITDetails() {
 
                     <div className="flex-1 min-w-0">
                          {activeSection === 'personal-info' && (
-                             <PersonalInfoSection personalInfo={personalInfo} setPersonalInfo={setPersonalInfo as any} savingPersonalInfo={savingPersonalInfo} onSave={handleSavePersonalInfo} />
+                             <div data-animate>
+                                 <PersonalInfoSection personalInfo={personalInfo} setPersonalInfo={setPersonalInfo as any} savingPersonalInfo={savingPersonalInfo} onSave={handleSavePersonalInfo} />
+                             </div>
                         )}
 
                          {renderIncomeSection()}
@@ -1027,7 +1034,7 @@ export default function PITDetails() {
                                 </div>
 
                                 {/* Section 2: Accordion */}
-                                <div className="mb-14">
+                                <div className="mb-14" data-animate>
                                      <Accordion defaultValue={[]} className="space-y-1">
                                         <AccordionItem value="summary" className="bg-neutral-50 border border-neutral-100 rounded-2xl">
                                             <AccordionTrigger className="px-4 py-3 text-2 font-semibold text-neutral-800">
@@ -1107,7 +1114,7 @@ export default function PITDetails() {
                                 </div>
 
                                 {/* Section 3: Legal Declaration + CTA */}
-                                <div className="space-y-3 mb-8">
+                                <div className="space-y-3 mb-8" data-animate>
                                     <label className="flex items-start gap-3 cursor-pointer">
                                         <Checkbox checked={legalConfirmPIT1} onCheckedChange={(c) => setLegalConfirmPIT1(c === true)} className="mt-0.5" />
                                         <span className="text-2 text-neutral-600 font-medium leading-relaxed">I confirm that the income and deductions I've entered are accurate.</span>

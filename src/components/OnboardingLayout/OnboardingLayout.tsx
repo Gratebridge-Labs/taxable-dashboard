@@ -1,7 +1,6 @@
 'use client';
-import React, { ReactNode, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { ReactNode, useLayoutEffect, useRef } from 'react';
 import gsap from 'gsap';
-import Lenis from 'lenis';
 import { OnboardingProvider } from '@/contexts/OnboardingContext';
 import LogoWhite from '@/components/OnboardingLayout/LogoWhite';
 import { useFormEntrance } from '@/hooks/useFormEntrance';
@@ -13,26 +12,6 @@ interface OnboardingLayoutProps {
 const OnboardingLayout = ({ children }: OnboardingLayoutProps) => {
     const leftRef = useRef<HTMLDivElement>(null);
     const rightRef = useFormEntrance<HTMLDivElement>({ duration: 0.6, stagger: 0.04, y: 16 });
-
-    useEffect(() => {
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-        const lenis = new Lenis({ lerp: 0.1 });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (window as any).__lenis = lenis;
-
-        function raf(time: number) {
-            lenis.raf(time);
-            requestAnimationFrame(raf);
-        }
-        requestAnimationFrame(raf);
-
-        return () => {
-            lenis.destroy();
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (window as any).__lenis = undefined;
-        };
-    }, []);
 
     useLayoutEffect(() => {
         if (!leftRef.current) return;

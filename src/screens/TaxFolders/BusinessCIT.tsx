@@ -16,7 +16,7 @@ import {
 import { PrimaryButton, SecondaryButton, SecondaryButtonSm, FormFieldRow, FormLabel } from './TaxFolderShared';
 import { FilingSheet } from './TaxFolderShared';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
-import { InformationFill } from '@mingcute/react';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmt = (n: number) => `₦${Math.round(n).toLocaleString()}`;
@@ -76,16 +76,6 @@ function FileUploadSection({
         </div>
     );
 }
-
-// ── Hint Icon ─────────────────────────────────────────────────────────────────
-const HintIcon = ({ tip }: { tip: string }) => (
-    <span className="relative group inline-flex items-center ml-1 align-middle cursor-default">
-        <InformationFill className="w-3.5 h-3.5" color="#E5E5E5" />
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2 bg-neutral-800 text-white text-1 leading-snug rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-40 font-medium">
-            {tip}
-        </div>
-    </span>
-);
 
 const fmtInput = (set: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/[^0-9.]/g, '');
@@ -655,7 +645,7 @@ export function BusinessCITContent({
                               <div>
                                 <label className="block text-2 font-medium text-neutral-500 mb-1">
                                    Estimated annual gross revenue
-                                   <HintIcon tip="Your projected gross revenue for the current tax year." />
+                                   <InfoTooltip text="Your projected gross revenue for the current tax year." />
                                 </label>
                                 <Input type="text" placeholder="₦ 0.00" value={editRevenue}
                                    onChange={e => { const raw = e.target.value.replace(/[^0-9.]/g, ''); const parts = raw.split('.'); const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ','); setEditRevenue(parts.length > 1 ? integer + '.' + parts.slice(1).join('') : integer); }} />
@@ -663,7 +653,7 @@ export function BusinessCITContent({
                               <div>
                                 <label className="block text-2 font-medium text-neutral-500 mb-2">
                                    Estimated profit margin
-                                   <HintIcon tip="Your estimated profit as a percentage of revenue." />
+                                   <InfoTooltip text="Your estimated profit as a percentage of revenue." />
                                 </label>
                                 <div className="flex gap-2">
                                    {['10%', '15%', '20%', '25%', '30%'].map(m => (

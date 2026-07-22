@@ -8,7 +8,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
-import { InformationFill } from '@mingcute/react';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 import type { ProfileCompleteRequest } from '@/types/api';
 
 interface SetupSidebarProps {
@@ -302,12 +302,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                             <div className="pt-10">
                                                 <label className="block text-2 font-medium mb-2 text-neutral-500">
                                                     {filingType === 'Business' ? 'Tax ID (RC/BN)' : 'Tax ID (Your NIN)'}{' '}
-                                                    <span className="relative group inline-flex items-center ml-1 align-middle cursor-default">
-                                                        <InformationFill className="w-3.5 h-3.5" color="#E5E5E5" />
-                                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-800 text-white text-2 rounded-lg w-52 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                                                            {filingType === 'Business' ? 'Your business registration number issued by CAC (Corporate Affairs Commission).' : 'Your 11-digit National Identification Number issued by NIMC.'}
-                                                        </div>
-                                                    </span>
+                                                    <InfoTooltip text={filingType === 'Business' ? 'Your business registration number issued by CAC (Corporate Affairs Commission).' : 'Your 11-digit National Identification Number issued by NIMC.'} />
                                                 </label>
                                                 <Input
                                                     type="text"

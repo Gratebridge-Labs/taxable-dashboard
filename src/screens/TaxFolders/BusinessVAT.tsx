@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Attachment, AttachmentGroup, AttachmentMedia, AttachmentContent, AttachmentTitle, AttachmentDescription, AttachmentActions, AttachmentAction } from '@/components/ui/attachment';
 import { FileTextIcon, XIcon } from 'lucide-react';
-import { InformationFill } from '@mingcute/react';
 import {
     Stepper, StepperItem, StepperIndicator, StepperTitle,
     StepperSeparator, StepperTrigger,
@@ -20,16 +19,6 @@ import {
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
 const VAT_RATE = 0.075;
-
-// ── Hint Icon ──────────────────────────────────────────────────────────
-const HintIcon = ({ tip }: { tip: string }) => (
-    <span className="relative group inline-flex items-center ml-1 align-middle cursor-default">
-        <InformationFill className="w-3.5 h-3.5" color="#E5E5E5" />
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2 bg-neutral-800 text-white text-1 leading-snug rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-40 font-medium">
-            {tip}
-        </div>
-    </span>
-);
 
 // ── VAT Filing Data ─────────────────────────────────────────────────────
 export interface VATFilingData {

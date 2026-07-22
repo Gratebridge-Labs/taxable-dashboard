@@ -4,7 +4,7 @@ import React, { use, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { ShieldCheck, EyeOff, Lock, ChevronDown, Search, CheckCircle2 } from 'lucide-react';
 
-const API_BASE_URL = 'https://api.gettaxable.com/api';
+import { API_BASE_URL } from '@/lib/api-endpoints';
 
 type UploadStatus = 'pending' | 'completed';
 
@@ -55,7 +55,8 @@ async function fetchJson<T>(input: RequestInfo, init?: RequestInit): Promise<T> 
     throw new Error(message);
   }
 
-  return res.json() as Promise<T>;
+  const text = await res.text();
+  return JSON.parse(text) as T;
 }
 
 function formatAmount(amount: number) {
@@ -233,7 +234,8 @@ export default function UploadPage({ params }: PageProps) {
           body: formData,
         });
 
-        const json = await res.json();
+        const jsonText = await res.text();
+        const json = JSON.parse(jsonText);
 
         if (!res.ok || !json.success) {
           throw new Error(json.message || 'Upload failed');

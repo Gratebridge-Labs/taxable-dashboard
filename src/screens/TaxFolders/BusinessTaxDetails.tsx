@@ -1,7 +1,6 @@
 'use client';
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, startTransition } from 'react';
 import gsap from 'gsap';
-import Lenis from 'lenis';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
@@ -18,7 +17,8 @@ import { BusinessWHTContent } from './BusinessWHT';
 import { FilingSheet } from '@/screens/TaxFolders/TaxFolderShared';
 import { PrimaryButton, SecondaryButton } from '@/screens/TaxFolders/TaxFolderShared';
 import { BusinessCITContent } from './BusinessCIT';
-import { InformationFill, Home2Fill } from '@mingcute/react';
+import { Home2Fill } from '@mingcute/react';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { toast } from 'sonner';
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
@@ -61,15 +61,6 @@ const BUSINESS_SECTIONS = [
 ];
 
 // ── Helper ────────────────────────────────────────────────────────────────────
-const HintIcon = ({ tip }: { tip: string }) => (
-    <span className="relative group inline-flex items-center ml-1 align-middle cursor-default">
-        <InformationFill className="w-3.5 h-3.5" color="#E5E5E5" />
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2 bg-neutral-800 text-white text-1 leading-snug rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 font-medium">
-            {tip}
-        </div>
-    </span>
-);
-
 const SidebarItem = ({
     label, active = false, completed = false, locked = false, onClick
 }: {
@@ -266,27 +257,6 @@ export default function BusinessTaxDetails() {
         animateSection();
     }, [activeSection, animateSection]);
 
-    useEffect(() => {
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-        if ((window as unknown as { __lenis?: Lenis }).__lenis) return;
-
-        const lenis = new Lenis({ lerp: 0.1 });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (window as any).__lenis = lenis;
-
-        function raf(time: number) {
-            lenis.raf(time);
-            requestAnimationFrame(raf);
-        }
-        requestAnimationFrame(raf);
-
-        return () => {
-            lenis.destroy();
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (window as any).__lenis = undefined;
-        };
-    }, []);
-
     // Warn about unsaved changes before page refresh
     useEffect(() => {
         const handler = (e: BeforeUnloadEvent) => {
@@ -428,7 +398,7 @@ export default function BusinessTaxDetails() {
                                     <div>
                                         <label className="block text-2 font-medium text-neutral-500 mb-1">
                                             RC/BN number
-                                            <HintIcon tip="Your business registration number issued by CAC (Corporate Affairs Commission)." />
+                                            <InfoTooltip text="Your business registration number issued by CAC (Corporate Affairs Commission)." />
                                         </label>
                                         <Input
                                             type="text"
@@ -441,7 +411,7 @@ export default function BusinessTaxDetails() {
                                     <div>
                                         <label className="block text-2 font-medium text-neutral-500 mb-1">
                                             Company name
-                                            <HintIcon tip="The registered name of your company as it appears in the CAC certificate." />
+                                            <InfoTooltip text="The registered name of your company as it appears in the CAC certificate." />
                                         </label>
                                         <Input
                                             type="text"
@@ -456,14 +426,14 @@ export default function BusinessTaxDetails() {
                                         <div>
                                             <label className="block text-2 font-medium text-neutral-500 mb-1">
                                                 Industry/sector
-                                                <HintIcon tip="The primary industry your company operates in." />
+                                                <InfoTooltip text="The primary industry your company operates in." />
                                             </label>
                                             <SearchableSelect value={industry} onChange={(v) => { setIndustry(v); hasUnsavedChanges.current = true; }} options={INDUSTRIES} placeholder="Select" />
                                     </div>
                                     <div>
                                         <label className="block text-2 font-medium text-neutral-500 mb-1">
                                             Date of incorporation
-                                                <HintIcon tip="Found on your CAC certificate of incorporation." />
+                                                <InfoTooltip text="Found on your CAC certificate of incorporation." />
                                             </label>
                                             <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                                                 <PopoverTrigger className="w-full h-10 flex items-center justify-start px-3 text-left font-normal text-3 text-neutral-800 border border-neutral-200 bg-white rounded-xl">
@@ -488,7 +458,7 @@ export default function BusinessTaxDetails() {
                                     <div>
                                         <label className="block text-2 font-medium text-neutral-500 mb-1">
                                             Address (building number, street)
-                                            <HintIcon tip="Your registered business address as listed with CAC." />
+                                            <InfoTooltip text="Your registered business address as listed with CAC." />
                                         </label>
                                         <Input
                                             type="text"
@@ -520,7 +490,7 @@ export default function BusinessTaxDetails() {
                                          <span className="text-3 font-medium text-neutral-800">
                                              Pay CIT in quarterly installments
                                          </span>
-                                         <HintIcon tip="Pay your annual CIT liability in 4 equal installments throughout the year." />
+                                         <InfoTooltip text="Pay your annual CIT liability in 4 equal installments throughout the year." />
                                      </label>
                                      <p className="text-2 text-neutral-400 font-medium mt-1">Spread your Company Income Tax across four payments instead of one lump sum.</p>
                                       {payQuarterly && (
@@ -528,7 +498,7 @@ export default function BusinessTaxDetails() {
                                           <div>
                                               <label className="block text-2 font-medium text-neutral-500 mb-1">
                                                   Estimated annual gross revenue
-                                                  <HintIcon tip="Your projected gross revenue for the current tax year." />
+                                                  <InfoTooltip text="Your projected gross revenue for the current tax year." />
                                               </label>
                                               <Input type="text" placeholder="₦ 0.00" value={estimatedAnnualRevenue}
                                                   onChange={e => { const raw = e.target.value.replace(/[^0-9.]/g, ''); const parts = raw.split('.'); const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ','); setEstimatedAnnualRevenue(parts.length > 1 ? integer + '.' + parts.slice(1).join('') : integer); hasUnsavedChanges.current = true; }} />
@@ -536,7 +506,7 @@ export default function BusinessTaxDetails() {
                                           <div>
                                               <label className="block text-2 font-medium text-neutral-500 mb-2">
                                                   Estimated profit margin
-                                                  <HintIcon tip="Your estimated profit as a percentage of revenue." />
+                                                  <InfoTooltip text="Your estimated profit as a percentage of revenue." />
                                               </label>
                                               <div className="flex gap-2">
                                                   {['10%', '15%', '20%', '25%', '30%'].map(m => (

@@ -2,7 +2,7 @@
 import React from 'react';
 import { Drawer, DrawerContent, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { InformationFill } from '@mingcute/react';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 
 // ── Primary Button ─────────────────────────────────────────────────
 interface PrimaryButtonProps {
@@ -80,13 +80,7 @@ export function FormLabel({ children, tip }: { children: React.ReactNode; tip: s
   return (
     <label className="block text-2 font-medium text-neutral-700 mb-1">
       {children}
-      <div className="relative group inline-flex items-center ml-1">
-        <InformationFill className="w-3.5 h-3.5" color="#E5E5E5" />
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-900 text-white text-2 rounded-lg w-52 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 whitespace-normal pointer-events-none">
-          {tip}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-neutral-900" />
-        </div>
-      </div>
+      <InfoTooltip text={tip} arrow />
     </label>
   );
 }

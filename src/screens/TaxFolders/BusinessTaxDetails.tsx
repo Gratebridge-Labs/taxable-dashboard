@@ -21,28 +21,13 @@ import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { toast } from 'sonner';
 import { useTaxableApi } from '@/hooks/useTaxableApi';
 import type { BusinessCompanyInfoRequest } from '@/types/api';
-
-// ── Mock data ─────────────────────────────────────────────────────────────────
-const NIGERIA_STATES = [
-    'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue',
-    'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT',
-    'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi',
-    'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo',
-    'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara',
-];
-
-const NIGERIA_CITIES = [
-    'Lagos', 'Abuja', 'Port Harcourt', 'Kano', 'Ibadan', 'Benin City',
-    'Enugu', 'Aba', 'Onitsha', 'Warri', 'Calabar', 'Uyo', 'Kaduna',
-    'Jos', 'Maiduguri', 'Akure', 'Abeokuta', 'Asaba', 'Owerri', 'Ile-Ife',
-];
-
-const NIGERIA_LGAS = [
-    'Agege', 'Ajeromi-Ifelodun', 'Alimosho', 'Amuwo-Odofin', 'Apapa',
-    'Badagry', 'Epe', 'Eti-Osa', 'Ibeju-Lekki', 'Ifako-Ijaiye',
-    'Ikeja', 'Ikorodu', 'Kosofe', 'Lagos Island', 'Lagos Mainland',
-    'Mushin', 'Ojo', 'Oshodi-Isolo', 'Somolu', 'Surulere',
-];
+import { NIGERIA_STATES, getCitiesForState, getLgasForState } from '@/lib/nigeria-locations';
+import {
+    mapApiEmployeeToPayeStaff,
+    mapPayeStaffToCreateRequest,
+    mapPayeStaffToUpdateRequest,
+    validatePayeStaffForApi,
+} from '@/lib/paye-mappers';
 
 const INDUSTRIES = [
     'Agriculture', 'Construction', 'Education', 'Energy & Utilities',
@@ -95,13 +80,22 @@ export default function BusinessTaxDetails() {
     const profileId = searchParams.get('profileId') || 'default';
     const taxYear = searchParams.get('year') || '2026';
     const STORAGE_KEY = `taxable_business_info_${profileId}`;
-    const { getBusinessCompanyInfo, updateBusinessCompanyInfo } = useTaxableApi();
+    const {
+        getBusinessCompanyInfo,
+        updateBusinessCompanyInfo,
+        listPayeEmployees,
+        createPayeEmployee,
+        updatePayeEmployee,
+        deletePayeEmployee,
+    } = useTaxableApi();
 
     // SessionStorage persistence — restore on client mount to avoid hydration mismatch
     const [showWelcomeModal, setShowWelcomeModal] = React.useState(false);
     const [activeSection, setActiveSection] = React.useState('company-info');
     const [submitting, setSubmitting] = React.useState(false);
     const [companyInfoSaved, setCompanyInfoSaved] = React.useState(false);
+    // Hold form until company-info fetch (or local fallback) finishes — prevents late field pop-in
+    const [companyInfoReady, setCompanyInfoReady] = React.useState(false);
     const hasUnsavedChanges = React.useRef(false);
     const [showUnsavedModal, setShowUnsavedModal] = React.useState(false);
     const [pendingNav, setPendingNav] = React.useState<string | null>(null);
@@ -141,7 +135,10 @@ export default function BusinessTaxDetails() {
     const [filedMonths, setFiledMonths] = React.useState<Set<string>>(new Set());
     const [showPayeFilingModal, setShowPayeFilingModal] = React.useState(false);
     const [payeStaffByMonth, setPayeStaffByMonth] = React.useState<Record<string, PayeStaff[]>>({});
+    const [payeLoading, setPayeLoading] = React.useState(false);
     const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const yearNum = parseInt(taxYear, 10) || new Date().getFullYear();
+    const activeMonthNumber = MONTHS.indexOf(activeMonth) + 1;
 
     // Determine sourceMonth (most recent previous month with data)
     const getSourceMonth = (currentMonth: string): string | null => {
@@ -155,93 +152,257 @@ export default function BusinessTaxDetails() {
         return null;
     };
 
+    const taxIdParam = searchParams.get('taxId');
+
+    // Clear only `new=workspace` — never strip profileId / year / taxId from the URL
     useEffect(() => {
         const isNew = searchParams.get('new');
-        if (isNew === 'workspace') {
-            startTransition(() => {
-                setShowWelcomeModal(true);
-            });
-            router.replace(window.location.pathname);
-        }
-    }, []);
+        if (isNew !== 'workspace') return;
 
-    // Pre-fill RC/BN from onboarding taxId
-    const taxIdParam = searchParams.get('taxId');
-    useEffect(() => {
-        if (taxIdParam && !rcbn) {
-            startTransition(() => {
-                setRcbn(taxIdParam);
-            });
-            hasUnsavedChanges.current = true;
-        }
-    }, [taxIdParam, rcbn]);
+        startTransition(() => {
+            setShowWelcomeModal(true);
+        });
 
-    // Restore company info from sessionStorage on client mount
-    useEffect(() => {
-        try {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            if (!raw) return;
-            const saved = JSON.parse(raw);
-            startTransition(() => {
-                if (saved.rcbn) setRcbn(saved.rcbn);
-                if (saved.companyName) setCompanyName(saved.companyName);
-                if (saved.industry) setIndustry(saved.industry);
-                if (saved.incorporationDateObj) setIncorporationDateObj(new Date(saved.incorporationDateObj));
-                if (saved.lga) setLga(saved.lga);
-                if (saved.address) setAddress(saved.address);
-                if (saved.city) setCity(saved.city);
-                if (saved.state) setState(saved.state);
-                if (typeof saved.payQuarterly === 'boolean') setPayQuarterly(saved.payQuarterly);
-                if (saved.estimatedAnnualRevenue) setEstimatedAnnualRevenue(saved.estimatedAnnualRevenue);
-                if (saved.profitMargin) setProfitMargin(saved.profitMargin);
-            });
-        } catch { /* ignore */ }
-    }, []);
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete('new');
+        const qs = params.toString();
+        router.replace(qs ? `/tax-folders/business?${qs}` : '/tax-folders/business');
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- only when welcome flag is present
+    }, [searchParams.get('new')]);
 
-    // Fetch saved company info from the server (source of truth) and prefill the form
+    // Load company info once before showing inputs (server → taxId → localStorage)
     useEffect(() => {
-        if (!profileId || profileId === 'default') return;
         let cancelled = false;
+        setCompanyInfoReady(false);
+
+        // Reset fields so a previous profile's data never flashes into the form
+        setRcbn('');
+        setCompanyName('');
+        setIndustry('');
+        setIncorporationDateObj(undefined);
+        setAddress('');
+        setCity('');
+        setState('');
+        setLga('');
+        setPayQuarterly(false);
+        setEstimatedAnnualRevenue('');
+        setProfitMargin('20%');
+        setCompanyInfoSaved(false);
+        hasUnsavedChanges.current = false;
+
+        const storageKey = `taxable_business_info_${profileId}`;
+
+        const applyLocalFallback = () => {
+            try {
+                const raw = localStorage.getItem(storageKey);
+                if (raw) {
+                    const saved = JSON.parse(raw);
+                    if (saved.rcbn) setRcbn(saved.rcbn);
+                    if (saved.companyName) setCompanyName(saved.companyName);
+                    if (saved.industry) setIndustry(saved.industry);
+                    if (saved.incorporationDateObj) setIncorporationDateObj(new Date(saved.incorporationDateObj));
+                    if (saved.lga) setLga(saved.lga);
+                    if (saved.address) setAddress(saved.address);
+                    if (saved.city) setCity(saved.city);
+                    if (saved.state) setState(saved.state);
+                    if (typeof saved.payQuarterly === 'boolean') setPayQuarterly(saved.payQuarterly);
+                    if (saved.estimatedAnnualRevenue) setEstimatedAnnualRevenue(saved.estimatedAnnualRevenue);
+                    if (saved.profitMargin) setProfitMargin(saved.profitMargin);
+                    if (saved.companyName) setCompanyInfoSaved(true);
+                } else if (taxIdParam) {
+                    setRcbn(taxIdParam);
+                }
+            } catch {
+                if (taxIdParam) setRcbn(taxIdParam);
+            }
+        };
 
         (async () => {
+            if (!profileId || profileId === 'default') {
+                applyLocalFallback();
+                if (!cancelled) setCompanyInfoReady(true);
+                return;
+            }
+
             try {
                 const res = await getBusinessCompanyInfo(profileId);
-                if (cancelled || !res?.success || !res.data) return;
+                if (cancelled) return;
 
-                const { companyInfo, citEstimate } = res.data;
-                const fmtAmount = (n: number) =>
-                    Number.isFinite(n) ? Math.round(n).toLocaleString('en-US') : '';
+                if (res?.success && res.data) {
+                    const { companyInfo, citEstimate } = res.data;
+                    const fmtAmount = (n: number) =>
+                        Number.isFinite(n) ? Math.round(n).toLocaleString('en-US') : '';
+                    const hasServerInfo = Boolean(companyInfo?.companyName || companyInfo?.RCNumber);
 
-                startTransition(() => {
-                    if (companyInfo?.RCNumber) setRcbn(companyInfo.RCNumber);
-                    if (companyInfo?.companyName) setCompanyName(companyInfo.companyName);
-                    if (companyInfo?.industrySector) setIndustry(companyInfo.industrySector);
-                    if (companyInfo?.dateOfIncorporation) setIncorporationDateObj(new Date(companyInfo.dateOfIncorporation));
-                    if (companyInfo?.businessAddress?.street) setAddress(companyInfo.businessAddress.street);
-                    if (companyInfo?.businessAddress?.city) setCity(companyInfo.businessAddress.city);
-                    if (companyInfo?.businessAddress?.state) setState(companyInfo.businessAddress.state);
-                    if (companyInfo?.businessAddress?.lga) setLga(companyInfo.businessAddress.lga);
+                    if (hasServerInfo) {
+                        if (companyInfo?.RCNumber) setRcbn(companyInfo.RCNumber);
+                        else if (taxIdParam) setRcbn(taxIdParam);
+                        if (companyInfo?.companyName) setCompanyName(companyInfo.companyName);
+                        if (companyInfo?.industrySector) setIndustry(companyInfo.industrySector);
+                        if (companyInfo?.dateOfIncorporation) {
+                            setIncorporationDateObj(new Date(companyInfo.dateOfIncorporation));
+                        }
+                        if (companyInfo?.businessAddress?.street) setAddress(companyInfo.businessAddress.street);
+                        if (companyInfo?.businessAddress?.city) setCity(companyInfo.businessAddress.city);
+                        if (companyInfo?.businessAddress?.state) setState(companyInfo.businessAddress.state);
+                        if (companyInfo?.businessAddress?.lga) setLga(companyInfo.businessAddress.lga);
 
-                    if (citEstimate) {
-                        if (typeof citEstimate.payCitQuarterly === 'boolean') setPayQuarterly(citEstimate.payCitQuarterly);
-                        if (typeof citEstimate.estimatedGrossRevenue === 'number') setEstimatedAnnualRevenue(fmtAmount(citEstimate.estimatedGrossRevenue));
-                        if (typeof citEstimate.estimatedProfitMargin === 'number') setProfitMargin(`${citEstimate.estimatedProfitMargin}%`);
+                        if (citEstimate) {
+                            if (typeof citEstimate.payCitQuarterly === 'boolean') {
+                                setPayQuarterly(citEstimate.payCitQuarterly);
+                            }
+                            if (typeof citEstimate.estimatedGrossRevenue === 'number') {
+                                setEstimatedAnnualRevenue(fmtAmount(citEstimate.estimatedGrossRevenue));
+                            }
+                            if (typeof citEstimate.estimatedProfitMargin === 'number') {
+                                setProfitMargin(`${citEstimate.estimatedProfitMargin}%`);
+                            }
+                        }
+
+                        if (companyInfo?.companyName) setCompanyInfoSaved(true);
+                        hasUnsavedChanges.current = false;
+                    } else {
+                        applyLocalFallback();
                     }
-
-                    // Company info already exists on the server → unlock the other sections
-                    if (companyInfo?.companyName) setCompanyInfoSaved(true);
-                });
-
-                // Server data is authoritative and matches persisted values now
-                hasUnsavedChanges.current = false;
+                } else {
+                    applyLocalFallback();
+                }
             } catch (err: unknown) {
-                // No saved company info yet (or fetch failed) — keep local/blank state
-                console.error('[BusinessTaxDetails] Failed to load company info:', err instanceof Error ? err.message : 'Unknown error');
+                console.error(
+                    '[BusinessTaxDetails] Failed to load company info:',
+                    err instanceof Error ? err.message : 'Unknown error'
+                );
+                if (!cancelled) applyLocalFallback();
+            } finally {
+                if (!cancelled) setCompanyInfoReady(true);
             }
         })();
 
         return () => { cancelled = true; };
-    }, [profileId, getBusinessCompanyInfo]);
+    }, [profileId, taxIdParam, getBusinessCompanyInfo]);
+
+    // Load PAYE employees for the active month before showing the payroll table
+    useEffect(() => {
+        if (activeSection !== 'paye') return;
+        if (!profileId || profileId === 'default') return;
+
+        let cancelled = false;
+        setPayeLoading(true);
+
+        (async () => {
+            try {
+                const res = await listPayeEmployees(profileId, activeMonthNumber, yearNum);
+                if (cancelled) return;
+                const staff = (res.data?.employees ?? []).map(mapApiEmployeeToPayeStaff);
+                setPayeStaffByMonth((prev) => ({ ...prev, [activeMonth]: staff }));
+            } catch (err: unknown) {
+                console.error(
+                    '[BusinessTaxDetails] Failed to load PAYE employees:',
+                    err instanceof Error ? err.message : 'Unknown error'
+                );
+                if (!cancelled) {
+                    setPayeStaffByMonth((prev) => ({ ...prev, [activeMonth]: prev[activeMonth] || [] }));
+                    toast.error(err instanceof Error ? err.message : 'Failed to load employees');
+                }
+            } finally {
+                if (!cancelled) setPayeLoading(false);
+            }
+        })();
+
+        return () => { cancelled = true; };
+    }, [activeSection, activeMonth, activeMonthNumber, profileId, yearNum, listPayeEmployees]);
+
+    const handleAddPayeStaff = useCallback(async (newStaff: PayeStaff) => {
+        if (!profileId || profileId === 'default') return;
+        const validationError = validatePayeStaffForApi(newStaff);
+        if (validationError) {
+            toast.error(validationError);
+            throw new Error(validationError);
+        }
+        try {
+            const res = await createPayeEmployee(
+                profileId,
+                mapPayeStaffToCreateRequest(newStaff, activeMonthNumber)
+            );
+            const mapped = mapApiEmployeeToPayeStaff(res.data.employee);
+            setPayeStaffByMonth((prev) => ({
+                ...prev,
+                [activeMonth]: [...(prev[activeMonth] || []), mapped],
+            }));
+            toast.success('Employee added');
+        } catch (err: unknown) {
+            console.error('[BusinessTaxDetails] Failed to add employee:', err instanceof Error ? err.message : 'Unknown error');
+            toast.error(err instanceof Error ? err.message : 'Failed to add employee');
+            throw err;
+        }
+    }, [profileId, activeMonth, activeMonthNumber, createPayeEmployee]);
+
+    const handleSavePayeStaff = useCallback(async (_oldStaff: PayeStaff, newStaff: PayeStaff) => {
+        if (!profileId || profileId === 'default') return;
+        const validationError = validatePayeStaffForApi(newStaff);
+        if (validationError) {
+            toast.error(validationError);
+            throw new Error(validationError);
+        }
+        try {
+            const res = await updatePayeEmployee(
+                profileId,
+                newStaff.id,
+                mapPayeStaffToUpdateRequest(newStaff)
+            );
+            const mapped = mapApiEmployeeToPayeStaff(res.data.employee);
+            setPayeStaffByMonth((prev) => ({
+                ...prev,
+                [activeMonth]: (prev[activeMonth] || []).map((s) => (s.id === newStaff.id ? mapped : s)),
+            }));
+            toast.success('Employee updated');
+        } catch (err: unknown) {
+            console.error('[BusinessTaxDetails] Failed to update employee:', err instanceof Error ? err.message : 'Unknown error');
+            toast.error(err instanceof Error ? err.message : 'Failed to update employee');
+            throw err;
+        }
+    }, [profileId, activeMonth, updatePayeEmployee]);
+
+    const handleRemovePayeStaff = useCallback(async (staff: PayeStaff) => {
+        if (!profileId || profileId === 'default') return;
+        try {
+            await deletePayeEmployee(profileId, staff.id);
+            setPayeStaffByMonth((prev) => ({
+                ...prev,
+                [activeMonth]: (prev[activeMonth] || []).filter((s) => s.id !== staff.id),
+            }));
+            toast.success('Employee removed');
+        } catch (err: unknown) {
+            console.error('[BusinessTaxDetails] Failed to delete employee:', err instanceof Error ? err.message : 'Unknown error');
+            toast.error(err instanceof Error ? err.message : 'Failed to remove employee');
+            throw err;
+        }
+    }, [profileId, activeMonth, deletePayeEmployee]);
+
+    const handleCopyPayeStaff = useCallback(async (sourceMonth: string) => {
+        if (!profileId || profileId === 'default') return;
+        const sourceStaff = payeStaffByMonth[sourceMonth] || [];
+        if (sourceStaff.length === 0) return;
+
+        try {
+            const created: PayeStaff[] = [];
+            for (const st of sourceStaff) {
+                const res = await createPayeEmployee(
+                    profileId,
+                    mapPayeStaffToCreateRequest(st, activeMonthNumber)
+                );
+                created.push(mapApiEmployeeToPayeStaff(res.data.employee));
+            }
+            setPayeStaffByMonth((prev) => ({
+                ...prev,
+                [activeMonth]: created,
+            }));
+            toast.success(`Copied ${created.length} employee(s) from ${sourceMonth}`);
+        } catch (err: unknown) {
+            console.error('[BusinessTaxDetails] Failed to copy employees:', err instanceof Error ? err.message : 'Unknown error');
+            toast.error(err instanceof Error ? err.message : 'Failed to copy employees');
+        }
+    }, [profileId, activeMonth, activeMonthNumber, payeStaffByMonth, createPayeEmployee]);
 
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -436,6 +597,11 @@ export default function BusinessTaxDetails() {
                             <div data-animate className="flex flex-col items-center">
                                 <h2 className="text-7 font-semibold text-neutral-800 tracking-[-0.02em] mb-8 w-full max-w-[400px]">Company Information</h2>
 
+                                {!companyInfoReady ? (
+                                    <div className="w-full max-w-[400px] flex items-center justify-center py-20">
+                                        <Spinner />
+                                    </div>
+                                ) : (
                                         <div className="space-y-10 w-full max-w-[400px]">
                                             {/* RC/BN number */}
                                     <div>
@@ -508,11 +674,40 @@ export default function BusinessTaxDetails() {
                                             placeholder="e.g. 27, Marina Street"
                                             value={address}
                                             onChange={e => { setAddress(e.target.value); hasUnsavedChanges.current = true; }}
+                                            name="company-street-nofill"
+                                            autoComplete="new-password"
+                                            autoCorrect="off"
+                                            spellCheck={false}
+                                            data-lpignore="true"
+                                            data-form-type="other"
+                                            data-1p-ignore="true"
                                         />
                                         <div className="grid grid-cols-3 gap-3 mt-3">
-                                            <SearchableSelect value={city} onChange={(v) => { setCity(v); hasUnsavedChanges.current = true; }} options={NIGERIA_CITIES} placeholder="City" />
-                                            <SearchableSelect value={state} onChange={(v) => { setState(v); hasUnsavedChanges.current = true; }} options={NIGERIA_STATES} placeholder="State" />
-                                            <SearchableSelect value={lga} onChange={(v) => { setLga(v); hasUnsavedChanges.current = true; }} options={NIGERIA_LGAS} placeholder="LGA" />
+                                            <SearchableSelect
+                                                value={state}
+                                                onChange={(v) => {
+                                                    setState(v);
+                                                    if (!getCitiesForState(v).includes(city)) setCity('');
+                                                    if (!getLgasForState(v).includes(lga)) setLga('');
+                                                    hasUnsavedChanges.current = true;
+                                                }}
+                                                options={NIGERIA_STATES}
+                                                placeholder="State"
+                                            />
+                                            <SearchableSelect
+                                                value={city}
+                                                onChange={(v) => { setCity(v); hasUnsavedChanges.current = true; }}
+                                                options={getCitiesForState(state)}
+                                                placeholder="City"
+                                                disabled={!state}
+                                            />
+                                            <SearchableSelect
+                                                value={lga}
+                                                onChange={(v) => { setLga(v); hasUnsavedChanges.current = true; }}
+                                                options={getLgasForState(state)}
+                                                placeholder="LGA"
+                                                disabled={!state}
+                                            />
                                         </div>
                                     </div>
 
@@ -588,11 +783,20 @@ export default function BusinessTaxDetails() {
                                         {submitting ? <Spinner /> : (companyInfoSaved ? 'Save & Continue' : 'Save & Continue to PAYE')}
                                     </PrimaryButton>
                                 </div>
+                                )}
                             </div>
                         )}
 
                         {/* PAYE section */}
                         {activeSection === 'paye' && payeSubSection === 'monthly-filing' && (() => {
+                            if (payeLoading) {
+                                return (
+                                    <div data-animate className="flex items-center justify-center py-20">
+                                        <Spinner />
+                                    </div>
+                                );
+                            }
+
                             const isFiled = filedMonths.has(activeMonth);
                             const currentMonthStaff = payeStaffByMonth[activeMonth] || [];
                             const sourceMonth = getSourceMonth(activeMonth);
@@ -614,22 +818,10 @@ export default function BusinessTaxDetails() {
                                         filedMonths={filedMonths}
                                         payeStaffByMonth={payeStaffByMonth}
                                         onMonthChange={setActiveMonth}
-                                        onAddStaff={(newStaff) => setPayeStaffByMonth(prev => ({
-                                            ...prev,
-                                            [activeMonth]: [...(prev[activeMonth] || []), newStaff]
-                                        }))}
-                                        onRemoveStaff={(st) => setPayeStaffByMonth(prev => ({
-                                            ...prev,
-                                            [activeMonth]: (prev[activeMonth] || []).filter(s => s.id !== st.id)
-                                        }))}
-                                        onSaveStaff={(oldSt, newSt) => setPayeStaffByMonth(prev => ({
-                                            ...prev,
-                                            [activeMonth]: (prev[activeMonth] || []).map(s => s.id === oldSt.id ? newSt : s)
-                                        }))}
-                                        onCopyStaff={(source) => setPayeStaffByMonth(prev => ({
-                                            ...prev,
-                                            [activeMonth]: [...(prev[source] || [])]
-                                        }))}
+                                        onAddStaff={handleAddPayeStaff}
+                                        onRemoveStaff={handleRemovePayeStaff}
+                                        onSaveStaff={handleSavePayeStaff}
+                                        onCopyStaff={handleCopyPayeStaff}
                                         onFile={() => setShowPayeFilingModal(true)}
                                     />
                                 </div>

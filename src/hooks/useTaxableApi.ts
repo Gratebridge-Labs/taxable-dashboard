@@ -8,6 +8,8 @@ import type {
   AddIncomeRequest,
   CreateProfileOptions,
   BusinessCompanyInfoRequest,
+  CreatePayeEmployeeRequest,
+  UpdatePayeEmployeeRequest,
 CreateSubscriptionLinkRequest,
   VerifyDeductionRequest,
   BatchDeductionRequest,
@@ -156,6 +158,30 @@ export const useTaxableApi = () => {
     return taxableApi.updateBusinessCompanyInfo(token, profileId, data);
   }, [token]);
 
+  const listPayeEmployees = useCallback(async (profileId: string, month: number, year?: number) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.listPayeEmployees(token, profileId, month, year);
+  }, [token]);
+
+  const createPayeEmployee = useCallback(async (profileId: string, data: CreatePayeEmployeeRequest) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.createPayeEmployee(token, profileId, data);
+  }, [token]);
+
+  const updatePayeEmployee = useCallback(async (
+    profileId: string,
+    employeeId: string,
+    data: UpdatePayeEmployeeRequest
+  ) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.updatePayeEmployee(token, profileId, employeeId, data);
+  }, [token]);
+
+  const deletePayeEmployee = useCallback(async (profileId: string, employeeId: string) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.deletePayeEmployee(token, profileId, employeeId);
+  }, [token]);
+
   const deleteProfile = useCallback(async (profileId: string) => {
     if (!token) throw new Error('Authentication required');
     return taxableApi.deleteProfile(token, profileId);
@@ -241,6 +267,10 @@ export const useTaxableApi = () => {
     getProfile,
     getBusinessCompanyInfo,
     updateBusinessCompanyInfo,
+    listPayeEmployees,
+    createPayeEmployee,
+    updatePayeEmployee,
+    deletePayeEmployee,
     deleteProfile,
     getDeductionList,
     uploadFile,

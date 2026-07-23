@@ -634,6 +634,116 @@ export interface BusinessCompanyInfoResponse {
   };
 }
 
+export interface PayeEmployeeDeductions {
+  pension: boolean;
+  nhf: boolean;
+  hmo: boolean;
+  annualRent: boolean;
+}
+
+export interface PayeEmployeePayroll {
+  grossIncome: number;
+  annualGrossIncome: number;
+  taxableIncome: number;
+  hmo: number;
+  pension: number;
+  nhf: number;
+  annualRent: number;
+  rentRelief: number;
+  annualPaye: number;
+  payeThisMonth: number;
+}
+
+export interface PayeEmployee {
+  id: string;
+  employeeId?: string;
+  month: number;
+  year: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  jobTitle: string;
+  jtbTaxId: string;
+  monthlySalary: number;
+  statutoryDeductions: PayeEmployeeDeductions;
+  annualRentAmount?: number;
+  deductionAmounts?: {
+    pension: number;
+    nhf: number;
+    hmo: number;
+  };
+  payroll?: PayeEmployeePayroll;
+  totalDeductions?: number;
+  status?: string;
+  isActive?: boolean;
+  createdAt?: string;
+}
+
+export interface PayeEmployeesListResponse {
+  success: boolean;
+  message?: string;
+  data: {
+    profileId: string;
+    month: number;
+    monthName: string;
+    year: number;
+    employees: PayeEmployee[];
+    summary?: {
+      totalEmployees: number;
+      totalGross: number;
+      totalPayeThisMonth: number;
+    };
+  };
+}
+
+export interface CreatePayeEmployeeRequest {
+  month: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  jobPosition: string;
+  jtbTaxId: string;
+  monthlySalary: number;
+  deductions: PayeEmployeeDeductions;
+  annualRentAmount?: number;
+}
+
+export interface UpdatePayeEmployeeRequest {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  jobPosition?: string;
+  jtbTaxId?: string;
+  monthlySalary?: number;
+  deductions?: PayeEmployeeDeductions;
+  annualRentAmount?: number;
+}
+
+export interface PayeEmployeeResponse {
+  success: boolean;
+  message?: string;
+  data: {
+    employee: PayeEmployee;
+  };
+}
+
+export interface DeletePayeEmployeeResponse {
+  success: boolean;
+  message?: string;
+  data: {
+    deletedEmployee: {
+      id: string;
+      employeeId?: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+    };
+  };
+}
+
 export type IncomeDataType = 'employment' | 'digital_assets' | 'freelance';
 
 export interface IncomeDataEmployment {

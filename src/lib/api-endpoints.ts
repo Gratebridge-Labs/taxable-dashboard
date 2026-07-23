@@ -18,6 +18,9 @@ export const TAXABLE_ENDPOINTS = {
   },
   BUSINESS: {
     COMPANY_INFO: (profileId: string) => `/taxableprofile/business/${profileId}/company-info`,
+    PAYE_EMPLOYEES: (profileId: string) => `/taxableprofile/business/${profileId}/paye/employees`,
+    PAYE_EMPLOYEE: (profileId: string, employeeId: string) =>
+      `/taxableprofile/business/${profileId}/paye/employees/${employeeId}`,
   },
   UPLOAD: '/upload',
   UPLOAD_SIMPLE: '/upload/simple',

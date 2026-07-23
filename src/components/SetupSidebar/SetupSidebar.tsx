@@ -153,9 +153,19 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                         cit: businessServices.includes('CIT'),
                     },
                 });
+                const createdProfileId = profile.profileId || profile.id;
+                if (!createdProfileId) {
+                    throw new Error('Profile created but no profile ID was returned');
+                }
                 await fetchProfiles();
                 onClose();
-                router.push(`/tax-folders/business?year=${taxYear}&new=workspace&profileId=${profile.profileId}&taxId=${encodeURIComponent(taxId)}`);
+                const params = new URLSearchParams({
+                    profileId: createdProfileId,
+                    year: taxYear,
+                    new: 'workspace',
+                });
+                if (taxId) params.set('taxId', taxId);
+                router.push(`/tax-folders/business?${params.toString()}`);
             } catch (err: unknown) {
                 console.error('[SetupSidebar] Failed to create business profile:', err);
                 setError(err instanceof Error ? err.message : 'Failed to create business profile');

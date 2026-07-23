@@ -15,6 +15,11 @@ import type {
   CreateProfileOptions,
   BusinessCompanyInfoResponse,
   BusinessCompanyInfoRequest,
+  CreatePayeEmployeeRequest,
+  UpdatePayeEmployeeRequest,
+  PayeEmployeesListResponse,
+  PayeEmployeeResponse,
+  DeletePayeEmployeeResponse,
   CreateSubscriptionLinkRequest,
   CreatePaymentLinkResponse,
   SubscriptionStatusResponse,
@@ -106,6 +111,69 @@ class TaxableApiService {
       body: JSON.stringify(data),
     });
     return this.handleResponse<BusinessCompanyInfoResponse>(response);
+  }
+
+  async listPayeEmployees(
+    token: string,
+    profileId: string,
+    month: number,
+    year?: number
+  ): Promise<PayeEmployeesListResponse> {
+    const params = new URLSearchParams({ month: String(month) });
+    if (typeof year === 'number') params.set('year', String(year));
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.PAYE_EMPLOYEES(profileId)}?${params.toString()}`,
+      {
+        method: 'GET',
+        headers: this.getHeaders(token),
+      }
+    );
+    return this.handleResponse<PayeEmployeesListResponse>(response);
+  }
+
+  async createPayeEmployee(
+    token: string,
+    profileId: string,
+    data: CreatePayeEmployeeRequest
+  ): Promise<PayeEmployeeResponse> {
+    const response = await fetch(`${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.PAYE_EMPLOYEES(profileId)}`, {
+      method: 'POST',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse<PayeEmployeeResponse>(response);
+  }
+
+  async updatePayeEmployee(
+    token: string,
+    profileId: string,
+    employeeId: string,
+    data: UpdatePayeEmployeeRequest
+  ): Promise<PayeEmployeeResponse> {
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.PAYE_EMPLOYEE(profileId, employeeId)}`,
+      {
+        method: 'PUT',
+        headers: this.getHeaders(token),
+        body: JSON.stringify(data),
+      }
+    );
+    return this.handleResponse<PayeEmployeeResponse>(response);
+  }
+
+  async deletePayeEmployee(
+    token: string,
+    profileId: string,
+    employeeId: string
+  ): Promise<DeletePayeEmployeeResponse> {
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.PAYE_EMPLOYEE(profileId, employeeId)}`,
+      {
+        method: 'DELETE',
+        headers: this.getHeaders(token),
+      }
+    );
+    return this.handleResponse<DeletePayeEmployeeResponse>(response);
   }
 
   async getAllowedYears(): Promise<AllowedYearsResponse> {

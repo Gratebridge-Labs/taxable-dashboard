@@ -79,7 +79,6 @@ export default function BusinessTaxDetails() {
     const searchParams = useSearchParams();
     const profileId = searchParams.get('profileId') || 'default';
     const taxYear = searchParams.get('year') || '2026';
-    const STORAGE_KEY = `taxable_business_info_${profileId}`;
     const {
         getBusinessCompanyInfo,
         updateBusinessCompanyInfo,
@@ -89,12 +88,11 @@ export default function BusinessTaxDetails() {
         deletePayeEmployee,
     } = useTaxableApi();
 
-    // SessionStorage persistence — restore on client mount to avoid hydration mismatch
     const [showWelcomeModal, setShowWelcomeModal] = React.useState(false);
     const [activeSection, setActiveSection] = React.useState('company-info');
     const [submitting, setSubmitting] = React.useState(false);
     const [companyInfoSaved, setCompanyInfoSaved] = React.useState(false);
-    // Hold form until company-info fetch (or local fallback) finishes — prevents late field pop-in
+    // Hold form until company-info fetch finishes — prevents late field pop-in
     const [companyInfoReady, setCompanyInfoReady] = React.useState(false);
     const hasUnsavedChanges = React.useRef(false);
     const [showUnsavedModal, setShowUnsavedModal] = React.useState(false);
@@ -170,7 +168,7 @@ export default function BusinessTaxDetails() {
         // eslint-disable-next-line react-hooks/exhaustive-deps -- only when welcome flag is present
     }, [searchParams.get('new')]);
 
-    // Load company info once before showing inputs (server → taxId → localStorage)
+    // Load company info once before showing inputs (server → taxId for RC/BN only)
     useEffect(() => {
         let cancelled = false;
         setCompanyInfoReady(false);
@@ -190,36 +188,13 @@ export default function BusinessTaxDetails() {
         setCompanyInfoSaved(false);
         hasUnsavedChanges.current = false;
 
-        const storageKey = `taxable_business_info_${profileId}`;
-
-        const applyLocalFallback = () => {
-            try {
-                const raw = localStorage.getItem(storageKey);
-                if (raw) {
-                    const saved = JSON.parse(raw);
-                    if (saved.rcbn) setRcbn(saved.rcbn);
-                    if (saved.companyName) setCompanyName(saved.companyName);
-                    if (saved.industry) setIndustry(saved.industry);
-                    if (saved.incorporationDateObj) setIncorporationDateObj(new Date(saved.incorporationDateObj));
-                    if (saved.lga) setLga(saved.lga);
-                    if (saved.address) setAddress(saved.address);
-                    if (saved.city) setCity(saved.city);
-                    if (saved.state) setState(saved.state);
-                    if (typeof saved.payQuarterly === 'boolean') setPayQuarterly(saved.payQuarterly);
-                    if (saved.estimatedAnnualRevenue) setEstimatedAnnualRevenue(saved.estimatedAnnualRevenue);
-                    if (saved.profitMargin) setProfitMargin(saved.profitMargin);
-                    if (saved.companyName) setCompanyInfoSaved(true);
-                } else if (taxIdParam) {
-                    setRcbn(taxIdParam);
-                }
-            } catch {
-                if (taxIdParam) setRcbn(taxIdParam);
-            }
+        const applyTaxIdFallback = () => {
+            if (taxIdParam) setRcbn(taxIdParam);
         };
 
         (async () => {
             if (!profileId || profileId === 'default') {
-                applyLocalFallback();
+                applyTaxIdFallback();
                 if (!cancelled) setCompanyInfoReady(true);
                 return;
             }
@@ -262,17 +237,17 @@ export default function BusinessTaxDetails() {
                         if (companyInfo?.companyName) setCompanyInfoSaved(true);
                         hasUnsavedChanges.current = false;
                     } else {
-                        applyLocalFallback();
+                        applyTaxIdFallback();
                     }
                 } else {
-                    applyLocalFallback();
+                    applyTaxIdFallback();
                 }
             } catch (err: unknown) {
                 console.error(
                     '[BusinessTaxDetails] Failed to load company info:',
                     err instanceof Error ? err.message : 'Unknown error'
                 );
-                if (!cancelled) applyLocalFallback();
+                if (!cancelled) applyTaxIdFallback();
             } finally {
                 if (!cancelled) setCompanyInfoReady(true);
             }
@@ -444,12 +419,6 @@ export default function BusinessTaxDetails() {
 
     const handleSaveAndContinue = async () => {
         setSubmitting(true);
-
-        // Cache locally regardless of network outcome
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-            rcbn, companyName, industry, incorporationDateObj, address, city, state, lga,
-            payQuarterly, estimatedAnnualRevenue, profitMargin,
-        }));
 
         try {
             if (profileId && profileId !== 'default') {

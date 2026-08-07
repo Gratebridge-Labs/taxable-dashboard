@@ -63,10 +63,10 @@ export default function Signup() {
                 <div ref={formRef} className="max-w-[420px] mx-auto w-full">
                     <div className="flex justify-between items-start mb-10">
                         <div>
-                            <h2 data-animate className="text-7 font-semibold text-neutral-800 mb-1 leading-[1.1] tracking-[-0.02em]">Welcome to Taxable</h2>
-                            <p data-animate className="text-2 font-medium text-neutral-400 tracking-[-0.01em]">Let&apos;s get your tax compliance sorted in minutes</p>
+                            <h2 data-animate className="text-5 font-medium text-neutral-800 mb-1 leading-[1.1] tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Welcome to Taxable</h2>
+                            <p data-animate className="text-1 font-medium text-neutral-400 tracking-[-0.01em]">Let&apos;s get your tax compliance sorted in minutes</p>
                         </div>
-                        <Link href="/signin" className="px-5 py-2.5 rounded-xl border border-neutral-200 text-neutral-800 font-semibold bg-white text-2 whitespace-nowrap shrink-0">
+                        <Link href="/signin" className="px-5 py-2.5 rounded-xl border border-neutral-200 text-neutral-800 font-semibold bg-white text-1 whitespace-nowrap shrink-0">
                             Log in
                         </Link>
                     </div>
@@ -115,7 +115,7 @@ export default function Signup() {
                             />
                             <div className="flex items-center gap-3 pt-1">
                                 <Checkbox id="whatsapp" checked={formData.whatsappReminders} onCheckedChange={(c) => setFormData({ ...formData, whatsappReminders: c === true })} />
-                                <label htmlFor="whatsapp" className="text-2 font-medium text-neutral-400 cursor-pointer">Receive tax deadline reminders via WhatsApp</label>
+                                <label htmlFor="whatsapp" className="text-1 font-medium text-neutral-400 cursor-pointer">Receive tax deadline reminders via WhatsApp</label>
                             </div>
                         </div>
 
@@ -130,19 +130,19 @@ export default function Signup() {
                         </div>
 
                         {apiError && (
-                            <p data-animate className="text-2 text-destructive font-medium">{apiError}</p>
+                            <p data-animate className="text-1 text-destructive font-medium">{apiError}</p>
                         )}
 
                         <div data-animate className="flex flex-col gap-3">
                             <button
                                 type="submit"
                                 disabled={!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.password}
-                                className="w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400 text-3 flex items-center justify-center"
+                                className="w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400 text-2 flex items-center justify-center"
                             >
                                 {isLoading ? <Spinner /> : "Create Account"}
                             </button>
 
-                            <p className="text-2 text-center text-neutral-400 font-medium px-2">
+                            <p className="text-1 text-center text-neutral-400 font-medium px-2">
                                 By continuing, you agree to our <Link href="#" className="font-semibold text-neutral-800">Terms of Service</Link> and <Link href="#" className="font-semibold text-neutral-800">Privacy Policy</Link>.
                             </p>
                         </div>

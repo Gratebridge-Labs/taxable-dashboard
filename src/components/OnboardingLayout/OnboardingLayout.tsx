@@ -49,11 +49,11 @@ const OnboardingLayout = ({ children }: OnboardingLayoutProps) => {
                     </div>
 
                     <div className="relative z-10 mt-12 md:mt-0">
-                        <h1 data-animate-left className="text-7 font-semibold text-neutral-50 mb-4 md:mb-6 leading-[1.1] tracking-[-0.02em]">
-                            Start your stress-free tax journey.
+                        <h1 data-animate-left className="text-8 font-normal text-neutral-50 mb-4 md:mb-6 leading-[1.1] tracking-[-0.05em] font-[family-name:var(--font-merriweather)]">
+                            By the time tax season comes around, you&apos;ll already be done.
                         </h1>
-                        <p data-animate-left className="text-neutral-50 text-2 font-medium tracking-[-0.01em]">
-                            Join thousands of Nigerians filing smarter in 10 minutes.
+                        <p data-animate-left className="text-neutral-50 text-2 font-medium tracking-[-0.01em] opacity-90">
+                            Taxable is built and run by licensed tax agents. Document your income as it happens, and they&apos;ll calculate what you owe and file it with NRS — quietly, correctly, on your behalf.
                         </p>
                     </div>
                 </div>

@@ -484,8 +484,7 @@ export default function PITDetails() {
                     <div data-animate>
 
                         <div className="space-y-4">
-                            {(currentProfile?.primaryIncomeSources ?? []).includes('Salary / Employment') && (
-                                <div className="bg-neutral-50 rounded-3xl p-5">
+                            <div className="bg-neutral-50 rounded-3xl p-5">
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="The actual cash amount transferred to your bank account by your employer after taxes and pensions are deducted.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} Take-Home Pay</FormLabel>
@@ -506,10 +505,8 @@ export default function PITDetails() {
                                         ))}
                                     </div>
                                 </div>
-                            )}
 
-                            {(currentProfile?.primaryIncomeSources ?? []).includes('Business/Self-employment') && (
-                                <div className="bg-neutral-50 rounded-3xl p-5">
+                            <div className="bg-neutral-50 rounded-3xl p-5">
                                     <h3 className="text-3 font-semibold text-neutral-800 mb-4">Business Income</h3>
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
@@ -535,10 +532,8 @@ export default function PITDetails() {
                                         ))}
                                     </div>
                                 </div>
-                            )}
 
-                            {(currentProfile?.primaryIncomeSources ?? []).includes('Freelance/Consulting') && (
-                                <div className="bg-neutral-50 rounded-3xl p-5">
+                            <div className="bg-neutral-50 rounded-3xl p-5">
                                     <h3 className="text-3 font-semibold text-neutral-800 mb-4">Freelance / Consulting</h3>
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
@@ -564,10 +559,8 @@ export default function PITDetails() {
                                         ))}
                                     </div>
                                 </div>
-                            )}
 
-                            {(currentProfile?.primaryIncomeSources ?? []).includes('Investment income') && (
-                                <div className="bg-neutral-50 rounded-3xl p-5">
+                            <div className="bg-neutral-50 rounded-3xl p-5">
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Dividends and interest earned on your investments this month.">Dividends / Interest Received</FormLabel>
@@ -588,10 +581,8 @@ export default function PITDetails() {
                                         ))}
                                     </div>
                                 </div>
-                            )}
 
-                            {(currentProfile?.primaryIncomeSources ?? []).includes('Rental income') && (
-                                <div className="bg-neutral-50 rounded-3xl p-5">
+                            <div className="bg-neutral-50 rounded-3xl p-5">
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Total rent payments collected from your tenants this month.">Gross Rent Payments Collected</FormLabel>
@@ -612,10 +603,8 @@ export default function PITDetails() {
                                         ))}
                                     </div>
                                 </div>
-                            )}
 
-                            {(currentProfile?.primaryIncomeSources ?? []).includes('Digital Assets/Crypto') && (
-                                <div className="bg-neutral-50 rounded-3xl p-5">
+                            <div className="bg-neutral-50 rounded-3xl p-5">
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Total realized profits from asset sales or trading inside the month.">Net Crypto / Digital Asset Gains</FormLabel>
@@ -636,11 +625,6 @@ export default function PITDetails() {
                                         ))}
                                     </div>
                                 </div>
-                            )}
-
-                            {(currentProfile?.primaryIncomeSources ?? []).length === 0 && (
-                                <p className="text-2 text-neutral-500 font-medium">No income sources selected during onboarding.</p>
-                            )}
                         </div>
 
                         <div className="flex gap-3 mt-8">

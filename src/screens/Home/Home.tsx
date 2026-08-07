@@ -114,10 +114,10 @@ export default function Home() {
                         <div className="flex flex-col gap-12">
                             <div className="flex flex-col md:flex-row justify-between items-start gap-8">
                                 <div data-animate>
-                                    <h1 className="text-7 font-semibold text-neutral-800 mb-2 tracking-tight">
+                                    <h1 className="text-5 font-semibold text-neutral-800 mb-2 tracking-tight">
                                         Hello {user?.firstName}, Welcome to Taxable
                                     </h1>
-                                    <p className="text-2 text-neutral-400 font-medium">The 2026 tax cycle is currently active. Let's make sure you're compliant.</p>
+                                    <p className="text-1 text-neutral-400 font-medium">The 2026 tax cycle is currently active. Let's make sure you're compliant.</p>
                                 </div>
 
                                 <div data-animate className="w-full md:w-auto">
@@ -143,60 +143,35 @@ export default function Home() {
                     <>
                         <div className="animate-in fade-in duration-700">
 
-                            {/* Dynamic Tax Filings Sections */}
-                            {Object.entries(
-                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                profiles.reduce((acc: Record<string, any[]>, profile) => {
-                                    const year = profile.year || '2026';
-                                    if (!acc[year]) acc[year] = [];
-                                    acc[year].push(profile);
-                                    return acc;
-                                }, {})
-                            ).sort(([yearA], [yearB]) => Number(yearB) - Number(yearA)).map(([year, yearProfiles], index) => (
-                                <section key={year} className="mb-10 last:mb-0" data-animate>
-                                    <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-10">
-                                        <h2 className="text-5 font-semibold text-neutral-800">{year} Tax Filings</h2>
-                                        {index === 0 ? (
-                                            <button
-                                                onClick={() => setIsSidebarOpen(true)}
-                                                className="h-12 px-4 bg-taxable-blue text-white font-semibold text-3 rounded-xl w-full sm:w-auto text-center"
-                                            >
-                                                Create another tax filing
-                                            </button>
-                                        ) : (
-                                            <button
-                                                onClick={() => setIsSidebarOpen(true)}
-                                                className="text-2 font-medium text-neutral-500"
-                                            >
-                                                Add another tax type
-                                            </button>
-                                        )}
-                                    </div>
+                            {/* Tax Filings */}
+                            <section data-animate>
+                                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
+                                    <h2 className="text-5 font-medium text-neutral-800 mb-1 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Tax Filings</h2>
+                                    <button
+                                        onClick={() => setIsSidebarOpen(true)}
+                                        className="h-10 px-5 bg-taxable-blue text-white font-semibold text-2 rounded-xl w-full sm:w-auto text-center"
+                                    >
+                                        Create another tax filing
+                                    </button>
+                                </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                        {yearProfiles.map((profile, index) => (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                    {[...profiles]
+                                        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                                        .map((profile, index) => (
                                             <TaxFolderCard
-                                                key={profile._id || profile.profileId || index}
-                                                title={profile.fullName || profile.title || `${profile.profileType} — ${profile.year}`}
-                                                description={profile.nin ? `Tax ID: ${profile.nin}` : (profile.description || `Your ${profile.profileType?.toLowerCase() || 'tax'} filing for ${profile.year || '2026'}.`)}
+                                                key={profile.profileId || profile.id || index}
+                                                title={profile.fullName || `${profile.profileType} — ${profile.year}`}
+                                                description={profile.nin ? `Tax ID: ${profile.nin}` : `Your ${profile.profileType?.toLowerCase() || 'tax'} filing for ${profile.year || '2026'}.`}
                                                 statusText={profile.profileType || 'Tax'}
+                                                year={profile.year}
                                                 onClick={() => handleFolderClick(profile)}
-                                                onDelete={() => handleDeleteProfile(profile.profileId || profile._id)}
+                                                onDelete={() => handleDeleteProfile(profile.profileId || profile.id)}
                                             />
                                         ))}
-                                    </div>
-                                </section>
-                            ))}
+                                </div>
+                            </section>
                         </div>
-
-                        <section className="mt-16" data-animate>
-                            <h2 className="text-5 font-semibold text-neutral-800 mb-6">Resources</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {VIDEOS.map((video, index) => (
-                                    <VideoCard key={index} {...video} />
-                                ))}
-                            </div>
-                        </section>
                     </>
                 )}
             </main>

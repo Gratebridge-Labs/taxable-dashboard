@@ -76,15 +76,15 @@ export default function VerifyOTP() {
             <OnboardingLayout>
                 <div className="flex-1 flex flex-col justify-center relative">
                     <div className="absolute top-0 right-0 -top-2 md:top-0">
-                        <Link href="/signin" className="px-4 md:px-5 py-2 md:py-2.5 rounded-xl border border-neutral-200 text-neutral-800 font-semibold bg-white text-1 md:text-2 whitespace-nowrap">
+                        <Link href="/signin" className="px-4 md:px-5 py-2 md:py-2.5 rounded-xl border border-neutral-200 text-neutral-800 font-semibold bg-white text-1 whitespace-nowrap">
                             Log in
                         </Link>
                     </div>
 
                     <div ref={formRef} className="max-w-[420px] w-full mx-auto px-4 md:px-0">
                         <div className="mb-10">
-                            <h2 data-animate className="text-6 md:text-7 font-semibold text-neutral-800 mb-1 tracking-[-0.02em]">Enter Verification Code</h2>
-                            <p data-animate className="text-neutral-400 text-2 leading-relaxed font-medium tracking-[-0.01em]">
+                            <h2 data-animate className="text-5 font-medium text-neutral-800 mb-1 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Enter Verification Code</h2>
+                            <p data-animate className="text-neutral-400 text-1 leading-relaxed font-medium tracking-[-0.01em]">
                                 We&apos;ve sent a verification code to your mail<br />
                                 <span className="text-neutral-800 font-semibold">{email}</span>
                             </p>
@@ -104,12 +104,12 @@ export default function VerifyOTP() {
                             <button
                                 type="submit"
                                 disabled={otp.some(d => !d)}
-                                className="w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400 text-3 flex items-center justify-center gap-2"
+                                className="w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400 text-2 flex items-center justify-center gap-2"
                             >
                                 {isLoading ? <Spinner /> : "Verify"}
                             </button>
 
-                            <div className="text-center text-2">
+                            <div className="text-center text-1">
                                 <span className="text-neutral-400 font-medium">Did not receive mail? </span>
                                 <button
                                     type="button"

@@ -40,7 +40,7 @@ export default function DashboardHeader() {
 
     return (
         <header className="w-full h-16 bg-white border-b border-neutral-100">
-            <div className="max-w-[1400px] mx-auto w-full h-full flex items-center px-4 md:px-8">
+            <div className="max-w-[1280px] mx-auto w-full h-full flex items-center px-6 md:px-12">
                 {/* Left Section: Mobile Menu Icon & Logo */}
                 <div className="flex-1 flex items-center gap-3">
                     <button
@@ -57,9 +57,9 @@ export default function DashboardHeader() {
                         <Image
                             src="/logo_blue.svg"
                             alt="Taxable"
-                            width={80}
-                            height={48}
-                            className="md:w-[76px] md:h-[46px] w-[60px] h-[36px]"
+                            width={64}
+                            height={38}
+                            className="md:w-[60px] md:h-[36px] w-[48px] h-[29px]"
                             priority
                         />
                     </Link>
@@ -80,7 +80,7 @@ export default function DashboardHeader() {
                                 title={link.name}
                             >
                                 {link.icon}
-                                <span className="text-3">{link.name}</span>
+                                <span className="text-2">{link.name}</span>
                             </Link>
                         );
                     })}
@@ -94,7 +94,7 @@ export default function DashboardHeader() {
                             className="flex items-center gap-2 bg-white border border-neutral-100 rounded-lg px-3 py-1.5 h-10"
                         >
                             <Image src="/Avatar.svg" alt="" width={28} height={28} className="rounded-full" />
-                            <span className="text-3 font-semibold text-neutral-800">{user?.firstName} {user?.lastName}</span>
+                            <span className="text-2 font-semibold text-neutral-800">{user?.firstName} {user?.lastName}</span>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-neutral-400">
                                 <polyline points="6 9 12 15 18 9" />
                             </svg>
@@ -107,7 +107,7 @@ export default function DashboardHeader() {
                                     <Link
                                         href="/profile"
                                         onClick={() => setShowProfileMenu(false)}
-                                        className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-neutral-800 text-3 font-semibold hover:bg-neutral-50"
+                                        className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-neutral-800 text-2 font-semibold hover:bg-neutral-50"
                                     >
                                         <span className="flex items-center justify-center w-5 h-5 shrink-0 text-neutral-400">
                                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="block">
@@ -118,7 +118,7 @@ export default function DashboardHeader() {
                                     </Link>
                                     <a
                                         href="mailto:support@taxable.ng"
-                                        className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-neutral-800 text-3 font-semibold hover:bg-neutral-50"
+                                        className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-neutral-800 text-2 font-semibold hover:bg-neutral-50"
                                     >
                                         <span className="flex items-center justify-center w-5 h-5 shrink-0 text-neutral-400">
                                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="block">
@@ -130,7 +130,7 @@ export default function DashboardHeader() {
                                     <div className="border-t border-neutral-50 my-0.5" />
                                     <button
                                         onClick={() => { logout(); router.push('/signin'); }}
-                                        className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-red-500 text-3 font-semibold hover:bg-red-50 w-full text-left"
+                                        className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-red-500 text-2 font-semibold hover:bg-red-50 w-full text-left"
                                     >
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

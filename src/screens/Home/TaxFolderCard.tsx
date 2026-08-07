@@ -5,12 +5,13 @@ interface TaxFolderCardProps {
     title: string;
     description: string;
     statusText: string;
+    year?: number;
     isInactive?: boolean;
     onClick?: () => void;
     onDelete?: () => void;
 }
 
-export function TaxFolderCard({ title, description, statusText, isInactive = false, onClick, onDelete }: TaxFolderCardProps) {
+export function TaxFolderCard({ title, description, statusText, year, isInactive = false, onClick, onDelete }: TaxFolderCardProps) {
     return (
         <div
             onClick={onClick}
@@ -20,20 +21,27 @@ export function TaxFolderCard({ title, description, statusText, isInactive = fal
                 <Image
                     src="/icons/folder.svg"
                     alt="folder"
-                    width={32}
-                    height={31}
+                    width={24}
+                    height={23}
                 />
 
                 <div className="flex flex-col gap-1">
-                    <h3 className="text-5 font-semibold text-neutral-800">{title}</h3>
-                    <p className="text-2 text-neutral-500 font-medium line-clamp-2">
+                    <h3 className="text-3 font-semibold text-neutral-800">{title}</h3>
+                    <p className="text-1 text-neutral-500 font-medium line-clamp-2">
                         {description}
                     </p>
                 </div>
 
-                <Badge variant="secondary" className="w-fit">
-                    {statusText}
-                </Badge>
+                <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="w-fit">
+                        {statusText}
+                    </Badge>
+                    {year && (
+                        <Badge variant="secondary" className="w-fit">
+                            {year}
+                        </Badge>
+                    )}
+                </div>
             </div>
 
             {onDelete && (

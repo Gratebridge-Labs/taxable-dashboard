@@ -51,8 +51,8 @@ export default function CreateNewPassword() {
             <OnboardingLayout>
                 <div ref={formRef} className="max-w-[420px] mx-auto w-full px-4">
                     <div className="mb-10 text-left">
-                        <h2 data-animate className="text-7 font-semibold text-neutral-800 mb-1 tracking-[-0.02em]">Create a new password</h2>
-                        <p data-animate className="text-neutral-400 text-2 font-medium tracking-[-0.01em]">Choose a strong password for your account.</p>
+                        <h2 data-animate className="text-5 font-medium text-neutral-800 mb-1 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Create a new password</h2>
+                        <p data-animate className="text-neutral-400 text-1 font-medium tracking-[-0.01em]">Choose a strong password for your account.</p>
                     </div>
 
                     <form className="space-y-10" onSubmit={handleSubmit}>
@@ -76,14 +76,14 @@ export default function CreateNewPassword() {
                         </div>
 
                         {apiError && (
-                            <p data-animate className="text-2 text-destructive font-medium">{apiError}</p>
+                            <p data-animate className="text-1 text-destructive font-medium">{apiError}</p>
                         )}
 
                         <div data-animate>
                             <button
                                 type="submit"
                                 disabled={!password || password !== confirmPassword}
-                                className="w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400 text-3 flex items-center justify-center"
+                                className="w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400 text-2 flex items-center justify-center"
                             >
                                 {isLoading ? <Spinner /> : "Reset Password"}
                             </button>

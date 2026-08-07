@@ -7,8 +7,8 @@ export default function LogoWhite() {
             <Image
                 src="/logo.svg"
                 alt="Taxable"
-                width={100}
-                height={61}
+                width={80}
+                height={49}
                 priority
             />
         </Link>

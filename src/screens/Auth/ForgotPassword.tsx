@@ -39,16 +39,10 @@ export default function ForgotPassword() {
         <>
             <OnboardingLayout>
                 <div className="flex-1 flex flex-col justify-center relative">
-                    <div className="absolute top-0 right-0">
-                        <Link href="/signin" className="px-5 py-2.5 rounded-xl border border-neutral-200 text-neutral-800 font-semibold bg-white text-2 whitespace-nowrap">
-                            Log in
-                        </Link>
-                    </div>
-
                     <div ref={formRef} className="max-w-[420px] w-full mx-auto px-4">
                         <div className="mb-10 text-left">
-                            <h2 data-animate className="text-7 font-semibold text-neutral-800 mb-1 tracking-[-0.02em]">Forgot Password</h2>
-                            <p data-animate className="text-neutral-400 text-2 font-medium leading-relaxed tracking-[-0.01em]">
+                            <h2 data-animate className="text-5 font-medium text-neutral-800 mb-1 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Forgot Password</h2>
+                            <p data-animate className="text-neutral-400 text-1 font-medium leading-relaxed tracking-[-0.01em]">
                                 Enter your registered email address to receive instructions on how to reset your password.
                             </p>
                         </div>
@@ -67,20 +61,20 @@ export default function ForgotPassword() {
                             </div>
 
                             {apiError && (
-                                <p data-animate className="text-2 text-destructive font-medium">{apiError}</p>
+                                <p data-animate className="text-1 text-destructive font-medium">{apiError}</p>
                             )}
 
                             <div data-animate className="flex flex-col gap-3">
                             <button
                                 type="submit"
                                 disabled={!email}
-                                className="w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400 text-3 flex items-center justify-center gap-2"
+                                className="w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400 text-2 flex items-center justify-center gap-2"
                             >
                                 {loading ? <Spinner /> : "Continue"}
                             </button>
 
                             <div className="text-center pt-2">
-                                <Link href="/signin" className="text-2 text-neutral-800 font-semibold">
+                                <Link href="/signin" className="text-1 text-neutral-800 font-semibold">
                                     Back to login
                                 </Link>
                             </div>

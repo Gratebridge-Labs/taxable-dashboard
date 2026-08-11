@@ -20,9 +20,9 @@ export function FAQSection() {
         <div className="mt-16 pb-20" data-animate>
             <div className="flex items-center justify-between mb-7">
                 <div className="flex items-center h-12">
-                    <h2 className="text-3 font-semibold text-taxable-dark">Common Tax Questions</h2>
+                    <h2 className="text-5 font-medium text-neutral-800 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Common Tax Questions</h2>
                 </div>
-                <button className="px-4 h-12 bg-white border border-neutral-100 text-taxable-dark font-semibold rounded-xl text-2">
+                <button className="h-12 px-5 border border-neutral-200 bg-white text-neutral-800 font-semibold rounded-xl whitespace-nowrap text-2">
                     Talk to an accountant
                 </button>
             </div>

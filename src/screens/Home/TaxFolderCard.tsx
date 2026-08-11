@@ -6,12 +6,13 @@ interface TaxFolderCardProps {
     description: string;
     statusText: string;
     year?: number;
+    statusLabel?: string;
     isInactive?: boolean;
     onClick?: () => void;
     onDelete?: () => void;
 }
 
-export function TaxFolderCard({ title, description, statusText, year, isInactive = false, onClick, onDelete }: TaxFolderCardProps) {
+export function TaxFolderCard({ title, description, statusText, year, statusLabel, isInactive = false, onClick, onDelete }: TaxFolderCardProps) {
     return (
         <div
             onClick={onClick}
@@ -39,6 +40,11 @@ export function TaxFolderCard({ title, description, statusText, year, isInactive
                     {year && (
                         <Badge variant="secondary" className="w-fit">
                             {year}
+                        </Badge>
+                    )}
+                    {statusLabel && (
+                        <Badge variant="secondary" className="w-fit">
+                            {statusLabel}
                         </Badge>
                     )}
                 </div>

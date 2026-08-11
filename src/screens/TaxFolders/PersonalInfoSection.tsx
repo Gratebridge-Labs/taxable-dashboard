@@ -10,25 +10,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Spinner } from '@/components/ui/spinner';
 import { format } from 'date-fns';
-
-const NIGERIA_STATES = [
-    'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue',
-    'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT',
-    'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi',
-    'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo',
-    'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara',
-];
-const NIGERIA_CITIES = [
-    'Lagos', 'Abuja', 'Port Harcourt', 'Kano', 'Ibadan', 'Benin City',
-    'Enugu', 'Aba', 'Onitsha', 'Warri', 'Calabar', 'Uyo', 'Kaduna',
-    'Jos', 'Maiduguri', 'Akure', 'Abeokuta', 'Asaba', 'Owerri', 'Ile-Ife',
-];
-const NIGERIA_LGAS = [
-    'Agege', 'Ajeromi-Ifelodun', 'Alimosho', 'Amuwo-Odofin', 'Apapa',
-    'Badagry', 'Epe', 'Eti-Osa', 'Ibeju-Lekki', 'Ifako-Ijaiye',
-    'Ikeja', 'Ikorodu', 'Kosofe', 'Lagos Island', 'Lagos Mainland',
-    'Mushin', 'Ojo', 'Oshodi-Isolo', 'Somolu', 'Surulere',
-];
+import { NIGERIA_STATES, getCitiesForState, getLgasForState } from '@/lib/nigeria-locations';
 
 export interface PersonalInfo {
     nin: string;
@@ -80,7 +62,7 @@ export const PersonalInfoSection = ({
     return (
         <div className="flex flex-col items-center" data-animate>
             <div className="space-y-10 w-full max-w-[400px]">
-                <h2 className="text-7 font-semibold text-neutral-800 tracking-[-0.02em]">Personal Information</h2>
+                <h2 className="text-5 font-medium text-neutral-800 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Personal Information</h2>
 
                 {/* NIN */}
                 <div>
@@ -159,7 +141,7 @@ export const PersonalInfoSection = ({
                         <InfoTooltip text="Your date of birth as recorded on your NIN." />
                     </label>
                     <Popover open={dobOpen} onOpenChange={setDobOpen}>
-                        <PopoverTrigger className="w-full h-10 flex items-center justify-start px-3 text-left font-normal text-3 text-neutral-800 border border-neutral-200 bg-white rounded-xl">
+                        <PopoverTrigger className="w-full h-10 flex items-center justify-start px-3 text-left font-medium text-sm text-neutral-800 border border-neutral-200 bg-white rounded-xl">
                             {dobDate ? format(dobDate, 'dd / MM / yyyy') : <span className="text-neutral-400">DD / MM / YYYY</span>}
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
@@ -190,9 +172,9 @@ export const PersonalInfoSection = ({
                         onChange={(e) => set('streetAddress', e.target.value)}
                     />
                     <div className="grid grid-cols-3 gap-3 mt-3">
-                        <SearchableSelect options={NIGERIA_CITIES} value={personalInfo.city} onChange={(v) => set('city', v)} placeholder="City" />
-                        <SearchableSelect options={NIGERIA_STATES} value={personalInfo.state} onChange={(v) => set('state', v)} placeholder="State" />
-                        <SearchableSelect options={NIGERIA_LGAS} value={personalInfo.lga} onChange={(v) => set('lga', v)} placeholder="LGA" />
+                        <SearchableSelect options={NIGERIA_STATES} value={personalInfo.state} onChange={(v) => setPersonalInfo(prev => ({ ...prev, state: v, city: '', lga: '' }))} placeholder="State" />
+                        <SearchableSelect options={personalInfo.state ? getCitiesForState(personalInfo.state) : []} value={personalInfo.city} onChange={(v) => set('city', v)} placeholder="City" />
+                        <SearchableSelect options={personalInfo.state ? getLgasForState(personalInfo.state) : []} value={personalInfo.lga} onChange={(v) => set('lga', v)} placeholder="LGA" />
                     </div>
                 </div>
 

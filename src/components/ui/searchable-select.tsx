@@ -42,9 +42,15 @@ export function SearchableSelect({ options, value, onChange, placeholder, classN
         setSearch('');
     };
 
+    const openDropdown = () => {
+        if (options.length > 0) {
+            setOpen(true);
+        }
+    };
+
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (!open) {
-            if (e.key === 'ArrowDown' || e.key === 'Enter') {
+            if ((e.key === 'ArrowDown' || e.key === 'Enter') && options.length > 0) {
                 setOpen(true);
                 e.preventDefault();
             }
@@ -79,8 +85,8 @@ export function SearchableSelect({ options, value, onChange, placeholder, classN
             <div className="relative">
                 <Input
                     value={displayText}
-                    onChange={e => { setSearch(e.target.value); setOpen(true); }}
-                    onFocus={() => setOpen(true)}
+                    onChange={e => { setSearch(e.target.value); openDropdown(); }}
+                    onFocus={openDropdown}
                     onKeyDown={handleKeyDown}
                     placeholder={placeholder}
                     className="pr-10"

@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { useUser } from '@/contexts/UserContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useTaxableApi } from '@/hooks/useTaxableApi';
+import { getProfileStatusLabel } from '@/lib/profile-status';
 
 const VIDEOS = [
     { thumbnail: "/thumbnails/tour.png", title: "The Taxable Tour", duration: "8:37 mins" },
@@ -114,7 +115,7 @@ export default function Home() {
                         <div className="flex flex-col gap-12">
                             <div className="flex flex-col md:flex-row justify-between items-start gap-8">
                                 <div data-animate>
-                                    <h1 className="text-5 font-semibold text-neutral-800 mb-2 tracking-tight">
+                                    <h1 className="text-5 font-medium text-neutral-800 mb-2 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">
                                         Hello {user?.firstName}, Welcome to Taxable
                                     </h1>
                                     <p className="text-1 text-neutral-400 font-medium">The 2026 tax cycle is currently active. Let's make sure you're compliant.</p>
@@ -123,14 +124,14 @@ export default function Home() {
                                 <div data-animate className="w-full md:w-auto">
                                     <button
                                         onClick={() => setIsSidebarOpen(true)}
-                                        className="h-12 px-4 bg-taxable-blue text-white font-semibold rounded-xl whitespace-nowrap"
+                                        className="h-10 px-5 bg-taxable-blue text-white font-semibold text-2 rounded-xl whitespace-nowrap"
                                     >
                                         Create new tax filing
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {VIDEOS.map((video, index) => (
                                     <div key={index} data-animate><VideoCard {...video} /></div>
                                 ))}
@@ -165,6 +166,7 @@ export default function Home() {
                                                 description={profile.nin ? `Tax ID: ${profile.nin}` : `Your ${profile.profileType?.toLowerCase() || 'tax'} filing for ${profile.year || '2026'}.`}
                                                 statusText={profile.profileType || 'Tax'}
                                                 year={profile.year}
+                                                statusLabel={getProfileStatusLabel(profile)}
                                                 onClick={() => handleFolderClick(profile)}
                                                 onDelete={() => handleDeleteProfile(profile.profileId || profile.id)}
                                             />

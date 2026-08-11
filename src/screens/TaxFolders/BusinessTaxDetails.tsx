@@ -19,29 +19,9 @@ import { BusinessCITContent } from './BusinessCIT';
 import { Home2Fill } from '@mingcute/react';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { toast } from 'sonner';
+import { NIGERIA_STATES, getCitiesForState, getLgasForState } from '@/lib/nigeria-locations';
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
-const NIGERIA_STATES = [
-    'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue',
-    'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT',
-    'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi',
-    'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo',
-    'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara',
-];
-
-const NIGERIA_CITIES = [
-    'Lagos', 'Abuja', 'Port Harcourt', 'Kano', 'Ibadan', 'Benin City',
-    'Enugu', 'Aba', 'Onitsha', 'Warri', 'Calabar', 'Uyo', 'Kaduna',
-    'Jos', 'Maiduguri', 'Akure', 'Abeokuta', 'Asaba', 'Owerri', 'Ile-Ife',
-];
-
-const NIGERIA_LGAS = [
-    'Agege', 'Ajeromi-Ifelodun', 'Alimosho', 'Amuwo-Odofin', 'Apapa',
-    'Badagry', 'Epe', 'Eti-Osa', 'Ibeju-Lekki', 'Ifako-Ijaiye',
-    'Ikeja', 'Ikorodu', 'Kosofe', 'Lagos Island', 'Lagos Mainland',
-    'Mushin', 'Ojo', 'Oshodi-Isolo', 'Somolu', 'Surulere',
-];
-
 const INDUSTRIES = [
     'Agriculture', 'Construction', 'Education', 'Energy & Utilities',
     'Financial Services', 'Healthcare', 'Hospitality & Tourism',
@@ -63,14 +43,8 @@ const BUSINESS_SECTIONS = [
 const WelcomeModal = ({ onClose }: { onClose: () => void }) => (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
         <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-        <div className="relative bg-white rounded-2xl w-full max-w-[380px] p-7 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-            {/* Icon */}
-            <div className="w-12 h-12 rounded-full border-2 border-neutral-200 flex items-center justify-center mb-5">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-taxable-dark">
-                    <polyline points="20 6 9 17 4 12" />
-                </svg>
-            </div>
-            <h2 className="text-6 font-semibold text-neutral-800 mb-3">Welcome to your tax workspace!</h2>
+        <div className="relative bg-white rounded-[20px] w-full max-w-[380px] p-7 shadow-2xl text-center animate-in fade-in zoom-in-95 duration-300">
+            <h2 className="text-5 font-medium text-neutral-800 tracking-[-0.02em] font-[family-name:var(--font-merriweather)] mb-3">Welcome to your tax workspace!</h2>
             <p className="text-2 text-neutral-500 font-medium leading-relaxed mb-1.5">
                 Everything you need is organized in sections on the left. Start with{' '}
                 <span className="text-neutral-800 font-semibold">Company Information</span>{' '}
@@ -308,7 +282,7 @@ export default function BusinessTaxDetails() {
                     <div className="w-[250px] flex-shrink-0 flex flex-col gap-4 sticky top-24 border border-neutral-50 rounded-xl p-3">
                         {/* Main sections */}
                         <div>
-                            <p className="text-1 font-semibold text-neutral-400 uppercase tracking-wider mb-2">Tax Sections</p>
+                            <p className="text-0 font-semibold text-neutral-400 uppercase tracking-wider mb-2">Tax Sections</p>
                             <div>
                                 {BUSINESS_SECTIONS.map(sec => (
                                     <div key={sec.key}>
@@ -432,9 +406,9 @@ export default function BusinessTaxDetails() {
                                             onChange={e => { setAddress(e.target.value); hasUnsavedChanges.current = true; }}
                                         />
                                         <div className="grid grid-cols-3 gap-3 mt-3">
-                                            <SearchableSelect value={city} onChange={(v) => { setCity(v); hasUnsavedChanges.current = true; }} options={NIGERIA_CITIES} placeholder="City" />
-                                            <SearchableSelect value={state} onChange={(v) => { setState(v); hasUnsavedChanges.current = true; }} options={NIGERIA_STATES} placeholder="State" />
-                                            <SearchableSelect value={lga} onChange={(v) => { setLga(v); hasUnsavedChanges.current = true; }} options={NIGERIA_LGAS} placeholder="LGA" />
+                                            <SearchableSelect value={state} onChange={(v) => { setState(v); setCity(''); setLga(''); hasUnsavedChanges.current = true; }} options={NIGERIA_STATES} placeholder="State" />
+                                            <SearchableSelect value={city} onChange={(v) => { setCity(v); hasUnsavedChanges.current = true; }} options={state ? getCitiesForState(state) : []} placeholder="City" />
+                                            <SearchableSelect value={lga} onChange={(v) => { setLga(v); hasUnsavedChanges.current = true; }} options={state ? getLgasForState(state) : []} placeholder="LGA" />
                                         </div>
                                     </div>
 

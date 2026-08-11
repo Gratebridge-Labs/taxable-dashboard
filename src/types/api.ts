@@ -48,6 +48,12 @@ export interface Profile {
   fullName?: string;
   email?: string;
   phone?: string;
+  businessSetup?: {
+    payeEnabled?: boolean;
+    vatEnabled?: boolean;
+    whtEnabled?: boolean;
+    citEnabled?: boolean;
+  };
 }
 
 export interface ProfileCompleteRequest {

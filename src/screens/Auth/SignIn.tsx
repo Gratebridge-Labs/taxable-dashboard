@@ -60,8 +60,8 @@ export default function SignIn() {
             <OnboardingLayout>
                 <div ref={formRef} className="max-w-[420px] mx-auto w-full">
                     <div className="mb-10">
-                        <h2 data-animate className="text-7 font-semibold text-neutral-800 mb-1 tracking-[-0.02em]">Sign in to Taxable</h2>
-                        <p data-animate className="text-neutral-400 text-2 font-medium tracking-[-0.01em]">Let&apos;s get your tax compliance sorted in minutes</p>
+                        <h2 data-animate className="text-5 font-medium text-neutral-800 mb-1 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Sign in to Taxable</h2>
+                        <p data-animate className="text-neutral-400 text-1 font-medium tracking-[-0.01em]">Let&apos;s get your tax compliance sorted in minutes</p>
                     </div>
 
                     <form className="space-y-10" onSubmit={handleLogin}>
@@ -83,13 +83,13 @@ export default function SignIn() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                             />
-                            <div className="text-2 text-neutral-400 font-medium pt-1">
+                            <div className="text-1 text-neutral-400 font-medium pt-1">
                                 Forgot your password? <Link href="/forgot-password" className="text-neutral-800 font-semibold">Reset it here</Link>
                             </div>
                         </div>
 
                         {apiError && (
-                            <div data-animate className="text-2 text-destructive font-medium">
+                            <div data-animate className="text-1 text-destructive font-medium">
                                 {apiError}
                             </div>
                         )}
@@ -98,12 +98,12 @@ export default function SignIn() {
                         <button
                             type="submit"
                             disabled={!email || !password}
-                            className="w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400 text-3 flex items-center justify-center"
+                            className="w-full h-12 bg-taxable-blue text-white font-semibold rounded-xl disabled:bg-neutral-100 disabled:text-neutral-400 text-2 flex items-center justify-center"
                         >
                             {isLoading ? <Spinner /> : "Sign In"}
                         </button>
 
-                        <div className="text-center text-2 text-neutral-400 font-medium">
+                        <div className="text-center text-1 text-neutral-400 font-medium">
                             Don&apos;t have an account? <Link href="/signup" className="text-neutral-800 font-semibold">Create one</Link>
                         </div>
                         </div>

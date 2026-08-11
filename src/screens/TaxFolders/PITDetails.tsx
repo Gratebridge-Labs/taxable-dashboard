@@ -36,13 +36,8 @@ import { PITModals } from './PITModals';
 const PITWelcomeModal = ({ onClose }: { onClose: () => void }) => (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
         <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-        <div className="relative bg-white rounded-2xl w-full max-w-[380px] p-7 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-            <div className="w-12 h-12 rounded-full border-2 border-neutral-200 flex items-center justify-center mb-5">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-800">
-                    <polyline points="20 6 9 17 4 12" />
-                </svg>
-            </div>
-            <h2 className="text-6 font-semibold text-neutral-800 mb-3">Welcome to your tax workspace!</h2>
+        <div className="relative bg-white rounded-[20px] w-full max-w-[380px] p-7 shadow-2xl text-center animate-in fade-in zoom-in-95 duration-300">
+            <h2 className="text-5 font-medium text-neutral-800 tracking-[-0.02em] font-[family-name:var(--font-merriweather)] mb-3">Welcome to your tax workspace!</h2>
             <p className="text-2 text-neutral-500 font-medium leading-relaxed mb-1.5">
                 We've organized your tax filing into simple sections. Start with{' '}
                 <span className="text-neutral-800 font-semibold">Personal Info</span>{' '}
@@ -123,6 +118,7 @@ export default function PITDetails() {
     const { loading: authLoading, isAuthenticated } = useUser();
     const api = useTaxableApi();
     const profileId = searchParams?.get('id') || '';
+    const STORAGE_KEY_PIT_INCOME = `taxable_pit_income_${profileId}`;
 
     // ─── Component State ──────────────────────────────────────────────────
     const [activeSection, setActiveSection] = useState<'personal-info' | 'income-deductions' | 'review'>('personal-info');
@@ -203,6 +199,22 @@ export default function PITDetails() {
         investmentIncome: string; rentalIncome: string; digitalGains: string;
     }>>({});
 
+    const [enabledIncomeSources, setEnabledIncomeSources] = useState<Record<string, boolean>>({
+        salary: true,
+        business: true,
+        freelance: false,
+        investment: false,
+        rental: false,
+        crypto: false,
+    });
+
+    const [enabledDeductions, setEnabledDeductions] = useState<Record<string, boolean>>({
+        rent: false,
+        healthInsurance: false,
+        pension: false,
+        mortgage: false,
+    });
+
     const fmtInput = (set: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
         const raw = e.target.value.replace(/[^0-9.]/g, '');
         const parts = raw.split('.');
@@ -276,21 +288,28 @@ export default function PITDetails() {
                     setCurrentProfile(profile);
                     setAnnualReturnFiledPIT(profile.filingStatus === 'filed');
 
-                    setPersonalInfo({
-                        nin: profile.nin || '',
-                        firstName: (profile as any).firstName || (profile.fullName && profile.fullName.split(' ')[0]) || '',
-                        lastName: (profile as any).lastName || (profile.fullName && profile.fullName.split(' ').slice(1).join(' ')) || '',
-                        email: profile.email || '',
-                        phone: profile.phone || '',
-                        dob: profile.dob || '',
-                        streetAddress: profile.street || '',
-                        city: profile.city || '',
-                        state: profile.state || '',
-                        lga: (profile as any).lga || '',
-                        isResident: (profile as any).residencyStatus !== 'non-resident',
-                    });
+                    setEnabledDeductions(prev => ({
+                        rent: prev.rent || !!(profile as any).paysRent,
+                        healthInsurance: prev.healthInsurance || !!(profile as any).hasHealthInsurance,
+                        pension: prev.pension || !!(profile as any).hasPension,
+                        mortgage: prev.mortgage || !!(profile as any).hasMortgage,
+                    }));
 
-                    if (profile.fullName) {
+                    setPersonalInfo(prev => ({
+                        nin: profile.nin || prev.nin,
+                        firstName: (profile as any).firstName || (profile.fullName && profile.fullName.split(' ')[0]) || prev.firstName,
+                        lastName: (profile as any).lastName || (profile.fullName && profile.fullName.split(' ').slice(1).join(' ')) || prev.lastName,
+                        email: prev.email,
+                        phone: prev.phone,
+                        dob: profile.dob || prev.dob,
+                        streetAddress: profile.street || prev.streetAddress,
+                        city: profile.city || prev.city,
+                        state: profile.state || prev.state,
+                        lga: (profile as any).lga || prev.lga,
+                        isResident: (profile as any).residencyStatus !== 'non-resident',
+                    }));
+
+                    if (profile.street && profile.city && profile.state) {
                         setPersonalInfoSaved(true);
                         personalInfoDirtyRef.current = false;
                     }
@@ -413,13 +432,24 @@ export default function PITDetails() {
         return { annualTax: Math.round(tax), monthlyTax: Math.round(tax / 12) };
     };
 
-    // YTD totals (sum across all months)
+    // YTD totals (sum across all months) — only enabled sources count
     const ytdGrossIncome = Object.values(incomeByMonth).reduce((sum, m) => {
-        const bi = (Number((m as any).businessRevenue?.replace(/,/g, '')) || 0) - (Number((m as any).businessExpenses?.replace(/,/g, '')) || 0);
-        const fn = (Number((m as any).freelanceInvoiced?.replace(/,/g, '')) || 0) - (Number((m as any).freelanceWHT?.replace(/,/g, '')) || 0);
-        return sum + (Number((m as any).salaryTakeHome?.replace(/,/g, '')) || 0) + Math.max(0, bi) + Math.max(0, fn) + (Number((m as any).investmentIncome?.replace(/,/g, '')) || 0) + (Number((m as any).rentalIncome?.replace(/,/g, '')) || 0) + (Number((m as any).digitalGains?.replace(/,/g, '')) || 0);
+        const bi = enabledIncomeSources.business ? (Number((m as any).businessRevenue?.replace(/,/g, '')) || 0) - (Number((m as any).businessExpenses?.replace(/,/g, '')) || 0) : 0;
+        const fn = enabledIncomeSources.freelance ? (Number((m as any).freelanceInvoiced?.replace(/,/g, '')) || 0) - (Number((m as any).freelanceWHT?.replace(/,/g, '')) || 0) : 0;
+        const salary = enabledIncomeSources.salary ? (Number((m as any).salaryTakeHome?.replace(/,/g, '')) || 0) : 0;
+        const investment = enabledIncomeSources.investment ? (Number((m as any).investmentIncome?.replace(/,/g, '')) || 0) : 0;
+        const rental = enabledIncomeSources.rental ? (Number((m as any).rentalIncome?.replace(/,/g, '')) || 0) : 0;
+        const crypto = enabledIncomeSources.crypto ? (Number((m as any).digitalGains?.replace(/,/g, '')) || 0) : 0;
+        return sum + salary + Math.max(0, bi) + Math.max(0, fn) + investment + rental + crypto;
     }, 0);
-    const ytdDeductions = Object.values(deductionsByMonth).reduce((sum, m) => sum + (Number((m as any).rent?.replace(/,/g, '')) || 0) + (Number((m as any).healthInsurance?.replace(/,/g, '')) || 0) + (Number((m as any).pension?.replace(/,/g, '')) || 0) + (Number((m as any).mortgageInterest?.replace(/,/g, '')) || 0), 0);
+    // YTD deductions (sum across all months) — only enabled deductions count
+    const ytdDeductions = Object.values(deductionsByMonth).reduce((sum, m) => {
+        const rent = enabledDeductions.rent ? (Number((m as any).rent?.replace(/,/g, '')) || 0) : 0;
+        const health = enabledDeductions.healthInsurance ? (Number((m as any).healthInsurance?.replace(/,/g, '')) || 0) : 0;
+        const pension = enabledDeductions.pension ? (Number((m as any).pension?.replace(/,/g, '')) || 0) : 0;
+        const mortgage = enabledDeductions.mortgage ? (Number((m as any).mortgageInterest?.replace(/,/g, '')) || 0) : 0;
+        return sum + rent + health + pension + mortgage;
+    }, 0);
     const monthCount = Object.keys(incomeByMonth).length || 1;
     const annualizedGross = ytdGrossIncome;
     const annualizedDeds = ytdDeductions;
@@ -521,10 +551,18 @@ export default function PITDetails() {
     const monthlyBreakdown = periodMode === 'monthly' ? INCOME_MONTH_NAMES.map((_, idx) => {
         const inc = incomeByMonth[idx] ?? {};
         const ded = deductionsByMonth[idx] ?? {};
-        const bi = (Number((inc as any).businessRevenue?.replace(/,/g, '')) || 0) - (Number((inc as any).businessExpenses?.replace(/,/g, '')) || 0);
-        const fn = (Number((inc as any).freelanceInvoiced?.replace(/,/g, '')) || 0) - (Number((inc as any).freelanceWHT?.replace(/,/g, '')) || 0);
-        const mi = (Number((inc as any).salaryTakeHome?.replace(/,/g, '')) || 0) + Math.max(0, bi) + Math.max(0, fn) + (Number((inc as any).investmentIncome?.replace(/,/g, '')) || 0) + (Number((inc as any).rentalIncome?.replace(/,/g, '')) || 0) + (Number((inc as any).digitalGains?.replace(/,/g, '')) || 0);
-        const md = (Number((ded as any).rent?.replace(/,/g, '')) || 0) + (Number((ded as any).healthInsurance?.replace(/,/g, '')) || 0) + (Number((ded as any).pension?.replace(/,/g, '')) || 0) + (Number((ded as any).mortgageInterest?.replace(/,/g, '')) || 0);
+        const bi = enabledIncomeSources.business ? (Number((inc as any).businessRevenue?.replace(/,/g, '')) || 0) - (Number((inc as any).businessExpenses?.replace(/,/g, '')) || 0) : 0;
+        const fn = enabledIncomeSources.freelance ? (Number((inc as any).freelanceInvoiced?.replace(/,/g, '')) || 0) - (Number((inc as any).freelanceWHT?.replace(/,/g, '')) || 0) : 0;
+        const salary = enabledIncomeSources.salary ? (Number((inc as any).salaryTakeHome?.replace(/,/g, '')) || 0) : 0;
+        const investment = enabledIncomeSources.investment ? (Number((inc as any).investmentIncome?.replace(/,/g, '')) || 0) : 0;
+        const rental = enabledIncomeSources.rental ? (Number((inc as any).rentalIncome?.replace(/,/g, '')) || 0) : 0;
+        const crypto = enabledIncomeSources.crypto ? (Number((inc as any).digitalGains?.replace(/,/g, '')) || 0) : 0;
+        const mi = salary + Math.max(0, bi) + Math.max(0, fn) + investment + rental + crypto;
+        const rent = enabledDeductions.rent ? (Number((ded as any).rent?.replace(/,/g, '')) || 0) : 0;
+        const health = enabledDeductions.healthInsurance ? (Number((ded as any).healthInsurance?.replace(/,/g, '')) || 0) : 0;
+        const pension = enabledDeductions.pension ? (Number((ded as any).pension?.replace(/,/g, '')) || 0) : 0;
+        const mortgage = enabledDeductions.mortgage ? (Number((ded as any).mortgageInterest?.replace(/,/g, '')) || 0) : 0;
+        const md = rent + health + pension + mortgage;
         return { month: INCOME_MONTH_NAMES[idx], income: mi, deductions: md, taxable: Math.max(0, mi - md) };
     }) : [];
 
@@ -539,34 +577,35 @@ export default function PITDetails() {
         }
         return (
             <div className="w-full">
-                <div className="mb-12">
-                    <div className="flex items-center justify-between mb-8">
-                        <div className="flex items-center gap-4">
-                            <h1 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em]">
-                                Income &amp; Deductions
-                            </h1>
-                            {periodMode === 'monthly' && incomeMonthSelector}
-                        </div>
-                        <Tabs value={periodMode} onValueChange={(v) => {
-                            if (v === 'annually' && hasRecordedData) return;
-                            if (v !== periodMode && v === 'annually' && monthCount > 1) {
-                                setPendingPeriodMode(v as 'monthly' | 'annually');
-                                setConfirmFilingPrefOpen(true);
-                            } else {
-                                setPeriodMode(v as 'monthly' | 'annually');
-                            }
-                        }}>
-                            <TabsList className="h-9 bg-neutral-50 rounded-lg p-0.5">
-                                <TabsTrigger value="monthly" className="text-2 px-3 py-1 rounded-md !text-neutral-300 font-medium data-active:!bg-neutral-800 data-active:!text-white">Monthly</TabsTrigger>
-                                <TabsTrigger value="annually" className="text-2 px-3 py-1 rounded-md !text-neutral-300 font-medium data-active:!bg-neutral-800 data-active:!text-white" disabled={hasRecordedData}>Annual</TabsTrigger>
-                            </TabsList>
-                        </Tabs>
+                <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                        <h1 className="text-5 font-medium text-neutral-800 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">
+                            Income &amp; Deductions
+                        </h1>
+                        {periodMode === 'monthly' && incomeMonthSelector}
                     </div>
+                    <Tabs value={periodMode} onValueChange={(v) => {
+                        if (v === 'annually' && hasRecordedData) return;
+                        if (v !== periodMode && v === 'annually' && monthCount > 1) {
+                            setPendingPeriodMode(v as 'monthly' | 'annually');
+                            setConfirmFilingPrefOpen(true);
+                        } else {
+                            setPeriodMode(v as 'monthly' | 'annually');
+                        }
+                    }}>
+                        <TabsList className="h-9 bg-neutral-50 rounded-lg p-0.5">
+                            <TabsTrigger value="monthly" className="text-2 px-3 py-1 rounded-md !text-neutral-300 font-medium data-active:!bg-neutral-800 data-active:!text-white">Monthly</TabsTrigger>
+                            <TabsTrigger value="annually" className="text-2 px-3 py-1 rounded-md !text-neutral-300 font-medium data-active:!bg-neutral-800 data-active:!text-white" disabled={hasRecordedData}>Annual</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                </div>
 
+                <div className="flex gap-16 justify-between">
+                    <div className="flex-1 min-w-0 max-w-[500px]">
                     <Stepper value={incomeStepIndex} onValueChange={(step) => {
                         const map: Record<number, 'income' | 'deductions'> = {1: 'income', 2: 'deductions'};
                         if (step <= incomeStepIndex) goBack(map[step]);
-                    }} className="max-w-[400px]">
+                    }} className="max-w-[400px] mb-12">
                         {INCOME_STEPS.map((s, idx) => (
                             <StepperItem key={s.key} step={s.step} completed={completedIncomeSteps.has(s.step)} disabled={s.step > incomeStepIndex} className="[&:not(:last-child)]:flex-1 data-[state=inactive]:[&_h3]:text-neutral-400 [&_h3]:text-neutral-800">
                                 <StepperTrigger className="flex items-center gap-3 max-md:flex-col">
@@ -579,28 +618,30 @@ export default function PITDetails() {
                             </StepperItem>
                         ))}
                     </Stepper>
-                </div>
-
-                <div className="flex gap-16">
-                <div className="flex-1 min-w-0 max-w-[500px]">
 
                 {/* Step 1: Income Sources */}
                 {incomeStep === 'income' && (
                     <div data-animate>
 
                         <div className="space-y-4">
-                            {(currentProfile?.primaryIncomeSources ?? []).includes('Salary / Employment') && (
-                                <div className="bg-neutral-50 rounded-3xl p-5">
+                            <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <Checkbox
+                                            checked={enabledIncomeSources.salary}
+                                            onCheckedChange={(c) => setEnabledIncomeSources(prev => ({ ...prev, salary: c === true }))}
+                                        />
+                                        <h3 className="text-3 font-semibold text-neutral-800">Salary / Employment</h3>
+                                    </div>
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="The actual cash amount transferred to your bank account by your employer after taxes and pensions are deducted.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} Take-Home Pay</FormLabel>
-                                             <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('salaryTakeHome') : (currentIncome as any).salaryTakeHome ?? ''} onChange={fmtInput((v) => setIncomeField('salaryTakeHome', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
+                                             <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('salaryTakeHome') : (currentIncome as any).salaryTakeHome ?? ''} onChange={fmtInput((v) => setIncomeField('salaryTakeHome', v))} disabled={!enabledIncomeSources.salary || (periodMode === 'annually' && hasRecordedData)} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                     <div className="mt-3">
-                                        <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                        <div className={`bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl ${!enabledIncomeSources.salary ? 'opacity-50' : ''}`}>
                                             <span className="text-1 text-neutral-400 font-medium">Upload payslip / proof of employment</span>
-                                            <button onClick={() => salaryRef.current?.click()} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0">Upload</button>
+                                            <button onClick={() => salaryRef.current?.click()} disabled={!enabledIncomeSources.salary} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0 disabled:cursor-not-allowed">Upload</button>
                                             <input ref={salaryRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setIncomeFiles(prev => ({ ...prev, ['salary_' + (activeMonthNum - 1)]: [...(prev['salary_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
                                         </div>
                                         {((incomeFiles['salary_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
@@ -611,25 +652,29 @@ export default function PITDetails() {
                                         ))}
                                     </div>
                                 </div>
-                            )}
 
-                            {(currentProfile?.primaryIncomeSources ?? []).includes('Business/Self-employment') && (
-                                <div className="bg-neutral-50 rounded-3xl p-5">
-                                    <h3 className="text-3 font-semibold text-neutral-800 mb-4">Business Income</h3>
+                            <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <Checkbox
+                                            checked={enabledIncomeSources.business}
+                                            onCheckedChange={(c) => setEnabledIncomeSources(prev => ({ ...prev, business: c === true }))}
+                                        />
+                                        <h3 className="text-3 font-semibold text-neutral-800">Business Income</h3>
+                                    </div>
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Total monthly revenue from your business or self-employment activities.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} Gross Revenue</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('businessRevenue') : (currentIncome as any).businessRevenue ?? ''} onChange={fmtInput((v) => setIncomeField('businessRevenue', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('businessRevenue') : (currentIncome as any).businessRevenue ?? ''} onChange={fmtInput((v) => setIncomeField('businessRevenue', v))} disabled={!enabledIncomeSources.business || (periodMode === 'annually' && hasRecordedData)} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Total monthly expenses incurred in running your business.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} Business Expenses</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('businessExpenses') : (currentIncome as any).businessExpenses ?? ''} onChange={fmtInput((v) => setIncomeField('businessExpenses', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('businessExpenses') : (currentIncome as any).businessExpenses ?? ''} onChange={fmtInput((v) => setIncomeField('businessExpenses', v))} disabled={!enabledIncomeSources.business || (periodMode === 'annually' && hasRecordedData)} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                     <div className="mt-3">
-                                        <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                        <div className={`bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl ${!enabledIncomeSources.business ? 'opacity-50' : ''}`}>
                                             <span className="text-1 text-neutral-400 font-medium">Upload invoices / bank statements</span>
-                                            <button onClick={() => businessRef.current?.click()} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0">Upload</button>
+                                            <button onClick={() => businessRef.current?.click()} disabled={!enabledIncomeSources.business} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0 disabled:cursor-not-allowed">Upload</button>
                                             <input ref={businessRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setIncomeFiles(prev => ({ ...prev, ['business_' + (activeMonthNum - 1)]: [...(prev['business_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
                                         </div>
                                         {((incomeFiles['business_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
@@ -640,25 +685,29 @@ export default function PITDetails() {
                                         ))}
                                     </div>
                                 </div>
-                            )}
 
-                            {(currentProfile?.primaryIncomeSources ?? []).includes('Freelance/Consulting') && (
-                                <div className="bg-neutral-50 rounded-3xl p-5">
-                                    <h3 className="text-3 font-semibold text-neutral-800 mb-4">Freelance / Consulting</h3>
+                            <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <Checkbox
+                                            checked={enabledIncomeSources.freelance}
+                                            onCheckedChange={(c) => setEnabledIncomeSources(prev => ({ ...prev, freelance: c === true }))}
+                                        />
+                                        <h3 className="text-3 font-semibold text-neutral-800">Freelance / Consulting</h3>
+                                    </div>
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Total value of invoices that were paid by your clients this month.">Total Project Invoices Paid</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('freelanceInvoiced') : (currentIncome as any).freelanceInvoiced ?? ''} onChange={fmtInput((v) => setIncomeField('freelanceInvoiced', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('freelanceInvoiced') : (currentIncome as any).freelanceInvoiced ?? ''} onChange={fmtInput((v) => setIncomeField('freelanceInvoiced', v))} disabled={!enabledIncomeSources.freelance || (periodMode === 'annually' && hasRecordedData)} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Enter any tax amount your clients held back from your payment (usually 5%). We track this as a direct credit to lower your final PIT bill.">Less: WHT Deducted at Source</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('freelanceWHT') : (currentIncome as any).freelanceWHT ?? ''} onChange={fmtInput((v) => setIncomeField('freelanceWHT', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('freelanceWHT') : (currentIncome as any).freelanceWHT ?? ''} onChange={fmtInput((v) => setIncomeField('freelanceWHT', v))} disabled={!enabledIncomeSources.freelance || (periodMode === 'annually' && hasRecordedData)} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                     <div className="mt-3">
-                                        <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                        <div className={`bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl ${!enabledIncomeSources.freelance ? 'opacity-50' : ''}`}>
                                             <span className="text-1 text-neutral-400 font-medium">Upload invoices / contracts</span>
-                                            <button onClick={() => freelanceRef.current?.click()} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0">Upload</button>
+                                            <button onClick={() => freelanceRef.current?.click()} disabled={!enabledIncomeSources.freelance} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0 disabled:cursor-not-allowed">Upload</button>
                                             <input ref={freelanceRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setIncomeFiles(prev => ({ ...prev, ['freelance_' + (activeMonthNum - 1)]: [...(prev['freelance_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
                                         </div>
                                         {((incomeFiles['freelance_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
@@ -669,20 +718,25 @@ export default function PITDetails() {
                                         ))}
                                     </div>
                                 </div>
-                            )}
 
-                            {(currentProfile?.primaryIncomeSources ?? []).includes('Investment income') && (
-                                <div className="bg-neutral-50 rounded-3xl p-5">
+                            <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <Checkbox
+                                            checked={enabledIncomeSources.investment}
+                                            onCheckedChange={(c) => setEnabledIncomeSources(prev => ({ ...prev, investment: c === true }))}
+                                        />
+                                        <h3 className="text-3 font-semibold text-neutral-800">Investment Income</h3>
+                                    </div>
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Dividends and interest earned on your investments this month.">Dividends / Interest Received</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('investmentIncome') : (currentIncome as any).investmentIncome ?? ''} onChange={fmtInput((v) => setIncomeField('investmentIncome', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('investmentIncome') : (currentIncome as any).investmentIncome ?? ''} onChange={fmtInput((v) => setIncomeField('investmentIncome', v))} disabled={!enabledIncomeSources.investment || (periodMode === 'annually' && hasRecordedData)} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                     <div className="mt-3">
-                                        <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                        <div className={`bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl ${!enabledIncomeSources.investment ? 'opacity-50' : ''}`}>
                                             <span className="text-1 text-neutral-400 font-medium">Upload investment statements</span>
-                                            <button onClick={() => investmentRef.current?.click()} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0">Upload</button>
+                                            <button onClick={() => investmentRef.current?.click()} disabled={!enabledIncomeSources.investment} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0 disabled:cursor-not-allowed">Upload</button>
                                             <input ref={investmentRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setIncomeFiles(prev => ({ ...prev, ['investment_' + (activeMonthNum - 1)]: [...(prev['investment_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
                                         </div>
                                         {((incomeFiles['investment_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
@@ -693,20 +747,25 @@ export default function PITDetails() {
                                         ))}
                                     </div>
                                 </div>
-                            )}
 
-                            {(currentProfile?.primaryIncomeSources ?? []).includes('Rental income') && (
-                                <div className="bg-neutral-50 rounded-3xl p-5">
+                            <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <Checkbox
+                                            checked={enabledIncomeSources.rental}
+                                            onCheckedChange={(c) => setEnabledIncomeSources(prev => ({ ...prev, rental: c === true }))}
+                                        />
+                                        <h3 className="text-3 font-semibold text-neutral-800">Rental Income</h3>
+                                    </div>
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Total rent payments collected from your tenants this month.">Gross Rent Payments Collected</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('rentalIncome') : (currentIncome as any).rentalIncome ?? ''} onChange={fmtInput((v) => setIncomeField('rentalIncome', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('rentalIncome') : (currentIncome as any).rentalIncome ?? ''} onChange={fmtInput((v) => setIncomeField('rentalIncome', v))} disabled={!enabledIncomeSources.rental || (periodMode === 'annually' && hasRecordedData)} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                     <div className="mt-3">
-                                        <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                        <div className={`bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl ${!enabledIncomeSources.rental ? 'opacity-50' : ''}`}>
                                             <span className="text-1 text-neutral-400 font-medium">Upload lease agreement / receipts</span>
-                                            <button onClick={() => rentalRef.current?.click()} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0">Upload</button>
+                                            <button onClick={() => rentalRef.current?.click()} disabled={!enabledIncomeSources.rental} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0 disabled:cursor-not-allowed">Upload</button>
                                             <input ref={rentalRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setIncomeFiles(prev => ({ ...prev, ['rental_' + (activeMonthNum - 1)]: [...(prev['rental_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
                                         </div>
                                         {((incomeFiles['rental_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
@@ -717,20 +776,25 @@ export default function PITDetails() {
                                         ))}
                                     </div>
                                 </div>
-                            )}
 
-                            {(currentProfile?.primaryIncomeSources ?? []).includes('Digital Assets/Crypto') && (
-                                <div className="bg-neutral-50 rounded-3xl p-5">
+                            <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <Checkbox
+                                            checked={enabledIncomeSources.crypto}
+                                            onCheckedChange={(c) => setEnabledIncomeSources(prev => ({ ...prev, crypto: c === true }))}
+                                        />
+                                        <h3 className="text-3 font-semibold text-neutral-800">Digital Assets / Crypto</h3>
+                                    </div>
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Total realized profits from asset sales or trading inside the month.">Net Crypto / Digital Asset Gains</FormLabel>
-                                                <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('digitalGains') : (currentIncome as any).digitalGains ?? ''} onChange={fmtInput((v) => setIncomeField('digitalGains', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
+                                                <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? fieldSumFmt('digitalGains') : (currentIncome as any).digitalGains ?? ''} onChange={fmtInput((v) => setIncomeField('digitalGains', v))} disabled={!enabledIncomeSources.crypto || (periodMode === 'annually' && hasRecordedData)} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                     <div className="mt-3">
-                                        <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                        <div className={`bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl ${!enabledIncomeSources.crypto ? 'opacity-50' : ''}`}>
                                             <span className="text-1 text-neutral-400 font-medium">Upload exchange / trading statements</span>
-                                            <button onClick={() => cryptoRef.current?.click()} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0">Upload</button>
+                                            <button onClick={() => cryptoRef.current?.click()} disabled={!enabledIncomeSources.crypto} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0 disabled:cursor-not-allowed">Upload</button>
                                             <input ref={cryptoRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setIncomeFiles(prev => ({ ...prev, ['crypto_' + (activeMonthNum - 1)]: [...(prev['crypto_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
                                         </div>
                                         {((incomeFiles['crypto_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
@@ -741,11 +805,6 @@ export default function PITDetails() {
                                         ))}
                                     </div>
                                 </div>
-                            )}
-
-                            {(currentProfile?.primaryIncomeSources ?? []).length === 0 && (
-                                <p className="text-2 text-neutral-500 font-medium">No income sources selected during onboarding.</p>
-                            )}
                         </div>
 
                         <div className="flex gap-3 mt-8">
@@ -762,18 +821,24 @@ export default function PITDetails() {
                         <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-6">Deductions &amp; Reliefs</h2>
 
                         <div className="space-y-4">
-                            {currentProfile?.paysRent && (
-                                <div className="bg-neutral-50 rounded-3xl p-5">
+                            <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <Checkbox
+                                            checked={enabledDeductions.rent}
+                                            onCheckedChange={(c) => setEnabledDeductions(prev => ({ ...prev, rent: c === true }))}
+                                        />
+                                        <h3 className="text-3 font-semibold text-neutral-800">Rent &amp; Housing Relief</h3>
+                                    </div>
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Your monthly rent payment. The system caps this at 20% of actual rent or ₦500,000 per year, whichever is lower.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} Rent Allocation</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? dedFieldSumFmt('rent') : (currentDeductions as any).rent ?? ''} onChange={fmtInput((v) => setDeductionField('rent', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? dedFieldSumFmt('rent') : (currentDeductions as any).rent ?? ''} onChange={fmtInput((v) => setDeductionField('rent', v))} disabled={!enabledDeductions.rent || (periodMode === 'annually' && hasRecordedData)} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                     <div className="mt-3">
-                                        <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                        <div className={`bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl ${!enabledDeductions.rent ? 'opacity-50' : ''}`}>
                                             <span className="text-1 text-neutral-400 font-medium">Upload rent receipt / lease agreement</span>
-                                            <button onClick={() => rentRef.current?.click()} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0">Upload</button>
+                                            <button onClick={() => rentRef.current?.click()} disabled={!enabledDeductions.rent} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0 disabled:cursor-not-allowed">Upload</button>
                                             <input ref={rentRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setDeductionFiles(prev => ({ ...prev, ['rent_' + (activeMonthNum - 1)]: [...(prev['rent_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
                                         </div>
                                         {((deductionFiles['rent_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
@@ -784,20 +849,25 @@ export default function PITDetails() {
                                         ))}
                                     </div>
                                 </div>
-                            )}
 
-                            {currentProfile?.hasHealthInsurance && (
-                                <div className="bg-neutral-50 rounded-3xl p-5">
+                            <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <Checkbox
+                                            checked={enabledDeductions.healthInsurance}
+                                            onCheckedChange={(c) => setEnabledDeductions(prev => ({ ...prev, healthInsurance: c === true }))}
+                                        />
+                                        <h3 className="text-3 font-semibold text-neutral-800">Health Insurance</h3>
+                                    </div>
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="The exact medical insurance premium amount you paid out of pocket this month.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} HMO / Health Insurance Premium</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? dedFieldSumFmt('healthInsurance') : (currentDeductions as any).healthInsurance ?? ''} onChange={fmtInput((v) => setDeductionField('healthInsurance', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? dedFieldSumFmt('healthInsurance') : (currentDeductions as any).healthInsurance ?? ''} onChange={fmtInput((v) => setDeductionField('healthInsurance', v))} disabled={!enabledDeductions.healthInsurance || (periodMode === 'annually' && hasRecordedData)} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                     <div className="mt-3">
-                                        <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                        <div className={`bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl ${!enabledDeductions.healthInsurance ? 'opacity-50' : ''}`}>
                                             <span className="text-1 text-neutral-400 font-medium">Upload insurance receipt</span>
-                                            <button onClick={() => healthRef.current?.click()} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0">Upload</button>
+                                            <button onClick={() => healthRef.current?.click()} disabled={!enabledDeductions.healthInsurance} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0 disabled:cursor-not-allowed">Upload</button>
                                             <input ref={healthRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setDeductionFiles(prev => ({ ...prev, ['health_' + (activeMonthNum - 1)]: [...(prev['health_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
                                         </div>
                                         {((deductionFiles['health_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
@@ -808,20 +878,25 @@ export default function PITDetails() {
                                         ))}
                                     </div>
                                 </div>
-                            )}
 
-                            {currentProfile?.hasPension && (
-                                <div className="bg-neutral-50 rounded-3xl p-5">
+                            <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <Checkbox
+                                            checked={enabledDeductions.pension}
+                                            onCheckedChange={(c) => setEnabledDeductions(prev => ({ ...prev, pension: c === true }))}
+                                        />
+                                        <h3 className="text-3 font-semibold text-neutral-800">Pension</h3>
+                                    </div>
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Your personal contribution paid directly into your Pension Fund Administrator (PFA) account this month.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} Pension Contribution</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? dedFieldSumFmt('pension') : (currentDeductions as any).pension ?? ''} onChange={fmtInput((v) => setDeductionField('pension', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? dedFieldSumFmt('pension') : (currentDeductions as any).pension ?? ''} onChange={fmtInput((v) => setDeductionField('pension', v))} disabled={!enabledDeductions.pension || (periodMode === 'annually' && hasRecordedData)} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                     <div className="mt-3">
-                                        <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                        <div className={`bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl ${!enabledDeductions.pension ? 'opacity-50' : ''}`}>
                                             <span className="text-1 text-neutral-400 font-medium">Upload pension receipt</span>
-                                            <button onClick={() => pensionRef.current?.click()} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0">Upload</button>
+                                            <button onClick={() => pensionRef.current?.click()} disabled={!enabledDeductions.pension} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0 disabled:cursor-not-allowed">Upload</button>
                                             <input ref={pensionRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setDeductionFiles(prev => ({ ...prev, ['pension_' + (activeMonthNum - 1)]: [...(prev['pension_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
                                         </div>
                                         {((deductionFiles['pension_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
@@ -832,20 +907,25 @@ export default function PITDetails() {
                                         ))}
                                     </div>
                                 </div>
-                            )}
 
-                            {currentProfile?.hasMortgage && (
-                                <div className="bg-neutral-50 rounded-3xl p-5">
+                            <div className="bg-neutral-50 rounded-3xl p-5">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <Checkbox
+                                            checked={enabledDeductions.mortgage}
+                                            onCheckedChange={(c) => setEnabledDeductions(prev => ({ ...prev, mortgage: c === true }))}
+                                        />
+                                        <h3 className="text-3 font-semibold text-neutral-800">Mortgage Interest</h3>
+                                    </div>
                                     <div className="space-y-3">
                                         <FormFieldRow className="justify-between">
                                             <FormLabel tip="Only enter the interest portion of your monthly mortgage payment, as the principal repayment is not tax-deductible by law.">{periodMode === 'annually' ? 'Annual' : 'Monthly'} Mortgage Interest Paid</FormLabel>
-                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? dedFieldSumFmt('mortgageInterest') : (currentDeductions as any).mortgageInterest ?? ''} onChange={fmtInput((v) => setDeductionField('mortgageInterest', v))} disabled={periodMode === 'annually' && hasRecordedData} className="w-[180px] text-left" />
+                                            <Input type="text" placeholder="₦ 0.00" value={periodMode === 'annually' ? dedFieldSumFmt('mortgageInterest') : (currentDeductions as any).mortgageInterest ?? ''} onChange={fmtInput((v) => setDeductionField('mortgageInterest', v))} disabled={!enabledDeductions.mortgage || (periodMode === 'annually' && hasRecordedData)} className="w-[180px] text-left" />
                                         </FormFieldRow>
                                     </div>
                                     <div className="mt-3">
-                                        <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                        <div className={`bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl ${!enabledDeductions.mortgage ? 'opacity-50' : ''}`}>
                                             <span className="text-1 text-neutral-400 font-medium">Upload mortgage receipt</span>
-                                            <button onClick={() => mortgageRef.current?.click()} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0">Upload</button>
+                                            <button onClick={() => mortgageRef.current?.click()} disabled={!enabledDeductions.mortgage} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0 disabled:cursor-not-allowed">Upload</button>
                                             <input ref={mortgageRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setDeductionFiles(prev => ({ ...prev, ['mortgage_' + (activeMonthNum - 1)]: [...(prev['mortgage_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
                                         </div>
                                         {((deductionFiles['mortgage_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
@@ -856,11 +936,6 @@ export default function PITDetails() {
                                         ))}
                                     </div>
                                 </div>
-                            )}
-
-                            {!currentProfile?.paysRent && !currentProfile?.hasHealthInsurance && !currentProfile?.hasPension && !currentProfile?.hasMortgage && (
-                                <p className="text-2 text-neutral-500 font-medium">No deductions or reliefs selected during onboarding.</p>
-                            )}
                         </div>
 
                         <div className="flex gap-3 mt-8">
@@ -887,7 +962,7 @@ export default function PITDetails() {
                 </div>
 
                 {/* Right panel — Estimated Annual Summary */}
-                <div className="w-[280px] flex-shrink-0 sticky top-24 self-start border border-neutral-50 rounded-xl p-4">
+                <div className="w-[280px] flex-shrink-0 sticky top-24 self-start">
                     <h3 className="text-2 font-semibold text-neutral-800 mb-3">Estimated Annual Summary</h3>
                     <div className="space-y-2">
                         <div className="flex items-center justify-between text-2">
@@ -978,6 +1053,13 @@ export default function PITDetails() {
         personalInfoSaved
     );
 
+    // Force first-time users to Personal Info; never render a locked section
+    useEffect(() => {
+        if (!personalInfoComplete && activeSection !== 'personal-info') {
+            setActiveSection('personal-info');
+        }
+    }, [personalInfoComplete, activeSection]);
+
     // GSAP reveal animations
     const animateSection = useCallback(() => {
         if (typeof window === 'undefined') return;
@@ -1004,6 +1086,35 @@ export default function PITDetails() {
     useEffect(() => {
         animateSection();
     }, [activeSection, animateSection]);
+
+    // Restore income data from localStorage on mount
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY_PIT_INCOME);
+            if (!raw) return;
+            const saved = JSON.parse(raw);
+            if (saved.incomeByMonth) setIncomeByMonth(saved.incomeByMonth);
+            if (saved.deductionsByMonth) setDeductionsByMonth(saved.deductionsByMonth);
+            if (saved.deductionFiles) setDeductionFiles(saved.deductionFiles);
+            if (saved.incomeFiles) setIncomeFiles(saved.incomeFiles);
+            if (saved.recordedMonths) setRecordedMonths(new Set(saved.recordedMonths));
+            if (saved.enabledIncomeSources) setEnabledIncomeSources(saved.enabledIncomeSources);
+            if (saved.enabledDeductions) setEnabledDeductions(saved.enabledDeductions);
+        } catch { /* ignore */ }
+    }, []);
+
+    // Auto-save income data to localStorage
+    useEffect(() => {
+        if (!profileId) return;
+        try {
+            localStorage.setItem(STORAGE_KEY_PIT_INCOME, JSON.stringify({
+                incomeByMonth, deductionsByMonth, deductionFiles, incomeFiles,
+                recordedMonths: Array.from(recordedMonths),
+                enabledIncomeSources,
+                enabledDeductions,
+            }));
+        } catch { /* ignore */ }
+    }, [incomeByMonth, deductionsByMonth, deductionFiles, incomeFiles, recordedMonths, STORAGE_KEY_PIT_INCOME, enabledIncomeSources, enabledDeductions]);
 
     // Load income/deductions from backend after profile is ready
     useEffect(() => {
@@ -1128,8 +1239,8 @@ export default function PITDetails() {
     return (
         <div ref={containerRef} className="min-h-screen bg-white pb-24 md:pb-20">
             {/* Breadcrumb nav bar */}
-            <div className="w-full bg-white border-b border-neutral-100 px-4 md:px-8 py-3">
-                <div className="max-w-[1200px] mx-auto w-full flex flex-col gap-1">
+            <div className="w-full bg-white border-b border-neutral-100 py-3">
+                <div className="max-w-[1280px] mx-auto px-6 md:px-12 w-full flex flex-col gap-1">
                     <button onClick={() => router.push('/home')} className="flex items-center gap-2 text-3 font-semibold text-neutral-800 w-fit shrink-0">
                         <Home2Fill className="w-5 h-5" color="#E5E5E5" />
                         Home
@@ -1142,7 +1253,7 @@ export default function PITDetails() {
                 </div>
             </div>
 
-            <main className="max-w-[1200px] mx-auto px-4 md:px-8 pt-14 pb-8">
+            <main className="max-w-[1280px] mx-auto px-6 md:px-12 pt-14 pb-8">
                 <div className="flex items-start gap-10">
                     <PITSidebar
                         activeSection={activeSection}

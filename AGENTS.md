@@ -26,12 +26,12 @@ Commit only when explicitly asked. No destructive operations without confirmatio
 ```
 src/
   app/               App Router pages + layout.tsx + globals.css
-  screens/           Page-level screens (Auth/, Home/, Onboarding/, TaxFolders/)
+  screens/           Page-level screens (Auth/, Home/, TaxFolders/)
   components/ui/     shadcn v4 base-nova (Input, Drawer, Table, Stepper, Accordion, etc.)
   components/        DashboardHeader/, ErrorBoundary/, OnboardingLayout/, RequireAuth/, SetupSidebar/
   contexts/          UserContext, ProfileContext, OnboardingContext
   hooks/             useApi.ts, useTaxableApi.ts
-  lib/               taxable-api.ts, utils.ts (cn()), api-endpoints.ts
+  lib/               taxable-api.ts, utils.ts (cn()), api-endpoints.ts, nigeria-locations.ts
   types/             api.ts
 ```
 
@@ -138,9 +138,14 @@ React Compiler auto-memoizes aggressively. These patterns break:
 
 ## Design System
 
-**Typography** (never `text-sm`, `text-base`, `text-lg`, or arbitrary `[Npx]`):
-- Scale: `text-1` (12px) → `text-2` (13px) → `text-3` (15px) → `text-5` (19px) → `text-6` (21px) → `text-7` (24px+)
-- Headings: `tracking-[-0.02em] font-semibold`. Font: Archivo Variable (set in layout.tsx).
+**Typography** (never `text-sm`, `text-base`, `text-lg`, or arbitrary `[Npx]` — except the shared `Input` component, which uses `text-sm`; match its size when styling custom field triggers):
+- Scale: `text-0` (10px) → `text-1` (12px) → `text-2` (13px) → `text-3` (15px) → `text-5` (19px) → `text-6` (21px) → `text-7` (24px+)
+- Two fonts, both local via `next/font/local` in layout.tsx:
+  - **Archivo** (`--font-archivo`) — body/default
+  - **Merriweather** (`--font-merriweather`) — headings, applied via `font-[family-name:var(--font-merriweather)]`
+- Page/section headers: `text-5 font-medium text-neutral-800 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]` (auth screens, Home "Tax Filings", SetupSidebar drawer)
+- Size usage: page headers `text-5`, section headings `text-3`, body/subtexts `text-1`/`text-2`, buttons `text-2`
+- Typography is tuned to look correct at ~80% browser zoom — keep sizes at the small end of the scale.
 
 **Colors** — use only these:
 - Body text: `text-neutral-400` (muted) / `text-neutral-500` / `text-neutral-600` / `text-neutral-700`
@@ -152,11 +157,28 @@ React Compiler auto-memoizes aggressively. These patterns break:
 - SVG icons: `stroke="currentColor"` + `className="text-neutral-*"`
 
 **Buttons**:
-- Primary: `h-12 text-3 font-semibold rounded-xl bg-taxable-blue text-white disabled:bg-neutral-100 disabled:text-neutral-400`
-- Secondary: `h-12 text-3 font-semibold rounded-xl bg-white border border-neutral-100 text-neutral-800`
+- Primary: `h-12 text-2 font-semibold rounded-xl bg-taxable-blue text-white disabled:bg-neutral-100 disabled:text-neutral-400`
+- Compact CTA (home "Create another tax filing"): `h-10 px-5 text-2 font-semibold rounded-xl bg-taxable-blue text-white`
+- Secondary: `h-12 text-2 font-semibold rounded-xl bg-white border border-neutral-100 text-neutral-800` (or `text-taxable-dark`)
 - No hover or transition effects on buttons.
 
+**Layout / containers**:
+- Header and main content both use `max-w-[1280px] mx-auto px-6 md:px-12` so the nav bar and page share left/right padding.
+- Logo sizes: DashboardHeader `width={64} height={38}`, OnboardingLayout (auth) `width={80} height={49}`.
+
+**Home tax-filings grid**:
+- Single "Tax Filings" section (no per-year separation), sorted most-recent first by `createdAt`.
+- `TaxFolderCard` renders `Badge variant="secondary"`s: profile type, year, and a status label.
+- Status label via `getProfileStatusLabel(profile)` (`src/lib/profile-status.ts`): lifecycle state (In Progress / In Review / Ready to File / Filed) plus enabled business tax types (e.g. "In Progress · VAT, WHT"). Needs `businessSetup` on the profile (exposed by the profile list endpoint).
+- Compact CTA (`h-10 px-5 text-2`) sits in the section header row.
+
+**SetupSidebar drawer**:
+- Header: `text-5 font-medium text-neutral-800 text-center tracking-[-0.02em] font-[family-name:var(--font-merriweather)]`.
+- Individual flow is now 2 screens: **Create filing → Life questions → Create**. Income-source selection was removed — the PIT folder shows all 6 income-source cards unconditionally so users fill what applies at the time.
+- Footer buttons `h-12 text-2`, primary disabled until valid.
+
 **Inputs**: Always shadcn `<Input>`. `<select>` → `<SearchableSelect>`. Monetary fields: `fmtInput(setter)`.
+Location selects (City/State/LGA): import `NIGERIA_STATES`, `getCitiesForState(state)`, `getLgasForState(state)` from `@/lib/nigeria-locations`. Filter City/LGA by the selected State; clear City/LGA when State changes.
 
 **Tables**: Container `bg-white border border-neutral-50 rounded-2xl overflow-hidden`. Header `bg-neutral-50 px-6 py-4 font-medium text-neutral-400`. Data cells `px-6 py-4 font-medium text-neutral-600`. Wrap in `overflow-x-auto`.
 
@@ -225,3 +247,4 @@ Deductions: Pension 8%, NHF 2.5%, HMO 5%, Rent Relief 20% capped ₦500k.
 Next.js 16.1, React 19.2, TypeScript strict. shadcn v4 (base-nova). GSAP 3.15 + Lenis 1.3.
 lucide-react + @mingcute/react (icons). sonner (toasts) + vaul (drawers).
 date-fns 4.4 + react-day-picker 10.0. tailwind-merge 3.6 (in `cn()`). framer-motion 12.24.
+Fonts (local, next/font/local): Archivo Variable + Merriweather.

@@ -23,15 +23,6 @@ interface SetupSidebarProps {
 }
 
 // ── Step 0 data ──────────────────────────────────────────────────────────────
-const INCOME_SOURCES = [
-    { id: 'salary', label: 'Salary / Employment', desc: 'Income from an employer' },
-    { id: 'business', label: 'Business/Self-employment', desc: 'Income from your own business' },
-    { id: 'freelance', label: 'Freelance/Consulting', desc: 'Project-based or contract work' },
-    { id: 'investment', label: 'Investment income', desc: 'Dividends, interest, capital gains' },
-    { id: 'rental', label: 'Rental income', desc: 'Income from property rentals' },
-    { id: 'crypto', label: 'Digital Assets/Crypto', desc: 'Royalties, gifts, or other sources' },
-];
-
 const LIFE_QUESTIONS = [
     {
         id: 'nigeria_resident',
@@ -93,10 +84,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
         : null;
     const ninValid = filingType !== 'Individual' || taxId.length === 11 || taxId.length === 0;
 
-    // Step 1 state — income sources
-    const [selectedSources, setSelectedSources] = useState<string[]>([]);
-
-    // Step 2 state — life questions
+    // Step 1 state — life questions
     const [lifeAnswers, setLifeAnswers] = useState<Record<string, string>>({});
 
     // ── Reset when opening ───────────────────────────────────────────────────
@@ -114,7 +102,6 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                 setTaxId('');
                 setFilingIntent(null);
                 setTaxYear('2026');
-                setSelectedSources([]);
                 setLifeAnswers({});
                 setBusinessServices([]);
                 }
@@ -123,13 +110,6 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
     }, [isOpen, resumeProfileId]);
 
     if (!isOpen) return null;
-
-    // ── Toggle income source ─────────────────────────────────────────────────
-    const toggleSource = (id: string) => {
-        setSelectedSources(prev =>
-            prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
-        );
-    };
 
     // ── Set life answer ──────────────────────────────────────────────────────
     const setLifeAnswer = (id: string, val: string) => {
@@ -180,16 +160,11 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
             router.push('/tax-folders/paye');
             return;
         }
-        // Individual returns flow → advance to income sources
+        // Individual returns flow → advance to life questions
         setStep(1);
     };
 
-    // ── Handle "Continue" on step 1 → go to step 2 ───────────────────────────
-    const handleContinueFromSources = () => {
-        setStep(2);
-    };
-
-    // ── Handle "Get Started" on step 2 → create + complete profile then redirect ──
+    // ── Handle "Get Started" on step 1 → create + complete profile then redirect ──
     const handleCreateAndSubmit = async () => {
         try {
             setError(null);
@@ -197,19 +172,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
             
             const profile = await createProfile(parseInt(taxYear), 'Individual');
             
-            const incomeSourceMap: Record<string, string> = {
-                'salary': 'Salary / Employment',
-                'business': 'Business/Self-employment',
-                'freelance': 'Freelance/Consulting',
-                'investment': 'Investment income',
-                'rental': 'Rental income',
-                'crypto': 'Digital Assets/Crypto',
-            };
-            
-            const primaryIncomeSources = selectedSources.map(s => incomeSourceMap[s] || s);
-            
             const completeData: ProfileCompleteRequest = {
-                primaryIncomeSources,
                 nin: taxId || undefined,
                 residency183Days: lifeAnswers.nigeria_resident === 'yes',
                 paysRent: lifeAnswers.pays_rent === 'yes',
@@ -242,8 +205,6 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
     };
 
     const getSubtitle = () => {
-        if (step === 0) return null;
-        if (step === 1) return 'You can select more than one option';
         return null;
     };
 
@@ -258,15 +219,15 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
 
                             {/* Header */}
                             <div className="pb-6">
-                                <h2 className="text-5 font-semibold text-neutral-800 text-center">{getTitle()}</h2>
+                                <h2 className="text-5 font-medium text-neutral-800 text-center tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">{getTitle()}</h2>
                                 {getSubtitle() && (
-                                    <p className="text-2 font-medium mt-0.5 text-neutral-500 text-center">{getSubtitle()}</p>
+                                    <p className="text-1 font-medium mt-0.5 text-neutral-500 text-center">{getSubtitle()}</p>
                                 )}
                             </div>
 
                             {/* Error display */}
                             {error && (
-                                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-2 text-red-600">
+                                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-1 text-red-600">
                                     {error}
                                 </div>
                             )}
@@ -275,39 +236,39 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                             {step === 0 && (
                                 <div className="space-y-1">
                                     {/* 1. What would you like to do? */}
-                                    <p className="text-2 font-medium mb-2 text-neutral-500">
+                                    <p className="text-1 font-medium mb-2 text-neutral-500">
                                         What would you like to do?
                                     </p>
                                     <RadioGroup value={filingIntent || ''} onValueChange={(v) => { setFilingIntent(v as 'returns' | 'paye'); setSubStep(1); }} className="flex flex-col gap-4">
                                         <label className="flex items-start gap-3 cursor-pointer">
                                             <RadioGroupItem value="returns" className="mt-0.5" />
-                                            <p className="text-3 font-medium text-neutral-800">File my tax returns</p>
+                                            <p className="text-2 font-medium text-neutral-800">File my tax returns</p>
                                         </label>
                                         <label className="flex items-start gap-3 cursor-pointer opacity-40">
                                             <RadioGroupItem value="paye" className="mt-0.5" disabled />
-                                            <p className="text-3 font-medium text-neutral-800">Calculate my monthly PAYE</p>
+                                            <p className="text-2 font-medium text-neutral-800">Calculate my monthly PAYE</p>
                                         </label>
                                     </RadioGroup>
 
                                     {/* 2. Who are you filing for? */}
                                     {subStep >= 1 && (
                                         <>
-                                            <p className="text-2 font-medium mt-10 mb-2 text-neutral-500">
+                                            <p className="text-1 font-medium mt-10 mb-2 text-neutral-500">
                                                 Who are you filing for?
                                             </p>
-                                            <RadioGroup value={filingType || ''} onValueChange={(v) => { setFilingType(v as 'Individual' | 'Business'); setSubStep(2); }} className="flex flex-col gap-4">
+                                            <RadioGroup value={filingType || ''} onValueChange={(v) => { setFilingType(v as 'Individual' | 'Business'); setSubStep(2); }} className="flex flex-col gap-6">
                                                 <label className="flex items-start gap-3 cursor-pointer">
                                                     <RadioGroupItem value="Individual" className="mt-0.5" />
                                                     <div>
-                                                        <p className="text-3 font-medium text-neutral-800">Individual</p>
-                                                        <p className="text-2 font-medium mt-1 text-neutral-500">For salary earners, freelancers, sole proprietors, and self-employed individuals</p>
+                                                        <p className="text-2 font-medium text-neutral-800">Individual</p>
+                                                        <p className="text-1 font-medium mt-1 text-neutral-500">For salary earners, freelancers, sole proprietors, and self-employed individuals</p>
                                                     </div>
                                                 </label>
                                                 <label className="flex items-start gap-3 cursor-pointer">
                                                     <RadioGroupItem value="Business" className="mt-0.5" />
                                                     <div>
-                                                        <p className="text-3 font-medium text-neutral-800">Businesses & Organizations</p>
-                                                        <p className="text-2 font-medium mt-1 text-neutral-500">For registered companies (LTD, NGOs, Partnerships) subject to Corporate Income Tax</p>
+                                                        <p className="text-2 font-medium text-neutral-800">Businesses & Organizations</p>
+                                                        <p className="text-1 font-medium mt-1 text-neutral-500">For registered companies (LTD, NGOs, Partnerships) subject to Corporate Income Tax</p>
                                                     </div>
                                                 </label>
                                             </RadioGroup>
@@ -318,7 +279,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                     {subStep >= 2 && filingType && (
                                         <>
                                             <div className="pt-10">
-                                                <label className="block text-2 font-medium mb-2 text-neutral-500">
+                                                <label className="block text-1 font-medium mb-2 text-neutral-500">
                                                     {filingType === 'Business' ? 'Tax ID (RC/BN)' : 'Tax ID (Your NIN)'}{' '}
                                                     <InfoTooltip text={filingType === 'Business' ? 'Your business registration number issued by CAC (Corporate Affairs Commission).' : 'Your 11-digit National Identification Number issued by NIMC.'} />
                                                 </label>
@@ -343,7 +304,7 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
 
                                             {filingType === 'Business' && (
                                                 <div className="pt-10">
-                                                    <p className="text-2 font-medium mb-2 text-neutral-500">
+                                                    <p className="text-1 font-medium mb-2 text-neutral-500">
                                                         What do you need to do?
                                                     </p>
                                                     {[
@@ -364,8 +325,8 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                                                 className="mt-0.5"
                                                             />
                                                             <div>
-                                                                <p className="text-3 font-medium text-neutral-800">{service.label}</p>
-                                                                <p className="text-2 font-medium mt-1 text-neutral-500">{service.desc}</p>
+                                                                <p className="text-2 font-medium text-neutral-800">{service.label}</p>
+                                                                <p className="text-1 font-medium mt-1 text-neutral-500">{service.desc}</p>
                                                             </div>
                                                         </label>
                                                     ))}
@@ -373,15 +334,15 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                             )}
 
                                             <div className="pt-10">
-                                                <p className="text-2 font-medium text-neutral-800 mb-2">Which tax year are you filing for?</p>
+                                                <p className="text-1 font-medium text-neutral-800 mb-2">Which tax year are you filing for?</p>
                                                 <RadioGroup value={taxYear} onValueChange={(v) => setTaxYear(v as '2026' | '2025')} className="flex flex-col sm:flex-row sm:items-center gap-4">
                                                     <label className="flex items-start gap-3 cursor-pointer">
                                                         <RadioGroupItem value="2026" className="mt-0.5" />
-                                                        <p className="text-3 font-medium text-neutral-800">2026 (Current year)</p>
+                                                        <p className="text-2 font-medium text-neutral-800">2026 (Current year)</p>
                                                     </label>
                                                     <label className="flex items-start gap-3 cursor-pointer">
                                                         <RadioGroupItem value="2025" className="mt-0.5" />
-                                                        <p className="text-3 font-medium text-neutral-800">2025</p>
+                                                        <p className="text-2 font-medium text-neutral-800">2025</p>
                                                     </label>
                                                 </RadioGroup>
                                             </div>
@@ -390,46 +351,22 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                 </div>
                             )}
 
-                            {/* ─── STEP 1: Income sources ─── */}
+                            {/* ─── STEP 1: Life questions ─── */}
                             {step === 1 && (
-                                <div>
-                                    <p className="text-2 font-medium text-neutral-800 mb-3">
-                                        What are your income sources?
-                                    </p>
-                                    <div className="flex flex-col">
-                                        {INCOME_SOURCES.map((src) => (
-                                            <label key={src.id} className="flex items-start gap-3 cursor-pointer py-3.5">
-                                                <Checkbox
-                                                    checked={selectedSources.includes(src.id)}
-                                                    onCheckedChange={() => toggleSource(src.id)}
-                                                    className="mt-0.5"
-                                                />
-                                                <div>
-                                                    <p className="text-3 font-medium text-neutral-800">{src.label}</p>
-                                                    <p className="text-2 font-medium mt-1 text-neutral-500">{src.desc}</p>
-                                                </div>
-                                            </label>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* ─── STEP 2: Life questions ─── */}
-                            {step === 2 && (
                                 <div className="space-y-14">
                                     {LIFE_QUESTIONS.map((q) => (
                                         <div key={q.id}>
-                                            <p className="text-2 font-medium text-neutral-800 mb-2">{q.question}</p>
+                                            <p className="text-1 font-medium text-neutral-800 mb-2">{q.question}</p>
                                             <RadioGroup value={lifeAnswers[q.id] || ''} onValueChange={(v) => setLifeAnswer(q.id, v)} className="flex flex-col sm:flex-row sm:items-center gap-4">
                                                 {q.options.map(opt => (
                                                     <label key={opt.value} className="flex items-start gap-3 cursor-pointer">
                                                         <RadioGroupItem value={opt.value} className="mt-0.5" />
-                                                        <p className="text-3 font-medium text-neutral-800">{opt.label}</p>
+                                                        <p className="text-2 font-medium text-neutral-800">{opt.label}</p>
                                                     </label>
                                                 ))}
                                             </RadioGroup>
                                             {q.hint && (
-                                                <p className="text-2 text-neutral-400 font-medium mt-2 leading-relaxed">
+                                                <p className="text-1 text-neutral-400 font-medium mt-2 leading-relaxed">
                                                     {q.hint}
                                                 </p>
                                             )}
@@ -442,22 +379,20 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                             <div className="flex gap-3 pt-6 border-t border-neutral-100 mt-8">
                                 <button
                                     onClick={step === 0 ? onClose : () => setStep(prev => prev - 1)}
-                                    className="flex-1 h-12 border border-neutral-200 text-neutral-800 font-semibold rounded-xl text-3"
+                                    className="flex-1 h-12 border border-neutral-200 text-neutral-800 font-semibold rounded-xl text-2"
                                 >
                                     {step === 0 ? 'Cancel' : 'Back'}
                                 </button>
                                 <button
-                                    onClick={step === 0 ? handleGetStarted : step === 1 ? handleContinueFromSources : handleCreateAndSubmit}
+                                    onClick={step === 0 ? handleGetStarted : handleCreateAndSubmit}
                                     disabled={
                                         step === 0
                                             ? !filingIntent || !filingType || (filingType === 'Individual' && !ninValid) || (filingType === 'Business' && businessServices.length === 0) || loadingStep === 0
-                                            : step === 1
-                                                ? selectedSources.length === 0
-                                                : !allLifeQuestionsAnswered || loadingStep === 2
+                                            : !allLifeQuestionsAnswered || loadingStep === 2
                                     }
-                                    className="flex-1 h-12 bg-taxable-blue text-white font-semibold rounded-xl text-3 disabled:bg-neutral-100 disabled:text-neutral-400 flex items-center justify-center gap-2"
+                                    className="flex-1 h-12 bg-taxable-blue text-white font-semibold rounded-xl text-2 disabled:bg-neutral-100 disabled:text-neutral-400 flex items-center justify-center gap-2"
                                 >
-                                    {(loadingStep === 2 || loadingStep === 0) ? <Spinner /> : step === 0 ? (filingType === 'Business' ? 'Get Started' : 'Continue') : step === 1 ? 'Continue' : 'Get Started'}
+                                    {(loadingStep === 2 || loadingStep === 0) ? <Spinner /> : step === 0 ? (filingType === 'Business' ? 'Get Started' : 'Continue') : 'Get Started'}
                                 </button>
                             </div>
                         </div>

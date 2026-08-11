@@ -1,7 +1,6 @@
 'use client';
 import React, { ReactNode, useLayoutEffect, useRef } from 'react';
 import gsap from 'gsap';
-import { OnboardingProvider } from '@/contexts/OnboardingContext';
 import LogoWhite from '@/components/OnboardingLayout/LogoWhite';
 import { useFormEntrance } from '@/hooks/useFormEntrance';
 
@@ -40,8 +39,7 @@ const OnboardingLayout = ({ children }: OnboardingLayoutProps) => {
     }, []);
 
     return (
-        <OnboardingProvider>
-            <div className="min-h-screen md:h-screen w-full flex flex-col md:flex-row bg-white md:overflow-hidden">
+        <div className="min-h-screen md:h-screen w-full flex flex-col md:flex-row bg-white md:overflow-hidden">
                 {/* Left Panel - Reusable Content */}
                 <div ref={leftRef} className="w-full md:w-[45%] lg:w-[40%] bg-taxable-blue p-8 md:p-10 flex flex-col justify-between relative overflow-hidden">
                     <div data-animate-left>
@@ -49,11 +47,11 @@ const OnboardingLayout = ({ children }: OnboardingLayoutProps) => {
                     </div>
 
                     <div className="relative z-10 mt-12 md:mt-0">
-                        <h1 data-animate-left className="text-7 font-semibold text-neutral-50 mb-4 md:mb-6 leading-[1.1] tracking-[-0.02em]">
-                            Start your stress-free tax journey.
+                        <h1 data-animate-left className="text-8 font-normal text-neutral-50 mb-4 md:mb-6 leading-[1.1] tracking-[-0.05em] font-[family-name:var(--font-merriweather)]">
+                            By the time tax season comes around, you&apos;ll already be done.
                         </h1>
-                        <p data-animate-left className="text-neutral-50 text-2 font-medium tracking-[-0.01em]">
-                            Join thousands of Nigerians filing smarter in 10 minutes.
+                        <p data-animate-left className="text-neutral-50 text-2 font-medium tracking-[-0.01em] opacity-90">
+                            Taxable is built and run by licensed tax agents. Document your income as it happens, and they&apos;ll calculate what you owe and file it with NRS — quietly, correctly, on your behalf.
                         </p>
                     </div>
                 </div>
@@ -65,7 +63,6 @@ const OnboardingLayout = ({ children }: OnboardingLayoutProps) => {
                     </div>
                 </div>
             </div>
-        </OnboardingProvider>
     );
 };
 

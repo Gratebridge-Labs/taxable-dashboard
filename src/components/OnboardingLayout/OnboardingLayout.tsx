@@ -1,7 +1,6 @@
 'use client';
 import React, { ReactNode, useLayoutEffect, useRef } from 'react';
 import gsap from 'gsap';
-import { OnboardingProvider } from '@/contexts/OnboardingContext';
 import LogoWhite from '@/components/OnboardingLayout/LogoWhite';
 import { useFormEntrance } from '@/hooks/useFormEntrance';
 
@@ -40,8 +39,7 @@ const OnboardingLayout = ({ children }: OnboardingLayoutProps) => {
     }, []);
 
     return (
-        <OnboardingProvider>
-            <div className="min-h-screen md:h-screen w-full flex flex-col md:flex-row bg-white md:overflow-hidden">
+        <div className="min-h-screen md:h-screen w-full flex flex-col md:flex-row bg-white md:overflow-hidden">
                 {/* Left Panel - Reusable Content */}
                 <div ref={leftRef} className="w-full md:w-[45%] lg:w-[40%] bg-taxable-blue p-8 md:p-10 flex flex-col justify-between relative overflow-hidden">
                     <div data-animate-left>
@@ -65,7 +63,6 @@ const OnboardingLayout = ({ children }: OnboardingLayoutProps) => {
                     </div>
                 </div>
             </div>
-        </OnboardingProvider>
     );
 };
 

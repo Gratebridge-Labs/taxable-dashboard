@@ -26,7 +26,7 @@ Commit only when explicitly asked. No destructive operations without confirmatio
 ```
 src/
   app/               App Router pages + layout.tsx + globals.css
-  screens/           Page-level screens (Auth/, Home/, Onboarding/, TaxFolders/)
+  screens/           Page-level screens (Auth/, Home/, TaxFolders/)
   components/ui/     shadcn v4 base-nova (Input, Drawer, Table, Stepper, Accordion, etc.)
   components/        DashboardHeader/, ErrorBoundary/, OnboardingLayout/, RequireAuth/, SetupSidebar/
   contexts/          UserContext, ProfileContext, OnboardingContext

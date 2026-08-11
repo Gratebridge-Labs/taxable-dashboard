@@ -93,7 +93,7 @@ export default function Home() {
 
             router.push(`/tax-folders/pit?id=${profile.profileId}&section=${section}`);
         } else if (profile.profileType === 'Business') {
-            router.push(`/tax-folders/business?profileId=${profile.profileId}`);
+            router.push(`/tax-folders/business?profileId=${profile.profileId}&year=${profile.year}`);
         } else {
             setResumeProfileId(profile.profileId);
             setResumeData({

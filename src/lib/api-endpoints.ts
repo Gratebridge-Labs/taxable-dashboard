@@ -16,6 +16,29 @@ export const TAXABLE_ENDPOINTS = {
     ALLOWED_YEARS: '/taxableprofile/web/allowed-years',
     INCOME_SOURCES: '/taxableprofile/web/income-sources',
   },
+  BUSINESS: {
+    COMPANY_INFO: (profileId: string) => `/taxableprofile/business/${profileId}/company-info`,
+    PAYE_EMPLOYEES: (profileId: string) => `/taxableprofile/business/${profileId}/paye/employees`,
+    PAYE_EMPLOYEE: (profileId: string, employeeId: string) =>
+      `/taxableprofile/business/${profileId}/paye/employees/${employeeId}`,
+    VAT: (profileId: string) => `/taxableprofile/business/${profileId}/vat`,
+    VAT_FILE: (profileId: string) => `/taxableprofile/business/${profileId}/vat/file`,
+    WHT_DEDUCTIONS: (profileId: string) => `/taxableprofile/business/${profileId}/wht/deductions`,
+    WHT_DEDUCTION: (profileId: string, id: string) =>
+      `/taxableprofile/business/${profileId}/wht/deductions/${id}`,
+    WHT_FILE: (profileId: string) => `/taxableprofile/business/${profileId}/wht/file`,
+    WHT_CREDITS: (profileId: string) => `/taxableprofile/business/${profileId}/wht/credits`,
+    WHT_CREDIT: (profileId: string, id: string) =>
+      `/taxableprofile/business/${profileId}/wht/credits/${id}`,
+    CIT: (profileId: string) => `/taxableprofile/business/${profileId}/cit`,
+    CIT_FILE: (profileId: string) => `/taxableprofile/business/${profileId}/cit/file`,
+    CIT_WHT_CREDITS: (profileId: string) => `/taxableprofile/business/${profileId}/cit/wht-credits`,
+    CIT_WHT_CREDIT: (profileId: string, id: string) =>
+      `/taxableprofile/business/${profileId}/cit/wht-credits/${id}`,
+    CIT_QUARTERLY: (profileId: string) => `/taxableprofile/business/${profileId}/cit/quarterly`,
+    CIT_QUARTERLY_PAY: (profileId: string) => `/taxableprofile/business/${profileId}/cit/quarterly/pay`,
+    CIT_QUARTERLY_DEFER: (profileId: string) => `/taxableprofile/business/${profileId}/cit/quarterly/defer`,
+  },
   UPLOAD: '/upload',
   UPLOAD_SIMPLE: '/upload/simple',
   INCOME_DATA: {

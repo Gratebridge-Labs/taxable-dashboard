@@ -9,6 +9,7 @@ import { useUser } from '@/contexts/UserContext';
 import { toast } from 'sonner';
 import { useTaxableApi } from '@/hooks/useTaxableApi';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
 import { PrimaryButton, SecondaryButton, FormFieldRow, FormLabel, FilingSheet } from '@/screens/TaxFolders/TaxFolderShared';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Stepper, StepperItem, StepperIndicator, StepperTitle, StepperSeparator, StepperTrigger } from '@/components/ui/stepper';
@@ -18,7 +19,12 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
-import type { Profile } from '@/types/api';
+import type {
+    Profile,
+    PitIncomeFields,
+    PitDeductionFields,
+    UpdateIncomeDataRequest,
+} from '@/types/api';
 
 // Sub-components and Shared Utilities
 import { MONTHS } from './PITShared';
@@ -81,12 +87,38 @@ const SkeletonLoader = () => (
     </div>
 );
 
+const parseMoney = (str?: string) => Number(String(str ?? '').replace(/,/g, '')) || 0;
+
+const fmtAmount = (n?: number | null) => {
+    if (n == null || !Number.isFinite(n) || n === 0) return '';
+    return Number(n).toLocaleString('en-US');
+};
+
+const mapIncomeToUi = (income?: PitIncomeFields) => ({
+    salaryTakeHome: fmtAmount(income?.salaryTakeHome),
+    businessRevenue: fmtAmount(income?.businessRevenue),
+    businessExpenses: fmtAmount(income?.businessExpenses),
+    freelanceInvoiced: fmtAmount(income?.freelanceInvoiced),
+    freelanceWHT: fmtAmount(income?.freelanceWHT),
+    investmentIncome: fmtAmount(income?.investmentIncome),
+    rentalIncome: fmtAmount(income?.rentalIncome),
+    digitalGains: fmtAmount(income?.digitalGains),
+});
+
+const mapDeductionsToUi = (deductions?: PitDeductionFields) => ({
+    rent: fmtAmount(deductions?.rent),
+    healthInsurance: fmtAmount(deductions?.healthInsurance),
+    pension: fmtAmount(deductions?.pension),
+    mortgageInterest: fmtAmount(deductions?.mortgageInterest),
+});
+
 export default function PITDetails() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { loading: authLoading, isAuthenticated } = useUser();
     const api = useTaxableApi();
     const profileId = searchParams?.get('id') || '';
+    const STORAGE_KEY_PIT_INCOME = `taxable_pit_income_${profileId}`;
 
     // ─── Component State ──────────────────────────────────────────────────
     const [activeSection, setActiveSection] = useState<'personal-info' | 'income-deductions' | 'review'>('personal-info');
@@ -97,8 +129,8 @@ export default function PITDetails() {
     const [profileLoading, setProfileLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Personal Info State
-    const defaultPersonalInfo: PersonalInfo = {
+    // Personal Info State — loaded from getProfile only
+    const [personalInfo, setPersonalInfo] = useState<PersonalInfo>({
         nin: '',
         firstName: '',
         lastName: '',
@@ -110,20 +142,12 @@ export default function PITDetails() {
         state: '',
         lga: '',
         isResident: true,
-    };
-
-    const [personalInfo, setPersonalInfo] = useState<PersonalInfo>(() => {
-        try {
-            const id = searchParams?.get('id');
-            if (!id) return { ...defaultPersonalInfo };
-            const cached = localStorage.getItem(`taxable_pit_personal_${id}`);
-            if (cached) return { ...defaultPersonalInfo, ...JSON.parse(cached) };
-        } catch { /* ignore */ }
-        return { ...defaultPersonalInfo };
     });
     const [savingPersonalInfo, setSavingPersonalInfo] = useState(false);
     const [personalInfoSaved, setPersonalInfoSaved] = useState(false);
     const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+    const [incomeDataReady, setIncomeDataReady] = useState(false);
+    const [savingIncome, setSavingIncome] = useState(false);
 
     // Income & Deductions State
     const [periodMode, setPeriodMode] = useState<'monthly' | 'annually'>('monthly');
@@ -167,23 +191,6 @@ export default function PITDetails() {
         setHasUnsavedIncome(false);
         setShowUnsavedIncomeModal(false);
         setPendingIncomeAction(null);
-    };
-
-    const handleSaveMonth = () => {
-        const monthData = incomeByMonth[activeMonthNum - 1] ?? {};
-        const hasData = Object.values(monthData).some(v => v !== undefined && v !== '' && Number((v as string)?.replace(/,/g, '') || 0) > 0);
-        if (hasData) {
-            setRecordedMonths(prev => new Set([...prev, activeMonthNum - 1]));
-        } else {
-            setRecordedMonths(prev => { const r = new Set(prev); r.delete(activeMonthNum - 1); return r; });
-        }
-        setHasUnsavedIncome(false);
-        toast.success(`Data recorded for ${INCOME_MONTH_NAMES[activeMonthNum - 1]}`);
-        if (activeMonthNum < 12) {
-            setActiveMonth(INCOME_MONTH_NAMES[activeMonthNum]);
-        }
-        setIncomeStep('income');
-        setCompletedIncomeSteps(new Set());
     };
 
     const [incomeByMonth, setIncomeByMonth] = useState<Record<number, {
@@ -241,15 +248,12 @@ export default function PITDetails() {
     const rentalRef = useRef<HTMLInputElement>(null);
     const cryptoRef = useRef<HTMLInputElement>(null);
     const rentRef = useRef<HTMLInputElement>(null);
-    const STORAGE_KEY_PIT_INCOME = `taxable_pit_income_${profileId}`;
 
     // Annual Filing state
     const [legalConfirmPIT1, setLegalConfirmPIT1] = useState(false);
     const [legalConfirmPIT2, setLegalConfirmPIT2] = useState(false);
     const [showFilingSheetPIT, setShowFilingSheetPIT] = useState(false);
-    const [annualReturnFiledPIT, setAnnualReturnFiledPIT] = useState(() => {
-        try { return localStorage.getItem(`taxable_pit_filed_${profileId}`) === 'true'; } catch { return false; }
-    });
+    const [annualReturnFiledPIT, setAnnualReturnFiledPIT] = useState(false);
 
     // Modal States
     const [helpModalOpen, setHelpModalOpen] = useState(false);
@@ -280,48 +284,58 @@ export default function PITDetails() {
         try {
             const profile = await api.getProfile(profileId);
             if (profile) {
-                setCurrentProfile(profile);
+                startTransition(() => {
+                    setCurrentProfile(profile);
+                    setAnnualReturnFiledPIT(profile.filingStatus === 'filed');
 
-                setEnabledDeductions(prev => ({
-                    rent: prev.rent || !!(profile as any).paysRent,
-                    healthInsurance: prev.healthInsurance || !!(profile as any).hasHealthInsurance,
-                    pension: prev.pension || !!(profile as any).hasPension,
-                    mortgage: prev.mortgage || !!(profile as any).hasMortgage,
-                }));
+                    setEnabledDeductions(prev => ({
+                        rent: prev.rent || !!(profile as any).paysRent,
+                        healthInsurance: prev.healthInsurance || !!(profile as any).hasHealthInsurance,
+                        pension: prev.pension || !!(profile as any).hasPension,
+                        mortgage: prev.mortgage || !!(profile as any).hasMortgage,
+                    }));
 
-                setPersonalInfo(prev => ({
-                    nin: profile.nin || prev.nin,
-                    firstName: (profile as any).firstName || (profile.fullName && profile.fullName.split(' ')[0]) || prev.firstName,
-                    lastName: (profile as any).lastName || (profile.fullName && profile.fullName.split(' ').slice(1).join(' ')) || prev.lastName,
-                    email: prev.email,
-                    phone: prev.phone,
-                    dob: profile.dob || prev.dob,
-                    streetAddress: profile.street || prev.streetAddress,
-                    city: profile.city || prev.city,
-                    state: profile.state || prev.state,
-                    lga: (profile as any).lga || prev.lga,
-                    isResident: (profile as any).residencyStatus !== 'non-resident',
-                }));
+                    setPersonalInfo(prev => ({
+                        nin: profile.nin || prev.nin,
+                        firstName: (profile as any).firstName || (profile.fullName && profile.fullName.split(' ')[0]) || prev.firstName,
+                        lastName: (profile as any).lastName || (profile.fullName && profile.fullName.split(' ').slice(1).join(' ')) || prev.lastName,
+                        email: prev.email,
+                        phone: prev.phone,
+                        dob: profile.dob || prev.dob,
+                        streetAddress: profile.street || prev.streetAddress,
+                        city: profile.city || prev.city,
+                        state: profile.state || prev.state,
+                        lga: (profile as any).lga || prev.lga,
+                        isResident: (profile as any).residencyStatus !== 'non-resident',
+                    }));
 
-                if (profile.street && profile.city && profile.state) {
-                    setPersonalInfoSaved(true);
-                    personalInfoDirtyRef.current = false;
-                }
-
-                // Determine starting section - Background auto-continue logic
-                if (!sectionInitializedRef.current) {
-                    const hasPersonalInfo = !!(profile.nin && profile.fullName);
-
-                    if (!hasPersonalInfo) {
-                        setActiveSection('personal-info');
-                    } else {
-                        setActiveSection('income-deductions');
+                    if (profile.street && profile.city && profile.state) {
+                        setPersonalInfoSaved(true);
+                        personalInfoDirtyRef.current = false;
                     }
-                    sectionInitializedRef.current = true;
-                }
+
+                    if (profile.filingPreference === 'annual') {
+                        setPeriodMode('annually');
+                    } else if (profile.filingPreference === 'monthly') {
+                        setPeriodMode('monthly');
+                    }
+
+                    // Determine starting section - Background auto-continue logic
+                    if (!sectionInitializedRef.current) {
+                        const hasPersonalInfo = !!(profile.nin && profile.fullName);
+
+                        if (!hasPersonalInfo) {
+                            setActiveSection('personal-info');
+                        } else {
+                            setActiveSection('income-deductions');
+                        }
+                        sectionInitializedRef.current = true;
+                    }
+                });
             }
-        } catch (err: any) {
-            setError(err.message || 'Failed to load profile');
+        } catch (err: unknown) {
+            console.error('Failed to load profile:', err instanceof Error ? err.message : 'Unknown error');
+            setError(err instanceof Error ? err.message : 'Failed to load profile');
         } finally {
             setProfileLoading(false);
             setLoading(false);
@@ -442,11 +456,96 @@ export default function PITDetails() {
     const annualTaxable = Math.max(0, annualizedGross - annualizedDeds);
     const estimatedAnnualTax = calculatePAYE(annualTaxable).annualTax;
 
-    const handleFilePITReturn = () => {
-        setAnnualReturnFiledPIT(true);
-        setShowFilingSheetPIT(false);
-        try { localStorage.setItem(`taxable_pit_filed_${profileId}`, 'true'); } catch {}
-        toast.success('Annual return filed successfully!');
+    const buildIncomePayload = (monthIdx: number): UpdateIncomeDataRequest => {
+        const useAnnualSums = periodMode === 'annually';
+        const monthData = incomeByMonth[monthIdx] ?? {};
+        const dedData = deductionsByMonth[monthIdx] ?? {};
+        return {
+            year: currentProfile?.year,
+            income: {
+                salaryTakeHome: useAnnualSums ? parseMoney(fieldSum('salaryTakeHome')) : parseMoney((monthData as any).salaryTakeHome),
+                businessRevenue: useAnnualSums ? parseMoney(fieldSum('businessRevenue')) : parseMoney((monthData as any).businessRevenue),
+                businessExpenses: useAnnualSums ? parseMoney(fieldSum('businessExpenses')) : parseMoney((monthData as any).businessExpenses),
+                freelanceInvoiced: useAnnualSums ? parseMoney(fieldSum('freelanceInvoiced')) : parseMoney((monthData as any).freelanceInvoiced),
+                freelanceWHT: useAnnualSums ? parseMoney(fieldSum('freelanceWHT')) : parseMoney((monthData as any).freelanceWHT),
+                investmentIncome: useAnnualSums ? parseMoney(fieldSum('investmentIncome')) : parseMoney((monthData as any).investmentIncome),
+                rentalIncome: useAnnualSums ? parseMoney(fieldSum('rentalIncome')) : parseMoney((monthData as any).rentalIncome),
+                digitalGains: useAnnualSums ? parseMoney(fieldSum('digitalGains')) : parseMoney((monthData as any).digitalGains),
+            },
+            deductions: {
+                rent: useAnnualSums ? parseMoney(dedFieldSum('rent')) : parseMoney((dedData as any).rent),
+                healthInsurance: useAnnualSums ? parseMoney(dedFieldSum('healthInsurance')) : parseMoney((dedData as any).healthInsurance),
+                pension: useAnnualSums ? parseMoney(dedFieldSum('pension')) : parseMoney((dedData as any).pension),
+                mortgageInterest: useAnnualSums ? parseMoney(dedFieldSum('mortgageInterest')) : parseMoney((dedData as any).mortgageInterest),
+            },
+            markRecorded: true,
+        };
+    };
+
+    const handleSaveMonth = async (): Promise<boolean> => {
+        if (!profileId) return false;
+        setSavingIncome(true);
+        try {
+            const monthIdx = activeMonthNum - 1;
+            const payload = buildIncomePayload(monthIdx);
+
+            if (periodMode === 'annually') {
+                await api.updateAnnualIncomeData(profileId, payload);
+                setRecordedMonths(prev => new Set([...prev, 0]));
+                toast.success('Annual income data recorded');
+            } else {
+                await api.updateMonthlyIncomeData(profileId, activeMonthNum, payload);
+                const monthData = incomeByMonth[monthIdx] ?? {};
+                const hasData = Object.values(monthData).some(
+                    (v) => v !== undefined && v !== '' && parseMoney(v as string) > 0
+                );
+                if (hasData) {
+                    setRecordedMonths(prev => new Set([...prev, monthIdx]));
+                } else {
+                    setRecordedMonths(prev => {
+                        const r = new Set(prev);
+                        r.delete(monthIdx);
+                        return r;
+                    });
+                }
+                toast.success(`Data recorded for ${INCOME_MONTH_NAMES[monthIdx]}`);
+                if (activeMonthNum < 12) {
+                    setActiveMonth(INCOME_MONTH_NAMES[activeMonthNum]!);
+                }
+            }
+
+            setHasUnsavedIncome(false);
+            setIncomeStep('income');
+            setCompletedIncomeSteps(new Set());
+            return true;
+        } catch (err: unknown) {
+            console.error('Failed to save income data:', err instanceof Error ? err.message : 'Unknown error');
+            toast.error(err instanceof Error ? err.message : 'Failed to save. Please try again.');
+            return false;
+        } finally {
+            setSavingIncome(false);
+        }
+    };
+
+    const handleFilePITReturn = async () => {
+        if (!profileId) return;
+        try {
+            try {
+                await api.submitProfile(profileId);
+            } catch (err: unknown) {
+                console.error(
+                    'submitProfile (optional before fileTax):',
+                    err instanceof Error ? err.message : 'Unknown error'
+                );
+            }
+            const res = await api.fileTax(profileId);
+            setAnnualReturnFiledPIT(Boolean(res?.filed) || res?.filingStatus === 'filed');
+            setShowFilingSheetPIT(false);
+            toast.success('Annual return filed successfully!');
+        } catch (err: unknown) {
+            console.error('Failed to file PIT return:', err instanceof Error ? err.message : 'Unknown error');
+            toast.error(err instanceof Error ? err.message : 'Failed to file return. Please try again.');
+        }
     };
 
     const monthlyBreakdown = periodMode === 'monthly' ? INCOME_MONTH_NAMES.map((_, idx) => {
@@ -469,6 +568,13 @@ export default function PITDetails() {
 
     const renderIncomeSection = () => {
         if (activeSection !== 'income-deductions') return null;
+        if (!incomeDataReady) {
+            return (
+                <div className="w-full flex items-center justify-center py-20">
+                    <Spinner />
+                </div>
+            );
+        }
         return (
             <div className="w-full">
                 <div className="flex items-center justify-between mb-8">
@@ -835,11 +941,19 @@ export default function PITDetails() {
                         <div className="flex gap-3 mt-8">
                             <SecondaryButton onClick={() => goBack('income')}>Back</SecondaryButton>
                             {periodMode === 'annually' || activeMonthNum === 12 ? (
-                                <PrimaryButton onClick={() => { handleSaveMonth(); setActiveSection('review'); }}>
+                                <PrimaryButton
+                                    disabled={savingIncome}
+                                    onClick={async () => {
+                                        const ok = await handleSaveMonth();
+                                        if (ok) setActiveSection('review');
+                                    }}
+                                >
                                     Save &amp; File Annual Filing
                                 </PrimaryButton>
                             ) : (
-                                <PrimaryButton onClick={() => handleSaveMonth()}>Save</PrimaryButton>
+                                <PrimaryButton disabled={savingIncome} onClick={() => { void handleSaveMonth(); }}>
+                                    Save
+                                </PrimaryButton>
                             )}
                         </div>
                     </div>
@@ -1002,16 +1116,71 @@ export default function PITDetails() {
         } catch { /* ignore */ }
     }, [incomeByMonth, deductionsByMonth, deductionFiles, incomeFiles, recordedMonths, STORAGE_KEY_PIT_INCOME, enabledIncomeSources, enabledDeductions]);
 
-    // Auto-save personal info to localStorage
+    // Load income/deductions from backend after profile is ready
     useEffect(() => {
-        if (!profileId) return;
-        try { localStorage.setItem(`taxable_pit_personal_${profileId}`, JSON.stringify(personalInfo)); } catch {}
-    }, [personalInfo, profileId]);
+        if (!profileId || authLoading || !isAuthenticated || profileLoading || !currentProfile) return;
 
-    // Persist annual return filed status
-    useEffect(() => {
-        try { localStorage.setItem(`taxable_pit_filed_${profileId}`, String(annualReturnFiledPIT)); } catch {}
-    }, [annualReturnFiledPIT, profileId]);
+        let cancelled = false;
+
+        (async () => {
+            setIncomeDataReady(false);
+            try {
+                const res = await api.getIncomeData(profileId);
+                if (cancelled) return;
+
+                if (!res?.success || !res.data) {
+                    setIncomeDataReady(true);
+                    return;
+                }
+
+                const nextIncome: Record<number, {
+                    salaryTakeHome: string; businessRevenue: string; businessExpenses: string;
+                    freelanceInvoiced: string; freelanceWHT: string;
+                    investmentIncome: string; rentalIncome: string; digitalGains: string;
+                }> = {};
+                const nextDeductions: Record<number, {
+                    rent: string; healthInsurance: string; pension: string; mortgageInterest: string;
+                }> = {};
+                const nextRecorded = new Set<number>();
+
+                if (res.data.months) {
+                    for (const m of res.data.months) {
+                        const uiIdx = (m.month ?? 1) - 1;
+                        if (uiIdx < 0 || uiIdx > 11) continue;
+                        if (m.income) nextIncome[uiIdx] = mapIncomeToUi(m.income);
+                        if (m.deductions) nextDeductions[uiIdx] = mapDeductionsToUi(m.deductions);
+                        if (m.recorded) nextRecorded.add(uiIdx);
+                    }
+                }
+
+                if (res.data.annual) {
+                    if (res.data.annual.income) nextIncome[0] = mapIncomeToUi(res.data.annual.income);
+                    if (res.data.annual.deductions) nextDeductions[0] = mapDeductionsToUi(res.data.annual.deductions);
+                }
+
+                startTransition(() => {
+                    setIncomeByMonth(nextIncome);
+                    setDeductionsByMonth(nextDeductions);
+                    setRecordedMonths(nextRecorded);
+                    if (res.data.filingPreference === 'annual') {
+                        setPeriodMode('annually');
+                    } else {
+                        setPeriodMode('monthly');
+                    }
+                    setIncomeDataReady(true);
+                });
+            } catch (err: unknown) {
+                console.error(
+                    'Failed to load income data:',
+                    err instanceof Error ? err.message : 'Unknown error'
+                );
+                toast.error('Failed to load income data. Please try again.');
+                if (!cancelled) setIncomeDataReady(true);
+            }
+        })();
+
+        return () => { cancelled = true; };
+    }, [profileId, authLoading, isAuthenticated, profileLoading, currentProfile?.profileId, api.getIncomeData]);
 
     // Warn about unsaved changes before page refresh
     useEffect(() => {
@@ -1288,7 +1457,10 @@ export default function PITDetails() {
                             <SecondaryButton className="flex-1" onClick={() => setShowUnsavedIncomeModal(false)}>
                                 Cancel
                             </SecondaryButton>
-                            <PrimaryButton className="flex-1" onClick={() => { handleSaveMonth(); setShowUnsavedIncomeModal(false); }}>
+                            <PrimaryButton className="flex-1" onClick={async () => {
+                                const ok = await handleSaveMonth();
+                                if (ok) setShowUnsavedIncomeModal(false);
+                            }}>
                                 Save
                             </PrimaryButton>
                         </div>

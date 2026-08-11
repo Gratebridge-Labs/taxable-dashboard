@@ -6,7 +6,24 @@ import type {
   ProfileCompleteRequest,
   PersonalInfoRequest,
   AddIncomeRequest,
-CreateSubscriptionLinkRequest,
+  CreateProfileOptions,
+  BusinessCompanyInfoRequest,
+  CreatePayeEmployeeRequest,
+  UpdatePayeEmployeeRequest,
+  UpsertVatRequest,
+  FileVatRequest,
+  CreateWhtDeductionRequest,
+  UpdateWhtDeductionRequest,
+  FileWhtMonthRequest,
+  CreateWhtCreditRequest,
+  UpdateWhtCreditRequest,
+  UpsertCitRequest,
+  FileCitRequest,
+  CreateCitWhtCreditRequest,
+  UpdateCitWhtCreditRequest,
+  PayCitQuarterRequest,
+  DeferCitQuarterRequest,
+  CreateSubscriptionLinkRequest,
   VerifyDeductionRequest,
   BatchDeductionRequest,
   UpdateDeductionRequest,
@@ -16,9 +33,9 @@ CreateSubscriptionLinkRequest,
 export const useTaxableApi = () => {
   const { token } = useUser();
 
-  const createProfile = useCallback(async (year: number, profileType: 'Individual' | 'Business') => {
+  const createProfile = useCallback(async (year: number, profileType: 'Individual' | 'Business', options?: CreateProfileOptions) => {
     if (!token) throw new Error('Authentication required');
-    return taxableApi.createProfile(token, year, profileType);
+    return taxableApi.createProfile(token, year, profileType, options);
   }, [token]);
 
   const getAllowedYears = useCallback(async () => {
@@ -144,6 +161,167 @@ export const useTaxableApi = () => {
     return taxableApi.getProfile(token, profileId);
   }, [token]);
 
+  const getBusinessCompanyInfo = useCallback(async (profileId: string) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.getBusinessCompanyInfo(token, profileId);
+  }, [token]);
+
+  const updateBusinessCompanyInfo = useCallback(async (profileId: string, data: BusinessCompanyInfoRequest) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.updateBusinessCompanyInfo(token, profileId, data);
+  }, [token]);
+
+  const listPayeEmployees = useCallback(async (profileId: string, month: number, year?: number) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.listPayeEmployees(token, profileId, month, year);
+  }, [token]);
+
+  const createPayeEmployee = useCallback(async (profileId: string, data: CreatePayeEmployeeRequest) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.createPayeEmployee(token, profileId, data);
+  }, [token]);
+
+  const updatePayeEmployee = useCallback(async (
+    profileId: string,
+    employeeId: string,
+    data: UpdatePayeEmployeeRequest
+  ) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.updatePayeEmployee(token, profileId, employeeId, data);
+  }, [token]);
+
+  const deletePayeEmployee = useCallback(async (profileId: string, employeeId: string) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.deletePayeEmployee(token, profileId, employeeId);
+  }, [token]);
+
+  const getVat = useCallback(async (profileId: string, year: number, month?: number) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.getVat(token, profileId, year, month);
+  }, [token]);
+
+  const upsertVat = useCallback(async (profileId: string, data: UpsertVatRequest) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.upsertVat(token, profileId, data);
+  }, [token]);
+
+  const fileVat = useCallback(async (profileId: string, data: FileVatRequest) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.fileVat(token, profileId, data);
+  }, [token]);
+
+  const deleteVatMonth = useCallback(async (profileId: string, year: number, month: number) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.deleteVatMonth(token, profileId, year, month);
+  }, [token]);
+
+  const listWhtDeductions = useCallback(async (profileId: string, year: number, month: number) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.listWhtDeductions(token, profileId, year, month);
+  }, [token]);
+
+  const createWhtDeduction = useCallback(async (profileId: string, data: CreateWhtDeductionRequest) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.createWhtDeduction(token, profileId, data);
+  }, [token]);
+
+  const updateWhtDeduction = useCallback(async (
+    profileId: string,
+    deductionId: string,
+    data: UpdateWhtDeductionRequest
+  ) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.updateWhtDeduction(token, profileId, deductionId, data);
+  }, [token]);
+
+  const deleteWhtDeduction = useCallback(async (profileId: string, deductionId: string) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.deleteWhtDeduction(token, profileId, deductionId);
+  }, [token]);
+
+  const fileWhtMonth = useCallback(async (profileId: string, data: FileWhtMonthRequest) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.fileWhtMonth(token, profileId, data);
+  }, [token]);
+
+  const listWhtCredits = useCallback(async (profileId: string, year: number, month?: number) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.listWhtCredits(token, profileId, year, month);
+  }, [token]);
+
+  const createWhtCredit = useCallback(async (profileId: string, data: CreateWhtCreditRequest) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.createWhtCredit(token, profileId, data);
+  }, [token]);
+
+  const updateWhtCredit = useCallback(async (
+    profileId: string,
+    creditId: string,
+    data: UpdateWhtCreditRequest
+  ) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.updateWhtCredit(token, profileId, creditId, data);
+  }, [token]);
+
+  const deleteWhtCredit = useCallback(async (profileId: string, creditId: string) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.deleteWhtCredit(token, profileId, creditId);
+  }, [token]);
+
+  const getCit = useCallback(async (profileId: string, year: number) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.getCit(token, profileId, year);
+  }, [token]);
+
+  const upsertCit = useCallback(async (profileId: string, data: UpsertCitRequest) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.upsertCit(token, profileId, data);
+  }, [token]);
+
+  const fileCit = useCallback(async (profileId: string, data: FileCitRequest) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.fileCit(token, profileId, data);
+  }, [token]);
+
+  const listCitWhtCredits = useCallback(async (profileId: string, year: number) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.listCitWhtCredits(token, profileId, year);
+  }, [token]);
+
+  const createCitWhtCredit = useCallback(async (profileId: string, data: CreateCitWhtCreditRequest) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.createCitWhtCredit(token, profileId, data);
+  }, [token]);
+
+  const updateCitWhtCredit = useCallback(async (
+    profileId: string,
+    creditId: string,
+    data: UpdateCitWhtCreditRequest
+  ) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.updateCitWhtCredit(token, profileId, creditId, data);
+  }, [token]);
+
+  const deleteCitWhtCredit = useCallback(async (profileId: string, creditId: string) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.deleteCitWhtCredit(token, profileId, creditId);
+  }, [token]);
+
+  const getCitQuarterly = useCallback(async (profileId: string, year: number) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.getCitQuarterly(token, profileId, year);
+  }, [token]);
+
+  const payCitQuarter = useCallback(async (profileId: string, data: PayCitQuarterRequest) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.payCitQuarter(token, profileId, data);
+  }, [token]);
+
+  const deferCitQuarter = useCallback(async (profileId: string, data: DeferCitQuarterRequest) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.deferCitQuarter(token, profileId, data);
+  }, [token]);
+
   const deleteProfile = useCallback(async (profileId: string) => {
     if (!token) throw new Error('Authentication required');
     return taxableApi.deleteProfile(token, profileId);
@@ -227,6 +405,35 @@ export const useTaxableApi = () => {
     verifyDeduction,
     getProfileList,
     getProfile,
+    getBusinessCompanyInfo,
+    updateBusinessCompanyInfo,
+    listPayeEmployees,
+    createPayeEmployee,
+    updatePayeEmployee,
+    deletePayeEmployee,
+    getVat,
+    upsertVat,
+    fileVat,
+    deleteVatMonth,
+    listWhtDeductions,
+    createWhtDeduction,
+    updateWhtDeduction,
+    deleteWhtDeduction,
+    fileWhtMonth,
+    listWhtCredits,
+    createWhtCredit,
+    updateWhtCredit,
+    deleteWhtCredit,
+    getCit,
+    upsertCit,
+    fileCit,
+    listCitWhtCredits,
+    createCitWhtCredit,
+    updateCitWhtCredit,
+    deleteCitWhtCredit,
+    getCitQuarterly,
+    payCitQuarter,
+    deferCitQuarter,
     deleteProfile,
     getDeductionList,
     uploadFile,

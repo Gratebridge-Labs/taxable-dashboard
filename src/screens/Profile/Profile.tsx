@@ -7,29 +7,69 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PrimaryButton, SecondaryButton } from '@/screens/TaxFolders/TaxFolderShared';
 import { useApi } from '@/hooks/useApi';
+import { useTaxableApi } from '@/hooks/useTaxableApi';
 import { useUser } from '@/contexts/UserContext';
 import { useProfile } from '@/contexts/ProfileContext';
+import type { PitIncomeDocuments } from '@/types/api';
 
 const MONTHS = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
-const DEDUCTION_LABELS: Record<string, string> = {
-    health: 'Health Insurance',
-    pension: 'Pension',
-    mortgage: 'Mortgage Interest',
-    rent: 'Rent Receipt',
+const DOC_LABELS: Record<keyof PitIncomeDocuments, string> = {
+    salaryUrl: 'Salary / Employment',
+    businessUrl: 'Business / Self-employment',
+    freelanceUrl: 'Freelance / Consulting',
+    investmentUrl: 'Investment',
+    rentalUrl: 'Rental Income',
+    cryptoUrl: 'Digital Assets / Crypto',
+    rentUrl: 'Rent Receipt',
+    healthUrl: 'Health Insurance',
+    pensionUrl: 'Pension',
+    mortgageUrl: 'Mortgage Interest',
 };
 
-const INCOME_LABELS: Record<string, string> = {
-    salary: 'Salary / Employment',
-    business: 'Business / Self-employment',
-    freelance: 'Freelance / Consulting',
-    investment: 'Investment',
-    rental: 'Rental Income',
-    crypto: 'Digital Assets / Crypto',
-};
+function fileNameFromUrl(url: string): string {
+    try {
+        const path = new URL(url).pathname;
+        return decodeURIComponent(path.split('/').pop() || 'Document');
+    } catch {
+        const part = url.split('/').pop();
+        return part ? decodeURIComponent(part.split('?')[0]) : 'Document';
+    }
+}
+
+interface DocEntry {
+    taxType: string;
+    year: string;
+    category: string;
+    fileName: string;
+    profileId: string;
+    link: string;
+}
+
+function appendPitDocuments(
+    docs: DocEntry[],
+    documents: PitIncomeDocuments | undefined,
+    year: string,
+    profileId: string,
+    monthLabel?: string
+) {
+    if (!documents) return;
+    for (const [key, label] of Object.entries(DOC_LABELS) as [keyof PitIncomeDocuments, string][]) {
+        const url = documents[key];
+        if (!url) continue;
+        docs.push({
+            taxType: 'Personal Income Tax',
+            year,
+            category: monthLabel ? `${label} (${monthLabel})` : label,
+            fileName: fileNameFromUrl(url),
+            profileId,
+            link: `/tax-folders/pit?id=${profileId}&section=income-deductions`,
+        });
+    }
+}
 
 
 export default function Profile() {
@@ -39,7 +79,9 @@ export default function Profile() {
     const [activeSection, setActiveSection] = useState('Personal Information');
     const [profileImage, setProfileImage] = useState<string | null>(null);
     const { post, patch, loading: apiLoading, error: apiError } = useApi();
+    const { getIncomeData, listWhtDeductions } = useTaxableApi();
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [documents, setDocuments] = useState<DocEntry[]>([]);
 
     const [formData, setFormData] = useState({
         firstName: '',
@@ -86,6 +128,76 @@ export default function Profile() {
         return () => el.removeEventListener('change', handler);
     }, []);
 
+    // Load uploaded documents from API (PIT income data + WHT deductions)
+    useEffect(() => {
+        let cancelled = false;
+
+        (async () => {
+            const docs: DocEntry[] = [];
+
+            for (const p of profiles) {
+                const pid = p.profileId;
+                const year = String(p.year || '2026');
+                if (!pid) continue;
+
+                if (p.profileType === 'Individual') {
+                    try {
+                        const res = await getIncomeData(pid);
+                        if (!res?.success || !res.data) continue;
+
+                        if (res.data.months) {
+                            for (const month of res.data.months) {
+                                const monthLabel = month.monthName
+                                    || MONTHS[(month.month ?? 1) - 1]
+                                    || `Month ${month.month}`;
+                                appendPitDocuments(docs, month.documents, year, pid, monthLabel);
+                            }
+                        }
+
+                        if (res.data.annual?.documents) {
+                            appendPitDocuments(docs, res.data.annual.documents, year, pid);
+                        }
+                    } catch (err: unknown) {
+                        console.error(
+                            'Failed to load PIT documents:',
+                            err instanceof Error ? err.message : 'Unknown error'
+                        );
+                    }
+                }
+
+                if (p.profileType === 'Business') {
+                    const yearNum = parseInt(year, 10) || new Date().getFullYear();
+                    for (let month = 1; month <= 12; month++) {
+                        try {
+                            const res = await listWhtDeductions(pid, yearNum, month);
+                            if (!res?.success || !res.data?.deductions) continue;
+                            for (const d of res.data.deductions) {
+                                if (!d.receiptUrl) continue;
+                                docs.push({
+                                    taxType: 'WHT Deductions',
+                                    year,
+                                    category: d.payee || 'Unknown Payee',
+                                    fileName: fileNameFromUrl(d.receiptUrl),
+                                    profileId: pid,
+                                    link: `/tax-folders/business?profileId=${pid}`,
+                                });
+                            }
+                        } catch (err: unknown) {
+                            console.error(
+                                'Failed to load WHT documents:',
+                                err instanceof Error ? err.message : 'Unknown error'
+                            );
+                        }
+                    }
+                }
+            }
+
+            if (!cancelled) setDocuments(docs);
+        })();
+
+        return () => { cancelled = true; };
+    }, [profiles, getIncomeData, listWhtDeductions]);
+
     const handlePasswordChange = async () => {
         setSuccessMessage(null);
         if (!securityData.currentPassword || !securityData.newPassword) return;
@@ -124,94 +236,6 @@ export default function Profile() {
             console.error('Failed to update profile:', err);
         }
     };
-
-    interface DocEntry {
-        taxType: string;
-        year: string;
-        category: string;
-        fileName: string;
-        profileId: string;
-        link: string;
-    }
-
-    const documents = useMemo(() => {
-        const docs: DocEntry[] = [];
-        for (const p of profiles) {
-            const pid = p.profileId;
-            const year = String(p.year || '2026');
-            if (!pid) continue;
-
-            if (p.profileType === 'Individual') {
-                try {
-                    const raw = localStorage.getItem(`taxable_pit_income_${pid}`);
-                    if (!raw) continue;
-                    const data = JSON.parse(raw);
-                    if (data.deductionFiles) {
-                        for (const [key, files] of Object.entries(data.deductionFiles)) {
-                            const sepIdx = key.lastIndexOf('_');
-                            const type = key.slice(0, sepIdx);
-                            const monthIdx = parseInt(key.slice(sepIdx + 1));
-                            const monthName = MONTHS[monthIdx] || `Month ${monthIdx}`;
-                            const cat = `${DEDUCTION_LABELS[type] || type} (${monthName})`;
-                            for (const f of files as { name: string }[]) {
-                                docs.push({
-                                    taxType: 'Personal Income Tax',
-                                    year,
-                                    category: cat,
-                                    fileName: f.name,
-                                    profileId: pid,
-                                    link: `/tax-folders/pit?id=${pid}&section=income-deductions`,
-                                });
-                            }
-                        }
-                    }
-                    if (data.incomeFiles) {
-                        for (const [key, files] of Object.entries(data.incomeFiles)) {
-                            const sepIdx = key.lastIndexOf('_');
-                            const type = key.slice(0, sepIdx);
-                            const monthIdx = parseInt(key.slice(sepIdx + 1));
-                            const monthName = MONTHS[monthIdx] || `Month ${monthIdx}`;
-                            const cat = `${INCOME_LABELS[type] || type} (${monthName})`;
-                            for (const f of files as { name: string }[]) {
-                                docs.push({
-                                    taxType: 'Personal Income Tax',
-                                    year,
-                                    category: cat,
-                                    fileName: f.name,
-                                    profileId: pid,
-                                    link: `/tax-folders/pit?id=${pid}&section=income-deductions`,
-                                });
-                            }
-                        }
-                    }
-                } catch { /* ignore */ }
-            }
-
-            if (p.profileType === 'Business') {
-                try {
-                    const raw = localStorage.getItem(`taxable_wht_deductions_${pid}_${year}`);
-                    if (!raw) continue;
-                    const deductions = JSON.parse(raw);
-                    if (!Array.isArray(deductions)) continue;
-                    for (const d of deductions) {
-                        if (!d.receipt) continue;
-                        const files = d.receipt.split(',').map((s: string) => s.trim()).filter(Boolean);
-                        for (const fname of files) {
-                            docs.push({
-                                taxType: 'WHT Deductions',
-                                year,
-                                category: d.payee || 'Unknown Payee',
-                                fileName: fname,
-                                profileId: pid,
-                                link: `/tax-folders/business?profileId=${pid}`,
-                            });
-                        }
-                    }
-                } catch { /* ignore */ }
-            }
-        }
-        return docs;
-    }, [profiles]);
 
     const groupedDocs = useMemo(() => {
         const groups: Record<string, Record<string, DocEntry[]>> = {};

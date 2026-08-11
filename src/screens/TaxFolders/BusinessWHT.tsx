@@ -8,9 +8,10 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Drawer, DrawerContent, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
+import { Spinner } from '@/components/ui/spinner';
 import { FileTextIcon, XIcon } from 'lucide-react';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
-import { WHTDeduction, useWhtDeductions } from './useWhtDeductions';
+import { WHTDeduction, useWhtRemittance, useWhtCredits } from './useWhtDeductions';
 import {
     SectionHeading, DescriptionText, PrimaryButton, SecondaryButton, SecondaryButtonSm,
     FilingSheet, FormFieldRow, FormLabel,
@@ -32,18 +33,14 @@ const defaultDeduction = (): Omit<WHTDeduction, 'id'> => ({
     gross: '', whtRate: '', whtDeducted: '', netPaid: '', date: '',
 });
 
-const storageKeyDeductions = (pid: string, year: string) => `taxable_wht_deductions_${pid}_${year}`;
-const storageKeyFiled = (pid: string, year: string) => `taxable_wht_filed_${pid}_${year}`;
-const storageKeyMonth = (pid: string, year: string) => `taxable_wht_month_${pid}_${year}`;
-const storageKeyCredits = (pid: string, year: string) => `taxable_wht_credits_${pid}_${year}`;
-
 // ── WHT Deduction Form (shared for WHT Credit Balance) ────────────────────────
 const WHTDeductionForm = ({ onSave, onCancel, initial }: {
-    onSave: (d: Omit<WHTDeduction, 'id'>) => void;
+    onSave: (d: Omit<WHTDeduction, 'id'>) => void | Promise<void>;
     onCancel: () => void;
     initial?: Omit<WHTDeduction, 'id'>;
 }) => {
     const [form, setForm] = useState(initial ?? defaultDeduction());
+    const [saving, setSaving] = useState(false);
     const set = (k: keyof typeof form) => (val: string) => setForm(f => ({ ...f, [k]: val }));
 
     const grossNum = Number(form.gross.replace(/,/g, '')) || 0;
@@ -51,6 +48,17 @@ const WHTDeductionForm = ({ onSave, onCancel, initial }: {
     const autoRate = rateMatch ? Number(rateMatch[1]) : 0;
     const autoWHT = grossNum * autoRate / 100;
     const autoNet = grossNum - autoWHT;
+
+    const handleSubmit = async () => {
+        setSaving(true);
+        try {
+            await onSave({ ...form, whtDeducted: String(Math.round(autoWHT)), netPaid: String(Math.round(autoNet)), whtRate: String(autoRate) });
+        } catch {
+            /* toast already shown */
+        } finally {
+            setSaving(false);
+        }
+    };
 
     return (
         <div>
@@ -107,8 +115,8 @@ const WHTDeductionForm = ({ onSave, onCancel, initial }: {
 
             <div className="flex gap-3">
                 <SecondaryButton onClick={onCancel}>Cancel</SecondaryButton>
-                <PrimaryButton onClick={() => onSave({ ...form, whtDeducted: String(Math.round(autoWHT)), netPaid: String(Math.round(autoNet)), whtRate: String(autoRate) })}>
-                    Save WHT Deduction
+                <PrimaryButton onClick={handleSubmit} disabled={saving}>
+                    {saving ? <Spinner /> : 'Save WHT Deduction'}
                 </PrimaryButton>
             </div>
         </div>
@@ -117,7 +125,7 @@ const WHTDeductionForm = ({ onSave, onCancel, initial }: {
 
 // ── Payee Card ────────────────────────────────────────────────────────────────
 const PayeeCard = ({ d, onRemove, onEdit }: { d: WHTDeduction; onRemove: () => void; onEdit: () => void }) => {
-    const gross = Number(d.gross) || 0;
+    const gross = Number(String(d.gross).replace(/,/g, '')) || 0;
     const wht = Number(d.whtDeducted) || 0;
     const net = Number(d.netPaid) || 0;
     return (
@@ -298,52 +306,29 @@ function WHTFormContent({
 
 // ── WHT Remittance ─────────────────────────────────────────────────────────────
 const WHTRemittance = ({ profileId, taxYear }: { profileId: string; taxYear: string }) => {
-    const dedKey = storageKeyDeductions(profileId, taxYear);
-    const monthKey = storageKeyMonth(profileId, taxYear);
-    const filedKey = storageKeyFiled(profileId, taxYear);
-
     const {
-        dataByMonth: deductionsByMonth, setDataByMonth,
+        loading,
+        dataByMonth: deductionsByMonth,
+        filedMonths,
         activeMonth, setActiveMonth,
         currentData: deductions,
-        total, annualTotal: _annualTotal, hasData,
+        total, hasData,
         pendingRemove, setPendingRemove,
         pendingPayee,
-        saveItem, handleConfirmRemove,
-    } = useWhtDeductions(dedKey, monthKey);
-
-    useEffect(() => {
-        const oldKeys = ['taxable_wht_deductions', 'taxable_wht_filed', 'taxable_wht_month', 'taxable_wht_credits'];
-        const migKey = `wht_migrated_${profileId}_${taxYear}`;
-        if (!localStorage.getItem(migKey)) {
-            for (const k of oldKeys) {
-                const oldVal = localStorage.getItem(k);
-                if (oldVal) {
-                    localStorage.setItem(k + '_' + profileId + '_' + taxYear, oldVal);
-                    localStorage.removeItem(k);
-                }
-            }
-            localStorage.setItem(migKey, 'true');
-        }
-    }, [profileId, taxYear]);
+        saveItem, removeItem, handleConfirmRemove, fileMonth,
+    } = useWhtRemittance(profileId, taxYear);
 
     const [showFormSheet, setShowFormSheet] = useState(false);
-    const [editId, setEditId] = useState<number | null>(null);
+    const [editId, setEditId] = useState<string | null>(null);
     const [editSourceMonth, setEditSourceMonth] = useState<number | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
-    const [whtStep, setWhtStep] = useState<'method' | 'table'>(hasData ? 'table' : 'method');
+    const [whtStep, setWhtStep] = useState<'method' | 'table'>('method');
     const [entryMethod, setEntryMethod] = useState<'manual' | 'csv' | 'software'>('manual');
-    const [filedMonths, setFiledMonths] = useState<Set<number>>(() => {
-        try {
-            if (!localStorage.getItem('wht_v3_cleared')) localStorage.removeItem(filedKey);
-            const v = JSON.parse(localStorage.getItem(filedKey)!);
-            return v ? new Set(v) : new Set();
-        } catch { return new Set(); }
-    });
     const [showFilingModal, setShowFilingModal] = useState(false);
     const [form, setForm] = useState(defaultDeduction());
     const [fileAttachments, setFileAttachments] = useState<{ name: string }[]>([]);
+    const [saving, setSaving] = useState(false);
     const set = (k: keyof typeof form) => (val: string) => setForm(f => ({ ...f, [k]: val }));
 
     const grossNum = Number(form.gross.replace(/,/g, '')) || 0;
@@ -355,21 +340,28 @@ const WHTRemittance = ({ profileId, taxYear }: { profileId: string; taxYear: str
     const canSave = form.payee.trim() && form.tin.trim() && form.whtType.trim() && form.gross.trim() && form.tin.length >= 10 && form.tin.length <= 14 && form.whtRate.trim() && fileAttachments.length > 0;
 
     useEffect(() => {
-        localStorage.setItem(filedKey, JSON.stringify(Array.from(filedMonths)));
-    }, [filedMonths]);
+        if (!loading && hasData) setWhtStep('table');
+    }, [loading, hasData]);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         const receipt = fileAttachments.map(f => f.name).join(', ');
         const d = { ...form, whtDeducted: String(Math.round(autoWHT)), netPaid: String(Math.round(autoNet)), whtRate: String(autoRate), receipt };
-        saveItem(d, editId, editSourceMonth ?? undefined);
-        setEditId(null);
-        setEditSourceMonth(null);
-        setForm(defaultDeduction());
-        setFileAttachments([]);
-        setShowFormSheet(false);
-        setIsEditing(false);
-        setShowRemoveConfirm(false);
-        if (!editId) setWhtStep('table');
+        setSaving(true);
+        try {
+            await saveItem(d, editId, editSourceMonth ?? undefined);
+            setEditId(null);
+            setEditSourceMonth(null);
+            setForm(defaultDeduction());
+            setFileAttachments([]);
+            setShowFormSheet(false);
+            setIsEditing(false);
+            setShowRemoveConfirm(false);
+            if (!editId) setWhtStep('table');
+        } catch {
+            /* toast already shown */
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleCancel = () => {
@@ -382,13 +374,25 @@ const WHTRemittance = ({ profileId, taxYear }: { profileId: string; taxYear: str
         setShowRemoveConfirm(false);
     };
 
-    const handleRemoveFromDrawer = () => {
+    const handleRemoveFromDrawer = async () => {
         if (editId !== null) {
             const monthKey = editSourceMonth ?? activeMonth;
-            setDataByMonth(prev => ({
-                ...prev,
-                [monthKey]: (prev[monthKey] || []).filter(x => x.id !== editId),
-            }));
+            setSaving(true);
+            try {
+                await removeItem(editId, monthKey);
+                setShowRemoveConfirm(false);
+                setShowFormSheet(false);
+                setEditId(null);
+                setEditSourceMonth(null);
+                setIsEditing(false);
+                setForm(defaultDeduction());
+                setFileAttachments([]);
+            } catch {
+                /* toast already shown */
+            } finally {
+                setSaving(false);
+            }
+            return;
         }
         setShowRemoveConfirm(false);
         setShowFormSheet(false);
@@ -401,7 +405,7 @@ const WHTRemittance = ({ profileId, taxYear }: { profileId: string; taxYear: str
 
     const openAdd = () => { setForm(defaultDeduction()); setFileAttachments([]); setEditId(null); setEditSourceMonth(null); setIsEditing(false); setShowRemoveConfirm(false); setShowFormSheet(true); };
     const openEdit = (d: WHTDeduction) => {
-        setForm({ payee: d.payee, tin: d.tin, whtType: d.whtType, gross: d.gross, whtRate: d.whtRate ? `${d.whtRate}%` : '', whtDeducted: d.whtDeducted, netPaid: d.netPaid, date: d.date, receipt: d.receipt ?? '' });
+        setForm({ payee: d.payee, tin: d.tin, whtType: d.whtType, gross: d.gross, whtRate: d.whtRate ? (d.whtRate.includes('%') ? d.whtRate : `${d.whtRate}%`) : '', whtDeducted: d.whtDeducted, netPaid: d.netPaid, date: d.date, receipt: d.receipt ?? '' });
         setFileAttachments(d.receipt ? d.receipt.split(', ').map(name => ({ name })) : []);
         setEditId(d.id);
         setEditSourceMonth(activeMonth);
@@ -410,10 +414,14 @@ const WHTRemittance = ({ profileId, taxYear }: { profileId: string; taxYear: str
         setShowFormSheet(true);
     };
 
-    const handleFile = () => {
-        setFiledMonths(prev => new Set([...prev, activeMonth]));
-        setShowFilingModal(false);
-        if (activeMonth < 11) setActiveMonth(m => m + 1);
+    const handleFile = async () => {
+        try {
+            await fileMonth();
+            setShowFilingModal(false);
+            if (activeMonth < 11) setActiveMonth(m => m + 1);
+        } catch {
+            /* toast already shown */
+        }
     };
 
     const monthSelector = (
@@ -447,6 +455,14 @@ const WHTRemittance = ({ profileId, taxYear }: { profileId: string; taxYear: str
         </Select>
     );
 
+    if (loading) {
+        return (
+            <div className="w-full flex items-center justify-center py-20">
+                <Spinner className="size-6" />
+            </div>
+        );
+    }
+
     return (
         <div className="w-full">
 
@@ -468,7 +484,7 @@ const WHTRemittance = ({ profileId, taxYear }: { profileId: string; taxYear: str
                             </p>
                             <div className="flex gap-3 w-full">
                                 <SecondaryButton className="flex-1" onClick={() => setPendingRemove(null)}>Cancel</SecondaryButton>
-                                <button onClick={handleConfirmRemove} className="flex-1 h-12 bg-destructive text-white font-semibold rounded-xl text-3">
+                                <button onClick={() => { void handleConfirmRemove(); }} className="flex-1 h-12 bg-destructive text-white font-semibold rounded-xl text-3">
                                     Remove
                                 </button>
                             </div>
@@ -527,19 +543,23 @@ const WHTRemittance = ({ profileId, taxYear }: { profileId: string; taxYear: str
                                     <SecondaryButton className="flex-1" onClick={() => {
                                         const d = deductions.find(x => x.id === editId);
                                         if (d) {
-                                            setForm({ payee: d.payee, tin: d.tin, whtType: d.whtType, gross: d.gross, whtRate: d.whtRate ? `${d.whtRate}%` : '', whtDeducted: d.whtDeducted, netPaid: d.netPaid, date: d.date, receipt: d.receipt ?? '' });
+                                            setForm({ payee: d.payee, tin: d.tin, whtType: d.whtType, gross: d.gross, whtRate: d.whtRate ? (d.whtRate.includes('%') ? d.whtRate : `${d.whtRate}%`) : '', whtDeducted: d.whtDeducted, netPaid: d.netPaid, date: d.date, receipt: d.receipt ?? '' });
                                             setFileAttachments(d.receipt ? d.receipt.split(', ').map(name => ({ name })) : []);
                                         }
                                         setIsEditing(false);
                                     }}>Cancel</SecondaryButton>
-                                    <PrimaryButton className="flex-1" onClick={handleSave} disabled={!canSave}>Save</PrimaryButton>
+                                    <PrimaryButton className="flex-1" onClick={() => { void handleSave(); }} disabled={!canSave || saving}>
+                                        {saving ? <Spinner /> : 'Save'}
+                                    </PrimaryButton>
                                 </>
                             ) : (
                                 <>
                                     <DrawerClose asChild>
                                         <SecondaryButton className="flex-1">Cancel</SecondaryButton>
                                     </DrawerClose>
-                                    <PrimaryButton className="flex-1" onClick={handleSave} disabled={!canSave}>Save WHT Deduction</PrimaryButton>
+                                    <PrimaryButton className="flex-1" onClick={() => { void handleSave(); }} disabled={!canSave || saving}>
+                                        {saving ? <Spinner /> : 'Save WHT Deduction'}
+                                    </PrimaryButton>
                                 </>
                             )}
                         </div>
@@ -562,8 +582,8 @@ const WHTRemittance = ({ profileId, taxYear }: { profileId: string; taxYear: str
                                     </p>
                                     <div className="flex gap-3 w-full">
                                         <SecondaryButton className="flex-1" onClick={() => setShowRemoveConfirm(false)}>Cancel</SecondaryButton>
-                                        <button onClick={handleRemoveFromDrawer} className="flex-1 h-12 bg-destructive text-white font-semibold rounded-xl text-3">
-                                            Remove
+                                        <button onClick={() => { void handleRemoveFromDrawer(); }} disabled={saving} className="flex-1 h-12 bg-destructive text-white font-semibold rounded-xl text-3">
+                                            {saving ? <Spinner /> : 'Remove'}
                                         </button>
                                     </div>
                                 </div>
@@ -683,7 +703,7 @@ const WHTRemittance = ({ profileId, taxYear }: { profileId: string; taxYear: str
                                                 <TableCell className="px-6 py-4 font-medium text-neutral-600">{d.tin || 'N/A'}</TableCell>
                                                 <TableCell className="px-6 py-4 font-medium text-neutral-600">{d.whtType || 'N/A'}</TableCell>
                                                 <TableCell className="px-6 py-4 font-medium text-neutral-600">{gross > 0 ? fmt(gross) : '—'}</TableCell>
-                                                <TableCell className="px-6 py-4 font-medium text-neutral-600">{d.whtRate ? `${d.whtRate}%` : '—'}</TableCell>
+                                                <TableCell className="px-6 py-4 font-medium text-neutral-600">{d.whtRate ? (d.whtRate.includes('%') ? d.whtRate : `${d.whtRate}%`) : '—'}</TableCell>
                                                 <TableCell className="px-6 py-4 font-medium text-neutral-600">{wht > 0 ? fmt(wht) : '—'}</TableCell>
                                                 <TableCell className="px-6 py-4">
                                                     {d.receipt ? (
@@ -740,6 +760,7 @@ const WHTRemittance = ({ profileId, taxYear }: { profileId: string; taxYear: str
 // ── WHT Credit Notes ───────────────────────────────────────────────────────────
 const WHTCreditBalance = ({ profileId, taxYear }: { profileId: string; taxYear: string }) => {
     const {
+        loading,
         dataByMonth: creditsByMonth,
         activeMonth, setActiveMonth,
         periodMode, setPeriodMode,
@@ -748,18 +769,26 @@ const WHTCreditBalance = ({ profileId, taxYear }: { profileId: string; taxYear: 
         pendingRemove, setPendingRemove,
         pendingPayee,
         saveItem, handleConfirmRemove,
-    } = useWhtDeductions(storageKeyCredits(profileId, taxYear));
+    } = useWhtCredits(profileId, taxYear);
 
     const [showForm, setShowForm] = useState(false);
-    const [editId, setEditId] = useState<number | null>(null);
+    const [editId, setEditId] = useState<string | null>(null);
     const [editSourceMonth, setEditSourceMonth] = useState<number | null>(null);
 
-    const handleSave = (d: Omit<WHTDeduction, 'id'>) => {
-        saveItem(d, editId, editSourceMonth ?? undefined);
+    const handleSave = async (d: Omit<WHTDeduction, 'id'>) => {
+        await saveItem(d, editId, editSourceMonth ?? undefined);
         setEditId(null);
         setEditSourceMonth(null);
         setShowForm(false);
     };
+
+    if (loading) {
+        return (
+            <div className="w-full flex items-center justify-center py-20">
+                <Spinner className="size-6" />
+            </div>
+        );
+    }
 
     return (
         <div className="flex gap-10">
@@ -902,7 +931,7 @@ const WHTCreditBalance = ({ profileId, taxYear }: { profileId: string; taxYear: 
                             </p>
                             <div className="flex gap-3 w-full">
                                 <SecondaryButton className="flex-1" onClick={() => setPendingRemove(null)}>Cancel</SecondaryButton>
-                                <button onClick={handleConfirmRemove} className="flex-1 h-12 bg-destructive text-white font-semibold rounded-xl text-3">
+                                <button onClick={() => { void handleConfirmRemove(); }} className="flex-1 h-12 bg-destructive text-white font-semibold rounded-xl text-3">
                                     Remove
                                 </button>
                             </div>

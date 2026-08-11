@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PrimaryButton, SecondaryButton } from '@/screens/TaxFolders/TaxFolderShared';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
+import { Spinner } from '@/components/ui/spinner';
 
 export interface PayeStaff {
     id: string;
@@ -20,15 +21,18 @@ export interface PayeStaff {
     hmoOn: boolean;
     annualRent: string;
     annualRentChecked: boolean;
+    /** Backend-computed PAYE for the month (preferred when present) */
+    payeThisMonth?: number;
+    annualPaye?: number;
 }
 
 interface AddEmployeeDrawerProps {
     open: boolean;
     onClose: () => void;
-    onAdd: (staff: PayeStaff) => void;
+    onAdd: (staff: PayeStaff) => void | Promise<void>;
     editStaff?: PayeStaff | null;
-    onRemove?: (staff: PayeStaff) => void;
-    onSave?: (staff: PayeStaff) => void;
+    onRemove?: (staff: PayeStaff) => void | Promise<void>;
+    onSave?: (staff: PayeStaff) => void | Promise<void>;
 }
 
 export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, onSave }: AddEmployeeDrawerProps) {
@@ -48,6 +52,7 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
     const [hmoOn, setHmoOn] = useState(false);
     const [annualRent, setAnnualRent] = useState('');
     const [annualRentChecked, setAnnualRentChecked] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         startTransition(() => {
@@ -72,6 +77,7 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
             }
             setIsEditing(false);
             setShowRemoveConfirm(false);
+            setSubmitting(false);
         });
     }, [editStaff, open]);
 
@@ -82,34 +88,54 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
         ? isEditing ? `${firstName} ${lastName}` : 'Employee Details'
         : 'Add Employee';
 
-    const handleAdd = () => {
-        if (!isValid || isViewMode) return;
-        onAdd({
-            id: crypto.randomUUID(),
-            firstName, lastName, email, phone, position, taxId,
-            gross: Number(gross.replace(/,/g, '')),
-            pensionOn, nhfOn, hmoOn, annualRent, annualRentChecked,
-        });
-        onClose();
+    const handleAdd = async () => {
+        if (!isValid || isViewMode || submitting) return;
+        setSubmitting(true);
+        try {
+            await onAdd({
+                id: crypto.randomUUID(),
+                firstName, lastName, email, phone, position, taxId,
+                gross: Number(gross.replace(/,/g, '')),
+                pensionOn, nhfOn, hmoOn, annualRent, annualRentChecked,
+            });
+            onClose();
+        } catch {
+            // Parent surfaces toast; keep drawer open
+        } finally {
+            setSubmitting(false);
+        }
     };
 
-    const handleSave = () => {
-        if (!isValid || !editStaff || !onSave) return;
-        onSave({
-            id: editStaff.id,
-            firstName, lastName, email, phone, position, taxId,
-            gross: Number(gross.replace(/,/g, '')),
-            pensionOn, nhfOn, hmoOn, annualRent, annualRentChecked,
-        });
-        setIsEditing(false);
-        onClose();
+    const handleSave = async () => {
+        if (!isValid || !editStaff || !onSave || submitting) return;
+        setSubmitting(true);
+        try {
+            await onSave({
+                id: editStaff.id,
+                firstName, lastName, email, phone, position, taxId,
+                gross: Number(gross.replace(/,/g, '')),
+                pensionOn, nhfOn, hmoOn, annualRent, annualRentChecked,
+            });
+            setIsEditing(false);
+            onClose();
+        } catch {
+            // Parent surfaces toast; keep drawer open
+        } finally {
+            setSubmitting(false);
+        }
     };
 
-    const handleRemove = () => {
-        if (editStaff && onRemove) {
-            onRemove(editStaff);
+    const handleRemove = async () => {
+        if (!editStaff || !onRemove || submitting) return;
+        setSubmitting(true);
+        try {
+            await onRemove(editStaff);
             setShowRemoveConfirm(false);
             onClose();
+        } catch {
+            // Parent surfaces toast
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -227,8 +253,8 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
                                     <SecondaryButton onClick={handleCancelEdit} className="flex-1">
                                         Cancel
                                     </SecondaryButton>
-                                    <PrimaryButton onClick={handleSave} disabled={!isValid} className="flex-1">
-                                        Save
+                                    <PrimaryButton onClick={handleSave} disabled={!isValid || submitting} className="flex-1">
+                                        {submitting ? <Spinner /> : 'Save'}
                                     </PrimaryButton>
                                 </>
                             )}
@@ -237,8 +263,8 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
                                     <SecondaryButton onClick={onClose} className="flex-1">
                                         Cancel
                                     </SecondaryButton>
-                                    <PrimaryButton onClick={handleAdd} disabled={!isValid} className="flex-1">
-                                        Add Employee
+                                    <PrimaryButton onClick={handleAdd} disabled={!isValid || submitting} className="flex-1">
+                                        {submitting ? <Spinner /> : 'Add Employee'}
                                     </PrimaryButton>
                                 </>
                             )}
@@ -265,8 +291,8 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
                                     <SecondaryButton className="flex-1" onClick={() => setShowRemoveConfirm(false)}>
                                         Cancel
                                     </SecondaryButton>
-                                    <button onClick={handleRemove} className="flex-1 h-12 bg-destructive text-white font-semibold rounded-xl text-3">
-                                        Remove
+                                    <button onClick={handleRemove} disabled={submitting} className="flex-1 h-12 bg-destructive text-white font-semibold rounded-xl text-3 disabled:opacity-50 flex items-center justify-center">
+                                        {submitting ? <Spinner /> : 'Remove'}
                                     </button>
                                 </div>
                             </div>

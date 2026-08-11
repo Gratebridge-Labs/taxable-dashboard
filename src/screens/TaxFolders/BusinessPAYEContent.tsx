@@ -21,6 +21,15 @@ const PAYE_BANDS = [
 ];
 
 export function calculateAnnualPAYE(st: PayeStaff) {
+    // Prefer backend-computed values when available
+    if (typeof st.payeThisMonth === 'number') {
+        return {
+            annualTax: typeof st.annualPaye === 'number' ? st.annualPaye : st.payeThisMonth * 12,
+            monthlyTax: st.payeThisMonth,
+            taxableIncome: 0,
+        };
+    }
+
     const annualGross = st.gross * 12;
     const pension = st.pensionOn ? Math.round(annualGross * 0.08) : 0;
     const nhf = st.nhfOn ? Math.round(annualGross * 0.025) : 0;
@@ -50,10 +59,10 @@ interface MonthlyFilingProps {
     filedMonths: Set<string>;
     payeStaffByMonth: Record<string, PayeStaff[]>;
     onMonthChange: (month: string) => void;
-    onAddStaff: (staff: PayeStaff) => void;
-    onRemoveStaff: (staff: PayeStaff) => void;
-    onSaveStaff: (oldStaff: PayeStaff, newStaff: PayeStaff) => void;
-    onCopyStaff: (sourceMonth: string) => void;
+    onAddStaff: (staff: PayeStaff) => void | Promise<void>;
+    onRemoveStaff: (staff: PayeStaff) => void | Promise<void>;
+    onSaveStaff: (oldStaff: PayeStaff, newStaff: PayeStaff) => void | Promise<void>;
+    onCopyStaff: (sourceMonth: string) => void | Promise<void>;
     onFile?: () => void;
 }
 
@@ -279,7 +288,7 @@ export function PayeMonthlyFiling({
                     onAdd={(newStaff) => onAddStaff(newStaff)}
                     editStaff={editingStaff}
                     onRemove={onRemoveStaff}
-                    onSave={(updated) => { if (editingStaff) onSaveStaff(editingStaff, updated); }}
+                    onSave={async (updated) => { if (editingStaff) await onSaveStaff(editingStaff, updated); }}
                 />
                 {showCopyModal && pendingCopy && createPortal(
                     <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/20" onClick={() => setShowCopyModal(false)}>
@@ -313,7 +322,7 @@ export function PayeMonthlyFiling({
                 onAdd={(newStaff) => onAddStaff(newStaff)}
                 editStaff={editingStaff}
                 onRemove={onRemoveStaff}
-                onSave={(updated) => { if (editingStaff) onSaveStaff(editingStaff, updated); }}
+                onSave={async (updated) => { if (editingStaff) await onSaveStaff(editingStaff, updated); }}
             />
         </>
     );

@@ -1,7 +1,10 @@
 'use client';
-import React, { useState, useRef, useEffect, startTransition } from 'react';
+
+import React, { useState, useRef, useEffect, useCallback, startTransition } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+
 import { Input } from '@/components/ui/input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -13,14 +16,54 @@ import {
     Stepper, StepperItem, StepperIndicator, StepperTitle,
     StepperSeparator, StepperTrigger,
 } from '@/components/ui/stepper';
-import { PrimaryButton, SecondaryButton, SecondaryButtonSm, FormFieldRow, FormLabel } from './TaxFolderShared';
-import { FilingSheet } from './TaxFolderShared';
-import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
+import { Spinner } from '@/components/ui/spinner';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
+import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
+import { useTaxableApi } from '@/hooks/useTaxableApi';
+import type {
+    CitFiling,
+    CitQuarterlyData,
+    CitWhtCredit,
+    UpsertCitRequest,
+} from '@/types/api';
+
+import { PrimaryButton, SecondaryButton, SecondaryButtonSm, FormFieldRow, FormLabel, FilingSheet } from './TaxFolderShared';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmt = (n: number) => `₦${Math.round(n).toLocaleString()}`;
-const num = (s: string) => Number(s.replace(/,/g, '')) || 0;
+const num = (s: string) => Number(String(s).replace(/,/g, '')) || 0;
+
+const formatMoneyInput = (n: number | undefined | null): string => {
+    if (n == null || n === 0) return '';
+    const parts = String(n).split('.');
+    const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.length > 1 ? `${integer}.${parts[1]}` : integer;
+};
+
+const isNotFoundError = (err: unknown): boolean => {
+    const message = err instanceof Error ? err.message : String(err ?? '');
+    return /not found|404|no filing|no cit/i.test(message);
+};
+
+type WhtCreditUi = {
+    id: string;
+    clientName: string;
+    clientTIN: string;
+    creditRef: string;
+    grossValue: string;
+    withheldAmount: string;
+};
+
+const creditToUi = (c: CitWhtCredit): WhtCreditUi => ({
+    id: c.id,
+    clientName: c.clientName ?? '',
+    clientTIN: c.clientTIN ?? '',
+    creditRef: c.creditRef ?? '',
+    grossValue: formatMoneyInput(c.grossValue),
+    withheldAmount: formatMoneyInput(c.withheldAmount),
+});
+
+type AnnualStep = 'financials' | 'tax-adjustments' | 'wht-credits' | 'review';
 
 // ── File Upload Section (standalone child component) ──────────────────────────
 function FileUploadSection({
@@ -205,9 +248,6 @@ const CIT_SUBSECTIONS = [
     { key: 'file-returns', label: 'File Annual Returns' },
 ];
 
-const storageKeyCIT = (pid: string) => `taxable_cit_data_${pid}`;
-const storageKeyCITFiled = (pid: string) => `taxable_cit_annual_filed_${pid}`;
-
 // ── Embeddable content component (no page shell) ──────────────────────────────
 export function BusinessCITContent({
     activeSubMenu,
@@ -231,9 +271,35 @@ export function BusinessCITContent({
     onProfitMarginChange?: (v: string) => void;
 } = {}) {
     const router = useRouter();
+    const {
+        getCit,
+        upsertCit,
+        fileCit,
+        listCitWhtCredits,
+        createCitWhtCredit,
+        updateCitWhtCredit,
+        deleteCitWhtCredit,
+        getCitQuarterly,
+        payCitQuarter,
+        deferCitQuarter,
+    } = useTaxableApi();
+
+    const yearNum = Number(taxYear) || new Date().getFullYear();
+    const canSync = Boolean(profileId) && profileId !== 'default';
+
     const [internalSubSection, setInternalSubSection] = useState<'quarterly' | 'file-returns'>('quarterly');
     const subSection = activeSubMenu ?? internalSubSection;
     const setSubSectionLocal = onSubMenuChange ?? setInternalSubSection;
+
+    const [loading, setLoading] = useState(canSync);
+    const [saving, setSaving] = useState(false);
+    const [showFilingReviewSheet, setShowFilingReviewSheet] = useState(false);
+    const [annualReturnFiled, setAnnualReturnFiled] = useState(false);
+    const [legalConfirm1, setLegalConfirm1] = useState(false);
+    const [legalConfirm2, setLegalConfirm2] = useState(false);
+    const [rolloverRefund, setRolloverRefund] = useState<'rollover' | 'refund'>('rollover');
+    const [annualStep, setAnnualStep] = useState<AnnualStep>('financials');
+    const [completedAnnualSteps, setCompletedAnnualSteps] = useState<Set<number>>(new Set());
 
     const setSubSection = (s: 'quarterly' | 'file-returns') => {
         setSubSectionLocal(s);
@@ -243,49 +309,24 @@ export function BusinessCITContent({
         }
     };
 
-    const citKey = storageKeyCIT(profileId);
-    const filedKey = storageKeyCITFiled(profileId);
-
-    // One-time migration from old unscoped keys
-    useEffect(() => {
-        const migKey = `cit_migrated_${profileId}`;
-        if (!localStorage.getItem(migKey)) {
-            const oldData = localStorage.getItem('taxable_cit_data');
-            if (oldData) { localStorage.setItem(citKey, oldData); localStorage.removeItem('taxable_cit_data'); }
-            const oldFiled = localStorage.getItem('taxable_cit_annual_filed');
-            if (oldFiled) { localStorage.setItem(filedKey, oldFiled); localStorage.removeItem('taxable_cit_annual_filed'); }
-            localStorage.setItem(migKey, 'true');
-        }
-    }, [profileId, citKey, filedKey]);
-
-    const goForward = (target: 'financials' | 'tax-adjustments' | 'wht-credits' | 'review') => {
+    const goForward = (target: AnnualStep) => {
         const stepNum: Record<string, number> = { financials: 1, 'tax-adjustments': 2, 'wht-credits': 3, review: 4 };
         const currentStepNum = stepNum[annualStep];
         if (currentStepNum) setCompletedAnnualSteps(prev => new Set([...prev, currentStepNum]));
         setAnnualStep(target);
     };
 
-    const [showFilingReviewSheet, setShowFilingReviewSheet] = useState(false);
-    const [annualReturnFiled, setAnnualReturnFiled] = useState(() => {
-        try { return localStorage.getItem(filedKey) === 'true'; } catch { return false; }
-    });
-    const [legalConfirm1, setLegalConfirm1] = useState(false);
-    const [legalConfirm2, setLegalConfirm2] = useState(false);
-    const [rolloverRefund, setRolloverRefund] = useState<'rollover' | 'refund'>('rollover');
-    const [annualStep, setAnnualStep] = useState<'financials' | 'tax-adjustments' | 'wht-credits' | 'review'>('financials');
-    const [completedAnnualSteps, setCompletedAnnualSteps] = useState<Set<number>>(new Set());
-
-   // Quarterly assessments
+    // Quarterly assessments
     const [quarterPayments, setQuarterPayments] = useState<Record<number, number>>({});
-   const [deferredQuarters, setDeferredQuarters] = useState<Set<number>>(new Set());
-   const [showDeferModal, setShowDeferModal] = useState(false);
-   const [deferModalQuarter, setDeferModalQuarter] = useState<number | null>(null);
-   const [payQuarter, setPayQuarter] = useState<number | null>(null);
-   const [pendingQuarterAmount, setPendingQuarterAmount] = useState(0);
-   const [showFilingSheet, setShowFilingSheet] = useState(false);
-   const [showEstimateDrawer, setShowEstimateDrawer] = useState(false);
-   const [editRevenue, setEditRevenue] = useState('');
-   const [editMargin, setEditMargin] = useState('20%');
+    const [deferredQuarters, setDeferredQuarters] = useState<Set<number>>(new Set());
+    const [showDeferModal, setShowDeferModal] = useState(false);
+    const [deferModalQuarter, setDeferModalQuarter] = useState<number | null>(null);
+    const [payQuarter, setPayQuarter] = useState<number | null>(null);
+    const [pendingQuarterAmount, setPendingQuarterAmount] = useState(0);
+    const [showFilingSheet, setShowFilingSheet] = useState(false);
+    const [showEstimateDrawer, setShowEstimateDrawer] = useState(false);
+    const [editRevenue, setEditRevenue] = useState('');
+    const [editMargin, setEditMargin] = useState('20%');
 
     // Financials
     const [totalRevenue, setTotalRevenue] = useState('');
@@ -301,10 +342,7 @@ export function BusinessCITContent({
     const [class3Assets, setClass3Assets] = useState('');
 
     // WHT Credits
-    const [whtCredits, setWhtCredits] = useState<{
-        clientName: string; clientTIN: string; creditRef: string;
-        grossValue: string; withheldAmount: string;
-    }[]>([]);
+    const [whtCredits, setWhtCredits] = useState<WhtCreditUi[]>([]);
     const [whtCreditStep, setWhtCreditStep] = useState<'method' | 'table'>('method');
     const [creditEntryMethod, setCreditEntryMethod] = useState<'manual' | 'csv' | 'software'>('manual');
     const [showCreditSheet, setShowCreditSheet] = useState(false);
@@ -320,6 +358,169 @@ export function BusinessCITContent({
     const [creditForm, setCreditForm] = useState(defaultCreditForm);
     const [creditCertificateFiles, setCreditCertificateFiles] = useState<{ name: string }[]>([]);
     const creditCertificateRef = useRef<HTMLInputElement>(null);
+
+    const resetFinancialState = useCallback(() => {
+        setTotalRevenue('');
+        setCogs('');
+        setOpex('');
+        setGovFines('');
+        setAccountingDepreciation('');
+        setGeneralProvisions('');
+        setClass1Assets('');
+        setClass2Assets('');
+        setClass3Assets('');
+        setAnnualReturnFiled(false);
+        setRolloverRefund('rollover');
+        setAnnualStep('financials');
+        setCompletedAnnualSteps(new Set());
+        setLegalConfirm1(false);
+        setLegalConfirm2(false);
+    }, []);
+
+    const applyCitFiling = useCallback((filing: CitFiling) => {
+        const f = filing.financials;
+        const ca = filing.capitalAllowances;
+        setTotalRevenue(formatMoneyInput(f?.totalRevenue));
+        setCogs(formatMoneyInput(f?.cogs));
+        setOpex(formatMoneyInput(f?.opex));
+        setGovFines(formatMoneyInput(f?.govFines));
+        setAccountingDepreciation(formatMoneyInput(f?.accountingDepreciation));
+        setGeneralProvisions(formatMoneyInput(f?.generalProvisions));
+        setClass1Assets(formatMoneyInput(ca?.class1Assets));
+        setClass2Assets(formatMoneyInput(ca?.class2Assets));
+        setClass3Assets(formatMoneyInput(ca?.class3Assets));
+        setAnnualReturnFiled(Boolean(filing.filed || filing.status === 'filed'));
+        if (filing.settlementPreference === 'rollover' || filing.settlementPreference === 'refund') {
+            setRolloverRefund(filing.settlementPreference);
+        }
+    }, []);
+
+    const applyQuarterly = useCallback((data: CitQuarterlyData) => {
+        const payments: Record<number, number> = {};
+        const deferred = new Set<number>();
+        for (const q of data.quarters ?? []) {
+            const idx = q.quarter - 1;
+            if (idx < 0 || idx > 3) continue;
+            if (q.status === 'paid') {
+                payments[idx] = q.amountPaid > 0 ? q.amountPaid : q.amountDue;
+            } else if (q.status === 'deferred') {
+                deferred.add(idx);
+            }
+        }
+        setQuarterPayments(payments);
+        setDeferredQuarters(deferred);
+    }, []);
+
+    // Load annual CIT + WHT credits + quarterly when profile/year changes
+    useEffect(() => {
+        if (!canSync || !profileId) {
+            startTransition(() => setLoading(false));
+            return;
+        }
+
+        let cancelled = false;
+        startTransition(() => {
+            setLoading(true);
+            resetFinancialState();
+            setWhtCredits([]);
+            setWhtCreditStep('method');
+            setQuarterPayments({});
+            setDeferredQuarters(new Set());
+        });
+
+        (async () => {
+            try {
+                const [citSettled, creditsSettled, quarterlySettled] = await Promise.allSettled([
+                    getCit(profileId, yearNum),
+                    listCitWhtCredits(profileId, yearNum),
+                    getCitQuarterly(profileId, yearNum),
+                ]);
+
+                if (cancelled) return;
+
+                startTransition(() => {
+                    if (citSettled.status === 'fulfilled' && citSettled.value?.data) {
+                        applyCitFiling(citSettled.value.data);
+                    } else if (citSettled.status === 'rejected') {
+                        if (!isNotFoundError(citSettled.reason)) {
+                            console.error(
+                                '[BusinessCIT] Failed to load CIT:',
+                                citSettled.reason instanceof Error
+                                    ? citSettled.reason.message
+                                    : 'Unknown error'
+                            );
+                            toast.error(
+                                citSettled.reason instanceof Error
+                                    ? citSettled.reason.message
+                                    : 'Failed to load CIT filing'
+                            );
+                        }
+                    }
+
+                    if (creditsSettled.status === 'fulfilled') {
+                        const credits = creditsSettled.value?.data?.credits ?? [];
+                        setWhtCredits(credits.map(creditToUi));
+                        setWhtCreditStep(credits.length > 0 ? 'table' : 'method');
+                    } else if (!isNotFoundError(creditsSettled.reason)) {
+                        console.error(
+                            '[BusinessCIT] Failed to load CIT WHT credits:',
+                            creditsSettled.reason instanceof Error
+                                ? creditsSettled.reason.message
+                                : 'Unknown error'
+                        );
+                        toast.error(
+                            creditsSettled.reason instanceof Error
+                                ? creditsSettled.reason.message
+                                : 'Failed to load WHT credits'
+                        );
+                    }
+
+                    if (quarterlySettled.status === 'fulfilled' && quarterlySettled.value?.data) {
+                        applyQuarterly(quarterlySettled.value.data);
+                    } else if (
+                        quarterlySettled.status === 'rejected'
+                        && !isNotFoundError(quarterlySettled.reason)
+                    ) {
+                        console.error(
+                            '[BusinessCIT] Failed to load CIT quarterly:',
+                            quarterlySettled.reason instanceof Error
+                                ? quarterlySettled.reason.message
+                                : 'Unknown error'
+                        );
+                        toast.error(
+                            quarterlySettled.reason instanceof Error
+                                ? quarterlySettled.reason.message
+                                : 'Failed to load quarterly assessments'
+                        );
+                    }
+                });
+            } catch (err: unknown) {
+                console.error(
+                    '[BusinessCIT] Failed to load CIT data:',
+                    err instanceof Error ? err.message : 'Unknown error'
+                );
+                if (!cancelled) {
+                    toast.error(err instanceof Error ? err.message : 'Failed to load CIT data');
+                }
+            } finally {
+                if (!cancelled) {
+                    startTransition(() => setLoading(false));
+                }
+            }
+        })();
+
+        return () => { cancelled = true; };
+    }, [
+        canSync,
+        profileId,
+        yearNum,
+        getCit,
+        listCitWhtCredits,
+        getCitQuarterly,
+        applyCitFiling,
+        applyQuarterly,
+        resetFinancialState,
+    ]);
 
     // Derived financials
     const totalRev = num(totalRevenue);
@@ -337,62 +538,153 @@ export function BusinessCITContent({
     const totalPrepayments = totalWHTCredits + totalQuarterlyPaid;
     const finalPosition = totalObligation - totalPrepayments;
 
-    const handleFileQuarter = () => {
-        if (payQuarter !== null) {
-            setQuarterPayments(prev => ({ ...prev, [payQuarter]: pendingQuarterAmount }));
+    const buildUpsertPayload = useCallback((): UpsertCitRequest => {
+        const payload: UpsertCitRequest = {
+            year: yearNum,
+            totalRevenue: num(totalRevenue),
+            cogs: num(cogs),
+            opex: num(opex),
+            govFines: num(govFines),
+            accountingDepreciation: num(accountingDepreciation),
+            generalProvisions: num(generalProvisions),
+            class1Assets: num(class1Assets),
+            class2Assets: num(class2Assets),
+            class3Assets: num(class3Assets),
+            settlementPreference: rolloverRefund,
+        };
+        return payload;
+    }, [
+        yearNum,
+        totalRevenue,
+        cogs,
+        opex,
+        govFines,
+        accountingDepreciation,
+        generalProvisions,
+        class1Assets,
+        class2Assets,
+        class3Assets,
+        rolloverRefund,
+    ]);
+
+    const saveCit = useCallback(async (): Promise<boolean> => {
+        if (!canSync || !profileId) {
+            toast.error('Profile required to save CIT data');
+            return false;
+        }
+        setSaving(true);
+        try {
+            const res = await upsertCit(profileId, buildUpsertPayload());
+            if (res?.data) applyCitFiling(res.data);
+            return true;
+        } catch (err: unknown) {
+            console.error(
+                '[BusinessCIT] Failed to save CIT:',
+                err instanceof Error ? err.message : 'Unknown error'
+            );
+            toast.error(err instanceof Error ? err.message : 'Failed to save CIT. Please try again.');
+            return false;
+        } finally {
+            setSaving(false);
+        }
+    }, [canSync, profileId, upsertCit, buildUpsertPayload, applyCitFiling]);
+
+    const continueWithSave = async (target: AnnualStep) => {
+        const ok = await saveCit();
+        if (!ok) return;
+        goForward(target);
+    };
+
+    const handleFileQuarter = async () => {
+        if (payQuarter === null) return;
+        if (!canSync || !profileId) {
+            toast.error('Profile required to pay quarterly CIT');
+            return;
+        }
+        const quarter = payQuarter + 1;
+        setSaving(true);
+        try {
+            const res = await payCitQuarter(profileId, {
+                year: yearNum,
+                quarter,
+                amount: pendingQuarterAmount,
+            });
+            const paidAmount = res?.data?.amountPaid ?? pendingQuarterAmount;
+            setQuarterPayments(prev => ({ ...prev, [payQuarter]: paidAmount }));
             setPayQuarter(null);
             setPendingQuarterAmount(0);
+            setShowFilingSheet(false);
+            toast.success(`Q${quarter} CIT payment recorded`);
+        } catch (err: unknown) {
+            console.error(
+                '[BusinessCIT] Failed to pay CIT quarter:',
+                err instanceof Error ? err.message : 'Unknown error'
+            );
+            toast.error(err instanceof Error ? err.message : 'Failed to pay quarter. Please try again.');
+        } finally {
+            setSaving(false);
         }
     };
 
-    const goBack = (target: 'financials' | 'tax-adjustments' | 'wht-credits' | 'review') => {
-        setAnnualStep(target);
+    const handleConfirmDefer = async () => {
+        if (deferModalQuarter === null) return;
+        if (!canSync || !profileId) {
+            toast.error('Profile required to defer quarterly CIT');
+            return;
+        }
+        const quarter = deferModalQuarter + 1;
+        setSaving(true);
+        try {
+            await deferCitQuarter(profileId, { year: yearNum, quarter });
+            setDeferredQuarters(prev => new Set([...prev, deferModalQuarter]));
+            setShowDeferModal(false);
+            setDeferModalQuarter(null);
+            toast.success(`Q${quarter} deferred to annual filing`);
+        } catch (err: unknown) {
+            console.error(
+                '[BusinessCIT] Failed to defer CIT quarter:',
+                err instanceof Error ? err.message : 'Unknown error'
+            );
+            toast.error(err instanceof Error ? err.message : 'Failed to defer quarter. Please try again.');
+        } finally {
+            setSaving(false);
+        }
     };
 
-    // Persist annual filed status
-    useEffect(() => {
-        try { localStorage.setItem(filedKey, String(annualReturnFiled)); } catch { /* ignore */ }
-    }, [annualReturnFiled]);
-
-    // Restore CIT data from localStorage on mount
-    useEffect(() => {
+    const handleFileAnnual = async () => {
+        if (!canSync || !profileId) {
+            toast.error('Profile required to file CIT');
+            return;
+        }
+        setSaving(true);
         try {
-            const raw = localStorage.getItem(citKey);
-            if (!raw) return;
-            const saved = JSON.parse(raw);
-            startTransition(() => {
-                if (saved.totalRevenue) setTotalRevenue(saved.totalRevenue);
-                if (saved.cogs) setCogs(saved.cogs);
-                if (saved.opex) setOpex(saved.opex);
-                if (saved.govFines) setGovFines(saved.govFines);
-                if (saved.accountingDepreciation) setAccountingDepreciation(saved.accountingDepreciation);
-                if (saved.generalProvisions) setGeneralProvisions(saved.generalProvisions);
-                if (saved.class1Assets) setClass1Assets(saved.class1Assets);
-                if (saved.class2Assets) setClass2Assets(saved.class2Assets);
-                if (saved.class3Assets) setClass3Assets(saved.class3Assets);
-                if (saved.whtCredits) setWhtCredits(saved.whtCredits);
-                if (saved.quarterPayments) setQuarterPayments(saved.quarterPayments);
-                if (saved.deferredQuarters) setDeferredQuarters(new Set(saved.deferredQuarters));
+            await upsertCit(profileId, buildUpsertPayload());
+            const res = await fileCit(profileId, {
+                year: yearNum,
+                legalConfirmAccuracy: legalConfirm1,
+                legalConfirmAuthority: legalConfirm2,
+                settlementPreference: finalPosition < 0 ? rolloverRefund : undefined,
             });
-        } catch { /* ignore */ }
-    }, []);
+            setAnnualReturnFiled(true);
+            setShowFilingReviewSheet(false);
+            if (res?.data?.settlementPreference) {
+                setRolloverRefund(res.data.settlementPreference);
+            }
+            toast.success(`${taxYear} annual CIT return filed`);
+        } catch (err: unknown) {
+            console.error(
+                '[BusinessCIT] Failed to file CIT:',
+                err instanceof Error ? err.message : 'Unknown error'
+            );
+            toast.error(err instanceof Error ? err.message : 'Failed to file CIT. Please try again.');
+        } finally {
+            setSaving(false);
+        }
+    };
 
-    // Persist CIT data on changes
-    useEffect(() => {
-        try {
-            localStorage.setItem(citKey, JSON.stringify({
-                totalRevenue, cogs, opex,
-                govFines, accountingDepreciation, generalProvisions,
-                class1Assets, class2Assets, class3Assets,
-                whtCredits, quarterPayments, deferredQuarters: Array.from(deferredQuarters),
-            }));
-        } catch { /* ignore */ }
-    }, [
-        totalRevenue, cogs, opex,
-        govFines, accountingDepreciation, generalProvisions,
-        class1Assets, class2Assets, class3Assets,
-        whtCredits, quarterPayments, deferredQuarters,
-    ]);
+    const goBack = (target: AnnualStep) => {
+        setAnnualStep(target);
+    };
 
     const CREDIT_ENTRY_OPTIONS = [
         { id: 'manual' as const, label: 'Manual entry' },
@@ -422,28 +714,81 @@ export function BusinessCITContent({
         setShowCreditSheet(true);
     };
 
-    const handleSaveCredit = () => {
-        if (editCreditIdx !== null) {
-            const r = [...whtCredits];
-            r[editCreditIdx] = creditForm;
-            setWhtCredits(r);
-        } else {
-            setWhtCredits(prev => [...prev, creditForm]);
+    const handleSaveCredit = async () => {
+        if (!canSync || !profileId) {
+            toast.error('Profile required to save WHT credit');
+            return;
         }
-        setShowCreditSheet(false);
-        setEditCreditIdx(null);
-        setIsEditingCredit(false);
-        setWhtCreditStep('table');
+        const wasEdit = editCreditIdx !== null;
+        setSaving(true);
+        try {
+            if (editCreditIdx !== null) {
+                const existing = whtCredits[editCreditIdx];
+                const res = await updateCitWhtCredit(profileId, existing.id, {
+                    clientName: creditForm.clientName,
+                    clientTIN: creditForm.clientTIN,
+                    creditRef: creditForm.creditRef,
+                    grossValue: num(creditForm.grossValue),
+                    withheldAmount: num(creditForm.withheldAmount),
+                });
+                const updated = res?.data?.credit
+                    ? creditToUi(res.data.credit)
+                    : { ...existing, ...creditForm };
+                setWhtCredits(prev => prev.map((c, i) => (i === editCreditIdx ? updated : c)));
+            } else {
+                const res = await createCitWhtCredit(profileId, {
+                    year: yearNum,
+                    clientName: creditForm.clientName,
+                    clientTIN: creditForm.clientTIN,
+                    creditRef: creditForm.creditRef,
+                    grossValue: num(creditForm.grossValue),
+                    withheldAmount: num(creditForm.withheldAmount),
+                });
+                if (res?.data?.credit) {
+                    setWhtCredits(prev => [...prev, creditToUi(res.data.credit)]);
+                }
+            }
+            setShowCreditSheet(false);
+            setEditCreditIdx(null);
+            setIsEditingCredit(false);
+            setWhtCreditStep('table');
+            toast.success(wasEdit ? 'WHT credit updated' : 'WHT credit added');
+        } catch (err: unknown) {
+            console.error(
+                '[BusinessCIT] Failed to save WHT credit:',
+                err instanceof Error ? err.message : 'Unknown error'
+            );
+            toast.error(err instanceof Error ? err.message : 'Failed to save WHT credit. Please try again.');
+        } finally {
+            setSaving(false);
+        }
     };
 
-    const handleRemoveCredit = () => {
-        if (editCreditIdx !== null) {
-            setWhtCredits(prev => prev.filter((_, i) => i !== editCreditIdx));
+    const handleRemoveCredit = async () => {
+        if (editCreditIdx === null) return;
+        if (!canSync || !profileId) {
+            toast.error('Profile required to remove WHT credit');
+            return;
         }
-        setShowRemoveCredit(false);
-        setShowCreditSheet(false);
-        setEditCreditIdx(null);
-        setIsEditingCredit(false);
+        const existing = whtCredits[editCreditIdx];
+        setSaving(true);
+        try {
+            await deleteCitWhtCredit(profileId, existing.id);
+            setWhtCredits(prev => prev.filter((_, i) => i !== editCreditIdx));
+            setShowRemoveCredit(false);
+            setShowCreditSheet(false);
+            setEditCreditIdx(null);
+            setIsEditingCredit(false);
+            toast.success('WHT credit removed');
+        } catch (err: unknown) {
+            console.error(
+                '[BusinessCIT] Failed to delete WHT credit:',
+                err instanceof Error ? err.message : 'Unknown error'
+            );
+            toast.error(err instanceof Error ? err.message : 'Failed to remove WHT credit. Please try again.');
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleCancelCredit = () => {
@@ -486,6 +831,12 @@ export function BusinessCITContent({
         )}
         {/* ── Right content ── */}
         <div className="flex-1 min-w-0">
+           {loading ? (
+             <div className="flex items-center justify-center py-24">
+               <Spinner className="size-6 text-neutral-400" />
+             </div>
+           ) : (
+           <>
 
            {/* ── Quarterly Assessments ── */}
            {subSection === 'quarterly' && (() => {
@@ -530,13 +881,10 @@ export function BusinessCITContent({
                                You chose to defer Q{deferModalQuarter + 1} payment to annual filing. You'll settle this when you file your CIT return in June {Number(taxYear) + 1}.
                            </p>
                            <PrimaryButton
-                              onClick={() => {
-                                setDeferredQuarters(prev => new Set([...prev, deferModalQuarter!]));
-                                setShowDeferModal(false);
-                                setDeferModalQuarter(null);
-                              }}
+                              onClick={handleConfirmDefer}
+                              disabled={saving}
                               className="w-full">
-                              Got it
+                              {saving ? <Spinner /> : 'Got it'}
                            </PrimaryButton>
                       </div>
                    </div>, document.body)}
@@ -837,8 +1185,11 @@ export function BusinessCITContent({
                             </div>
 
                             <div className="flex gap-3 mt-8">
-                                <PrimaryButton onClick={() => goForward('tax-adjustments')} disabled={!totalRevenue}>
-                                    Next: Tax Adjustments
+                                <PrimaryButton
+                                    onClick={() => continueWithSave('tax-adjustments')}
+                                    disabled={!totalRevenue || saving}
+                                >
+                                    {saving ? <Spinner /> : 'Next: Tax Adjustments'}
                                 </PrimaryButton>
                             </div>
                         </div>
@@ -924,8 +1275,11 @@ export function BusinessCITContent({
 
                             <div className="flex gap-3 mt-8">
                                 <SecondaryButton onClick={() => goBack('financials')}>Back</SecondaryButton>
-                                <PrimaryButton onClick={() => goForward('wht-credits')}>
-                                    Next: WHT Credits
+                                <PrimaryButton
+                                    onClick={() => continueWithSave('wht-credits')}
+                                    disabled={saving}
+                                >
+                                    {saving ? <Spinner /> : 'Next: WHT Credits'}
                                 </PrimaryButton>
                             </div>
                         </div>
@@ -997,7 +1351,7 @@ export function BusinessCITContent({
                                             </TableHeader>
                                             <TableBody>
                                                 {whtCredits.map((c, idx) => (
-                                                    <TableRow key={idx} className="cursor-pointer" onClick={() => openEditCredit(idx)}>
+                                                    <TableRow key={c.id || idx} className="cursor-pointer" onClick={() => openEditCredit(idx)}>
                                                         <TableCell className="px-6 py-4 text-2 font-medium text-neutral-600">{c.clientName || '—'}</TableCell>
                                                         <TableCell className="px-6 py-4 text-2 font-medium text-neutral-600">{c.clientTIN || '—'}</TableCell>
                                                         <TableCell className="px-6 py-4 text-2 font-medium text-neutral-600">{c.creditRef || '—'}</TableCell>
@@ -1273,13 +1627,15 @@ export function BusinessCITContent({
                             <FilingSheet
                                 open={showFilingReviewSheet}
                                 onClose={() => setShowFilingReviewSheet(false)}
-                                onFile={() => { setAnnualReturnFiled(true); setShowFilingReviewSheet(false); }}
+                                onFile={handleFileAnnual}
                             />
                         </div>
                     ))}
                 </div>
             )}
 
+           </>
+           )}
                 </div>
             </div>
         );

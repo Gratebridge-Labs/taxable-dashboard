@@ -12,6 +12,44 @@ import type {
   TaxSummaryResponse,
   CalculateTaxResponse,
   CalculationHistoryResponse,
+  CreateProfileOptions,
+  BusinessCompanyInfoResponse,
+  BusinessCompanyInfoRequest,
+  CreatePayeEmployeeRequest,
+  UpdatePayeEmployeeRequest,
+  PayeEmployeesListResponse,
+  PayeEmployeeResponse,
+  DeletePayeEmployeeResponse,
+  UpsertVatRequest,
+  FileVatRequest,
+  VatListResponse,
+  VatFilingResponse,
+  DeleteVatMonthResponse,
+  CreateWhtDeductionRequest,
+  UpdateWhtDeductionRequest,
+  FileWhtMonthRequest,
+  WhtDeductionsListResponse,
+  WhtDeductionResponse,
+  DeleteWhtDeductionResponse,
+  FileWhtMonthResponse,
+  CreateWhtCreditRequest,
+  UpdateWhtCreditRequest,
+  WhtCreditsListResponse,
+  WhtCreditResponse,
+  DeleteWhtCreditResponse,
+  UpsertCitRequest,
+  FileCitRequest,
+  CitFilingResponse,
+  FileCitResponse,
+  CreateCitWhtCreditRequest,
+  UpdateCitWhtCreditRequest,
+  CitWhtCreditsListResponse,
+  CitWhtCreditResponse,
+  DeleteCitWhtCreditResponse,
+  CitQuarterlyResponse,
+  PayCitQuarterRequest,
+  DeferCitQuarterRequest,
+  CitQuarterActionResponse,
   CreateSubscriptionLinkRequest,
   CreatePaymentLinkResponse,
   SubscriptionStatusResponse,
@@ -78,14 +116,456 @@ class TaxableApiService {
     return data as T;
   }
 
-  async createProfile(token: string, year: number, profileType: 'Individual' | 'Business'): Promise<Profile> {
+  async createProfile(token: string, year: number, profileType: 'Individual' | 'Business', options?: CreateProfileOptions): Promise<Profile> {
     const response = await fetch(`${this.baseUrl}${TAXABLE_ENDPOINTS.PROFILE.CREATE}`, {
       method: 'POST',
       headers: this.getHeaders(token),
-      body: JSON.stringify({ year, profileType }),
+      body: JSON.stringify({ year, profileType, ...(options ?? {}) }),
     });
     const data = await this.handleResponse<{ success: boolean; data: Profile }>(response);
     return data.data;
+  }
+
+  async getBusinessCompanyInfo(token: string, profileId: string): Promise<BusinessCompanyInfoResponse> {
+    const response = await fetch(`${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.COMPANY_INFO(profileId)}`, {
+      method: 'GET',
+      headers: this.getHeaders(token),
+    });
+    return this.handleResponse<BusinessCompanyInfoResponse>(response);
+  }
+
+  async updateBusinessCompanyInfo(token: string, profileId: string, data: BusinessCompanyInfoRequest): Promise<BusinessCompanyInfoResponse> {
+    const response = await fetch(`${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.COMPANY_INFO(profileId)}`, {
+      method: 'PUT',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse<BusinessCompanyInfoResponse>(response);
+  }
+
+  async listPayeEmployees(
+    token: string,
+    profileId: string,
+    month: number,
+    year?: number
+  ): Promise<PayeEmployeesListResponse> {
+    const params = new URLSearchParams({ month: String(month) });
+    if (typeof year === 'number') params.set('year', String(year));
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.PAYE_EMPLOYEES(profileId)}?${params.toString()}`,
+      {
+        method: 'GET',
+        headers: this.getHeaders(token),
+      }
+    );
+    return this.handleResponse<PayeEmployeesListResponse>(response);
+  }
+
+  async createPayeEmployee(
+    token: string,
+    profileId: string,
+    data: CreatePayeEmployeeRequest
+  ): Promise<PayeEmployeeResponse> {
+    const response = await fetch(`${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.PAYE_EMPLOYEES(profileId)}`, {
+      method: 'POST',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse<PayeEmployeeResponse>(response);
+  }
+
+  async updatePayeEmployee(
+    token: string,
+    profileId: string,
+    employeeId: string,
+    data: UpdatePayeEmployeeRequest
+  ): Promise<PayeEmployeeResponse> {
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.PAYE_EMPLOYEE(profileId, employeeId)}`,
+      {
+        method: 'PUT',
+        headers: this.getHeaders(token),
+        body: JSON.stringify(data),
+      }
+    );
+    return this.handleResponse<PayeEmployeeResponse>(response);
+  }
+
+  async deletePayeEmployee(
+    token: string,
+    profileId: string,
+    employeeId: string
+  ): Promise<DeletePayeEmployeeResponse> {
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.PAYE_EMPLOYEE(profileId, employeeId)}`,
+      {
+        method: 'DELETE',
+        headers: this.getHeaders(token),
+      }
+    );
+    return this.handleResponse<DeletePayeEmployeeResponse>(response);
+  }
+
+  async getVat(
+    token: string,
+    profileId: string,
+    year: number,
+    month?: number
+  ): Promise<VatListResponse | VatFilingResponse> {
+    const params = new URLSearchParams({ year: String(year) });
+    if (typeof month === 'number') params.set('month', String(month));
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.VAT(profileId)}?${params.toString()}`,
+      {
+        method: 'GET',
+        headers: this.getHeaders(token),
+      }
+    );
+    return this.handleResponse<VatListResponse | VatFilingResponse>(response);
+  }
+
+  async upsertVat(
+    token: string,
+    profileId: string,
+    data: UpsertVatRequest
+  ): Promise<VatFilingResponse> {
+    const response = await fetch(`${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.VAT(profileId)}`, {
+      method: 'PUT',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse<VatFilingResponse>(response);
+  }
+
+  async fileVat(
+    token: string,
+    profileId: string,
+    data: FileVatRequest
+  ): Promise<VatFilingResponse> {
+    const response = await fetch(`${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.VAT_FILE(profileId)}`, {
+      method: 'POST',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse<VatFilingResponse>(response);
+  }
+
+  async deleteVatMonth(
+    token: string,
+    profileId: string,
+    year: number,
+    month: number
+  ): Promise<DeleteVatMonthResponse> {
+    const params = new URLSearchParams({ year: String(year), month: String(month) });
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.VAT(profileId)}?${params.toString()}`,
+      {
+        method: 'DELETE',
+        headers: this.getHeaders(token),
+      }
+    );
+    return this.handleResponse<DeleteVatMonthResponse>(response);
+  }
+
+  async listWhtDeductions(
+    token: string,
+    profileId: string,
+    year: number,
+    month: number
+  ): Promise<WhtDeductionsListResponse> {
+    const params = new URLSearchParams({ year: String(year), month: String(month) });
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.WHT_DEDUCTIONS(profileId)}?${params.toString()}`,
+      {
+        method: 'GET',
+        headers: this.getHeaders(token),
+      }
+    );
+    return this.handleResponse<WhtDeductionsListResponse>(response);
+  }
+
+  async createWhtDeduction(
+    token: string,
+    profileId: string,
+    data: CreateWhtDeductionRequest
+  ): Promise<WhtDeductionResponse> {
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.WHT_DEDUCTIONS(profileId)}`,
+      {
+        method: 'POST',
+        headers: this.getHeaders(token),
+        body: JSON.stringify(data),
+      }
+    );
+    return this.handleResponse<WhtDeductionResponse>(response);
+  }
+
+  async updateWhtDeduction(
+    token: string,
+    profileId: string,
+    deductionId: string,
+    data: UpdateWhtDeductionRequest
+  ): Promise<WhtDeductionResponse> {
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.WHT_DEDUCTION(profileId, deductionId)}`,
+      {
+        method: 'PUT',
+        headers: this.getHeaders(token),
+        body: JSON.stringify(data),
+      }
+    );
+    return this.handleResponse<WhtDeductionResponse>(response);
+  }
+
+  async deleteWhtDeduction(
+    token: string,
+    profileId: string,
+    deductionId: string
+  ): Promise<DeleteWhtDeductionResponse> {
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.WHT_DEDUCTION(profileId, deductionId)}`,
+      {
+        method: 'DELETE',
+        headers: this.getHeaders(token),
+      }
+    );
+    return this.handleResponse<DeleteWhtDeductionResponse>(response);
+  }
+
+  async fileWhtMonth(
+    token: string,
+    profileId: string,
+    data: FileWhtMonthRequest
+  ): Promise<FileWhtMonthResponse> {
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.WHT_FILE(profileId)}`,
+      {
+        method: 'POST',
+        headers: this.getHeaders(token),
+        body: JSON.stringify(data),
+      }
+    );
+    return this.handleResponse<FileWhtMonthResponse>(response);
+  }
+
+  async listWhtCredits(
+    token: string,
+    profileId: string,
+    year: number,
+    month?: number
+  ): Promise<WhtCreditsListResponse> {
+    const params = new URLSearchParams({ year: String(year) });
+    if (typeof month === 'number') params.set('month', String(month));
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.WHT_CREDITS(profileId)}?${params.toString()}`,
+      {
+        method: 'GET',
+        headers: this.getHeaders(token),
+      }
+    );
+    return this.handleResponse<WhtCreditsListResponse>(response);
+  }
+
+  async createWhtCredit(
+    token: string,
+    profileId: string,
+    data: CreateWhtCreditRequest
+  ): Promise<WhtCreditResponse> {
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.WHT_CREDITS(profileId)}`,
+      {
+        method: 'POST',
+        headers: this.getHeaders(token),
+        body: JSON.stringify(data),
+      }
+    );
+    return this.handleResponse<WhtCreditResponse>(response);
+  }
+
+  async updateWhtCredit(
+    token: string,
+    profileId: string,
+    creditId: string,
+    data: UpdateWhtCreditRequest
+  ): Promise<WhtCreditResponse> {
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.WHT_CREDIT(profileId, creditId)}`,
+      {
+        method: 'PUT',
+        headers: this.getHeaders(token),
+        body: JSON.stringify(data),
+      }
+    );
+    return this.handleResponse<WhtCreditResponse>(response);
+  }
+
+  async deleteWhtCredit(
+    token: string,
+    profileId: string,
+    creditId: string
+  ): Promise<DeleteWhtCreditResponse> {
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.WHT_CREDIT(profileId, creditId)}`,
+      {
+        method: 'DELETE',
+        headers: this.getHeaders(token),
+      }
+    );
+    return this.handleResponse<DeleteWhtCreditResponse>(response);
+  }
+
+  async getCit(
+    token: string,
+    profileId: string,
+    year: number
+  ): Promise<CitFilingResponse> {
+    const params = new URLSearchParams({ year: String(year) });
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.CIT(profileId)}?${params.toString()}`,
+      {
+        method: 'GET',
+        headers: this.getHeaders(token),
+      }
+    );
+    return this.handleResponse<CitFilingResponse>(response);
+  }
+
+  async upsertCit(
+    token: string,
+    profileId: string,
+    data: UpsertCitRequest
+  ): Promise<CitFilingResponse> {
+    const response = await fetch(`${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.CIT(profileId)}`, {
+      method: 'PUT',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse<CitFilingResponse>(response);
+  }
+
+  async fileCit(
+    token: string,
+    profileId: string,
+    data: FileCitRequest
+  ): Promise<FileCitResponse> {
+    const response = await fetch(`${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.CIT_FILE(profileId)}`, {
+      method: 'POST',
+      headers: this.getHeaders(token),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse<FileCitResponse>(response);
+  }
+
+  async listCitWhtCredits(
+    token: string,
+    profileId: string,
+    year: number
+  ): Promise<CitWhtCreditsListResponse> {
+    const params = new URLSearchParams({ year: String(year) });
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.CIT_WHT_CREDITS(profileId)}?${params.toString()}`,
+      {
+        method: 'GET',
+        headers: this.getHeaders(token),
+      }
+    );
+    return this.handleResponse<CitWhtCreditsListResponse>(response);
+  }
+
+  async createCitWhtCredit(
+    token: string,
+    profileId: string,
+    data: CreateCitWhtCreditRequest
+  ): Promise<CitWhtCreditResponse> {
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.CIT_WHT_CREDITS(profileId)}`,
+      {
+        method: 'POST',
+        headers: this.getHeaders(token),
+        body: JSON.stringify(data),
+      }
+    );
+    return this.handleResponse<CitWhtCreditResponse>(response);
+  }
+
+  async updateCitWhtCredit(
+    token: string,
+    profileId: string,
+    creditId: string,
+    data: UpdateCitWhtCreditRequest
+  ): Promise<CitWhtCreditResponse> {
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.CIT_WHT_CREDIT(profileId, creditId)}`,
+      {
+        method: 'PUT',
+        headers: this.getHeaders(token),
+        body: JSON.stringify(data),
+      }
+    );
+    return this.handleResponse<CitWhtCreditResponse>(response);
+  }
+
+  async deleteCitWhtCredit(
+    token: string,
+    profileId: string,
+    creditId: string
+  ): Promise<DeleteCitWhtCreditResponse> {
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.CIT_WHT_CREDIT(profileId, creditId)}`,
+      {
+        method: 'DELETE',
+        headers: this.getHeaders(token),
+      }
+    );
+    return this.handleResponse<DeleteCitWhtCreditResponse>(response);
+  }
+
+  async getCitQuarterly(
+    token: string,
+    profileId: string,
+    year: number
+  ): Promise<CitQuarterlyResponse> {
+    const params = new URLSearchParams({ year: String(year) });
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.CIT_QUARTERLY(profileId)}?${params.toString()}`,
+      {
+        method: 'GET',
+        headers: this.getHeaders(token),
+      }
+    );
+    return this.handleResponse<CitQuarterlyResponse>(response);
+  }
+
+  async payCitQuarter(
+    token: string,
+    profileId: string,
+    data: PayCitQuarterRequest
+  ): Promise<CitQuarterActionResponse> {
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.CIT_QUARTERLY_PAY(profileId)}`,
+      {
+        method: 'POST',
+        headers: this.getHeaders(token),
+        body: JSON.stringify(data),
+      }
+    );
+    return this.handleResponse<CitQuarterActionResponse>(response);
+  }
+
+  async deferCitQuarter(
+    token: string,
+    profileId: string,
+    data: DeferCitQuarterRequest
+  ): Promise<CitQuarterActionResponse> {
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.CIT_QUARTERLY_DEFER(profileId)}`,
+      {
+        method: 'POST',
+        headers: this.getHeaders(token),
+        body: JSON.stringify(data),
+      }
+    );
+    return this.handleResponse<CitQuarterActionResponse>(response);
   }
 
   async getAllowedYears(): Promise<AllowedYearsResponse> {

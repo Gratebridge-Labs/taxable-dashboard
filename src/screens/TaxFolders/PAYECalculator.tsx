@@ -1,7 +1,13 @@
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, startTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
+import { Home2Fill } from '@mingcute/react';
+import { toast } from 'sonner';
+import { FormFieldRow, FormLabel, PrimaryButton, SecondaryButton, FilingSheet } from '@/screens/TaxFolders/TaxFolderShared';
+import { MONTHS } from '@/screens/TaxFolders/PITShared';
 
 // 2026 Nigeria Tax Act PAYE bands
 const PAYE_BANDS = [
@@ -49,84 +55,52 @@ function fmtN(n: number): string {
     return `₦${Math.round(n).toLocaleString()}`;
 }
 
-// ── Deduction row ─────────────────────────────────────────────────────────────
+const fmtInput = (set: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/[^0-9.]/g, '');
+    const parts = raw.split('.');
+    const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    set(parts.length > 1 ? integer + '.' + parts.slice(1).join('') : integer);
+};
+
+// ── Deduction row (PIT-style card row) ────────────────────────────────────────
 const DeductionRow = ({
     label,
     hint,
     checked,
     onToggle,
     amount,
-    onAmountChange,
-    suffix,
-    disabled: _disabled,
+    onChange,
     autoCalc,
 }: {
     label: string;
-    hint?: string;
+    hint: string;
     checked: boolean;
     onToggle: () => void;
     amount: string;
-    onAmountChange: (v: string) => void;
-    suffix?: string;
-    disabled?: boolean;
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     autoCalc?: boolean;
 }) => (
-    <div className="flex items-center gap-4 py-3 last:border-0">
-        {/* Checkbox */}
-        <button
-            type="button"
-            onClick={onToggle}
-            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${checked ? 'border-taxable-blue bg-taxable-blue' : 'border-neutral-300 bg-white'
-                }`}
-        >
-            {checked && (
-                <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                    <path d="M2 6L5 9L10 3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-            )}
-        </button>
-
-        {/* Label */}
-        <div className="flex items-center gap-1.5 flex-1 min-w-0">
-            <span className={`text-2 font-semibold ${checked ? 'text-neutral-800' : 'text-neutral-500'}`}>{label}</span>
-            {hint && (
-                <div className="relative group">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-400" strokeWidth="2">
-                        <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
-                    </svg>
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-neutral-800 text-white text-1 rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
-                        {hint}
-                    </div>
-                </div>
-            )}
+    <FormFieldRow className="justify-between">
+        <div className="flex items-center gap-3">
+            <Checkbox checked={checked} onCheckedChange={() => onToggle()} />
+            <FormLabel tip={hint}>{label}</FormLabel>
         </div>
-
-        {/* Amount */}
-        <div className={`w-40 flex-shrink-0 border rounded-lg px-3 py-2 flex items-center gap-2 ${checked ? 'border-neutral-200 bg-white' : 'border-neutral-100 bg-neutral-50'
-            }`}>
-            <span className="text-2 font-semibold text-neutral-800 flex-shrink-0">₦</span>
-            <input
-                type="text"
-                value={checked ? amount : ''}
-                placeholder="0"
-                disabled={!checked || autoCalc}
-                onChange={e => {
-                    const raw = e.target.value.replace(/[^0-9.]/g, '');
-                    onAmountChange(raw);
-                }}
-                className={`flex-1 w-0 min-w-0 text-2 font-semibold bg-transparent border-none outline-none placeholder:text-neutral-300 ${(!checked || autoCalc) ? 'opacity-60 cursor-not-allowed' : ''
-                    }`}
-            />
-            {suffix && checked && (
-                <span className="text-1 text-neutral-400 flex-shrink-0">{suffix}</span>
-            )}
-        </div>
-    </div>
+        <Input
+            type="text"
+            placeholder="₦ 0.00"
+            value={checked ? amount : ''}
+            disabled={!checked || autoCalc}
+            onChange={onChange}
+            className="w-[150px] text-left"
+        />
+    </FormFieldRow>
 );
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function PAYECalculator() {
     const router = useRouter();
+
+    const [month, setMonth] = useState(MONTHS[0]);
 
     // Salary inputs
     const [grossSalary, setGrossSalary] = useState('');
@@ -135,12 +109,46 @@ export default function PAYECalculator() {
     // Deductions
     const [pensionOn, setPensionOn] = useState(true);
     const [nhfOn, setNhfOn] = useState(false);
-    const [lifeInsOn, setLifeInsOn] = useState(true);
-    const [lifeInsAmt, setLifeInsAmt] = useState('20000');
-    const [rentOn, setRentOn] = useState(false);
-    const [rentAmt, setRentAmt] = useState('');
+    const [hmoOn, setHmoOn] = useState(true);
+    const [annualRentOn, setAnnualRentOn] = useState(false);
+    const [annualRentAmt, setAnnualRentAmt] = useState('');
 
     const [showBreakdown, setShowBreakdown] = useState(false);
+    const [showFilingSheet, setShowFilingSheet] = useState(false);
+
+    // Restore draft from localStorage
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem('taxable_paye_draft');
+            if (!raw) return;
+            const saved = JSON.parse(raw);
+            startTransition(() => {
+                if (saved.month) setMonth(saved.month);
+                if (saved.grossSalary) setGrossSalary(saved.grossSalary);
+                if (saved.bonuses) setBonuses(saved.bonuses);
+                if (typeof saved.pensionOn === 'boolean') setPensionOn(saved.pensionOn);
+                if (typeof saved.nhfOn === 'boolean') setNhfOn(saved.nhfOn);
+                if (typeof saved.hmoOn === 'boolean') setHmoOn(saved.hmoOn);
+                if (typeof saved.annualRentOn === 'boolean') setAnnualRentOn(saved.annualRentOn);
+                if (saved.annualRentAmt) setAnnualRentAmt(saved.annualRentAmt);
+            });
+        } catch { /* ignore */ }
+    }, []);
+
+    const handleSave = () => {
+        try {
+            localStorage.setItem('taxable_paye_draft', JSON.stringify({
+                month, grossSalary, bonuses,
+                pensionOn, nhfOn, hmoOn, annualRentOn, annualRentAmt,
+            }));
+            toast.success('Draft saved');
+        } catch { /* ignore */ }
+    };
+
+    const handleSaveAndFile = () => {
+        handleSave();
+        setShowFilingSheet(true);
+    };
 
     // Derived numbers
     const gross = parseFloat(grossSalary.replace(/,/g, '')) || 0;
@@ -148,10 +156,12 @@ export default function PAYECalculator() {
     const monthlyGross = gross + bonus;
     const pensionAmt = pensionOn ? Math.round(monthlyGross * 0.08) : 0;
     const nhfAmt = nhfOn ? Math.round(monthlyGross * 0.025) : 0;
-    const lifeAmt = lifeInsOn ? (parseFloat(lifeInsAmt.replace(/,/g, '')) || 0) : 0;
-    const rentRelief = rentOn ? Math.round((parseFloat(rentAmt.replace(/,/g, '')) || 0) / 12) : 0;
+    const hmoAmt = hmoOn ? Math.round(monthlyGross * 0.05) : 0;
+    const rentReliefMonthly = annualRentOn
+        ? Math.round((Math.min((parseFloat(annualRentAmt.replace(/,/g, '')) || 0) * 0.20, 500000)) / 12)
+        : 0;
 
-    const totalMonthlyDeductions = pensionAmt + nhfAmt + lifeAmt + rentRelief;
+    const totalMonthlyDeductions = pensionAmt + nhfAmt + hmoAmt + rentReliefMonthly;
     const monthlyTaxable = Math.max(0, monthlyGross - totalMonthlyDeductions);
     const annualTaxable = monthlyTaxable * 12;
 
@@ -163,133 +173,109 @@ export default function PAYECalculator() {
     const hasData = gross > 0;
 
     return (
-        <div className="min-h-screen bg-white pb-20 font-sans">
-            <DashboardHeader />
-
-            <main className="max-w-[760px] mx-auto px-4 md:px-8 py-8">
-                {/* Back + Breadcrumb */}
-                <div className="flex items-center gap-3 mb-8">
-                    <button
-                        onClick={() => router.back()}
-                        className="flex items-center gap-1.5 text-2 font-semibold text-neutral-800  transition-colors"
-                    >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
-                        </svg>
-                        Back
+        <div className="min-h-screen bg-white pb-20">
+            {/* Breadcrumb nav bar */}
+            <div className="w-full bg-white border-b border-neutral-100 py-3">
+                <div className="max-w-[1280px] mx-auto px-6 md:px-12 w-full flex flex-col gap-1">
+                    <button onClick={() => router.push('/home')} className="flex items-center gap-2 text-3 font-semibold text-neutral-800 w-fit shrink-0">
+                        <Home2Fill className="w-5 h-5" color="#E5E5E5" />
+                        Home
                     </button>
-                    <div className="flex items-center gap-1.5 text-1 text-neutral-400 font-medium">
-                        <span>Dashboard</span>
+                    <div className="flex items-center gap-2 text-1 text-neutral-300 font-medium">
+                        <span>Monthly PAYE</span>
                         <span>/</span>
-                        <span className="text-neutral-500">Calculate my monthly PAYE</span>
+                        <span className="text-neutral-300">Calculate and File Monthly PAYE</span>
                     </div>
                 </div>
+            </div>
 
+            <main className="max-w-[500px] mx-auto px-6 md:px-12 pt-10 pb-8">
                 {/* Title */}
-                <div className="mb-8">
-                    <h1 className="text-8 font-semibold text-neutral-800 mb-1">PAYE Calculator</h1>
-                    <p className="text-3 text-neutral-400 font-medium">
+                <div className="mb-6">
+                    <h1 className="text-5 font-medium text-neutral-800 mb-1 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">PAYE Calculator</h1>
+                    <p className="text-1 text-neutral-400 font-medium">
                         Estimate how much income tax your employer should deduct from your salary each month.
                     </p>
                 </div>
 
-                {/* Salary section */}
+                {/* Month selector */}
                 <div className="mb-6">
-                    <h2 className="text-4 font-semibold text-neutral-800 mb-3">Your Salary</h2>
-                    <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden">
-                        {/* Gross salary */}
-                        <div className="px-5 py-4">
-                            <p className="text-1 font-semibold text-neutral-500 mb-2">What's your monthly gross salary</p>
-                            <div className="flex items-center gap-2">
-                                <span className="text-3 font-semibold text-neutral-800">₦</span>
-                                <input
-                                    type="text"
-                                    placeholder="0"
-                                    value={grossSalary}
-                                    onChange={e => setGrossSalary(e.target.value.replace(/[^0-9.]/g, ''))}
-                                    className="flex-1 text-3 font-semibold text-neutral-800 placeholder:text-neutral-300 bg-transparent border-none outline-none"
-                                />
-                            </div>
-                            <p className="text-1 text-neutral-400 font-medium mt-1.5">
-                                Enter the amount before any deductions. Don't include bonuses unless they're paid monthly
-                            </p>
-                        </div>
+                    <FormLabel tip="Select the month you're calculating PAYE for.">Month</FormLabel>
+                    <Select value={month} onValueChange={(v) => v && setMonth(v)}>
+                        <SelectTrigger className="w-fit min-w-[180px] h-10 rounded-xl bg-white border-neutral-100 text-sm">
+                            <span>{month}</span>
+                        </SelectTrigger>
+                        <SelectContent>
+                            {MONTHS.map((m) => (
+                                <SelectItem key={m} value={m}>{m}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
 
-                        {/* Bonuses */}
-                        <div className="px-5 py-4">
-                            <p className="text-1 font-semibold text-neutral-500 mb-2">Monthly bonuses or allowances</p>
-                            <div className="flex items-center gap-2">
-                                <span className="text-3 font-semibold text-neutral-800">₦</span>
-                                <input
-                                    type="text"
-                                    placeholder="0"
-                                    value={bonuses}
-                                    onChange={e => setBonuses(e.target.value.replace(/[^0-9.]/g, ''))}
-                                    className="flex-1 text-3 font-semibold text-neutral-800 placeholder:text-neutral-300 bg-transparent border-none outline-none"
-                                />
-                            </div>
-                            <p className="text-1 text-neutral-400 font-medium mt-1.5">
-                                Only include bonuses that are paid every month, like housing or transport allowances.
-                            </p>
-                        </div>
+                {/* Salary card */}
+                <div className="bg-neutral-50 rounded-3xl p-5 mb-6">
+                    <h3 className="text-3 font-semibold text-neutral-800 mb-4">Your Salary</h3>
+                    <div className="space-y-3">
+                        <FormFieldRow className="justify-between">
+                            <FormLabel tip="Your monthly gross salary before any deductions. Don't include bonuses unless they're paid monthly.">Gross Salary</FormLabel>
+                            <Input type="text" placeholder="₦ 0.00" value={grossSalary} onChange={fmtInput(setGrossSalary)} className="w-[180px] text-left" />
+                        </FormFieldRow>
+                        <FormFieldRow className="justify-between">
+                            <FormLabel tip="Only include bonuses that are paid every month, like housing or transport allowances.">Bonuses / Allowances</FormLabel>
+                            <Input type="text" placeholder="₦ 0.00" value={bonuses} onChange={fmtInput(setBonuses)} className="w-[180px] text-left" />
+                        </FormFieldRow>
                     </div>
                 </div>
 
-                {/* Deductions section */}
-                <div className="mb-6">
-                    <h2 className="text-4 font-semibold text-neutral-800 mb-3">Your Deductions</h2>
-                    <div className="bg-white border border-neutral-200 rounded-2xl px-5 py-2">
+                {/* Deductions card */}
+                <div className="bg-neutral-50 rounded-3xl p-5 mb-6">
+                    <h3 className="text-3 font-semibold text-neutral-800 mb-4">Deductions [This month]</h3>
+                    <div className="space-y-3">
                         <DeductionRow
                             label="Pension (8%)"
                             hint="Mandatory pension contribution — 8% of gross salary, deducted before tax."
                             checked={pensionOn}
                             onToggle={() => setPensionOn(p => !p)}
                             amount={grossSalary ? pensionAmt.toLocaleString() : ''}
-                            onAmountChange={() => { }}
+                            onChange={() => { }}
                             autoCalc
                         />
                         <DeductionRow
-                            label="National Housing Funds (2.5%)"
-                            hint="NHF contribution — 2.5% of basic salary."
+                            label="NHF (2.5%)"
+                            hint="National Housing Funds contribution — 2.5% of basic salary."
                             checked={nhfOn}
                             onToggle={() => setNhfOn(p => !p)}
                             amount={grossSalary ? nhfAmt.toLocaleString() : ''}
-                            onAmountChange={() => { }}
+                            onChange={() => { }}
                             autoCalc
                         />
                         <DeductionRow
-                            label="Life Insurance"
-                            hint="Life assurance premiums are tax deductible."
-                            checked={lifeInsOn}
-                            onToggle={() => setLifeInsOn(p => !p)}
-                            amount={lifeInsAmt}
-                            onAmountChange={setLifeInsAmt}
-                            suffix="/month"
+                            label="HMO (5%)"
+                            hint="Health Maintenance Organisation contribution — 5% of gross salary."
+                            checked={hmoOn}
+                            onToggle={() => setHmoOn(p => !p)}
+                            amount={grossSalary ? hmoAmt.toLocaleString() : ''}
+                            onChange={() => { }}
+                            autoCalc
                         />
                         <DeductionRow
-                            label="I pay rent"
+                            label="Annual Rent"
                             hint="Under 2026 reforms, 20% of annual rent (up to ₦500k relief) is deductible."
-                            checked={rentOn}
-                            onToggle={() => setRentOn(p => !p)}
-                            amount={rentAmt}
-                            onAmountChange={setRentAmt}
-                            suffix="/year"
+                            checked={annualRentOn}
+                            onToggle={() => setAnnualRentOn(p => !p)}
+                            amount={annualRentAmt}
+                            onChange={fmtInput(setAnnualRentAmt)}
                         />
                     </div>
                 </div>
 
-                {/* Result */}
-                <div className="mb-6">
+                {/* Result card */}
+                <div className="bg-neutral-50 rounded-3xl p-5 mb-6">
                     <p className="text-2 font-semibold text-neutral-500 mb-1">Your monthly PAYE</p>
-                    <p className={`text-11 font-semibold leading-none mb-1 ${hasData ? 'text-neutral-800' : 'text-neutral-300'}`}>
-                        {hasData ? fmtN(monthlyPAYE) : '₦—'}
+                    <p className={`text-7 font-semibold leading-none mb-1 ${hasData ? 'text-neutral-800' : 'text-neutral-300'}`}>
+                        {hasData ? fmtN(monthlyPAYE) : '₦0'}
                     </p>
-                    <div className="flex items-center gap-1.5 mt-2">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-400" strokeWidth="2">
-                            <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
-                        </svg>
-                        <p className="text-1 text-neutral-400 font-medium">Your employer should deduct this much each month</p>
-                    </div>
                 </div>
 
                 {/* Breakdown toggle */}
@@ -297,7 +283,7 @@ export default function PAYECalculator() {
                     <div className="mb-6">
                         <button
                             onClick={() => setShowBreakdown(s => !s)}
-                            className="flex items-center gap-1.5 text-2 font-semibold text-taxable-blue transition-opacity"
+                            className="flex items-center gap-1.5 text-2 font-semibold text-taxable-blue"
                         >
                             {showBreakdown ? 'Hide' : 'Show'} calculation breakdown
                             <svg
@@ -309,7 +295,7 @@ export default function PAYECalculator() {
                         </button>
 
                         {showBreakdown && (
-                            <div className="mt-4 bg-white border border-neutral-200 rounded-2xl overflow-hidden text-2 font-medium animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="mt-4 bg-white border border-neutral-100 rounded-2xl overflow-hidden text-2 font-medium animate-in fade-in slide-in-from-top-2 duration-200">
                                 {/* Income rows */}
                                 <div className="space-y-0">
                                     <div className="flex justify-between items-center px-5 py-3">
@@ -328,16 +314,16 @@ export default function PAYECalculator() {
                                             <span className="font-semibold text-destructive">-{fmtN(nhfAmt)}</span>
                                         </div>
                                     )}
-                                    {lifeInsOn && (
+                                    {hmoOn && (
                                         <div className="flex justify-between items-center px-5 py-3">
-                                            <span className="text-neutral-500">Life Insurance</span>
-                                            <span className="font-semibold text-destructive">-{fmtN(lifeAmt)}</span>
+                                            <span className="text-neutral-500">HMO (5%)</span>
+                                            <span className="font-semibold text-destructive">-{fmtN(hmoAmt)}</span>
                                         </div>
                                     )}
-                                    {rentOn && (
+                                    {annualRentOn && rentReliefMonthly > 0 && (
                                         <div className="flex justify-between items-center px-5 py-3">
                                             <span className="text-neutral-500">Rent Relief</span>
-                                            <span className="font-semibold text-destructive">-{fmtN(rentRelief)} ({fmtN(parseFloat(rentAmt) || 0)} annual ÷ 12)</span>
+                                            <span className="font-semibold text-destructive">-{fmtN(rentReliefMonthly)}</span>
                                         </div>
                                     )}
                                 </div>
@@ -360,36 +346,27 @@ export default function PAYECalculator() {
                                         ))}
                                     </div>
                                 </div>
-
-                                {/* Total */}
-                                <div className="flex justify-between items-center px-5 py-4 bg-taxable-blue text-white">
-                                    <span className="font-semibold">Total PAYE</span>
-                                    <span className="font-semibold text-lg">{fmtN(monthlyPAYE)}/month</span>
-                                </div>
                             </div>
                         )}
                     </div>
                 )}
 
-                {/* Action buttons */}
+                {/* Action */}
                 <div className="flex gap-3 mb-4">
-                    <button className="flex-1 h-12 border border-neutral-200 text-neutral-800 font-semibold rounded-xl text-3">
-                        Download PDF
-                    </button>
-                    <button
-                        onClick={() => router.push('/tax-folders/pit')}
-                        className="flex-[2] h-12 bg-taxable-blue text-white font-semibold rounded-xl text-3"
-                    >
-                        File PIT taxes
-                    </button>
+                    <SecondaryButton className="flex-1" onClick={handleSave}>
+                        Save
+                    </SecondaryButton>
+                    <PrimaryButton className="flex-[2]" onClick={handleSaveAndFile}>
+                        Save &amp; File Monthly PAYE
+                    </PrimaryButton>
                 </div>
-
-                {/* Mismatch help */}
-                <p className="text-center text-2 text-neutral-500 font-medium">
-                    This doesn't match my payslip.{' '}
-                    <a href="#" className="text-taxable-blue font-semibold">Get help</a>
-                </p>
             </main>
+
+            <FilingSheet
+                open={showFilingSheet}
+                onClose={() => setShowFilingSheet(false)}
+                onFile={() => toast.success('Return filed')}
+            />
         </div>
     );
 }

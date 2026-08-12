@@ -132,6 +132,7 @@ export function useWhtRemittance(
     updateWhtDeduction,
     deleteWhtDeduction,
     fileWhtMonth,
+    uploadFile,
   } = useTaxableApi();
   const year = Number(taxYear) || new Date().getFullYear();
 
@@ -270,6 +271,7 @@ export function useWhtRemittance(
     removeItem,
     handleConfirmRemove,
     fileMonth,
+    uploadFile,
   };
 }
 

@@ -137,7 +137,7 @@ const FilingModal = ({
                             </div>
                             <div>
                                 <p className="text-3 font-semibold text-neutral-800 mb-0.5">{opt.label}</p>
-                                <p className="text-2 text-neutral-500 font-medium leading-relaxed">{opt.desc}</p>
+                                <p className="text-1 text-neutral-500 font-medium leading-relaxed">{opt.desc}</p>
                             </div>
                         </button>
                     ))}
@@ -272,7 +272,7 @@ export default function BusinessPAYE() {
                 {/* ── Step: Method selection ── */}
                 {view === 'monthly' && step === 'method' && (
                     <div data-animate className="max-w-[480px] mx-auto">
-                        <h2 className="text-6 font-semibold text-neutral-800 mb-1">How do you want to add payroll data?</h2>
+                        <h2 className="text-5 font-medium text-neutral-800 mb-1 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">How do you want to add payroll data?</h2>
                         <p className="text-3 text-neutral-500 font-medium mb-6">Upload or enter your payroll for this month</p>
 
                         <RadioGroup value={entryMethod} onValueChange={(v) => setEntryMethod(v as 'manual' | 'csv' | 'software')} className="space-y-0 mb-8">
@@ -490,7 +490,7 @@ export default function BusinessPAYE() {
                     return (
                         <div data-animate className="max-w-[680px] mx-auto">
                             {/* Title */}
-                            <h2 className="text-6 font-semibold text-neutral-800 mb-1">PAYE · Annual Returns (2026)</h2>
+                            <h2 className="text-5 font-medium text-neutral-800 mb-1 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">PAYE · Annual Returns (2026)</h2>
                             <p className="text-3 text-neutral-500 font-medium mb-6">Your annual PAYE reconciliation is ready</p>
 
                             {/* Summary bullets */}

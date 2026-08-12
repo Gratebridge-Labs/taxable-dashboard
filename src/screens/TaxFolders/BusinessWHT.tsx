@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -10,7 +10,9 @@ import { Switch } from '@/components/ui/switch';
 import { Drawer, DrawerContent, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
 import { Spinner } from '@/components/ui/spinner';
 import { FileTextIcon, XIcon } from 'lucide-react';
+import { toast } from 'sonner';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
+import { prepareUploadFile, validateFileSize, MAX_UPLOAD_BYTES } from '@/lib/file-upload';
 import { WHTDeduction, useWhtRemittance, useWhtCredits } from './useWhtDeductions';
 import {
     SectionHeading, DescriptionText, PrimaryButton, SecondaryButton, SecondaryButtonSm,
@@ -21,6 +23,17 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
 
 const fmt = (n: number) => `₦${Math.round(n).toLocaleString()}`;
+
+const fileNameFromUrl = (url: string): string => {
+    try {
+        const path = new URL(url).pathname;
+        const name = path.split('/').pop();
+        return name && name.length > 0 ? decodeURIComponent(name) : 'Uploaded file';
+    } catch {
+        const name = url.split('/').pop();
+        return name && name.length > 0 ? name : 'Uploaded file';
+    }
+};
 
 // ── WHT Types ─────────────────────────────────────────────────────────────────
 const WHT_TYPES = [
@@ -62,7 +75,7 @@ const WHTDeductionForm = ({ onSave, onCancel, initial }: {
 
     return (
         <div>
-            <h2 className="text-5 font-semibold text-neutral-800 mb-5">Add WHT Deduction</h2>
+            <h2 className="text-5 font-medium text-neutral-800 mb-5 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Add WHT Deduction</h2>
 
             <div className="bg-neutral-50 rounded-3xl p-5 mb-12">
                 <h3 className="text-3 font-semibold text-neutral-800 mb-12">Payee Details (who you paid)</h3>
@@ -92,7 +105,7 @@ const WHTDeductionForm = ({ onSave, onCancel, initial }: {
                     </FormFieldRow>
                     <FormFieldRow className="justify-between">
                         <FormLabel tip="Total amount paid before deducting WHT.">Gross payment</FormLabel>
-                        <Input type="text" placeholder="N0" value={form.gross} onChange={e => { const raw = e.target.value.replace(/[^0-9.]/g, ''); const parts = raw.split('.'); const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ','); set('gross')(parts.length > 1 ? integer + '.' + parts.slice(1).join('') : integer); }} className="w-[150px] text-left" />
+                        <Input type="text" placeholder="₦ 0.00" value={form.gross} onChange={e => { const raw = e.target.value.replace(/[^0-9.]/g, ''); const parts = raw.split('.'); const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ','); set('gross')(parts.length > 1 ? integer + '.' + parts.slice(1).join('') : integer); }} className="w-[150px] text-left" />
                     </FormFieldRow>
                     <FormFieldRow className="justify-between">
                         <FormLabel tip="Applicable Withholding Tax rate set by FIRS.">WHT rate</FormLabel>
@@ -104,7 +117,7 @@ const WHTDeductionForm = ({ onSave, onCancel, initial }: {
                     </FormFieldRow>
                     <FormFieldRow className="justify-between">
                         <FormLabel tip="Amount actually remitted: Gross minus WHT.">Net paid to payee</FormLabel>
-                        <Input type="text" value={autoNet > 0 ? `₦${Math.round(autoNet).toLocaleString()}` : 'N0'} disabled className="w-[150px] text-left bg-neutral-50 text-neutral-300" />
+                        <Input type="text" value={autoNet > 0 ? `₦${Math.round(autoNet).toLocaleString()}` : '₦ 0.00'} disabled className="w-[150px] text-left bg-neutral-50 text-neutral-300" />
                     </FormFieldRow>
                     <FormFieldRow className="justify-between">
                         <FormLabel tip="The date when payment was made to the vendor.">Date of payment</FormLabel>
@@ -171,6 +184,7 @@ const PayeeCard = ({ d, onRemove, onEdit }: { d: WHTDeduction; onRemove: () => v
 function WHTFormContent({
     form, set, autoWHT, disabled, readOnlyStyle,
     fileAttachments, setFileAttachments,
+    onUploadClick, uploading,
 }: {
     form: Omit<WHTDeduction, 'id'>;
     set: (k: keyof Omit<WHTDeduction, 'id'>) => (val: string) => void;
@@ -179,6 +193,8 @@ function WHTFormContent({
     readOnlyStyle: string;
     fileAttachments: { name: string }[];
     setFileAttachments: React.Dispatch<React.SetStateAction<{ name: string }[]>>;
+    onUploadClick?: () => void;
+    uploading?: boolean;
 }) {
     return (
         <>
@@ -272,17 +288,16 @@ function WHTFormContent({
                         <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
                             <div className="flex items-center gap-2.5">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-neutral-400"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
-                                <span className="text-1 text-neutral-400 font-medium">PDF, PNG, or JPG (Max 5MB)</span>
+                                <span className="text-1 text-neutral-400 font-medium">PDF, PNG, or JPG (Max 4MB)</span>
                             </div>
-                            <label className="cursor-pointer text-2 font-semibold text-taxable-blue">
-                                Upload
-                                <input type="file" hidden accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => {
-                                    const files = e.target.files;
-                                    if (!files) return;
-                                    setFileAttachments(prev => [...prev, ...Array.from(files).map(f => ({ name: f.name }))]);
-                                    e.target.value = '';
-                                }} />
-                            </label>
+                            <button
+                                type="button"
+                                onClick={onUploadClick}
+                                disabled={disabled || uploading}
+                                className="cursor-pointer text-2 font-semibold text-taxable-blue bg-transparent border-none p-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {uploading ? <Spinner className="size-4" /> : 'Upload'}
+                            </button>
                         </div>
                         {fileAttachments.length > 0 && (
                             <div className="mt-3">
@@ -322,6 +337,7 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
         pendingRemove, setPendingRemove,
         pendingPayee,
         saveItem, removeItem, handleConfirmRemove, fileMonth,
+        uploadFile,
     } = useWhtRemittance(profileId, taxYear, activeMonth, setActiveMonth);
 
     const [showFormSheet, setShowFormSheet] = useState(false);
@@ -334,22 +350,72 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
     const [form, setForm] = useState(defaultDeduction());
     const [fileAttachments, setFileAttachments] = useState<{ name: string }[]>([]);
     const [saving, setSaving] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const receiptInputRef = useRef<HTMLInputElement>(null);
     const set = (k: keyof typeof form) => (val: string) => setForm(f => ({ ...f, [k]: val }));
 
     const grossNum = Number(form.gross.replace(/,/g, '')) || 0;
-    const autoRate = form.whtRate === '10%' ? 10 : form.whtRate === '5%' ? 5 : 0;
+    const autoRate = Number(form.whtRate.replace('%', '')) || 0;
     const autoWHT = grossNum * autoRate / 100;
     const autoNet = grossNum - autoWHT;
 
-    const dueDate = MONTHS[(activeMonth + 1) % 12].slice(0, 3) + ' 21, 2025';
+    const yearNum = Number(taxYear) || new Date().getFullYear();
+    const dueDate = MONTHS[(activeMonth + 1) % 12].slice(0, 3) + ' 21, ' + yearNum;
     const canSave = form.payee.trim() && form.tin.trim() && form.whtType.trim() && form.gross.trim() && form.tin.length >= 10 && form.tin.length <= 14 && form.whtRate.trim() && fileAttachments.length > 0;
 
     useEffect(() => {
         if (!loading && hasData) setWhtStep('table');
     }, [loading, hasData]);
 
+    const handleReceiptUpload = async (file: File) => {
+        if (!profileId) {
+            toast.error('Profile required to upload files');
+            return;
+        }
+        if (!validateFileSize(file)) {
+            toast.error(`File too large — max ${MAX_UPLOAD_BYTES / (1024 * 1024)}MB`);
+            return;
+        }
+        setUploading(true);
+        try {
+            const prepared = await prepareUploadFile(file);
+            if (!prepared) {
+                toast.error('Could not process file. Please try another.');
+                return;
+            }
+            const res = await uploadFile(profileId, prepared, 'wht-receipt', `${MONTHS[activeMonth]} ${yearNum} WHT receipt`);
+            const url = res?.data?.url;
+            if (!url) {
+                toast.error('Upload failed — no file URL returned.');
+                return;
+            }
+            set('receipt')(url);
+            setFileAttachments(prev => [...prev, { name: file.name }]);
+            toast.success('Receipt uploaded');
+        } catch (err: unknown) {
+            console.error('[BusinessWHT] Failed to upload receipt:', err instanceof Error ? err.message : 'Unknown error');
+            toast.error(err instanceof Error ? err.message : 'Failed to upload file. Please try again.');
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    // React-Compiler-safe file input wiring (button + ref + native addEventListener)
+    useEffect(() => {
+        const input = receiptInputRef.current;
+        if (!input) return;
+        const onChange = (e: Event) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (file) handleReceiptUpload(file);
+            (e.target as HTMLInputElement).value = '';
+        };
+        input.addEventListener('change', onChange);
+        return () => input.removeEventListener('change', onChange);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [profileId, activeMonth, yearNum, uploadFile, receiptInputRef.current]);
+
     const handleSave = async () => {
-        const receipt = fileAttachments.map(f => f.name).join(', ');
+        const receipt = form.receipt?.trim() || undefined;
         const d = { ...form, whtDeducted: String(Math.round(autoWHT)), netPaid: String(Math.round(autoNet)), whtRate: String(autoRate), receipt };
         setSaving(true);
         try {
@@ -411,7 +477,7 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
     const openAdd = () => { setForm(defaultDeduction()); setFileAttachments([]); setEditId(null); setEditSourceMonth(null); setIsEditing(false); setShowRemoveConfirm(false); setShowFormSheet(true); };
     const openEdit = (d: WHTDeduction) => {
         setForm({ payee: d.payee, tin: d.tin, whtType: d.whtType, gross: d.gross, whtRate: d.whtRate ? (d.whtRate.includes('%') ? d.whtRate : `${d.whtRate}%`) : '', whtDeducted: d.whtDeducted, netPaid: d.netPaid, date: d.date, receipt: d.receipt ?? '' });
-        setFileAttachments(d.receipt ? d.receipt.split(', ').map(name => ({ name })) : []);
+        setFileAttachments(d.receipt ? [{ name: fileNameFromUrl(d.receipt) }] : []);
         setEditId(d.id);
         setEditSourceMonth(activeMonth);
         setIsEditing(false);
@@ -431,7 +497,7 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
 
     const monthSelector = (
         <Select value={MONTHS[activeMonth]} onValueChange={(v) => { if (v) setActiveMonth(MONTHS.indexOf(v)); }}>
-            <SelectTrigger className="w-fit min-w-[180px] h-10 rounded-xl bg-white border-neutral-50 text-3">
+            <SelectTrigger className="w-fit min-w-[180px] h-10 rounded-xl bg-white border-neutral-50 text-sm">
                 <div className="flex items-center gap-2 mr-6">
                     <span>{MONTHS[activeMonth]}</span>
                     {filedMonths.has(activeMonth) &&
@@ -472,6 +538,7 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
         <div className="w-full">
 
             <FilingSheet open={showFilingModal} onClose={() => setShowFilingModal(false)} onFile={handleFile} />
+            <input ref={receiptInputRef} type="file" hidden accept=".pdf,.png,.jpg,.jpeg" />
 
             {pendingRemove && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/20" onClick={() => setPendingRemove(null)}>
@@ -483,13 +550,13 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
                                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                                 </svg>
                             </div>
-                            <h3 className="text-6 font-semibold text-neutral-800 mb-2">Remove Deduction?</h3>
-                            <p className="text-2 text-neutral-500 font-medium mb-6">
+                            <h3 className="text-5 font-medium text-neutral-800 mb-2 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Remove Deduction?</h3>
+                            <p className="text-1 text-neutral-500 font-medium mb-6">
                                 Are you sure you want to remove <span className="font-semibold text-neutral-800">{pendingPayee || 'this deduction'}</span>? This action cannot be undone.
                             </p>
                             <div className="flex gap-3 w-full">
                                 <SecondaryButton className="flex-1" onClick={() => setPendingRemove(null)}>Cancel</SecondaryButton>
-                                <button onClick={() => { void handleConfirmRemove(); }} className="flex-1 h-12 bg-destructive text-white font-semibold rounded-xl text-3">
+                                <button onClick={() => { void handleConfirmRemove(); }} className="flex-1 h-12 ">
                                     Remove
                                 </button>
                             </div>
@@ -502,7 +569,7 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
                 <DrawerContent className="bg-white w-full max-w-full px-4 pb-4 max-h-[85vh]">
                     <DrawerTitle className="sr-only">{editId ? 'Deduction Details' : 'Add WHT Deduction'}</DrawerTitle>
                     <div className="max-w-[450px] mx-auto w-full pt-2 text-center">
-                        <h2 className="text-5 font-semibold text-neutral-800 mb-8">
+                        <h2 className="text-5 font-medium text-neutral-800 mb-8 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">
                             {editId ? (isEditing ? (form.payee || 'Edit Deduction') : 'Deduction Details') : 'Add WHT Deduction'}
                         </h2>
                     </div>
@@ -510,7 +577,7 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
                         <div className="max-w-[450px] mx-auto w-full space-y-6">
                             {editId === null ? (
                                 <div className="space-y-6">
-                                    <WHTFormContent form={form} set={set} autoWHT={autoWHT} disabled={false} readOnlyStyle="" fileAttachments={fileAttachments} setFileAttachments={setFileAttachments} />
+                                    <WHTFormContent form={form} set={set} autoWHT={autoWHT} disabled={false} readOnlyStyle="" fileAttachments={fileAttachments} setFileAttachments={setFileAttachments} onUploadClick={() => receiptInputRef.current?.click()} uploading={uploading} />
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 overflow-hidden">
@@ -524,7 +591,7 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
                                     <div className={`col-start-1 row-start-1 transition-transform duration-300 ease-in-out ${isEditing ? 'translate-x-0' : 'translate-x-full'}`}>
                                         {isEditing && (
                                             <div className="space-y-6">
-                                                <WHTFormContent form={form} set={set} autoWHT={autoWHT} disabled={false} readOnlyStyle="" fileAttachments={fileAttachments} setFileAttachments={setFileAttachments} />
+                                                <WHTFormContent form={form} set={set} autoWHT={autoWHT} disabled={false} readOnlyStyle="" fileAttachments={fileAttachments} setFileAttachments={setFileAttachments} onUploadClick={() => receiptInputRef.current?.click()} uploading={uploading} />
                                             </div>
                                         )}
                                     </div>
@@ -536,7 +603,7 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
                         <div className="flex gap-3">
                             {editId !== null && !isEditing ? (
                                 <>
-                                    <button onClick={() => setShowRemoveConfirm(true)} className="flex-1 h-12 border border-red-200 bg-red-50 text-destructive font-semibold rounded-xl text-3">
+                                    <button onClick={() => setShowRemoveConfirm(true)} className="flex-1 h-12 border ">
                                         Remove Deduction
                                     </button>
                                     <PrimaryButton className="flex-1" onClick={() => setIsEditing(true)}>
@@ -549,7 +616,7 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
                                         const d = deductions.find(x => x.id === editId);
                                         if (d) {
                                             setForm({ payee: d.payee, tin: d.tin, whtType: d.whtType, gross: d.gross, whtRate: d.whtRate ? (d.whtRate.includes('%') ? d.whtRate : `${d.whtRate}%`) : '', whtDeducted: d.whtDeducted, netPaid: d.netPaid, date: d.date, receipt: d.receipt ?? '' });
-                                            setFileAttachments(d.receipt ? d.receipt.split(', ').map(name => ({ name })) : []);
+                                            setFileAttachments(d.receipt ? [{ name: fileNameFromUrl(d.receipt) }] : []);
                                         }
                                         setIsEditing(false);
                                     }}>Cancel</SecondaryButton>
@@ -581,13 +648,13 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
                                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                                         </svg>
                                     </div>
-                                    <h3 className="text-6 font-semibold text-neutral-800 mb-2">Remove Deduction?</h3>
-                                    <p className="text-2 text-neutral-500 font-medium mb-6">
+                                    <h3 className="text-5 font-medium text-neutral-800 mb-2 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Remove Deduction?</h3>
+                                    <p className="text-1 text-neutral-500 font-medium mb-6">
                                         Are you sure you want to remove <span className="font-semibold text-neutral-800">{form.payee || 'this deduction'}</span>? This action cannot be undone.
                                     </p>
                                     <div className="flex gap-3 w-full">
                                         <SecondaryButton className="flex-1" onClick={() => setShowRemoveConfirm(false)}>Cancel</SecondaryButton>
-                                        <button onClick={() => { void handleRemoveFromDrawer(); }} disabled={saving} className="flex-1 h-12 bg-destructive text-white font-semibold rounded-xl text-3">
+                                        <button onClick={() => { void handleRemoveFromDrawer(); }} disabled={saving} className="flex-1 h-12 ">
                                             {saving ? <Spinner /> : 'Remove'}
                                         </button>
                                     </div>
@@ -601,8 +668,8 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
             <div className="w-full">
                 {whtStep === 'method' ? (
                     <div className="max-w-[480px] mx-auto" data-animate>
-                        <h2 className="text-6 font-semibold text-neutral-800 tracking-[-0.02em] mb-1">How do you want to enter your WHT data?</h2>
-                        <p className="text-2 text-neutral-500 font-medium mb-6">Choose how you'd like to enter your WHT deductions.</p>
+                        <h2 className="text-5 font-medium text-neutral-800 tracking-[-0.02em] mb-1 font-[family-name:var(--font-merriweather)]">How do you want to enter your WHT data?</h2>
+                        <p className="text-1 text-neutral-500 font-medium mb-6">Choose how you'd like to enter your WHT deductions.</p>
                         <RadioGroup value={entryMethod} onValueChange={(v) => setEntryMethod(v as 'manual' | 'csv' | 'software')} className="space-y-0 mb-6">
                             {[
                                 { id: 'manual' as const, label: 'Manual entry' },
@@ -621,7 +688,7 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
                         <div className="mb-6">
                             <label className="block text-2 font-medium text-neutral-500 mb-2">Select starting month <InfoTooltip text="The first month you'll file WHT for." /></label>
                             <Select value={MONTHS[activeMonth]} onValueChange={(v) => { if (v) setActiveMonth(MONTHS.indexOf(v)); }}>
-                                <SelectTrigger className="w-full max-w-[300px] h-10 rounded-xl bg-white border-neutral-50 text-3">
+                                <SelectTrigger className="w-full max-w-[300px] h-10 rounded-xl bg-white border-neutral-50 text-sm">
                                     <div className="flex items-center gap-2">
                                         <span>{MONTHS[activeMonth]}</span>
                                         {filedMonths.has(activeMonth) &&
@@ -656,11 +723,11 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
                 ) : deductions.length === 0 ? (
                     <div>
                         <div className="flex items-center gap-4 mb-14">
-                            <h2 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em]">Remit {MONTHS[activeMonth]} Withholding Tax</h2>
+                            <h2 className="text-5 font-medium text-neutral-800 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Remit {MONTHS[activeMonth]} Withholding Tax</h2>
                             {monthSelector}
                         </div>
                         <div className="max-w-[480px] mx-auto" data-animate>
-                            <p className="text-3 font-semibold text-neutral-800 mb-3">How do you want to add Withholding Tax data?</p>
+                            <p className="text-3 font-medium text-neutral-800 mb-3 font-[family-name:var(--font-merriweather)]">How do you want to add Withholding Tax data?</p>
                             <RadioGroup value={entryMethod} onValueChange={(v) => setEntryMethod(v as 'manual' | 'csv' | 'software')} className="space-y-0 mb-6">
                                 {[
                                     { id: 'manual' as const, label: 'Manual entry' },
@@ -683,7 +750,7 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
                     <div data-animate>
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-4">
-                                <h2 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em]">Remit {MONTHS[activeMonth]} Withholding Tax</h2>
+                                <h2 className="text-5 font-medium text-neutral-800 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Remit {MONTHS[activeMonth]} Withholding Tax</h2>
                                 {monthSelector}
                             </div>
                             <SecondaryButtonSm onClick={openAdd}>Add WHT Deduction</SecondaryButtonSm>
@@ -809,7 +876,7 @@ const WHTCreditBalance = ({ profileId, taxYear, activeMonth, setActiveMonth }: {
                 </div>
                 {periodMode === 'monthly' && (
                     <Select value={MONTHS[activeMonth]} onValueChange={(v) => { if (v) setActiveMonth(MONTHS.indexOf(v)); }}>
-                        <SelectTrigger className="w-full h-10 rounded-xl bg-white text-3">
+                        <SelectTrigger className="w-full h-10 rounded-xl bg-white text-sm">
                             <div className="flex items-center gap-2">
                                 <span>{MONTHS[activeMonth]}</span>
                                 {(creditsByMonth[activeMonth] || []).length > 0 &&
@@ -885,7 +952,7 @@ const WHTCreditBalance = ({ profileId, taxYear, activeMonth, setActiveMonth }: {
                 ) : (creditsByMonth[activeMonth] || []).length === 0 && (periodMode === 'monthly' || !Object.values(creditsByMonth).some(arr => arr.length > 0)) ? (
                     <div className="flex flex-col items-start gap-3">
                         <SectionHeading>WHT Credit Notes</SectionHeading>
-                        <p className="text-2 text-neutral-500 font-medium">WHT deducted from payments received — used to offset your CIT liability.</p>
+                        <p className="text-1 text-neutral-500 font-medium">WHT deducted from payments received — used to offset your CIT liability.</p>
                         <button onClick={() => setShowForm(true)}
                             className="mt-2 flex items-center gap-1.5 text-2 font-semibold text-taxable-blue">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
@@ -934,13 +1001,13 @@ const WHTCreditBalance = ({ profileId, taxYear, activeMonth, setActiveMonth }: {
                                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                                 </svg>
                             </div>
-                            <h3 className="text-6 font-semibold text-neutral-800 mb-2">Remove Credit Note?</h3>
-                            <p className="text-2 text-neutral-500 font-medium mb-6">
+                            <h3 className="text-5 font-medium text-neutral-800 mb-2 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Remove Credit Note?</h3>
+                            <p className="text-1 text-neutral-500 font-medium mb-6">
                                 Are you sure you want to remove <span className="font-semibold text-neutral-800">{pendingPayee || 'this credit note'}</span>? This action cannot be undone.
                             </p>
                             <div className="flex gap-3 w-full">
                                 <SecondaryButton className="flex-1" onClick={() => setPendingRemove(null)}>Cancel</SecondaryButton>
-                                <button onClick={() => { void handleConfirmRemove(); }} className="flex-1 h-12 bg-destructive text-white font-semibold rounded-xl text-3">
+                                <button onClick={() => { void handleConfirmRemove(); }} className="flex-1 h-12 ">
                                     Remove
                                 </button>
                             </div>

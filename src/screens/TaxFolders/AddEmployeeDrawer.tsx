@@ -284,7 +284,7 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
                                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                                     </svg>
                                 </div>
-                                <h3 className="text-6 font-semibold text-neutral-800 mb-2">Remove Employee?</h3>
+                                <h3 className="text-5 font-medium text-neutral-800 mb-2 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Remove Employee?</h3>
                                 <p className="text-3 text-neutral-500 font-medium mb-6">
                                     Are you sure you want to remove <span className="font-semibold text-neutral-700">{editStaff?.firstName} {editStaff?.lastName}</span>? This action cannot be undone.
                                 </p>

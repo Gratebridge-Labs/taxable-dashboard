@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { prepareUploadFile, validateFileSize, MAX_UPLOAD_BYTES } from '@/lib/file-upload';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     Attachment, AttachmentGroup, AttachmentMedia, AttachmentContent,
@@ -470,11 +471,16 @@ export function BusinessVATContent({
             toast.error('Profile required to upload files');
             return;
         }
+        if (!validateFileSize(file)) {
+            toast.error(`File too large — max ${MAX_UPLOAD_BYTES / (1024 * 1024)}MB`);
+            return;
+        }
         setUploading(target);
         try {
+            const prepared = (await prepareUploadFile(file)) ?? file;
             const res = await uploadFile(
                 profileId,
-                file,
+                prepared,
                 target === 'sales' ? 'sales-schedule' : 'purchase-invoices',
                 `${MONTHS[activeMonth]} ${yearNum} ${target === 'sales' ? 'sales schedule' : 'purchase invoices'}`
             );
@@ -543,7 +549,7 @@ export function BusinessVATContent({
 
     const monthSelector = (
         <Select value={MONTHS[activeMonth]} onValueChange={(v) => { if (v) setActiveMonth(MONTHS.indexOf(v)); }}>
-            <SelectTrigger className="w-fit min-w-[180px] h-10 rounded-xl bg-white border-neutral-50 text-3">
+            <SelectTrigger className="w-fit min-w-[180px] h-10 rounded-xl bg-white border-neutral-50 text-sm">
                 <div className="flex items-center gap-2 mr-6">
                     <span>{MONTHS[activeMonth]}</span>
                     {filedMonths.has(activeMonth) &&

@@ -20,6 +20,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import DashboardHeader from '@/components/DashboardHeader/DashboardHeader';
 import { useTaxableApi } from '@/hooks/useTaxableApi';
+import { prepareUploadFile, validateFileSize, MAX_UPLOAD_BYTES } from '@/lib/file-upload';
 import type {
     CitFiling,
     CitQuarterlyData,
@@ -52,6 +53,7 @@ type WhtCreditUi = {
     creditRef: string;
     grossValue: string;
     withheldAmount: string;
+    certificateUrl?: string;
 };
 
 const creditToUi = (c: CitWhtCredit): WhtCreditUi => ({
@@ -61,34 +63,69 @@ const creditToUi = (c: CitWhtCredit): WhtCreditUi => ({
     creditRef: c.creditRef ?? '',
     grossValue: formatMoneyInput(c.grossValue),
     withheldAmount: formatMoneyInput(c.withheldAmount),
+    certificateUrl: c.certificateUrl ?? undefined,
 });
 
 type AnnualStep = 'financials' | 'tax-adjustments' | 'wht-credits' | 'review';
 
 // ── File Upload Section (standalone child component) ──────────────────────────
 function FileUploadSection({
-    label, description, accept, required,
+    label, description, accept, required, profileId, category, descriptionTag,
+    onUploaded,
 }: {
     label: string;
     description: string;
     accept: string;
     required?: boolean;
+    profileId?: string;
+    category: string;
+    descriptionTag?: string;
+    onUploaded: (urls: string[]) => void;
 }) {
-    const [files, setFiles] = useState<{ name: string }[]>([]);
+    const { uploadFile } = useTaxableApi();
+    const [files, setFiles] = useState<{ name: string; url: string }[]>([]);
+    const [uploading, setUploading] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         const el = inputRef.current;
         if (!el) return;
-        const handler = (e: Event) => {
+        const handler = async (e: Event) => {
             const fl = (e.target as HTMLInputElement).files;
-            if (!fl) return;
-            setFiles(prev => [...prev, ...Array.from(fl).map(f => ({ name: f.name }))]);
             (e.target as HTMLInputElement).value = '';
+            if (!fl || fl.length === 0) return;
+            for (const f of Array.from(fl)) {
+                if (!validateFileSize(f)) {
+                    toast.error(`${f.name} is too large — max ${MAX_UPLOAD_BYTES / (1024 * 1024)}MB`);
+                    continue;
+                }
+                setUploading(true);
+                try {
+                    const prepared = (await prepareUploadFile(f)) ?? f;
+                    const res = await uploadFile(profileId ?? 'default', prepared, category, descriptionTag ?? description);
+                    const url = res?.data?.url;
+                    if (!url) {
+                        toast.error('Upload failed — no file URL returned.');
+                        continue;
+                    }
+                    setFiles(prev => {
+                        const next = [...prev, { name: f.name, url }];
+                        onUploaded(next.map(x => x.url));
+                        return next;
+                    });
+                    toast.success(`${label} uploaded`);
+                } catch (err: unknown) {
+                    console.error('[BusinessCIT] Failed to upload:', err instanceof Error ? err.message : 'Unknown error');
+                    toast.error(err instanceof Error ? err.message : 'Failed to upload file. Please try again.');
+                } finally {
+                    setUploading(false);
+                }
+            }
         };
         el.addEventListener('change', handler);
         return () => el.removeEventListener('change', handler);
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [profileId, category, description, descriptionTag, uploadFile]);
 
     return (
         <div className="bg-neutral-50 rounded-2xl p-5">
@@ -96,13 +133,13 @@ function FileUploadSection({
                 {label} {required && <span className="text-destructive">*</span>}
                 {!required && <span className="text-neutral-400 font-medium text-1">(Optional)</span>}
             </h3>
-            <p className="text-2 font-medium text-neutral-500 mb-3">{description}</p>
+            <p className="text-1 font-medium text-neutral-500 mb-3">{description}</p>
             <div className="bg-white relative flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
                 <div className="flex items-center gap-2.5">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-neutral-400"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
                     <span className="text-1 text-neutral-400 font-medium">{(accept || '').split(',').join(', ').toUpperCase()} accepted</span>
                 </div>
-                <span className="text-2 font-semibold text-taxable-blue pointer-events-none">Upload</span>
+                <span className="text-2 font-semibold text-taxable-blue pointer-events-none">{uploading ? <Spinner className="size-4" /> : 'Upload'}</span>
                 <input ref={inputRef} type="file" accept={accept} className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" />
             </div>
             {files.length > 0 && (
@@ -111,7 +148,11 @@ function FileUploadSection({
                         <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-neutral-400"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
                             <span className="text-1 text-neutral-600">{f.name}</span>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-neutral-400 cursor-pointer" onClick={() => setFiles(prev => prev.filter((_, j) => j !== i))}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-neutral-400 cursor-pointer" onClick={() => setFiles(prev => {
+                                const next = prev.filter((_, j) => j !== i);
+                                onUploaded(next.map(x => x.url));
+                                return next;
+                            })}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                         </div>
                     ))}
                 </div>
@@ -178,7 +219,7 @@ const LeftSidebar = ({
 // ── WHT Credit Form Content (read-only + editable) ─────────────────────────────
 function CreditFormContent({
     form, onChange, disabled, readOnlyStyle,
-    certificateFiles, setCertificateFiles, certificateRef,
+    certificateFiles, setCertificateFiles, certificateRef, certificateUploading,
 }: {
     form: { clientName: string; clientTIN: string; creditRef: string; grossValue: string; withheldAmount: string };
     onChange: (k: string, v: string) => void;
@@ -187,6 +228,7 @@ function CreditFormContent({
     certificateFiles: { name: string }[];
     setCertificateFiles: React.Dispatch<React.SetStateAction<{ name: string }[]>>;
     certificateRef: React.RefObject<HTMLInputElement | null>;
+    certificateUploading?: boolean;
 }) {
     return (
         <>
@@ -223,8 +265,8 @@ function CreditFormContent({
                     <>
                         <div className="bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
                             <span className="text-1 text-neutral-400 font-medium">image or PDF certificate received</span>
-                            <button onClick={() => certificateRef.current?.click()} className="cursor-pointer text-2 font-semibold text-taxable-blue bg-transparent border-none p-0">Upload</button>
-                            <input ref={certificateRef} type="file" hidden accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => { const f = e.target.files; if (!f) return; setCertificateFiles(prev => [...prev, ...Array.from(f).map(x => ({ name: x.name }))]); e.target.value = ''; }} />
+                            <button onClick={() => certificateRef.current?.click()} disabled={certificateUploading} className="cursor-pointer text-2 font-semibold text-taxable-blue bg-transparent border-none p-0 disabled:opacity-50 disabled:cursor-not-allowed">{certificateUploading ? <Spinner className="size-4" /> : 'Upload'}</button>
+                            <input ref={certificateRef} type="file" hidden accept=".pdf,.png,.jpg,.jpeg" />
                         </div>
                         {certificateFiles.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-2">
@@ -282,6 +324,7 @@ export function BusinessCITContent({
         getCitQuarterly,
         payCitQuarter,
         deferCitQuarter,
+        uploadFile,
     } = useTaxableApi();
 
     const yearNum = Number(taxYear) || new Date().getFullYear();
@@ -332,6 +375,8 @@ export function BusinessCITContent({
     const [totalRevenue, setTotalRevenue] = useState('');
     const [cogs, setCogs] = useState('');
     const [opex, setOpex] = useState('');
+    const [financialStatementUrl, setFinancialStatementUrl] = useState<string | null>(null);
+    const [_trialBalanceUrl, setTrialBalanceUrl] = useState<string | null>(null);
 
     // Tax Adjustments
     const [govFines, setGovFines] = useState('');
@@ -352,12 +397,53 @@ export function BusinessCITContent({
 
     const defaultCreditForm = () => ({
         clientName: '', clientTIN: '', creditRef: '',
-        grossValue: '', withheldAmount: '',
+        grossValue: '', withheldAmount: '', certificateUrl: '',
     });
 
     const [creditForm, setCreditForm] = useState(defaultCreditForm);
     const [creditCertificateFiles, setCreditCertificateFiles] = useState<{ name: string }[]>([]);
+    const [certificateUploading, setCertificateUploading] = useState(false);
     const creditCertificateRef = useRef<HTMLInputElement>(null);
+
+    // React-Compiler-safe WHT certificate upload (button + ref + native addEventListener)
+    useEffect(() => {
+        const input = creditCertificateRef.current;
+        if (!input) return;
+        const onChange = async (e: Event) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            (e.target as HTMLInputElement).value = '';
+            if (!file) return;
+            if (!validateFileSize(file)) {
+                toast.error(`File too large — max ${MAX_UPLOAD_BYTES / (1024 * 1024)}MB`);
+                return;
+            }
+            if (!canSync || !profileId) {
+                toast.error('Profile required to upload certificate');
+                return;
+            }
+            setCertificateUploading(true);
+            try {
+                const prepared = (await prepareUploadFile(file)) ?? file;
+                const res = await uploadFile(profileId, prepared, 'cit-wht-certificate', `${creditForm.clientName || 'WHT credit'} certificate`);
+                const url = res?.data?.url;
+                if (!url) {
+                    toast.error('Upload failed — no file URL returned.');
+                    return;
+                }
+                setCreditCertificateFiles(prev => [...prev, { name: file.name }]);
+                setCreditForm(f => ({ ...f, certificateUrl: url }));
+                toast.success('Certificate uploaded');
+            } catch (err: unknown) {
+                console.error('[BusinessCIT] Failed to upload certificate:', err instanceof Error ? err.message : 'Unknown error');
+                toast.error(err instanceof Error ? err.message : 'Failed to upload certificate. Please try again.');
+            } finally {
+                setCertificateUploading(false);
+            }
+        };
+        input.addEventListener('change', onChange);
+        return () => input.removeEventListener('change', onChange);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [canSync, profileId, uploadFile, creditCertificateRef.current]);
 
     const resetFinancialState = useCallback(() => {
         setTotalRevenue('');
@@ -529,7 +615,7 @@ export function BusinessCITContent({
     const nonDeductibleTotal = num(govFines) + num(accountingDepreciation) + num(generalProvisions);
     const totalCapitalAllowances = num(class1Assets) * 0.10 + num(class2Assets) * 0.20 + num(class3Assets) * 0.25;
     const assessableProfit = accountingProfit + nonDeductibleTotal - totalCapitalAllowances;
-    const bracketRate = assessableProfit > 0 && totalRev <= 25_000_000 ? 0.20 : 0.30;
+    const bracketRate = totalRev <= 25_000_000 && assessableProfit > 0 ? 0.20 : assessableProfit > 0 ? 0.30 : 0;
     const baseCIT = Math.max(0, assessableProfit) * bracketRate;
     const developmentLevy = Math.max(0, assessableProfit) * 0.04;
     const totalObligation = baseCIT + developmentLevy;
@@ -706,6 +792,7 @@ export function BusinessCITContent({
         setCreditForm({
             clientName: c.clientName, clientTIN: c.clientTIN, creditRef: c.creditRef,
             grossValue: c.grossValue, withheldAmount: c.withheldAmount,
+            certificateUrl: c.certificateUrl ?? '',
         });
         setCreditCertificateFiles([]);
         setEditCreditIdx(idx);
@@ -730,6 +817,7 @@ export function BusinessCITContent({
                     creditRef: creditForm.creditRef,
                     grossValue: num(creditForm.grossValue),
                     withheldAmount: num(creditForm.withheldAmount),
+                    certificateUrl: creditForm.certificateUrl || undefined,
                 });
                 const updated = res?.data?.credit
                     ? creditToUi(res.data.credit)
@@ -743,6 +831,7 @@ export function BusinessCITContent({
                     creditRef: creditForm.creditRef,
                     grossValue: num(creditForm.grossValue),
                     withheldAmount: num(creditForm.withheldAmount),
+                    certificateUrl: creditForm.certificateUrl || undefined,
                 });
                 if (res?.data?.credit) {
                     setWhtCredits(prev => [...prev, creditToUi(res.data.credit)]);
@@ -797,6 +886,7 @@ export function BusinessCITContent({
             setCreditForm({
                 clientName: c.clientName, clientTIN: c.clientTIN, creditRef: c.creditRef,
                 grossValue: c.grossValue, withheldAmount: c.withheldAmount,
+                certificateUrl: c.certificateUrl ?? '',
             });
             setCreditCertificateFiles([]);
             setIsEditingCredit(false);
@@ -843,10 +933,11 @@ export function BusinessCITContent({
               const rev = Number((estimatedAnnualRevenue || '').replace(/,/g, '')) || 0;
               const margin = profitMargin ? Number(profitMargin.replace('%', '')) / 100 : 0;
               const estimatedProfit = rev * margin;
-               const totalCIT = estimatedProfit * (rev > 0 && rev <= 25_000_000 ? 0.20 : 0.30);
-              const initialPerQuarter = totalCIT / 4;
-              const qFmt = (n: number) => `₦${Math.round(n).toLocaleString()}`;
-              const quarters = [
+               const totalCIT = estimatedProfit > 0
+                  ? estimatedProfit * (rev > 0 && rev <= 25_000_000 ? 0.20 : 0.30) * 1.04
+                  : 0;
+               const initialPerQuarter = totalCIT / 4;
+               const quarters = [
                 { label: 'Q1 ' + taxYear, due: 'Mar 31' },
                 { label: 'Q2 ' + taxYear, due: 'Jun 30' },
                 { label: 'Q3 ' + taxYear, due: 'Sep 30' },
@@ -876,7 +967,7 @@ export function BusinessCITContent({
                                 <circle cx="12" cy="12" r="10" />
                               </svg>
                            </div>
-                           <h3 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em] mb-3">Defer to annual filing</h3>
+                           <h3 className="text-5 font-medium text-neutral-800 tracking-[-0.02em] mb-3 font-[family-name:var(--font-merriweather)]">Defer to annual filing</h3>
                            <p className="text-1 text-neutral-500 font-medium leading-relaxed mb-6">
                                You chose to defer Q{deferModalQuarter + 1} payment to annual filing. You'll settle this when you file your CIT return in June {Number(taxYear) + 1}.
                            </p>
@@ -891,7 +982,7 @@ export function BusinessCITContent({
 
                    <div className="flex items-start justify-between mb-8">
                       <div>
-                        <h2 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em]">Quarterly Assessments ({taxYear})</h2>
+                        <h2 className="text-5 font-medium text-neutral-800 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Quarterly Assessments ({taxYear})</h2>
                         <p className="text-1 text-neutral-500 font-medium">Pay your estimated CIT in quarterly installments</p>
                       </div>
                       <SecondaryButtonSm onClick={() => { setEditRevenue(estimatedAnnualRevenue || ''); setEditMargin(profitMargin || '20%'); setShowEstimateDrawer(true); }}>
@@ -905,7 +996,7 @@ export function BusinessCITContent({
                    <div className="space-y-4">
                       <div className="flex items-center justify-between text-2">
                         <span className="text-neutral-500 font-medium">Estimated annual revenue</span>
-                        <span className="font-semibold text-neutral-800">{qFmt(rev)}</span>
+                        <span className="font-semibold text-neutral-800">{fmt(rev)}</span>
                       </div>
                       <div className="flex items-center justify-between text-2">
                         <span className="text-neutral-500 font-medium">Profit margin</span>
@@ -913,15 +1004,15 @@ export function BusinessCITContent({
                       </div>
                       <div className="flex items-center justify-between text-2">
                         <span className="text-neutral-500 font-medium">Estimated annual profit</span>
-                        <span className="font-semibold text-neutral-800">{qFmt(estimatedProfit)}</span>
+                        <span className="font-semibold text-neutral-800">{fmt(estimatedProfit)}</span>
                       </div>
                       <div className="flex items-center justify-between text-2">
                                        <span className="text-neutral-500 font-medium">Estimated CIT ({rev > 0 && rev <= 25_000_000 ? '20' : '30'}%)</span>
-                        <span className="font-semibold text-neutral-800">{qFmt(totalCIT)}</span>
+                        <span className="font-semibold text-neutral-800">{fmt(totalCIT)}</span>
                       </div>
                       <div className="flex items-center justify-between text-2">
                         <span className="text-neutral-500 font-medium">Per quarter</span>
-                        <span className="font-semibold text-neutral-800">{qFmt(initialPerQuarter)}</span>
+                        <span className="font-semibold text-neutral-800">{fmt(initialPerQuarter)}</span>
                       </div>
                    </div>
                    </div>
@@ -944,7 +1035,7 @@ export function BusinessCITContent({
                               <TableRow key={q.label}>
                                 <TableCell className="px-6 py-4 font-medium text-neutral-500">{q.label}</TableCell>
                                 <TableCell className="px-6 py-4 text-neutral-500">{q.due}</TableCell>
-                                <TableCell className="px-6 py-4 font-medium text-neutral-700">{amount > 0 ? qFmt(amount) : '—'}</TableCell>
+                                <TableCell className="px-6 py-4 font-medium text-neutral-700">{amount > 0 ? fmt(amount) : '—'}</TableCell>
                                 <TableCell className="px-6 py-4">
                                    {paidQSet.has(i) ? (
                                       <Badge className="bg-green-50 text-green-600 border-green-200 text-1 font-medium px-2 py-0 h-5">Paid</Badge>
@@ -970,12 +1061,12 @@ export function BusinessCITContent({
                                 <SecondaryButton onClick={() => { setDeferModalQuarter(3); setShowDeferModal(true); }} className="flex-1">
                                    Defer to Annual Filing
                                 </SecondaryButton>
-                                <PrimaryButton onClick={() => { setPendingQuarterAmount(adjustedPerQuarter); setPayQuarter(nextUnpaid); setShowFilingSheet(true); }} className="flex-1">
+                                <PrimaryButton onClick={() => { setPendingQuarterAmount(quarterPayments[nextUnpaid] || (adjustedPerQuarter > 0 ? adjustedPerQuarter : 0)); setPayQuarter(nextUnpaid); setShowFilingSheet(true); }} className="flex-1">
                                    File Q4 taxes
                                 </PrimaryButton>
                               </div>
                            ) : (
-                              <PrimaryButton onClick={() => { setPendingQuarterAmount(adjustedPerQuarter); setPayQuarter(nextUnpaid); setShowFilingSheet(true); }} className="w-full">
+                              <PrimaryButton onClick={() => { setPendingQuarterAmount(quarterPayments[nextUnpaid] || (adjustedPerQuarter > 0 ? adjustedPerQuarter : 0)); setPayQuarter(nextUnpaid); setShowFilingSheet(true); }} className="w-full">
                                 File Q{nextUnpaid + 1} taxes
                               </PrimaryButton>
                            )}
@@ -988,7 +1079,7 @@ export function BusinessCITContent({
                       <DrawerContent className="bg-white w-full max-w-full px-4 pb-6">
                         <DrawerTitle className="sr-only">Edit Estimates</DrawerTitle>
                         <div className="max-w-[420px] mx-auto w-full pt-6">
-                           <h2 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em] mb-8 text-center">Edit Estimates</h2>
+                           <h2 className="text-5 font-medium text-neutral-800 tracking-[-0.02em] mb-8 text-center font-[family-name:var(--font-merriweather)]">Edit Estimates</h2>
                            <div className="space-y-6">
                               <div>
                                 <label className="block text-2 font-medium text-neutral-500 mb-1">
@@ -996,7 +1087,7 @@ export function BusinessCITContent({
                                    <InfoTooltip text="Your projected gross revenue for the current tax year." />
                                 </label>
                                 <Input type="text" placeholder="₦ 0.00" value={editRevenue}
-                                   onChange={e => { const raw = e.target.value.replace(/[^0-9.]/g, ''); const parts = raw.split('.'); const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ','); setEditRevenue(parts.length > 1 ? integer + '.' + parts.slice(1).join('') : integer); }} />
+                                   onChange={fmtInput(setEditRevenue)} />
                               </div>
                               <div>
                                 <label className="block text-2 font-medium text-neutral-500 mb-2">
@@ -1016,7 +1107,9 @@ export function BusinessCITContent({
                             {(() => {
                                const editRev = Number((editRevenue || '').replace(/,/g, '')) || 0;
                                const editMarg = editMargin ? Number(editMargin.replace('%', '')) / 100 : 0;
-                                const editCIT = editRev * editMarg * (editRev > 0 && editRev <= 25_000_000 ? 0.20 : 0.30);
+                                const editCIT = editRev > 0 && editMarg > 0
+                                  ? editRev * editMarg * (editRev > 0 && editRev <= 25_000_000 ? 0.20 : 0.30) * 1.04
+                                  : 0;
                                const editQtr = editCIT / 4;
                                return (
                                 <div className="space-y-3">
@@ -1050,11 +1143,11 @@ export function BusinessCITContent({
                    <div className="grid grid-cols-2 gap-8">
                       <div>
                         <p className="text-1 font-semibold text-neutral-500 mb-1">Total paid ({paidPct}%)</p>
-                        <p className="text-7 font-semibold text-neutral-800">{qFmt(totalPaid)}</p>
+                        <p className="text-7 font-semibold text-neutral-800">{fmt(totalPaid)}</p>
                       </div>
                       <div>
                         <p className="text-1 font-semibold text-neutral-500 mb-1">Remaining</p>
-                        <p className="text-7 font-semibold text-neutral-800">{qFmt(remainingCIT)}</p>
+                        <p className="text-7 font-semibold text-neutral-800">{fmt(remainingCIT)}</p>
                       </div>
                    </div>
                    </div>
@@ -1067,7 +1160,7 @@ export function BusinessCITContent({
                               <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
                            </svg>
                            <p className="text-1 font-medium text-neutral-500 leading-relaxed">
-                              You've completed your 2025 quarterly payments.<br />Now it's time to file your annual return based on actual profit.
+                              You've completed your {yearNum} quarterly payments.<br />Now it's time to file your annual return based on actual profit.
                            </p>
                         </div>
                         <PrimaryButton onClick={() => setSubSection('file-returns')}>
@@ -1094,7 +1187,7 @@ export function BusinessCITContent({
                            <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
                         </svg>
                         <p className="text-1 font-semibold text-amber-600 leading-relaxed">
-                           Remember: When you file your annual CIT in June 2027, we'll reconcile based on your actual profit. You may owe more or get a refund.
+                           Remember: When you file your annual CIT in June {Number(yearNum) + 1}, we'll reconcile based on your actual profit. You may owe more or get a refund.
                         </p>
                       </div>
                    )}
@@ -1114,7 +1207,7 @@ export function BusinessCITContent({
                     {/* Stepper header */}
                     <div className="mb-12">
                         <div className="flex items-center justify-between mb-8">
-                            <h1 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em]">
+                            <h1 className="text-5 font-medium text-neutral-800 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">
                                 File {taxYear} Annual CIT Return
                             </h1>
                         </div>
@@ -1176,11 +1269,17 @@ export function BusinessCITContent({
                                      description="Upload your audited financial statements for the tax year."
                                      accept=".pdf"
                                      required
+                                     profileId={profileId}
+                                     category="cit-audited-financials"
+                                     onUploaded={(urls) => setFinancialStatementUrl(urls[urls.length - 1] ?? null)}
                                  />
                                  <FileUploadSection
                                      label="Trial Balance / General Ledger"
                                      description="Upload your trial balance or general ledger for additional verification."
                                      accept=".csv,.xlsx,.xls"
+                                     profileId={profileId}
+                                     category="cit-trial-balance"
+                                     onUploaded={(urls) => setTrialBalanceUrl(urls[urls.length - 1] ?? null)}
                                  />
                             </div>
 
@@ -1291,7 +1390,7 @@ export function BusinessCITContent({
 
                             {whtCreditStep === 'method' ? (
                                 <div className="max-w-[500px] mx-auto">
-                                    <p className="text-3 font-semibold text-neutral-800 mb-4">Choose how you'd like to enter your WHT credit notes.</p>
+                                    <p className="text-3 font-medium text-neutral-800 mb-4 font-[family-name:var(--font-merriweather)]">Choose how you'd like to enter your WHT credit notes.</p>
                                     <RadioGroup value={creditEntryMethod} onValueChange={(v) => setCreditEntryMethod(v as 'manual' | 'csv' | 'software')} className="space-y-0 mb-4">
                                         {CREDIT_ENTRY_OPTIONS.map(opt => {
                                             const disabled = opt.id !== 'manual';
@@ -1313,7 +1412,7 @@ export function BusinessCITContent({
                                 </div>
                             ) : whtCredits.length === 0 && editCreditIdx === null ? (
                                 <div className="max-w-[500px] mx-auto">
-                                    <p className="text-3 font-semibold text-neutral-800 mb-4">Choose how you'd like to enter your WHT credit notes.</p>
+                                    <p className="text-3 font-medium text-neutral-800 mb-4 font-[family-name:var(--font-merriweather)]">Choose how you'd like to enter your WHT credit notes.</p>
                                     <RadioGroup value={creditEntryMethod} onValueChange={(v) => setCreditEntryMethod(v as 'manual' | 'csv' | 'software')} className="space-y-0 mb-4">
                                         {CREDIT_ENTRY_OPTIONS.map(opt => {
                                             const disabled = opt.id !== 'manual';
@@ -1357,7 +1456,7 @@ export function BusinessCITContent({
                                                         <TableCell className="px-6 py-4 text-2 font-medium text-neutral-600">{c.creditRef || '—'}</TableCell>
                                                         <TableCell className="px-6 py-4 text-2 font-medium text-neutral-600">{num(c.grossValue) > 0 ? fmt(num(c.grossValue)) : '—'}</TableCell>
                                                         <TableCell className="px-6 py-4 text-2 font-medium text-neutral-600">{num(c.withheldAmount) > 0 ? fmt(num(c.withheldAmount)) : '—'}</TableCell>
-                                                        <TableCell className="px-6 py-4 text-2 font-medium text-neutral-600">—</TableCell>
+                                                        <TableCell className="px-6 py-4 text-2 font-medium text-neutral-600">{c.certificateUrl ? '✓' : '—'}</TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
@@ -1381,7 +1480,7 @@ export function BusinessCITContent({
                                 <DrawerContent className="bg-white w-full max-w-full px-4 pb-4 max-h-[85vh]">
                                     <DrawerTitle className="sr-only">{editCreditIdx !== null ? 'Edit WHT Credit Note' : 'Add WHT Credit Note'}</DrawerTitle>
                                     <div className="max-w-[550px] mx-auto w-full pt-2 text-center">
-                                        <h2 className="text-5 font-semibold text-neutral-800 mb-8">{editCreditIdx !== null ? (isEditingCredit ? 'Edit Credit Note' : 'Credit Note Details') : 'Add WHT Credit Note'}</h2>
+                                        <h2 className="text-5 font-medium text-neutral-800 mb-8 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">{editCreditIdx !== null ? (isEditingCredit ? 'Edit Credit Note' : 'Credit Note Details') : 'Add WHT Credit Note'}</h2>
                                     </div>
                                     <div data-lenis-prevent className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
                                         <div className="max-w-[550px] mx-auto w-full space-y-6">
@@ -1389,20 +1488,20 @@ export function BusinessCITContent({
                                                 <div className={`transition-transform duration-300 ease-in-out ${isEditingCredit ? '-translate-x-full' : 'translate-x-0'}`}>
                                                     {editCreditIdx !== null && (
                                                         <div className="space-y-6">
-                                                            <CreditFormContent form={creditForm} onChange={(k, v) => setCreditForm(f => ({ ...f, [k]: v }))} disabled={true} readOnlyStyle="bg-neutral-50 text-neutral-400" certificateFiles={creditCertificateFiles} setCertificateFiles={setCreditCertificateFiles} certificateRef={creditCertificateRef} />
+                                                            <CreditFormContent form={creditForm} onChange={(k, v) => setCreditForm(f => ({ ...f, [k]: v }))} disabled={true} readOnlyStyle="bg-neutral-50 text-neutral-400" certificateFiles={creditCertificateFiles} setCertificateFiles={setCreditCertificateFiles} certificateRef={creditCertificateRef} certificateUploading={certificateUploading} />
                                                         </div>
                                                     )}
                                                 </div>
                                                 <div className={`absolute inset-0 transition-transform duration-300 ease-in-out ${isEditingCredit ? 'translate-x-0' : 'translate-x-full'}`}>
                                                     {isEditingCredit && (
                                                         <div className="space-y-6">
-                                                            <CreditFormContent form={creditForm} onChange={(k, v) => setCreditForm(f => ({ ...f, [k]: v }))} disabled={false} readOnlyStyle="" certificateFiles={creditCertificateFiles} setCertificateFiles={setCreditCertificateFiles} certificateRef={creditCertificateRef} />
+                                                            <CreditFormContent form={creditForm} onChange={(k, v) => setCreditForm(f => ({ ...f, [k]: v }))} disabled={false} readOnlyStyle="" certificateFiles={creditCertificateFiles} setCertificateFiles={setCreditCertificateFiles} certificateRef={creditCertificateRef} certificateUploading={certificateUploading} />
                                                         </div>
                                                     )}
                                                 </div>
                                                 {editCreditIdx === null && (
                                                     <div className="space-y-6">
-                                                        <CreditFormContent form={creditForm} onChange={(k, v) => setCreditForm(f => ({ ...f, [k]: v }))} disabled={false} readOnlyStyle="" certificateFiles={creditCertificateFiles} setCertificateFiles={setCreditCertificateFiles} certificateRef={creditCertificateRef} />
+                                                        <CreditFormContent form={creditForm} onChange={(k, v) => setCreditForm(f => ({ ...f, [k]: v }))} disabled={false} readOnlyStyle="" certificateFiles={creditCertificateFiles} setCertificateFiles={setCreditCertificateFiles} certificateRef={creditCertificateRef} certificateUploading={certificateUploading} />
                                                     </div>
                                                 )}
                                             </div>
@@ -1413,7 +1512,7 @@ export function BusinessCITContent({
                                         <div className="flex gap-3">
                                             {editCreditIdx !== null && !isEditingCredit ? (
                                                 <>
-                                                    <button onClick={() => setShowRemoveCredit(true)} className="flex-1 h-12 border border-red-200 bg-red-50 text-destructive font-semibold rounded-xl text-3">Remove</button>
+                                                    <button onClick={() => setShowRemoveCredit(true)} className="flex-1 h-12 border border-red-200 bg-red-50 text-destructive font-semibold rounded-xl text-2">Remove</button>
                                                     <PrimaryButton className="flex-1" onClick={() => setIsEditingCredit(true)}>Edit Details</PrimaryButton>
                                                 </>
                                             ) : editCreditIdx !== null && isEditingCredit ? (
@@ -1440,11 +1539,11 @@ export function BusinessCITContent({
                                                     <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
                                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-destructive"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
                                                     </div>
-                                                    <h3 className="text-6 font-semibold text-neutral-800 mb-2">Remove Credit Note?</h3>
+                                                    <h3 className="text-5 font-medium text-neutral-800 mb-2 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Remove Credit Note?</h3>
                                                     <p className="text-1 text-neutral-500 font-medium mb-6">This action cannot be undone.</p>
                                                     <div className="flex gap-3 w-full">
                                                         <SecondaryButton className="flex-1" onClick={() => setShowRemoveCredit(false)}>Cancel</SecondaryButton>
-                                                        <button onClick={handleRemoveCredit} className="flex-1 h-12 bg-destructive text-white font-semibold rounded-xl text-3">Remove</button>
+                                                        <button onClick={handleRemoveCredit} className="flex-1 h-12 bg-destructive text-white font-semibold rounded-xl text-2">Remove</button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1464,9 +1563,9 @@ export function BusinessCITContent({
                                         <polyline points="20 6 9 17 4 12" />
                                     </svg>
                                 </div>
-                                <h2 className="text-6 font-semibold text-neutral-800 mb-2">Annual Return Filed</h2>
+                                <h2 className="text-5 font-medium text-neutral-800 mb-2 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Annual Return Filed</h2>
                                 <p className="text-1 text-neutral-500 font-medium mb-6">
-                                    Your 2025 annual CIT return has been successfully submitted to the NRS.
+                                    Your {yearNum} annual CIT return has been successfully submitted to the NRS.
                                 </p>
                                 <div className="flex justify-center gap-3">
                                     <SecondaryButton onClick={() => goBack('wht-credits')}>Back</SecondaryButton>
@@ -1485,19 +1584,19 @@ export function BusinessCITContent({
                                 <div className="flex gap-4">
                                     <div className="flex-1 bg-white border border-neutral-100 rounded-2xl p-4 text-left">
                                         <p className="text-1 text-neutral-500 font-medium">Gross CIT Owed</p>
-                                        <p className="text-4 font-semibold text-neutral-800 mt-1">{fmt(baseCIT)}</p>
+                                        <p className="text-5 font-semibold text-neutral-800 mt-1">{fmt(baseCIT)}</p>
                                     </div>
                                     <div className="flex-1 bg-white border border-neutral-100 rounded-2xl p-4 text-left">
                                         <p className="text-1 text-neutral-500 font-medium">Development Levy (4%)</p>
-                                        <p className="text-4 font-semibold text-neutral-800 mt-1">+{fmt(developmentLevy)}</p>
+                                        <p className="text-5 font-semibold text-neutral-800 mt-1">+{fmt(developmentLevy)}</p>
                                     </div>
                                     <div className="flex-1 bg-white border border-neutral-100 rounded-2xl p-4 text-left">
                                         <p className="text-1 text-neutral-500 font-medium">WHT Credits Applied</p>
-                                        <p className="text-4 font-semibold text-neutral-800 mt-1">-{fmt(totalWHTCredits)}</p>
+                                        <p className="text-5 font-semibold text-neutral-800 mt-1">-{fmt(totalWHTCredits)}</p>
                                     </div>
                                     <div className="flex-1 bg-white border border-neutral-100 rounded-2xl p-4 text-left">
                                         <p className="text-1 text-neutral-500 font-medium">Quarterly Installments</p>
-                                        <p className="text-4 font-semibold text-neutral-800 mt-1">-{fmt(totalQuarterlyPaid)}</p>
+                                        <p className="text-5 font-semibold text-neutral-800 mt-1">-{fmt(totalQuarterlyPaid)}</p>
                                     </div>
                                 </div>
 
@@ -1544,8 +1643,8 @@ export function BusinessCITContent({
                                             </div>
                                             <div className="flex items-center justify-between text-2">
                                                 <span className="text-neutral-500">Attached Financial Statement File</span>
-                                                <span className={`font-medium ${completedAnnualSteps.has(1) ? 'text-green-600' : 'text-neutral-400'}`}>
-                                                    {completedAnnualSteps.has(1) ? '✓ Provided' : '—'}
+                                                <span className={`font-medium ${financialStatementUrl ? 'text-green-600' : 'text-neutral-400'}`}>
+                                                    {financialStatementUrl ? '✓ Provided' : '—'}
                                                 </span>
                                             </div>
                                         </div>
@@ -1588,6 +1687,12 @@ export function BusinessCITContent({
                                                 <span className="text-neutral-500">Quarterly Installments Paid</span>
                                                 <span className="font-medium text-neutral-800">
                                                     {['Q1', 'Q2', 'Q3', 'Q4'].filter((_, i) => (quarterPayments[i] || 0) > 0).join(', ') || '—'} (Totaling {fmt(totalQuarterlyPaid)})
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-2">
+                                                <span className="text-neutral-500">Deferred to Annual Filing</span>
+                                                <span className="font-medium text-neutral-800">
+                                                    {['Q1', 'Q2', 'Q3', 'Q4'].filter((_, i) => deferredQuarters.has(i)).join(', ') || '—'}
                                                 </span>
                                             </div>
                                         </div>

@@ -890,7 +890,11 @@ class TaxableApiService {
     if (category) formData.append('category', category);
     if (description) formData.append('description', description);
 
-    const response = await fetch(`${this.baseUrl}${TAXABLE_ENDPOINTS.UPLOAD}`, {
+    // uploadId must also be in the query string — the backend's resolveUploadForUpload
+    // middleware reads it before multer parses the multipart body.
+    const uploadUrl = `${this.baseUrl}${TAXABLE_ENDPOINTS.UPLOAD}?uploadId=${encodeURIComponent(session.uploadId)}`;
+
+    const response = await fetch(uploadUrl, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}` },
       body: formData,

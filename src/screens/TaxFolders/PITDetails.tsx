@@ -8,6 +8,7 @@ import { Home2Fill } from '@mingcute/react';
 import { useUser } from '@/contexts/UserContext';
 import { toast } from 'sonner';
 import { useTaxableApi } from '@/hooks/useTaxableApi';
+import { validateFileSize, MAX_UPLOAD_BYTES } from '@/lib/file-upload';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import { PrimaryButton, SecondaryButton, FormFieldRow, FormLabel, FilingSheet } from '@/screens/TaxFolders/TaxFolderShared';
@@ -38,12 +39,12 @@ const PITWelcomeModal = ({ onClose }: { onClose: () => void }) => (
         <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
         <div className="relative bg-white rounded-[20px] w-full max-w-[380px] p-7 shadow-2xl text-center animate-in fade-in zoom-in-95 duration-300">
             <h2 className="text-5 font-medium text-neutral-800 tracking-[-0.02em] font-[family-name:var(--font-merriweather)] mb-3">Welcome to your tax workspace!</h2>
-            <p className="text-2 text-neutral-500 font-medium leading-relaxed mb-1.5">
+            <p className="text-1 text-neutral-500 font-medium leading-relaxed mb-1.5">
                 We've organized your tax filing into simple sections. Start with{' '}
                 <span className="text-neutral-800 font-semibold">Personal Info</span>{' '}
                 and work your way down.
             </p>
-            <p className="text-2 text-neutral-500 font-medium leading-relaxed mb-7">
+            <p className="text-1 text-neutral-500 font-medium leading-relaxed mb-7">
                 Your progress is saved automatically.
             </p>
             <PrimaryButton onClick={onClose} className="w-full">
@@ -249,6 +250,25 @@ export default function PITDetails() {
     const cryptoRef = useRef<HTMLInputElement>(null);
     const rentRef = useRef<HTMLInputElement>(null);
 
+    // File selection guard for PIT uploads (name-only today; enforces the size cap)
+    const handlePitFileSelect = (e: React.ChangeEvent<HTMLInputElement>, key: string, target: 'income' | 'deduction') => {
+        const files = e.target.files;
+        e.target.value = '';
+        if (!files || files.length === 0) return;
+        const accepted = Array.from(files).filter((f) => {
+            if (validateFileSize(f)) return true;
+            toast.error(`${f.name} is too large — max ${MAX_UPLOAD_BYTES / (1024 * 1024)}MB`);
+            return false;
+        });
+        if (accepted.length === 0) return;
+        const items = accepted.map((x) => ({ name: x.name }));
+        if (target === 'income') {
+            setIncomeFiles(prev => ({ ...prev, [key]: [...(prev[key] ?? []), ...items] }));
+        } else {
+            setDeductionFiles(prev => ({ ...prev, [key]: [...(prev[key] ?? []), ...items] }));
+        }
+    };
+
     // Annual Filing state
     const [legalConfirmPIT1, setLegalConfirmPIT1] = useState(false);
     const [legalConfirmPIT2, setLegalConfirmPIT2] = useState(false);
@@ -373,7 +393,7 @@ export default function PITDetails() {
                 }
             }
         }}>
-            <SelectTrigger className="w-fit min-w-[180px] h-10 rounded-xl bg-white border-neutral-50 text-3">
+            <SelectTrigger className="w-fit min-w-[180px] h-10 rounded-xl bg-white border-neutral-50 text-sm">
                 <div className="flex items-center gap-2 mr-6">
                     <span>{INCOME_MONTH_NAMES[activeMonthNum - 1]}</span>
                     {recordedMonths.has(activeMonthNum - 1) &&
@@ -642,7 +662,7 @@ export default function PITDetails() {
                                         <div className={`bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl ${!enabledIncomeSources.salary ? 'opacity-50' : ''}`}>
                                             <span className="text-1 text-neutral-400 font-medium">Upload payslip / proof of employment</span>
                                             <button onClick={() => salaryRef.current?.click()} disabled={!enabledIncomeSources.salary} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0 disabled:cursor-not-allowed">Upload</button>
-                                            <input ref={salaryRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setIncomeFiles(prev => ({ ...prev, ['salary_' + (activeMonthNum - 1)]: [...(prev['salary_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
+                                            <input ref={salaryRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => handlePitFileSelect(e, 'salary_' + (activeMonthNum - 1), 'income')} />
                                         </div>
                                         {((incomeFiles['salary_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
                                             <div key={i} className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
@@ -675,7 +695,7 @@ export default function PITDetails() {
                                         <div className={`bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl ${!enabledIncomeSources.business ? 'opacity-50' : ''}`}>
                                             <span className="text-1 text-neutral-400 font-medium">Upload invoices / bank statements</span>
                                             <button onClick={() => businessRef.current?.click()} disabled={!enabledIncomeSources.business} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0 disabled:cursor-not-allowed">Upload</button>
-                                            <input ref={businessRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setIncomeFiles(prev => ({ ...prev, ['business_' + (activeMonthNum - 1)]: [...(prev['business_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
+                                            <input ref={businessRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => handlePitFileSelect(e, 'business_' + (activeMonthNum - 1), 'income')} />
                                         </div>
                                         {((incomeFiles['business_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
                                             <div key={i} className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
@@ -708,7 +728,7 @@ export default function PITDetails() {
                                         <div className={`bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl ${!enabledIncomeSources.freelance ? 'opacity-50' : ''}`}>
                                             <span className="text-1 text-neutral-400 font-medium">Upload invoices / contracts</span>
                                             <button onClick={() => freelanceRef.current?.click()} disabled={!enabledIncomeSources.freelance} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0 disabled:cursor-not-allowed">Upload</button>
-                                            <input ref={freelanceRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setIncomeFiles(prev => ({ ...prev, ['freelance_' + (activeMonthNum - 1)]: [...(prev['freelance_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
+                                            <input ref={freelanceRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => handlePitFileSelect(e, 'freelance_' + (activeMonthNum - 1), 'income')} />
                                         </div>
                                         {((incomeFiles['freelance_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
                                             <div key={i} className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
@@ -737,7 +757,7 @@ export default function PITDetails() {
                                         <div className={`bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl ${!enabledIncomeSources.investment ? 'opacity-50' : ''}`}>
                                             <span className="text-1 text-neutral-400 font-medium">Upload investment statements</span>
                                             <button onClick={() => investmentRef.current?.click()} disabled={!enabledIncomeSources.investment} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0 disabled:cursor-not-allowed">Upload</button>
-                                            <input ref={investmentRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setIncomeFiles(prev => ({ ...prev, ['investment_' + (activeMonthNum - 1)]: [...(prev['investment_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
+                                            <input ref={investmentRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => handlePitFileSelect(e, 'investment_' + (activeMonthNum - 1), 'income')} />
                                         </div>
                                         {((incomeFiles['investment_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
                                             <div key={i} className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
@@ -766,7 +786,7 @@ export default function PITDetails() {
                                         <div className={`bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl ${!enabledIncomeSources.rental ? 'opacity-50' : ''}`}>
                                             <span className="text-1 text-neutral-400 font-medium">Upload lease agreement / receipts</span>
                                             <button onClick={() => rentalRef.current?.click()} disabled={!enabledIncomeSources.rental} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0 disabled:cursor-not-allowed">Upload</button>
-                                            <input ref={rentalRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setIncomeFiles(prev => ({ ...prev, ['rental_' + (activeMonthNum - 1)]: [...(prev['rental_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
+                                            <input ref={rentalRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => handlePitFileSelect(e, 'rental_' + (activeMonthNum - 1), 'income')} />
                                         </div>
                                         {((incomeFiles['rental_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
                                             <div key={i} className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
@@ -795,7 +815,7 @@ export default function PITDetails() {
                                         <div className={`bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl ${!enabledIncomeSources.crypto ? 'opacity-50' : ''}`}>
                                             <span className="text-1 text-neutral-400 font-medium">Upload exchange / trading statements</span>
                                             <button onClick={() => cryptoRef.current?.click()} disabled={!enabledIncomeSources.crypto} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0 disabled:cursor-not-allowed">Upload</button>
-                                            <input ref={cryptoRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setIncomeFiles(prev => ({ ...prev, ['crypto_' + (activeMonthNum - 1)]: [...(prev['crypto_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
+                                            <input ref={cryptoRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => handlePitFileSelect(e, 'crypto_' + (activeMonthNum - 1), 'income')} />
                                         </div>
                                         {((incomeFiles['crypto_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
                                             <div key={i} className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
@@ -839,7 +859,7 @@ export default function PITDetails() {
                                         <div className={`bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl ${!enabledDeductions.rent ? 'opacity-50' : ''}`}>
                                             <span className="text-1 text-neutral-400 font-medium">Upload rent receipt / lease agreement</span>
                                             <button onClick={() => rentRef.current?.click()} disabled={!enabledDeductions.rent} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0 disabled:cursor-not-allowed">Upload</button>
-                                            <input ref={rentRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setDeductionFiles(prev => ({ ...prev, ['rent_' + (activeMonthNum - 1)]: [...(prev['rent_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
+                                            <input ref={rentRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => handlePitFileSelect(e, 'rent_' + (activeMonthNum - 1), 'deduction')} />
                                         </div>
                                         {((deductionFiles['rent_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
                                             <div key={i} className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
@@ -868,7 +888,7 @@ export default function PITDetails() {
                                         <div className={`bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl ${!enabledDeductions.healthInsurance ? 'opacity-50' : ''}`}>
                                             <span className="text-1 text-neutral-400 font-medium">Upload insurance receipt</span>
                                             <button onClick={() => healthRef.current?.click()} disabled={!enabledDeductions.healthInsurance} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0 disabled:cursor-not-allowed">Upload</button>
-                                            <input ref={healthRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setDeductionFiles(prev => ({ ...prev, ['health_' + (activeMonthNum - 1)]: [...(prev['health_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
+                                            <input ref={healthRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => handlePitFileSelect(e, 'health_' + (activeMonthNum - 1), 'deduction')} />
                                         </div>
                                         {((deductionFiles['health_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
                                             <div key={i} className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
@@ -897,7 +917,7 @@ export default function PITDetails() {
                                         <div className={`bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl ${!enabledDeductions.pension ? 'opacity-50' : ''}`}>
                                             <span className="text-1 text-neutral-400 font-medium">Upload pension receipt</span>
                                             <button onClick={() => pensionRef.current?.click()} disabled={!enabledDeductions.pension} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0 disabled:cursor-not-allowed">Upload</button>
-                                            <input ref={pensionRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setDeductionFiles(prev => ({ ...prev, ['pension_' + (activeMonthNum - 1)]: [...(prev['pension_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
+                                            <input ref={pensionRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => handlePitFileSelect(e, 'pension_' + (activeMonthNum - 1), 'deduction')} />
                                         </div>
                                         {((deductionFiles['pension_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
                                             <div key={i} className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
@@ -926,7 +946,7 @@ export default function PITDetails() {
                                         <div className={`bg-white flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl ${!enabledDeductions.mortgage ? 'opacity-50' : ''}`}>
                                             <span className="text-1 text-neutral-400 font-medium">Upload mortgage receipt</span>
                                             <button onClick={() => mortgageRef.current?.click()} disabled={!enabledDeductions.mortgage} className="cursor-pointer text-2 font-semibold text-neutral-800 bg-transparent border-none p-0 disabled:cursor-not-allowed">Upload</button>
-                                            <input ref={mortgageRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => { const f = e.target.files; if (!f) return; setDeductionFiles(prev => ({ ...prev, ['mortgage_' + (activeMonthNum - 1)]: [...(prev['mortgage_' + (activeMonthNum - 1)] ?? []), ...Array.from(f).map(x => ({ name: x.name }))] })); e.target.value = ''; }} />
+                                            <input ref={mortgageRef} type="file" hidden accept=".pdf,.jpg,.png" onChange={(e) => handlePitFileSelect(e, 'mortgage_' + (activeMonthNum - 1), 'deduction')} />
                                         </div>
                                         {((deductionFiles['mortgage_' + (activeMonthNum - 1)] ?? [])).map((file, i) => (
                                             <div key={i} className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-neutral-100 rounded-lg">
@@ -1278,8 +1298,8 @@ export default function PITDetails() {
                                             <polyline points="20 6 9 17 4 12" />
                                         </svg>
                                     </div>
-                                    <h2 className="text-6 font-semibold text-neutral-800 mb-2">Annual Return Filed</h2>
-                                    <p className="text-2 text-neutral-500 font-medium mb-6">Your annual PIT return has been successfully submitted.</p>
+                                    <h2 className="text-5 font-medium text-neutral-800 mb-2 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Annual Return Filed</h2>
+                                    <p className="text-1 text-neutral-500 font-medium mb-6">Your annual PIT return has been successfully submitted.</p>
                                     <SecondaryButton onClick={() => setActiveSection('income-deductions')}>Back</SecondaryButton>
                                 </div>
                             ) : (
@@ -1449,7 +1469,7 @@ export default function PITDetails() {
                 <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/30 p-4">
                     <div className="bg-white rounded-2xl w-full max-w-[380px] p-6 shadow-2xl">
                         <h3 className="text-5 font-semibold text-neutral-800 mb-2">Unsaved Changes</h3>
-                        <p className="text-2 text-neutral-500 font-medium mb-6">You have unsaved changes for {INCOME_MONTH_NAMES[activeMonthNum - 1]}. Save before leaving?</p>
+                        <p className="text-1 text-neutral-500 font-medium mb-6">You have unsaved changes for {INCOME_MONTH_NAMES[activeMonthNum - 1]}. Save before leaving?</p>
                         <div className="flex gap-3 w-full">
                             <SecondaryButton className="flex-1" onClick={() => { handleUnsavedConfirm(); setShowUnsavedIncomeModal(false); }}>
                                 Discard

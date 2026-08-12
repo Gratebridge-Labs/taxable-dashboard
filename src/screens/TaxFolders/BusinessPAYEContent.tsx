@@ -118,7 +118,7 @@ export function PayeMonthlyFiling({
     const monthSelector = (
         <div data-animate>
         <Select value={activeMonth} onValueChange={(v) => v && onMonthChange(v)}>
-            <SelectTrigger className="w-fit min-w-[180px] h-10 rounded-xl bg-white border-neutral-50 text-3">
+            <SelectTrigger className="w-fit min-w-[180px] h-10 rounded-xl bg-white border-neutral-50 text-sm">
                 <div className="flex items-center gap-2 mr-6">
                     <span>{activeMonth}</span>
                     {isFiled && <Badge variant="secondary" className="bg-green-50 text-green-600 border-green-200 text-2 font-semibold px-2 py-0 h-5">Filed</Badge>}
@@ -151,7 +151,7 @@ export function PayeMonthlyFiling({
     const entryOptions = (
         <div data-animate className="max-w-[480px] mx-auto">
             <h2 className="text-5 font-medium text-neutral-800 tracking-[-0.02em] font-[family-name:var(--font-merriweather)] mb-1">How do you want to add payroll data?</h2>
-            <p className="text-2 text-neutral-500 font-medium mb-6">Choose how you'd like to add payroll, and the month you're starting from.</p>
+            <p className="text-1 text-neutral-500 font-medium mb-6">Choose how you'd like to add payroll, and the month you're starting from.</p>
 
             {isFirstTime ? (
                 <>
@@ -173,7 +173,7 @@ export function PayeMonthlyFiling({
                     <div className="mb-8">
                         <div className="block text-2 font-medium text-neutral-500 mb-2">Select starting month <InfoTooltip text="The first month you'll file PAYE for this business on Taxable." /></div>
                         <Select value={onboardingMonth} onValueChange={(v) => v && setOnboardingMonth(v)}>
-                            <SelectTrigger className="w-[300px] h-10 rounded-xl bg-white text-3">
+                            <SelectTrigger className="w-[300px] h-10 rounded-xl bg-white text-sm">
                                 <SelectValue placeholder="Choose a month" />
                             </SelectTrigger>
                             <SelectContent>
@@ -297,8 +297,8 @@ export function PayeMonthlyFiling({
                     <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/20" onClick={() => setShowCopyModal(false)}>
                         <div className="bg-white rounded-2xl p-6 max-w-[400px] mx-4 w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
                             <div className="flex flex-col items-center text-center">
-                                <h3 className="text-6 font-semibold text-neutral-800 mb-2">Copy payroll data?</h3>
-                                <p className="text-2 text-neutral-500 font-medium mb-4">
+                                <h3 className="text-5 font-medium text-neutral-800 mb-2 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Copy payroll data?</h3>
+                                <p className="text-1 text-neutral-500 font-medium mb-4">
                                     This will copy all employees from {pendingCopy.sourceMonth} {taxYear} to {activeMonth} {taxYear}. You can edit them independently.
                                 </p>
                                 <label className="flex items-center gap-2 mb-6 cursor-pointer">

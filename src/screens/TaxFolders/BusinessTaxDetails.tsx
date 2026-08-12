@@ -53,12 +53,12 @@ const WelcomeModal = ({ onClose }: { onClose: () => void }) => (
         <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
         <div className="relative bg-white rounded-[20px] w-full max-w-[380px] p-7 shadow-2xl text-center animate-in fade-in zoom-in-95 duration-300">
             <h2 className="text-5 font-medium text-neutral-800 tracking-[-0.02em] font-[family-name:var(--font-merriweather)] mb-3">Welcome to your tax workspace!</h2>
-            <p className="text-2 text-neutral-500 font-medium leading-relaxed mb-1.5">
+            <p className="text-1 text-neutral-500 font-medium leading-relaxed mb-1.5">
                 Everything you need is organized in sections on the left. Start with{' '}
                 <span className="text-neutral-800 font-semibold">Company Information</span>{' '}
                 and work your way down.
             </p>
-            <p className="text-2 text-neutral-500 font-medium leading-relaxed mb-7">
+            <p className="text-1 text-neutral-500 font-medium leading-relaxed mb-7">
                 Your progress is saved automatically.
             </p>
             <PrimaryButton onClick={onClose} className="w-full">
@@ -429,6 +429,13 @@ export default function BusinessTaxDetails() {
             setActiveSection('company-info');
         }
     }, [companyInfoSaved, activeSection]);
+
+    // Keep CIT sub-section consistent with the quarterly setting
+    useEffect(() => {
+        if (!payQuarterly && citSubSection === 'quarterly') {
+            setCitSubSection('file-returns');
+        }
+    }, [payQuarterly, citSubSection]);
 
     const handleSaveAndContinue = async () => {
         setSubmitting(true);
@@ -857,8 +864,8 @@ export default function BusinessTaxDetails() {
                                     <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
                                 </svg>
                             </div>
-                            <h3 className="text-6 font-semibold text-neutral-800 mb-2">Unsaved Changes</h3>
-                            <p className="text-2 text-neutral-500 font-medium mb-6">
+                            <h3 className="text-5 font-medium text-neutral-800 mb-2 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Unsaved Changes</h3>
+                            <p className="text-1 text-neutral-500 font-medium mb-6">
                                 You have unsaved company information. What would you like to do?
                             </p>
                             <div className="flex gap-3 w-full">

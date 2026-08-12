@@ -88,7 +88,7 @@ export function FormLabel({ children, tip }: { children: React.ReactNode; tip: s
 
 // ── Section Heading ────────────────────────────────────────────────
 export function SectionHeading({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <h2 className={`text-6 font-semibold text-neutral-800 mb-1 ${className}`}>{children}</h2>;
+  return <h2 className={`text-5 font-medium text-neutral-800 mb-1 tracking-[-0.02em] font-[family-name:var(--font-merriweather)] ${className}`}>{children}</h2>;
 }
 
 // ── Description Text ───────────────────────────────────────────────
@@ -168,14 +168,14 @@ export function FilingSheet({ open, onClose, onFile }: FilingSheetProps) {
               <RadioGroupItem value="taxable_file" className="mt-0.5" />
               <div>
                 <p className="text-3 font-semibold text-neutral-800">Let Taxable file for you (₦8,000)</p>
-                <p className="text-2 text-neutral-500 font-medium mt-0.5">We submit your return directly to FIRS.</p>
+                <p className="text-1 text-neutral-500 font-medium mt-0.5">We submit your return directly to FIRS.</p>
               </div>
             </label>
             <label className={`flex items-start gap-3 px-4 py-4 rounded-xl cursor-pointer ${selectedOption === 'accountant_review' ? 'bg-neutral-50 border border-neutral-200' : 'bg-white border border-transparent'}`}>
               <RadioGroupItem value="accountant_review" className="mt-0.5" />
               <div>
                 <p className="text-3 font-semibold text-neutral-800">Get accountant review first (₦25,000)</p>
-                <p className="text-2 text-neutral-500 font-medium mt-0.5">A licensed accountant reviews before filing.</p>
+                <p className="text-1 text-neutral-500 font-medium mt-0.5">A licensed accountant reviews before filing.</p>
               </div>
             </label>
           </RadioGroup>

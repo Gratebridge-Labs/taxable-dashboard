@@ -1122,6 +1122,7 @@ export interface CitWhtCredit {
   creditRef: string;
   grossValue: number;
   withheldAmount: number;
+  certificateUrl?: string;
   year?: number;
   createdAt?: string;
 }
@@ -1133,6 +1134,7 @@ export interface CreateCitWhtCreditRequest {
   creditRef: string;
   grossValue: number;
   withheldAmount: number;
+  certificateUrl?: string;
 }
 
 export interface UpdateCitWhtCreditRequest {
@@ -1141,6 +1143,7 @@ export interface UpdateCitWhtCreditRequest {
   creditRef?: string;
   grossValue?: number;
   withheldAmount?: number;
+  certificateUrl?: string;
 }
 
 export interface CitWhtCreditsListResponse {

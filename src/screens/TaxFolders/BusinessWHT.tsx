@@ -305,25 +305,30 @@ function WHTFormContent({
 }
 
 // ── WHT Remittance ─────────────────────────────────────────────────────────────
-const WHTRemittance = ({ profileId, taxYear }: { profileId: string; taxYear: string }) => {
+const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtStep, setWhtStep }: {
+    profileId: string;
+    taxYear: string;
+    activeMonth: number;
+    setActiveMonth: React.Dispatch<React.SetStateAction<number>>;
+    whtStep: 'method' | 'table';
+    setWhtStep: React.Dispatch<React.SetStateAction<'method' | 'table'>>;
+}) => {
     const {
         loading,
         dataByMonth: deductionsByMonth,
         filedMonths,
-        activeMonth, setActiveMonth,
         currentData: deductions,
         total, hasData,
         pendingRemove, setPendingRemove,
         pendingPayee,
         saveItem, removeItem, handleConfirmRemove, fileMonth,
-    } = useWhtRemittance(profileId, taxYear);
+    } = useWhtRemittance(profileId, taxYear, activeMonth, setActiveMonth);
 
     const [showFormSheet, setShowFormSheet] = useState(false);
     const [editId, setEditId] = useState<string | null>(null);
     const [editSourceMonth, setEditSourceMonth] = useState<number | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
-    const [whtStep, setWhtStep] = useState<'method' | 'table'>('method');
     const [entryMethod, setEntryMethod] = useState<'manual' | 'csv' | 'software'>('manual');
     const [showFilingModal, setShowFilingModal] = useState(false);
     const [form, setForm] = useState(defaultDeduction());
@@ -758,18 +763,22 @@ const WHTRemittance = ({ profileId, taxYear }: { profileId: string; taxYear: str
 };
 
 // ── WHT Credit Notes ───────────────────────────────────────────────────────────
-const WHTCreditBalance = ({ profileId, taxYear }: { profileId: string; taxYear: string }) => {
+const WHTCreditBalance = ({ profileId, taxYear, activeMonth, setActiveMonth }: {
+    profileId: string;
+    taxYear: string;
+    activeMonth: number;
+    setActiveMonth: React.Dispatch<React.SetStateAction<number>>;
+}) => {
     const {
         loading,
         dataByMonth: creditsByMonth,
-        activeMonth, setActiveMonth,
         periodMode, setPeriodMode,
         currentData: credits,
         total, annualTotal,
         pendingRemove, setPendingRemove,
         pendingPayee,
         saveItem, handleConfirmRemove,
-    } = useWhtCredits(profileId, taxYear);
+    } = useWhtCredits(profileId, taxYear, activeMonth, setActiveMonth);
 
     const [showForm, setShowForm] = useState(false);
     const [editId, setEditId] = useState<string | null>(null);
@@ -946,10 +955,15 @@ const WHTCreditBalance = ({ profileId, taxYear }: { profileId: string; taxYear: 
 // ── Embeddable content component (no page shell) ──────────────────────────────
 export function BusinessWHTContent({
     activeSubMenu, profileId = 'default', taxYear = '2026',
+    activeMonth, setActiveMonth, whtStep, setWhtStep,
 }: {
     activeSubMenu?: 'remit-wht' | 'wht-balance';
     profileId?: string;
     taxYear?: string;
+    activeMonth: number;
+    setActiveMonth: React.Dispatch<React.SetStateAction<number>>;
+    whtStep: 'method' | 'table';
+    setWhtStep: React.Dispatch<React.SetStateAction<'method' | 'table'>>;
 }) {
     const [internalSubSection, _setInternalSubSection] = useState<'remit-wht' | 'wht-balance'>('remit-wht');
     const subSection = activeSubMenu ?? internalSubSection;
@@ -957,8 +971,8 @@ export function BusinessWHTContent({
     return (
         <div className="w-full">
             <div className="flex-1 min-w-0">
-                {subSection === 'remit-wht' && <WHTRemittance profileId={profileId} taxYear={taxYear} />}
-                {subSection === 'wht-balance' && <WHTCreditBalance profileId={profileId} taxYear={taxYear} />}
+                {subSection === 'remit-wht' && <WHTRemittance profileId={profileId} taxYear={taxYear} activeMonth={activeMonth} setActiveMonth={setActiveMonth} whtStep={whtStep} setWhtStep={setWhtStep} />}
+                {subSection === 'wht-balance' && <WHTCreditBalance profileId={profileId} taxYear={taxYear} activeMonth={activeMonth} setActiveMonth={setActiveMonth} />}
             </div>
         </div>
     );

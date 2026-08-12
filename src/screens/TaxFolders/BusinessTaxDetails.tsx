@@ -11,7 +11,7 @@ import { PayeMonthlyFiling, calculateAnnualPAYE } from '@/screens/TaxFolders/Bus
 import { PayeStaff } from '@/screens/TaxFolders/AddEmployeeDrawer';
 import { Calendar } from '@/components/ui/calendar';
 import { Spinner } from '@/components/ui/spinner';
-import { BusinessVATContent } from './BusinessVAT';
+import { BusinessVATContent, type VatStep } from './BusinessVAT';
 import { BusinessWHTContent } from './BusinessWHT';
 import { FilingSheet } from '@/screens/TaxFolders/TaxFolderShared';
 import { PrimaryButton, SecondaryButton, SidebarItem } from '@/screens/TaxFolders/TaxFolderShared';
@@ -124,6 +124,13 @@ export default function BusinessTaxDetails() {
     const [payeSubSection] = React.useState<'monthly-filing' | 'annual-returns'>('monthly-filing');
     const [citSubSection, setCitSubSection] = React.useState<'quarterly' | 'file-returns'>('quarterly');
 
+    // Lifted VAT/WHT state so progress survives section switches
+    const [vatStep, setVatStep] = React.useState<VatStep>('gatekeeper');
+    const [vatActiveMonth, setVatActiveMonth] = React.useState(0);
+    const [vatCompletedSteps, setVatCompletedSteps] = React.useState<Set<number>>(new Set());
+    const [whtActiveMonth, setWhtActiveMonth] = React.useState(0);
+    const [whtStep, setWhtStep] = React.useState<'method' | 'table'>('method');
+
     const [activeMonth, setActiveMonth] = React.useState('January');
     const [filedMonths, setFiledMonths] = React.useState<Set<string>>(new Set());
     const [showPayeFilingModal, setShowPayeFilingModal] = React.useState(false);
@@ -181,6 +188,11 @@ export default function BusinessTaxDetails() {
         setEstimatedAnnualRevenue('');
         setProfitMargin('20%');
         setCompanyInfoSaved(false);
+        setVatStep('gatekeeper');
+        setVatActiveMonth(0);
+        setVatCompletedSteps(new Set());
+        setWhtActiveMonth(0);
+        setWhtStep('method');
         hasUnsavedChanges.current = false;
 
         const applyTaxIdFallback = () => {
@@ -229,7 +241,6 @@ export default function BusinessTaxDetails() {
                             }
                         }
 
-                        if (companyInfo?.companyName) setCompanyInfoSaved(true);
                         hasUnsavedChanges.current = false;
                     } else {
                         applyTaxIdFallback();
@@ -412,6 +423,13 @@ export default function BusinessTaxDetails() {
         return () => window.removeEventListener('beforeunload', handler);
     }, []);
 
+    // Force locked navigation back to Company Information
+    useEffect(() => {
+        if (!companyInfoSaved && activeSection !== 'company-info') {
+            setActiveSection('company-info');
+        }
+    }, [companyInfoSaved, activeSection]);
+
     const handleSaveAndContinue = async () => {
         setSubmitting(true);
 
@@ -474,7 +492,10 @@ export default function BusinessTaxDetails() {
     };
 
     const handleEstimatedRevenueChange = (v: string) => {
-        setEstimatedAnnualRevenue(v);
+        const raw = v.replace(/[^0-9.]/g, '');
+        const parts = raw.split('.');
+        const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        setEstimatedAnnualRevenue(parts.length > 1 ? integer + '.' + parts.slice(1).join('') : integer);
         hasUnsavedChanges.current = true;
     };
 
@@ -487,8 +508,8 @@ export default function BusinessTaxDetails() {
     return (
         <div ref={containerRef} className="min-h-screen bg-white pb-20">
             {/* Custom nav bar */}
-            <div className="w-full bg-white border-b border-neutral-100 px-4 md:px-8 py-3">
-                <div className="max-w-[1200px] mx-auto w-full flex flex-col gap-1">
+            <div className="w-full bg-white border-b border-neutral-100 py-3">
+                <div className="max-w-[1280px] mx-auto px-6 md:px-12 w-full flex flex-col gap-1">
                     <button onClick={() => router.push('/home')} className="flex items-center gap-2 text-3 font-semibold text-neutral-800 w-fit shrink-0">
                         <Home2Fill className="w-5 h-5" color="#E5E5E5" />
                         Home
@@ -503,7 +524,7 @@ export default function BusinessTaxDetails() {
 
             {showWelcomeModal && <WelcomeModal onClose={() => setShowWelcomeModal(false)} />}
 
-            <main className="max-w-[1200px] mx-auto px-4 md:px-8 pt-14 pb-8">
+            <main className="max-w-[1280px] mx-auto px-6 md:px-12 pt-14 pb-8">
 
                 {/* 3-column layout */}
                 <div className="flex items-start gap-10 justify-center">
@@ -559,7 +580,7 @@ export default function BusinessTaxDetails() {
                         {/* Company Information */}
                         {activeSection === 'company-info' && (
                             <div data-animate className="flex flex-col items-center">
-                                <h2 className="text-7 font-semibold text-neutral-800 tracking-[-0.02em] mb-8 w-full max-w-[400px]">Company Information</h2>
+                                <h2 className="text-5 font-medium text-neutral-800 tracking-[-0.02em] font-[family-name:var(--font-merriweather)] mb-8 w-full max-w-[400px]">Company Information</h2>
 
                                 {!companyInfoReady ? (
                                     <div className="w-full max-w-[400px] flex items-center justify-center py-20">
@@ -609,7 +630,7 @@ export default function BusinessTaxDetails() {
                                                 <InfoTooltip text="Found on your CAC certificate of incorporation." />
                                             </label>
                                             <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-                                                <PopoverTrigger className="w-full h-10 flex items-center justify-start px-3 text-left font-normal text-3 text-neutral-800 border border-neutral-200 bg-white rounded-xl">
+                                                <PopoverTrigger className="w-full h-10 flex items-center justify-start px-3 text-left font-medium text-sm text-neutral-800 border border-neutral-200 bg-white rounded-xl">
                                                     {incorporationDateObj ? format(incorporationDateObj, 'dd / MM / yyyy') : <span className="text-neutral-400">DD / MM / YYYY</span>}
                                                 </PopoverTrigger>
                                                 <PopoverContent className="w-auto p-0" align="start">
@@ -681,7 +702,7 @@ export default function BusinessTaxDetails() {
                                                   <InfoTooltip text="Your projected gross revenue for the current tax year." />
                                               </label>
                                               <Input type="text" placeholder="₦ 0.00" value={estimatedAnnualRevenue}
-                                                  onChange={e => { const raw = e.target.value.replace(/[^0-9.]/g, ''); const parts = raw.split('.'); const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ','); setEstimatedAnnualRevenue(parts.length > 1 ? integer + '.' + parts.slice(1).join('') : integer); hasUnsavedChanges.current = true; }} />
+                                                  onChange={e => handleEstimatedRevenueChange(e.target.value)} />
                                           </div>
                                           <div>
                                               <label className="block text-2 font-medium text-neutral-500 mb-2">
@@ -759,6 +780,7 @@ export default function BusinessTaxDetails() {
                                         sourceMonth={sourceMonth}
                                         filedMonths={filedMonths}
                                         payeStaffByMonth={payeStaffByMonth}
+                                        taxYear={yearNum}
                                         onMonthChange={setActiveMonth}
                                         onAddStaff={handleAddPayeStaff}
                                         onRemoveStaff={handleRemovePayeStaff}
@@ -773,14 +795,30 @@ export default function BusinessTaxDetails() {
                         {/* VAT section */}
                         {activeSection === 'vat' && (
                             <div data-animate className="w-full">
-                                <BusinessVATContent profileId={profileId} taxYear={taxYear} />
+                                <BusinessVATContent
+                                    profileId={profileId}
+                                    taxYear={taxYear}
+                                    vatStep={vatStep}
+                                    setVatStep={setVatStep}
+                                    activeMonth={vatActiveMonth}
+                                    setActiveMonth={setVatActiveMonth}
+                                    completedSteps={vatCompletedSteps}
+                                    setCompletedSteps={setVatCompletedSteps}
+                                />
                             </div>
                         )}
 
                         {/* WHT section */}
                         {activeSection === 'wht' && (
                             <div data-animate className="w-full">
-                                <BusinessWHTContent profileId={profileId} taxYear={taxYear} />
+                                <BusinessWHTContent
+                                    profileId={profileId}
+                                    taxYear={taxYear}
+                                    activeMonth={whtActiveMonth}
+                                    setActiveMonth={setWhtActiveMonth}
+                                    whtStep={whtStep}
+                                    setWhtStep={setWhtStep}
+                                />
                             </div>
                         )}
 

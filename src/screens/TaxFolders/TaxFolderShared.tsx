@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import Image from 'next/image';
-import { Drawer, DrawerContent, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
+import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 
@@ -160,18 +160,18 @@ export function FilingSheet({ open, onClose, onFile }: FilingSheetProps) {
     <Drawer open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DrawerContent className="bg-white w-full max-w-full px-4 pb-6">
         <DrawerTitle className="sr-only">Filing Options</DrawerTitle>
-        <div className="max-w-[420px] mx-auto w-full pt-6">
-          <h2 className="text-5 font-semibold text-neutral-800 text-center mb-8">How do you want to file?</h2>
+        <div className="max-w-[420px] mx-auto w-full pt-6" data-animate>
+          <h2 className="text-5 font-medium text-neutral-800 text-center mb-8 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">How do you want to file?</h2>
 
           <RadioGroup value={selectedOption} onValueChange={(v) => setSelectedOption(v as typeof selectedOption)} className="space-y-3 mb-10">
-            <label className="flex items-start gap-3 px-4 py-4 rounded-xl bg-white cursor-pointer">
+            <label className={`flex items-start gap-3 px-4 py-4 rounded-xl cursor-pointer ${selectedOption === 'taxable_file' ? 'bg-neutral-50 border border-neutral-200' : 'bg-white border border-transparent'}`}>
               <RadioGroupItem value="taxable_file" className="mt-0.5" />
               <div>
                 <p className="text-3 font-semibold text-neutral-800">Let Taxable file for you (₦8,000)</p>
                 <p className="text-2 text-neutral-500 font-medium mt-0.5">We submit your return directly to FIRS.</p>
               </div>
             </label>
-            <label className="flex items-start gap-3 px-4 py-4 rounded-xl bg-white cursor-pointer">
+            <label className={`flex items-start gap-3 px-4 py-4 rounded-xl cursor-pointer ${selectedOption === 'accountant_review' ? 'bg-neutral-50 border border-neutral-200' : 'bg-white border border-transparent'}`}>
               <RadioGroupItem value="accountant_review" className="mt-0.5" />
               <div>
                 <p className="text-3 font-semibold text-neutral-800">Get accountant review first (₦25,000)</p>
@@ -181,11 +181,9 @@ export function FilingSheet({ open, onClose, onFile }: FilingSheetProps) {
           </RadioGroup>
 
           <div className="flex gap-3">
-            <DrawerClose asChild>
-              <button type="button" onClick={onClose} className="flex-1 h-12 border border-neutral-200 bg-white rounded-xl text-2 font-semibold text-neutral-800">
-                Back
-              </button>
-            </DrawerClose>
+            <SecondaryButton className="flex-1" onClick={onClose}>
+              Back
+            </SecondaryButton>
             <button type="button" onClick={handleContinue} className="flex-1 h-12 bg-taxable-blue text-white font-semibold rounded-xl text-2">
               Continue
             </button>

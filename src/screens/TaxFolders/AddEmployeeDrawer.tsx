@@ -81,9 +81,10 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
         });
     }, [editStaff, open]);
 
-    const isValid = firstName && lastName && email && phone && position && taxId && gross;
-    const _readOnly = isViewMode && !isEditing;
-
+    const grossValue = Number(gross.replace(/,/g, ''));
+    const isValidEmail = /^\S+@\S+\.\S+$/.test(email);
+    const isValidPhone = /^(\+?234[\s-]?)?[0-9]{3}[\s-]?[0-9]{3}[\s-]?[0-9]{4}$|^0?[0-9]{10}$/.test(phone);
+    const isValid = !!firstName && !!lastName && isValidEmail && isValidPhone && !!position && !!taxId && grossValue > 0;
     const headerTitle = isViewMode
         ? isEditing ? `${firstName} ${lastName}` : 'Employee Details'
         : 'Add Employee';
@@ -165,7 +166,7 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
             <DrawerContent className="flex flex-col max-h-[90dvh]" data-animate>
                 <div data-lenis-prevent className="overflow-y-auto flex-1">
                     <div className="mx-auto max-w-[450px] px-6 py-8">
-                        <h2 className="text-5 font-semibold text-taxable-dark text-center mb-8">
+                        <h2 className="text-5 font-medium text-neutral-800 text-center mb-8 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">
                             {headerTitle}
                         </h2>
 
@@ -240,7 +241,7 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
                         <div className="flex gap-3 mt-8">
                             {isViewMode && !isEditing && (
                                 <>
-                                    <button onClick={() => setShowRemoveConfirm(true)} className="flex-1 h-12 border border-red-200 bg-red-50 text-destructive font-semibold rounded-xl text-3">
+                                    <button onClick={() => setShowRemoveConfirm(true)} className="flex-1 h-12 border border-red-200 bg-red-50 text-destructive font-semibold rounded-xl text-2">
                                         Remove Staff
                                     </button>
                                     <PrimaryButton onClick={handleEditClick} className="flex-1">
@@ -291,7 +292,7 @@ export function AddEmployeeDrawer({ open, onClose, onAdd, editStaff, onRemove, o
                                     <SecondaryButton className="flex-1" onClick={() => setShowRemoveConfirm(false)}>
                                         Cancel
                                     </SecondaryButton>
-                                    <button onClick={handleRemove} disabled={submitting} className="flex-1 h-12 bg-destructive text-white font-semibold rounded-xl text-3 disabled:opacity-50 flex items-center justify-center">
+                                    <button onClick={handleRemove} disabled={submitting} className="flex-1 h-12 bg-destructive text-white font-semibold rounded-xl text-2 disabled:opacity-50 flex items-center justify-center">
                                         {submitting ? <Spinner /> : 'Remove'}
                                     </button>
                                 </div>

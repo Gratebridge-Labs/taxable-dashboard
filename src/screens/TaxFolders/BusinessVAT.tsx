@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, startTransition } from 'react';
+import React, { useState, useEffect, useCallback, useRef, startTransition } from 'react';
 import { toast } from 'sonner';
 import { FileTextIcon, XIcon } from 'lucide-react';
 
@@ -30,7 +30,7 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
 const VAT_RATE = 0.075;
 
-type VatStep = 'gatekeeper' | 'output-vat' | 'input-vat' | 'adjustments' | 'review';
+export type VatStep = 'gatekeeper' | 'output-vat' | 'input-vat' | 'adjustments' | 'review';
 
 // ── VAT Filing Data ─────────────────────────────────────────────────────
 export interface VATFilingData {
@@ -106,25 +106,66 @@ const STEP_NUM: Record<VatStep, number> = {
     gatekeeper: 1, 'output-vat': 2, 'input-vat': 3, adjustments: 4, review: 5,
 };
 
+const ENTRY_OPTIONS = [
+    { id: 'manual' as const, label: 'Manual entry' },
+    { id: 'csv' as const, label: 'Upload sales & purchase ledgers (CSV/Excel)' },
+    { id: 'software' as const, label: 'Connect accounting software (QuickBooks, Xero, Zoho)' },
+];
+
+const VAT_STEPS = [
+    { key: 'gatekeeper', step: 1, title: 'Data Source' },
+    { key: 'output-vat', step: 2, title: 'Output VAT' },
+    { key: 'input-vat', step: 3, title: 'Input VAT' },
+    { key: 'adjustments', step: 4, title: 'Adjustments' },
+    { key: 'review', step: 5, title: 'Review' },
+];
+
 // ── VAT Content ─────────────────────────────────────────────────────────
-export function BusinessVATContent({ profileId, taxYear }: { profileId?: string; taxYear?: string } = {}) {
-    const { getVat, upsertVat, fileVat } = useTaxableApi();
+export interface BusinessVATContentProps {
+    profileId?: string;
+    taxYear?: string;
+    vatStep?: VatStep;
+    setVatStep?: React.Dispatch<React.SetStateAction<VatStep>>;
+    activeMonth?: number;
+    setActiveMonth?: React.Dispatch<React.SetStateAction<number>>;
+    completedSteps?: Set<number>;
+    setCompletedSteps?: React.Dispatch<React.SetStateAction<Set<number>>>;
+}
+
+export function BusinessVATContent({
+    profileId, taxYear, vatStep: vatStepProp, setVatStep: setVatStepProp,
+    activeMonth: activeMonthProp, setActiveMonth: setActiveMonthProp,
+    completedSteps: completedStepsProp, setCompletedSteps: setCompletedStepsProp,
+}: BusinessVATContentProps = {}) {
+    const { getVat, upsertVat, fileVat, uploadFile } = useTaxableApi();
     const yearNum = Number(taxYear) || new Date().getFullYear();
 
-    const [vatStep, setVatStep] = useState<VatStep>('gatekeeper');
+    // Fall back to internal state when used standalone (e.g. /tax-folders/business-vat)
+    const [internalVatStep, setInternalVatStep] = useState<VatStep>('gatekeeper');
+    const [internalActiveMonth, setInternalActiveMonth] = useState(0);
+    const [internalCompletedSteps, setInternalCompletedSteps] = useState<Set<number>>(new Set());
+
+    const vatStep = vatStepProp ?? internalVatStep;
+    const setVatStep = setVatStepProp ?? setInternalVatStep;
+    const activeMonth = activeMonthProp ?? internalActiveMonth;
+    const setActiveMonth = setActiveMonthProp ?? setInternalActiveMonth;
+    const completedSteps = completedStepsProp ?? internalCompletedSteps;
+    const setCompletedSteps = setCompletedStepsProp ?? setInternalCompletedSteps;
+
     const [entryMethod, setEntryMethod] = useState<'manual' | 'csv' | 'software'>('manual');
-    const [activeMonth, setActiveMonth] = useState(0);
     const [filedMonths, setFiledMonths] = useState<Set<number>>(new Set());
     const [draftMonths, setDraftMonths] = useState<Set<number>>(new Set());
     const [monthData, setMonthData] = useState<Record<number, VATFilingData>>({});
     const [showFilingModal, setShowFilingModal] = useState(false);
     const [salesScheduleFiles, setSalesScheduleFiles] = useState<{ name: string }[]>([]);
     const [purchaseInvoiceFiles, setPurchaseInvoiceFiles] = useState<{ name: string }[]>([]);
-    const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
     const [dismissCashBanner, setDismissCashBanner] = useState(false);
     const [dismissInputBanner, setDismissInputBanner] = useState(false);
     const [monthLoading, setMonthLoading] = useState(Boolean(profileId));
     const [saving, setSaving] = useState(false);
+    const [uploading, setUploading] = useState<'sales' | 'purchases' | null>(null);
+    const salesInputRef = useRef<HTMLInputElement>(null);
+    const purchaseInputRef = useRef<HTMLInputElement>(null);
 
     const data = monthData[activeMonth] ?? defaultFilingData();
 
@@ -237,8 +278,6 @@ export function BusinessVATContent({ profileId, taxYear }: { profileId?: string;
             setMonthData({});
             setFiledMonths(new Set());
             setDraftMonths(new Set());
-            setVatStep('gatekeeper');
-            setCompletedSteps(new Set());
         });
 
         if (!profileId) return;
@@ -426,33 +465,71 @@ export function BusinessVATContent({ profileId, taxYear }: { profileId?: string;
         }
     };
 
-    const handleAttachmentUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'sales' | 'purchases') => {
-        const files = e.target.files;
-        if (!files) return;
-        const items = Array.from(files).map(f => ({ name: f.name }));
-        if (target === 'sales') {
-            setSalesScheduleFiles(prev => [...prev, ...items]);
-            setField('salesScheduleUploaded')('true');
-        } else {
-            setPurchaseInvoiceFiles(prev => [...prev, ...items]);
-            setField('purchaseInvoicesUploaded')('true');
+    const handleAttachmentUpload = async (file: File, target: 'sales' | 'purchases') => {
+        if (!profileId) {
+            toast.error('Profile required to upload files');
+            return;
         }
-        e.target.value = '';
+        setUploading(target);
+        try {
+            const res = await uploadFile(
+                profileId,
+                file,
+                target === 'sales' ? 'sales-schedule' : 'purchase-invoices',
+                `${MONTHS[activeMonth]} ${yearNum} ${target === 'sales' ? 'sales schedule' : 'purchase invoices'}`
+            );
+            const url = res?.data?.url;
+            if (!url) {
+                toast.error('Upload failed — no file URL returned.');
+                return;
+            }
+            if (target === 'sales') {
+                setSalesScheduleFiles(prev => [...prev, { name: file.name }]);
+                setField('salesScheduleUrl')(url);
+                setField('salesScheduleUploaded')('true');
+            } else {
+                setPurchaseInvoiceFiles(prev => [...prev, { name: file.name }]);
+                setField('purchaseInvoicesUrl')(url);
+                setField('purchaseInvoicesUploaded')('true');
+            }
+            toast.success(target === 'sales' ? 'Sales schedule uploaded' : 'Purchase invoices uploaded');
+        } catch (err: unknown) {
+            console.error(
+                `[BusinessVAT] Failed to upload ${target}:`,
+                err instanceof Error ? err.message : 'Unknown error'
+            );
+            toast.error(err instanceof Error ? err.message : 'Failed to upload file. Please try again.');
+        } finally {
+            setUploading(null);
+        }
     };
 
-    const ENTRY_OPTIONS = [
-        { id: 'manual' as const, label: 'Manual entry' },
-        { id: 'csv' as const, label: 'Upload sales & purchase ledgers (CSV/Excel)' },
-        { id: 'software' as const, label: 'Connect accounting software (QuickBooks, Xero, Zoho)' },
-    ];
+    // React-Compiler-safe file input wiring (button + ref + native addEventListener)
+    useEffect(() => {
+        const input = salesInputRef.current;
+        if (!input) return;
+        const onChange = (e: Event) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (file) handleAttachmentUpload(file, 'sales');
+            (e.target as HTMLInputElement).value = '';
+        };
+        input.addEventListener('change', onChange);
+        return () => input.removeEventListener('change', onChange);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [profileId, activeMonth, yearNum, uploadFile, salesInputRef.current]);
 
-    const VAT_STEPS = [
-        { key: 'gatekeeper', step: 1, title: 'Data Source' },
-        { key: 'output-vat', step: 2, title: 'Output VAT' },
-        { key: 'input-vat', step: 3, title: 'Input VAT' },
-        { key: 'adjustments', step: 4, title: 'Adjustments' },
-        { key: 'review', step: 5, title: 'Review' },
-    ];
+    useEffect(() => {
+        const input = purchaseInputRef.current;
+        if (!input) return;
+        const onChange = (e: Event) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (file) handleAttachmentUpload(file, 'purchases');
+            (e.target as HTMLInputElement).value = '';
+        };
+        input.addEventListener('change', onChange);
+        return () => input.removeEventListener('change', onChange);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [profileId, activeMonth, yearNum, uploadFile, purchaseInputRef.current]);
 
     const stepIndex = STEP_NUM[vatStep];
 
@@ -501,7 +578,7 @@ export function BusinessVATContent({ profileId, taxYear }: { profileId?: string;
             <div className="mb-12">
                 <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-4">
-                        <h1 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em]">
+                        <h1 className="text-5 font-medium text-neutral-800 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">
                             File {MONTHS[activeMonth]} VAT Return
                         </h1>
                         {monthSelector}
@@ -537,7 +614,7 @@ export function BusinessVATContent({ profileId, taxYear }: { profileId?: string;
                     {/* ── Step 1: Gatekeeper ── */}
                     {vatStep === 'gatekeeper' && (
                         <div className="max-w-[480px] mx-auto" data-animate>
-                            <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-4">How do you want to enter your VAT data?</h2>
+                            <h2 className="text-3 font-medium text-neutral-800 tracking-[-0.02em] font-[family-name:var(--font-merriweather)] mb-4">How do you want to enter your VAT data?</h2>
 
                             <RadioGroup value={entryMethod} onValueChange={(v) => setEntryMethod(v as 'manual' | 'csv' | 'software')} className="space-y-0 mb-6">
                                 {ENTRY_OPTIONS.map(opt => {
@@ -560,7 +637,7 @@ export function BusinessVATContent({ profileId, taxYear }: { profileId?: string;
                     {/* ── Step 2: Output VAT (Sales) ── */}
                     {vatStep === 'output-vat' && (
                         <div className="max-w-[500px] mx-auto" data-animate>
-                            <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-4">Output VAT (Sales)</h2>
+                            <h2 className="text-3 font-medium text-neutral-800 tracking-[-0.02em] font-[family-name:var(--font-merriweather)] mb-4">Output VAT (Sales)</h2>
                             {!dismissCashBanner && (
                             <div className="relative flex items-start gap-2 mb-6 p-3 bg-amber-50 rounded-xl">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="flex-shrink-0 mt-0.5 text-amber-600"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
@@ -573,35 +650,40 @@ export function BusinessVATContent({ profileId, taxYear }: { profileId?: string;
                                 <div className="space-y-3">
                                     <FormFieldRow className="justify-between">
                                         <FormLabel tip="Total standard sales before VAT — cash actually received this month.">Standard Sales (7.5%)</FormLabel>
-                                        <Input type="text" value={data.standardSales} onChange={fmtInput(setField('standardSales'))} placeholder="N0" className="w-[150px] text-left" />
+                                        <Input type="text" value={data.standardSales} onChange={fmtInput(setField('standardSales'))} placeholder="₦ 0.00" className="w-[150px] text-left" />
                                     </FormFieldRow>
                                     <FormFieldRow className="justify-between">
                                         <FormLabel tip="Automatically calculated: Standard Sales × 7.5%">Output VAT @ 7.5%</FormLabel>
-                                        <Input type="text" value={outputVAT > 0 ? fmt(outputVAT) : 'N0'} disabled className="w-[150px] text-left bg-neutral-50 text-neutral-400" />
+                                        <Input type="text" value={outputVAT > 0 ? fmt(outputVAT) : '₦ 0.00'} disabled className="w-[150px] text-left" />
                                     </FormFieldRow>
                                     <FormFieldRow className="justify-between">
                                         <FormLabel tip="Sales where VAT is 0% — exports, certain goods.">Exempt / Zero-Rated Sales</FormLabel>
-                                        <Input type="text" value={data.exemptSales} onChange={fmtInput(setField('exemptSales'))} placeholder="N0" className="w-[150px] text-left" />
+                                        <Input type="text" value={data.exemptSales} onChange={fmtInput(setField('exemptSales'))} placeholder="₦ 0.00" className="w-[150px] text-left" />
                                     </FormFieldRow>
                                     <FormFieldRow className="justify-between">
                                         <FormLabel tip="VAT deducted at source by government or corporate clients.">Withholding VAT (WVAT) Credit</FormLabel>
-                                        <Input type="text" value={data.wvatCredit} onChange={fmtInput(setField('wvatCredit'))} placeholder="N0" className="w-[150px] text-left" />
+                                        <Input type="text" value={data.wvatCredit} onChange={fmtInput(setField('wvatCredit'))} placeholder="₦ 0.00" className="w-[150px] text-left" />
                                     </FormFieldRow>
                                 </div>
                             </div>
 
                             <div className="mb-6">
                                 <p className="text-2 font-semibold text-neutral-700 mb-2">Upload Sales Schedule</p>
-                                <div className="flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
-                                    <div className="flex items-center gap-2.5">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-neutral-400"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
-                                        <span className="text-1 text-neutral-400 font-medium">Upload CSV or PDF of sales transactions</span>
+                                    <div className="flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                        <div className="flex items-center gap-2.5">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-neutral-400"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                                            <span className="text-1 text-neutral-400 font-medium">Upload CSV or PDF of sales transactions</span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => salesInputRef.current?.click()}
+                                            disabled={uploading !== null || !profileId}
+                                            className="cursor-pointer text-2 font-semibold text-taxable-blue bg-transparent border-none p-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {uploading === 'sales' ? <Spinner className="size-4" /> : 'Upload'}
+                                        </button>
+                                        <input ref={salesInputRef} type="file" hidden accept=".csv,.pdf,.xlsx" />
                                     </div>
-                                    <label className="cursor-pointer text-2 font-semibold text-taxable-blue">
-                                        Upload
-                                        <input type="file" hidden accept=".csv,.pdf,.xlsx" onChange={(e) => handleAttachmentUpload(e, 'sales')} />
-                                    </label>
-                                </div>
                                 {salesScheduleFiles.length > 0 && (
                                     <div className="mt-3">
                                         <AttachmentGroup>
@@ -638,7 +720,7 @@ export function BusinessVATContent({ profileId, taxYear }: { profileId?: string;
                     {/* ── Step 3: Input VAT (Purchases) ── */}
                     {vatStep === 'input-vat' && (
                         <div className="max-w-[500px] mx-auto" data-animate>
-                            <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-4">Input VAT (Purchases)</h2>
+                            <h2 className="text-3 font-medium text-neutral-800 tracking-[-0.02em] font-[family-name:var(--font-merriweather)] mb-4">Input VAT (Purchases)</h2>
                             {!dismissInputBanner && (
                             <div className="relative flex items-start gap-2 mb-6 p-3 bg-amber-50 rounded-xl">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="flex-shrink-0 mt-0.5 text-amber-600"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
@@ -651,31 +733,36 @@ export function BusinessVATContent({ profileId, taxYear }: { profileId?: string;
                                 <div className="space-y-3">
                                     <FormFieldRow className="justify-between">
                                         <FormLabel tip="VAT paid on raw materials or inventory purchased for direct resale. This reduces your VAT liability.">VAT on Inventory / Raw Materials (Allowable)</FormLabel>
-                                        <Input type="text" value={data.allowableInputVAT} onChange={fmtInput(setField('allowableInputVAT'))} placeholder="N0" className="w-[150px] text-left" />
+                                        <Input type="text" value={data.allowableInputVAT} onChange={fmtInput(setField('allowableInputVAT'))} placeholder="₦ 0.00" className="w-[150px] text-left" />
                                     </FormFieldRow>
                                     <FormFieldRow className="justify-between">
                                         <FormLabel tip="VAT on rent, diesel, internet, utilities — logged for records but cannot be deducted.">VAT on Operational Overheads (Non-Allowable)</FormLabel>
-                                        <Input type="text" value={data.nonAllowableOverheads} onChange={fmtInput(setField('nonAllowableOverheads'))} placeholder="N0" className="w-[150px] text-left" />
+                                        <Input type="text" value={data.nonAllowableOverheads} onChange={fmtInput(setField('nonAllowableOverheads'))} placeholder="₦ 0.00" className="w-[150px] text-left" />
                                     </FormFieldRow>
                                     <FormFieldRow className="justify-between">
                                         <FormLabel tip="VAT on machinery, laptops, equipment — logged for records but cannot be deducted.">VAT on Capital Expenditure (Non-Allowable)</FormLabel>
-                                        <Input type="text" value={data.nonAllowableCapEx} onChange={fmtInput(setField('nonAllowableCapEx'))} placeholder="N0" className="w-[150px] text-left" />
+                                        <Input type="text" value={data.nonAllowableCapEx} onChange={fmtInput(setField('nonAllowableCapEx'))} placeholder="₦ 0.00" className="w-[150px] text-left" />
                                     </FormFieldRow>
                                 </div>
                             </div>
 
                             <div className="mb-6">
                                 <p className="text-2 font-semibold text-neutral-700 mb-2">Upload Purchase Invoices & Receipts</p>
-                                <div className="flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
-                                    <div className="flex items-center gap-2.5">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-neutral-400"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
-                                        <span className="text-1 text-neutral-400 font-medium">Upload invoices supporting Allowable Input VAT</span>
+                                    <div className="flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
+                                        <div className="flex items-center gap-2.5">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-neutral-400"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                                            <span className="text-1 text-neutral-400 font-medium">Upload invoices supporting Allowable Input VAT</span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => purchaseInputRef.current?.click()}
+                                            disabled={uploading !== null || !profileId}
+                                            className="cursor-pointer text-2 font-semibold text-taxable-blue bg-transparent border-none p-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {uploading === 'purchases' ? <Spinner className="size-4" /> : 'Upload'}
+                                        </button>
+                                        <input ref={purchaseInputRef} type="file" hidden accept=".csv,.pdf,.xlsx,.jpg,.png" />
                                     </div>
-                                    <label className="cursor-pointer text-2 font-semibold text-taxable-blue">
-                                        Upload
-                                        <input type="file" hidden accept=".csv,.pdf,.xlsx,.jpg,.png" onChange={(e) => handleAttachmentUpload(e, 'purchases')} />
-                                    </label>
-                                </div>
                                 {purchaseInvoiceFiles.length > 0 && (
                                     <div className="mt-3">
                                         <AttachmentGroup>
@@ -712,12 +799,12 @@ export function BusinessVATContent({ profileId, taxYear }: { profileId?: string;
                     {/* ── Step 4: Adjustments ── */}
                     {vatStep === 'adjustments' && (
                         <div className="max-w-[500px] mx-auto" data-animate>
-                            <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-4">Adjustments</h2>
+                            <h2 className="text-3 font-medium text-neutral-800 tracking-[-0.02em] font-[family-name:var(--font-merriweather)] mb-4">Adjustments</h2>
 
                             <div className="bg-neutral-50 rounded-3xl p-5 mb-6">
                                 <FormFieldRow className="justify-between mb-0">
                                     <FormLabel tip="VAT credit carried forward from the previous month. Auto-populated if available.">Brought-Forward VAT Credit</FormLabel>
-                                    <Input type="text" value={data.broughtForwardCredit} onChange={fmtInput(setField('broughtForwardCredit'))} placeholder="N0" className="w-[150px] text-left" />
+                                    <Input type="text" value={data.broughtForwardCredit} onChange={fmtInput(setField('broughtForwardCredit'))} placeholder="₦ 0.00" className="w-[150px] text-left" />
                                 </FormFieldRow>
                             </div>
 
@@ -736,7 +823,7 @@ export function BusinessVATContent({ profileId, taxYear }: { profileId?: string;
                     {/* ── Step 5: Review ── */}
                     {vatStep === 'review' && (
                         <div className="max-w-[500px] mx-auto" data-animate>
-                            <h2 className="text-3 font-semibold text-neutral-800 tracking-[-0.02em] mb-4">Review & Submit</h2>
+                            <h2 className="text-3 font-medium text-neutral-800 tracking-[-0.02em] font-[family-name:var(--font-merriweather)] mb-4">Review & Submit</h2>
 
                             <div className="bg-neutral-50 rounded-3xl p-5 mb-6">
                                 <div className="space-y-6">

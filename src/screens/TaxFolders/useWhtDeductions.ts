@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { toast } from 'sonner';
 
 import { useTaxableApi } from '@/hooks/useTaxableApi';
@@ -119,7 +120,12 @@ function errMessage(err: unknown, fallback: string) {
   return err instanceof Error ? err.message : fallback;
 }
 
-export function useWhtRemittance(profileId: string, taxYear: string) {
+export function useWhtRemittance(
+    profileId: string,
+    taxYear: string,
+    externalActiveMonth?: number,
+    setExternalActiveMonth?: Dispatch<SetStateAction<number>>
+) {
   const {
     listWhtDeductions,
     createWhtDeduction,
@@ -131,7 +137,9 @@ export function useWhtRemittance(profileId: string, taxYear: string) {
 
   const [dataByMonth, setDataByMonth] = useState<Record<number, WHTDeduction[]>>({});
   const [filedMonths, setFiledMonths] = useState<Set<number>>(new Set());
-  const [activeMonth, setActiveMonth] = useState(0);
+  const [internalActiveMonth, setInternalActiveMonth] = useState(0);
+  const activeMonth = externalActiveMonth ?? internalActiveMonth;
+  const setActiveMonth = setExternalActiveMonth ?? setInternalActiveMonth;
   const [loading, setLoading] = useState(true);
   const [pendingRemove, setPendingRemove] = useState<{ monthKey: number; id: string } | null>(null);
   const loadGen = useRef(0);
@@ -265,7 +273,12 @@ export function useWhtRemittance(profileId: string, taxYear: string) {
   };
 }
 
-export function useWhtCredits(profileId: string, taxYear: string) {
+export function useWhtCredits(
+    profileId: string,
+    taxYear: string,
+    externalActiveMonth?: number,
+    setExternalActiveMonth?: Dispatch<SetStateAction<number>>
+) {
   const {
     listWhtCredits,
     createWhtCredit,
@@ -275,7 +288,9 @@ export function useWhtCredits(profileId: string, taxYear: string) {
   const year = Number(taxYear) || new Date().getFullYear();
 
   const [dataByMonth, setDataByMonth] = useState<Record<number, WHTDeduction[]>>({});
-  const [activeMonth, setActiveMonth] = useState(0);
+  const [internalActiveMonth, setInternalActiveMonth] = useState(0);
+  const activeMonth = externalActiveMonth ?? internalActiveMonth;
+  const setActiveMonth = setExternalActiveMonth ?? setInternalActiveMonth;
   const [periodMode, setPeriodMode] = useState<'monthly' | 'annually'>('monthly');
   const [loading, setLoading] = useState(true);
   const [pendingRemove, setPendingRemove] = useState<{ monthKey: number; id: string } | null>(null);

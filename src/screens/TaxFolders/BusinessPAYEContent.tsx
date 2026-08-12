@@ -11,12 +11,14 @@ import { PrimaryButton, SecondaryButton, SecondaryButtonSm } from '@/screens/Tax
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 
 // ── PAYE Calculation (2026 Nigeria Tax Act) ─────────────────────────
+// Band limits are WIDTHS (progressive brackets): first ₦800k at 0%,
+// next ₦2.2M at 15%, next ₦9M at 18%, next ₦13M at 21%, next ₦25M at 23%, remainder at 25%.
 const PAYE_BANDS = [
     { limit: 800000, rate: 0 },
-    { limit: 3000000, rate: 0.15 },
-    { limit: 12000000, rate: 0.18 },
-    { limit: 25000000, rate: 0.21 },
-    { limit: 50000000, rate: 0.23 },
+    { limit: 2200000, rate: 0.15 },
+    { limit: 9000000, rate: 0.18 },
+    { limit: 13000000, rate: 0.21 },
+    { limit: 25000000, rate: 0.23 },
     { limit: Infinity, rate: 0.25 },
 ];
 
@@ -58,6 +60,7 @@ interface MonthlyFilingProps {
     sourceMonth: string | null;
     filedMonths: Set<string>;
     payeStaffByMonth: Record<string, PayeStaff[]>;
+    taxYear: number;
     onMonthChange: (month: string) => void;
     onAddStaff: (staff: PayeStaff) => void | Promise<void>;
     onRemoveStaff: (staff: PayeStaff) => void | Promise<void>;
@@ -70,7 +73,7 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 
 export function PayeMonthlyFiling({
     activeMonth, activeStep, isFiled, totalPAYE, staff, sourceMonth,
-    filedMonths, payeStaffByMonth, onMonthChange,
+    filedMonths, payeStaffByMonth, taxYear, onMonthChange,
     onAddStaff, onRemoveStaff, onSaveStaff, onCopyStaff, onFile,
 }: MonthlyFilingProps) {
     const [drawerOpen, setDrawerOpen] = useState(false);
@@ -147,7 +150,7 @@ export function PayeMonthlyFiling({
 
     const entryOptions = (
         <div data-animate className="max-w-[480px] mx-auto">
-            <h2 className="text-6 font-semibold text-neutral-800 mb-1">How do you want to add payroll data?</h2>
+            <h2 className="text-5 font-medium text-neutral-800 tracking-[-0.02em] font-[family-name:var(--font-merriweather)] mb-1">How do you want to add payroll data?</h2>
             <p className="text-2 text-neutral-500 font-medium mb-6">Choose how you'd like to add payroll, and the month you're starting from.</p>
 
             {isFirstTime ? (
@@ -187,7 +190,7 @@ export function PayeMonthlyFiling({
                         {sourceMonth && (
                             <label className="flex items-center gap-3 py-3.5 cursor-pointer" onClick={() => handleCopyClick(sourceMonth)}>
                                 <RadioGroupItem value="copy" />
-                                <span className="text-3 font-medium text-neutral-800">Copy from {sourceMonth} 2026</span>
+                                <span className="text-3 font-medium text-neutral-800">Copy from {sourceMonth} {taxYear}</span>
                             </label>
                         )}
                         <label className="flex items-center gap-3 py-3.5 cursor-not-allowed opacity-40">
@@ -214,7 +217,7 @@ export function PayeMonthlyFiling({
         <div data-animate className="w-full">
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-4">
-                    <h2 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em]">Employee Payroll</h2>
+                    <h2 className="text-5 font-medium text-neutral-800 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Employee Payroll</h2>
                     {monthSelector}
                 </div>
                 <SecondaryButtonSm onClick={() => openAddDrawer()}>Add employee</SecondaryButtonSm>
@@ -223,7 +226,7 @@ export function PayeMonthlyFiling({
                 <Table className="text-2 [&_tr]:border-neutral-50">
                     <TableHeader>
                         <TableRow className="bg-neutral-50">
-                            {['Full Name', 'Gross Income', 'Taxable Income', 'HMO (5%)', 'Pension (8%)', 'NHF (2.5%)', 'Annual Rent', 'JTB Tax ID', 'Job Position', 'Email Address', 'Phone Number'].map(h => (
+                            {['Full Name', 'Gross Income', 'PAYE Due', 'HMO (5%)', 'Pension (8%)', 'NHF (2.5%)', 'Annual Rent', 'JTB Tax ID', 'Job Position', 'Email Address', 'Phone Number'].map(h => (
                                 <TableHead key={h} className="px-6 py-4 font-medium text-neutral-400">{h}</TableHead>
                             ))}
                         </TableRow>
@@ -237,7 +240,7 @@ export function PayeMonthlyFiling({
                             </TableRow>
                         ) : (
                             staff.map((st, i) => {
-                                const { monthlyTax: _monthlyTax, taxableIncome } = calculateAnnualPAYE(st);
+                                const { monthlyTax, taxableIncome: _taxableIncome } = calculateAnnualPAYE(st);
                                 const pension = st.pensionOn ? Math.round(st.gross * 0.08) : 0;
                                 const nhf = st.nhfOn ? Math.round(st.gross * 0.025) : 0;
                                 const hmo = st.hmoOn ? Math.round(st.gross * 0.05) : 0;
@@ -245,7 +248,7 @@ export function PayeMonthlyFiling({
                                     <TableRow key={i} className="cursor-pointer" onClick={() => openViewDrawer(st)}>
                                         <TableCell className="px-6 py-4 font-medium text-neutral-600">{st.firstName} {st.lastName}</TableCell>
                                         <TableCell className="px-6 py-4 font-medium text-neutral-600">{fmt(st.gross)}</TableCell>
-                                        <TableCell className="px-6 py-4 font-semibold text-neutral-800">{fmt(taxableIncome)}</TableCell>
+                                        <TableCell className="px-6 py-4 font-semibold text-neutral-800">{fmt(monthlyTax)}</TableCell>
                                         <TableCell className="px-6 py-4 font-medium text-neutral-600">{fmt(hmo)}</TableCell>
                                         <TableCell className="px-6 py-4 font-medium text-neutral-600">{fmt(pension)}</TableCell>
                                         <TableCell className="px-6 py-4 font-medium text-neutral-600">{fmt(nhf)}</TableCell>
@@ -278,7 +281,7 @@ export function PayeMonthlyFiling({
         return (
             <>
                 {!isFirstTime && <div className="mb-6 flex items-center gap-4">
-                    <h2 className="text-5 font-semibold text-neutral-800 tracking-[-0.02em]">Employee Payroll</h2>
+                    <h2 className="text-5 font-medium text-neutral-800 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Employee Payroll</h2>
                     {monthSelector}
                 </div>}
                 {entryOptions}
@@ -296,7 +299,7 @@ export function PayeMonthlyFiling({
                             <div className="flex flex-col items-center text-center">
                                 <h3 className="text-6 font-semibold text-neutral-800 mb-2">Copy payroll data?</h3>
                                 <p className="text-2 text-neutral-500 font-medium mb-4">
-                                    This will copy all employees from {pendingCopy.sourceMonth} 2026 to {activeMonth} 2026. You can edit them independently.
+                                    This will copy all employees from {pendingCopy.sourceMonth} {taxYear} to {activeMonth} {taxYear}. You can edit them independently.
                                 </p>
                                 <label className="flex items-center gap-2 mb-6 cursor-pointer">
                                     <Checkbox checked={skipCopyConfirmation} onCheckedChange={() => setSkipCopyConfirmation(p => !p)} />

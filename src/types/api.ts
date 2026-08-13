@@ -1362,10 +1362,11 @@ export interface User {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  tin?: string;
   emailVerified?: boolean;
   twoFactorEnabled?: boolean;
-  tin?: string;
-  whatsappReminders?: boolean;
+  receiveTaxDeadlineReminders?: boolean;
+  profileImageUrl?: string;
   name?: string;
 }
 

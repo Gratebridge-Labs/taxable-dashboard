@@ -3,13 +3,16 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Home2Fill } from '@mingcute/react';
+import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { PrimaryButton, SecondaryButton } from '@/screens/TaxFolders/TaxFolderShared';
+import { Spinner } from '@/components/ui/spinner';
+import { PrimaryButton, SecondaryButton, SecondaryButtonSm, SectionHeading } from '@/screens/TaxFolders/TaxFolderShared';
 import { useApi } from '@/hooks/useApi';
 import { useTaxableApi } from '@/hooks/useTaxableApi';
 import { useUser } from '@/contexts/UserContext';
 import { useProfile } from '@/contexts/ProfileContext';
+import { prepareUploadFile } from '@/lib/file-upload';
 import type { PitIncomeDocuments } from '@/types/api';
 
 const MONTHS = [
@@ -78,8 +81,9 @@ export default function Profile() {
     const { profiles } = useProfile();
     const [activeSection, setActiveSection] = useState('Personal Information');
     const [profileImage, setProfileImage] = useState<string | null>(null);
-    const { post, patch, loading: apiLoading, error: apiError } = useApi();
-    const { getIncomeData, listWhtDeductions } = useTaxableApi();
+    const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
+    const { post, put, loading: apiLoading, error: apiError } = useApi();
+    const { getIncomeData, listWhtDeductions, uploadSimple } = useTaxableApi();
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [documents, setDocuments] = useState<DocEntry[]>([]);
 
@@ -89,7 +93,7 @@ export default function Profile() {
         tin: '',
         phone: '',
         email: '',
-        whatsappReminders: false
+        receiveTaxDeadlineReminders: false
     });
 
     useEffect(() => {
@@ -101,8 +105,9 @@ export default function Profile() {
                 tin: user.tin || '',
                 phone: user.phone || '',
                 email: user.email || '',
-                whatsappReminders: user.whatsappReminders || false
+                receiveTaxDeadlineReminders: user.receiveTaxDeadlineReminders || false
             });
+            setProfileImage(user.profileImageUrl || null);
         }
     }, [user]);
 
@@ -121,6 +126,7 @@ export default function Profile() {
             if (file) {
                 const imageUrl = URL.createObjectURL(file);
                 setProfileImage(imageUrl);
+                setPendingImageFile(file);
             }
             (e.target as HTMLInputElement).value = '';
         };
@@ -220,20 +226,40 @@ export default function Profile() {
     const handleSaveProfile = async () => {
         setSuccessMessage(null);
         try {
-            const response = await patch('/auth/update-profile', {
+            let profileImageUrl = user?.profileImageUrl || null;
+
+            if (pendingImageFile) {
+                const prepared = await prepareUploadFile(pendingImageFile);
+                if (!prepared) {
+                    toast.error('That image is too large. Please choose one under 4MB.');
+                    return;
+                }
+                const uploadRes = await uploadSimple(prepared);
+                if (!uploadRes?.success || !uploadRes?.data?.url) {
+                    toast.error('Failed to upload your photo. Please try again.');
+                    return;
+                }
+                profileImageUrl = uploadRes.data.url;
+            }
+
+            const response = await put('/auth/me', {
                 firstName: formData.firstName,
                 lastName: formData.lastName,
                 phone: formData.phone,
-                tin: formData.tin,
-                whatsappReminders: formData.whatsappReminders
+                receiveTaxDeadlineReminders: formData.receiveTaxDeadlineReminders,
+                ...(formData.tin ? { tin: formData.tin } : {}),
+                ...(profileImageUrl ? { profileImageUrl } : {}),
             });
 
             if (response?.success && response?.data?.user) {
                 setUser(response.data.user);
+                setProfileImage(profileImageUrl || response.data.user.profileImageUrl || null);
+                setPendingImageFile(null);
                 setSuccessMessage('Profile successfully updated.');
             }
         } catch (err) {
-            console.error('Failed to update profile:', err);
+            console.error('Failed to update profile:', err instanceof Error ? err.message : 'Unknown error');
+            toast.error('Failed to save your profile. Please try again.');
         }
     };
 
@@ -265,8 +291,8 @@ export default function Profile() {
     return (
         <div className="min-h-screen bg-white pb-20">
             {/* Nav bar */}
-            <div className="w-full bg-white border-b border-neutral-100 px-4 md:px-8 py-3">
-                <div className="max-w-[1200px] mx-auto w-full flex flex-col gap-1">
+            <div className="w-full bg-white border-b border-neutral-100 px-6 md:px-12 py-3">
+                <div className="max-w-[1280px] mx-auto w-full flex flex-col gap-1">
                     <button onClick={() => router.push('/home')} className="flex items-center gap-2 text-3 font-semibold text-neutral-800 w-fit shrink-0">
                         <Home2Fill className="w-5 h-5" color="#E5E5E5" />
                         Home
@@ -279,7 +305,7 @@ export default function Profile() {
                 </div>
             </div>
 
-            <main className="max-w-[1200px] mx-auto px-4 md:px-8 pt-14 pb-8">
+            <main className="max-w-[1280px] mx-auto px-6 md:px-12 pt-14 pb-8">
                 <div className="flex items-start gap-10">
                     {/* Sidebar */}
                     <div className="w-[250px] flex-shrink-0 bg-white rounded-2xl border border-neutral-100 p-3 flex flex-col sticky top-24">
@@ -302,7 +328,7 @@ export default function Profile() {
                     <div className="flex-1 min-w-0">
                         {activeSection === 'Personal Information' && (
                             <div className="flex flex-col items-center" data-animate>
-                                <h2 className="text-6 font-semibold text-neutral-800 tracking-[-0.02em] mb-8 w-full max-w-[400px]">Personal Information</h2>
+                                <SectionHeading className="mb-8 w-full max-w-[400px]">Personal Information</SectionHeading>
 
                                 <div className="space-y-10 w-full max-w-[400px]">
                                     {/* Profile Image */}
@@ -323,12 +349,9 @@ export default function Profile() {
                                         <div>
                                             <p className="text-3 font-semibold text-neutral-800 mb-0.5">{user?.firstName} {user?.lastName}</p>
                                             <p className="text-2 text-neutral-400 font-medium mb-3">{user?.email}</p>
-                                            <button
-                                                onClick={() => fileInputRef.current?.click()}
-                                                className="h-9 px-4 border border-neutral-200 bg-white text-neutral-800 font-semibold rounded-lg text-2"
-                                            >
-                                                Change photo
-                                            </button>
+                                        <SecondaryButtonSm onClick={() => fileInputRef.current?.click()}>
+                                            Change photo
+                                        </SecondaryButtonSm>
                                         </div>
                                     </div>
 
@@ -391,12 +414,20 @@ export default function Profile() {
                                     <div className="pt-2">
                                         <label className="flex items-center gap-3 cursor-pointer">
                                             <Checkbox
-                                                checked={formData.whatsappReminders}
-                                                onCheckedChange={(c) => setFormData({ ...formData, whatsappReminders: c === true })}
+                                                checked={formData.receiveTaxDeadlineReminders}
+                                                onCheckedChange={(c) => setFormData({ ...formData, receiveTaxDeadlineReminders: c === true })}
                                             />
                                             <span className="text-3 font-medium text-neutral-800">Receive tax deadline reminders via WhatsApp</span>
                                         </label>
                                     </div>
+
+                                    {apiError && (
+                                        <div className="text-2 text-destructive font-medium bg-red-50 p-3 rounded-xl">{apiError}</div>
+                                    )}
+
+                                    {successMessage && (
+                                        <div className="text-2 text-green-600 font-medium bg-green-50 p-3 rounded-xl">{successMessage}</div>
+                                    )}
 
                                     {/* Buttons */}
                                     <div className="flex items-center gap-3 pt-2">
@@ -406,10 +437,10 @@ export default function Profile() {
                                             tin: user.tin || '',
                                             phone: user.phone || '',
                                             email: user.email || '',
-                                            whatsappReminders: user.whatsappReminders || false
+                                            receiveTaxDeadlineReminders: user.receiveTaxDeadlineReminders || false
                                         })}>Reset</SecondaryButton>
                                         <PrimaryButton onClick={handleSaveProfile} disabled={apiLoading}>
-                                            {apiLoading ? 'Saving...' : 'Save'}
+                                            {apiLoading ? <Spinner /> : 'Save'}
                                         </PrimaryButton>
                                     </div>
                                 </div>
@@ -418,7 +449,7 @@ export default function Profile() {
 
                         {activeSection === 'Security' && (
                             <div className="flex flex-col items-center" data-animate>
-                                <h2 className="text-6 font-semibold text-neutral-800 tracking-[-0.02em] mb-8 w-full max-w-[400px]">Security</h2>
+                                <SectionHeading className="mb-8 w-full max-w-[400px]">Security</SectionHeading>
 
                                 <div className="space-y-10 w-full max-w-[400px]">
                                     {/* Current password */}
@@ -459,7 +490,7 @@ export default function Profile() {
                                             setSuccessMessage(null);
                                         }}>Cancel</SecondaryButton>
                                         <PrimaryButton onClick={handlePasswordChange} disabled={apiLoading || !securityData.currentPassword || !securityData.newPassword}>
-                                            {apiLoading ? 'Updating...' : 'Change password'}
+                                            {apiLoading ? <Spinner /> : 'Change password'}
                                         </PrimaryButton>
                                     </div>
                                 </div>
@@ -468,7 +499,7 @@ export default function Profile() {
 
                         {activeSection === 'Documents' && (
                             <div className="flex flex-col" data-animate>
-                                <h2 className="text-6 font-semibold text-neutral-800 tracking-[-0.02em] mb-8 w-full max-w-[500px]">Documents</h2>
+                                <SectionHeading className="mb-8 w-full max-w-[500px]">Documents</SectionHeading>
 
                                 {Object.keys(groupedDocs).length === 0 ? (
                                     <div className="py-16 text-center">
@@ -487,7 +518,7 @@ export default function Profile() {
                                     <div className="space-y-8 max-w-[500px]">
                                         {Object.entries(groupedDocs).map(([groupKey, categories]) => (
                                             <div key={groupKey}>
-                                                <h3 className="text-4 font-semibold text-neutral-800 mb-4">{groupKey}</h3>
+                                                <h3 className="text-3 font-semibold text-neutral-800 mb-4">{groupKey}</h3>
                                                 <div className="space-y-0 border border-neutral-100 rounded-2xl overflow-hidden">
                                                     {Object.entries(categories).map(([category, entries], ci) => (
                                                         <div key={category}>

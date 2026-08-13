@@ -20,27 +20,26 @@ interface Blog {
 }
 
 const VideoCard = ({ thumbnail, title, duration }: { thumbnail: string; title: string; duration: string }) => (
-    <div className="group cursor-pointer">
-        <div className="relative aspect-[16/11] w-full rounded-4xl overflow-hidden mb-5 shadow-xs group-hover:shadow-md transition-all duration-300">
+    <div className="cursor-pointer">
+        <div className="relative h-[200px] w-full rounded-2xl overflow-hidden mb-4">
             <Image
                 src={thumbnail}
                 alt={title}
                 fill
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                className="object-cover"
             />
-            <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                <div className="w-14 h-14 rounded-full bg-white/30 backdrop-blur-md flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="ml-1 text-taxable-blue">
-                            <path d="M5 3L19 12L5 21V3Z" />
-                        </svg>
-                    </div>
+            <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5 text-neutral-800">
+                        <path d="M5 3L19 12L5 21V3Z" />
+                    </svg>
                 </div>
             </div>
         </div>
-        <div className="text-left px-1">
-            <h3 className="text-5 font-semibold text-taxable-dark mb-1.5 leading-tight">{title}</h3>
-            <p className="text-3 text-taxable-gray font-medium">{duration}</p>
+        <div className="text-left px-0.5">
+            <h3 className="text-3 font-semibold text-neutral-800 mb-1 leading-tight">{title}</h3>
+            <p className="text-1 text-neutral-500 font-medium">{duration}</p>
         </div>
     </div>
 );
@@ -62,16 +61,16 @@ const BlogCard = ({ blog }: { blog: Blog }) => (
             )}
         </div>
         <div>
-            <div className="flex items-center gap-3 mb-2.5">
-                <span className="px-2.5 py-1 bg-blue-50 text-taxable-blue text-1 font-semibold rounded-md uppercase tracking-wider">
+            <div className="flex items-center gap-3 mb-2">
+                <span className="px-2.5 py-1 bg-neutral-100 text-neutral-800 text-1 font-semibold rounded-md uppercase tracking-wider">
                     {blog.category || 'Tax Guide'}
                 </span>
-                <span className="text-2 font-semibold text-neutral-400">
+                <span className="text-1 font-semibold text-neutral-400">
                     {new Date(blog.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </span>
             </div>
-            <h3 className="text-6 font-semibold text-taxable-dark mb-2 leading-tight group-hover:text-taxable-blue transition-colors">{blog.title}</h3>
-            <p className="text-3 text-taxable-gray font-medium line-clamp-2 leading-relaxed">
+            <h3 className="text-3 font-semibold text-neutral-800 mb-1.5 leading-tight">{blog.title}</h3>
+            <p className="text-1 text-neutral-500 font-medium line-clamp-2 leading-relaxed">
                 {blog.excerpt || blog.summary || blog.content?.replace(/<[^>]*>/g, '').slice(0, 120) + '...'}
             </p>
         </div>
@@ -82,15 +81,15 @@ const FAQAccordion = ({ question, answer }: { question: string; answer: string }
     const [isOpen, setIsOpen] = useState(false);
     return (
         <div className="mb-4">
-            <div className="bg-neutral-50 rounded-3xl overflow-hidden transition-all border border-transparent hover:border-neutral-100">
+            <div className="bg-neutral-50 rounded-3xl overflow-hidden">
                 <button
                     onClick={() => setIsOpen(!isOpen)}
-                    className="w-full px-8 py-6 flex items-center justify-between text-left transition-all"
+                    className="w-full px-8 py-6 flex items-center justify-between text-left"
                 >
                     <div className="pr-4">
-                        <h3 className="text-4 font-semibold text-taxable-dark leading-snug">{question}</h3>
+                        <h3 className="text-3 font-semibold text-neutral-800 leading-snug">{question}</h3>
                         {!isOpen && (
-                            <p className="text-3 text-taxable-gray font-medium mt-1.5 line-clamp-1">
+                            <p className="text-1 text-neutral-500 font-medium mt-1.5 line-clamp-1">
                                 {answer}
                             </p>
                         )}
@@ -104,7 +103,7 @@ const FAQAccordion = ({ question, answer }: { question: string; answer: string }
                         strokeWidth="2.5"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        className="text-neutral-400 transition-transform duration-300 shrink-0"
+                        className="text-neutral-400 shrink-0"
                         style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
                     >
                         <polyline points="6 9 12 15 18 9" />
@@ -112,7 +111,7 @@ const FAQAccordion = ({ question, answer }: { question: string; answer: string }
                 </button>
                 {isOpen && (
                     <div className="px-8 pb-8 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <p className="text-4 text-taxable-gray font-medium leading-relaxed">
+                        <p className="text-2 text-neutral-500 font-medium leading-relaxed">
                             {answer}
                         </p>
                     </div>
@@ -201,11 +200,6 @@ export default function EducationalResources() {
             thumbnail: '/tax_reforms_thumbnail.png',
             title: "Nigeria's 2026 Tax Reforms Explained",
             duration: '8:37 mins'
-        },
-        {
-            thumbnail: '/tax_reforms_thumbnail.png',
-            title: "Nigeria's 2026 Tax Reforms Explained",
-            duration: '8:37 mins'
         }
     ];
 
@@ -220,39 +214,23 @@ export default function EducationalResources() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-neutral-50">
+        <div className="min-h-screen bg-white">
             <DashboardHeader />
 
-            <main className="max-w-[1240px] mx-auto pt-6 md:pt-8 pb-20 px-4 md:px-6">
-                {/* Back Button & Breadcrumbs */}
-                <div className="mb-10">
-                    <Link href="/home" className="flex items-center gap-2 group mb-4">
-                        <div className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center transition-colors group-hover:bg-neutral-200">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-taxable-dark">
-                                <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
-                            </svg>
-                        </div>
-                        <span className="text-4 font-semibold text-taxable-dark">Back</span>
-                    </Link>
-                    <div className="flex items-center gap-2 text-3 font-medium text-taxable-gray">
-                        <Link href="/home" className="hover:text-taxable-dark transition-colors">Home</Link>
-                        <span>/</span>
-                        <span className="text-taxable-dark font-semibold">Educational resources</span>
-                    </div>
-                </div>
+            <main className="max-w-[1280px] mx-auto px-6 md:px-12 pt-8 pb-20">
 
                 {/* Header Section */}
-                <div className="flex items-start justify-between mb-12">
+                <div className="flex items-start justify-between mb-10">
                     <div className="flex-1">
-                        <h1 className="text-7 md:text-8 font-semibold text-taxable-dark mb-2 md:mb-3">Help Center & Resources</h1>
-                        <p className="text-3 md:text-4 text-taxable-gray font-medium max-w-[500px] leading-relaxed">
+                        <h1 className="text-5 font-medium text-neutral-800 mb-2 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">Help Center &amp; Resources</h1>
+                        <p className="text-2 text-neutral-500 font-medium max-w-[500px] leading-relaxed">
                             Everything you need to understand Nigerian taxes and make the most of Taxable
                         </p>
                     </div>
                     <div className="relative shrink-0 ml-4" ref={dropdownRef}>
                         <button
                             onClick={() => setIsSupportDropdownOpen(!isSupportDropdownOpen)}
-                            className="h-[46px] md:h-[52px] px-4 md:px-8 bg-white border border-neutral-100 rounded-2xl text-3 md:text-3 font-semibold text-taxable-dark shadow-xs flex items-center whitespace-nowrap"
+                            className="h-12 px-6 bg-white border border-neutral-100 rounded-xl text-2 font-semibold text-neutral-800 flex items-center whitespace-nowrap"
                         >
                             <span className="hidden sm:inline">Contact support</span>
                             <span className="sm:hidden">Support</span>
@@ -261,24 +239,16 @@ export default function EducationalResources() {
                         {isSupportDropdownOpen && (
                             <>
                                 <div className="fixed inset-0 z-40" onClick={() => setIsSupportDropdownOpen(false)} />
-                                <div className="absolute top-full mt-2 right-0 w-[280px] bg-white border border-neutral-100 rounded-4xl shadow-xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="absolute top-full mt-2 right-0 w-[280px] bg-white border border-neutral-100 rounded-3xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                                     <div className="flex flex-col gap-1">
-                                        <button className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-neutral-50 transition-colors text-taxable-dark text-4 font-semibold text-left">
+                                        <button className="flex items-center gap-4 px-4 py-4 rounded-2xl text-neutral-800 text-2 font-semibold text-left">
                                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-400" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" /></svg>
                                             Chat with support
                                         </button>
-                                        <a href="mailto:support@taxable.ng" className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-neutral-50 transition-colors text-taxable-dark text-4 font-semibold">
+                                        <a href="mailto:support@taxable.ng" className="flex items-center gap-4 px-4 py-4 rounded-2xl text-neutral-800 text-2 font-semibold">
                                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-400" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
                                             support@taxable.ng
                                         </a>
-                                        <button className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-neutral-50 transition-colors text-taxable-dark text-4 font-semibold text-left">
-                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-400" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="10" r="3" /><path d="M7 20.662V19c0-1.657 2.239-3 5-3s5 1.343 5 3v1.662" /></svg>
-                                            Consult an Accountant
-                                        </button>
-                                        <button className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-neutral-50 transition-colors text-taxable-dark text-4 font-semibold text-left">
-                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-neutral-400" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /><path d="M8 6h10" /><path d="M8 10h10" /><path d="M8 14h10" /></svg>
-                                            Visit FIRS Resources
-                                        </button>
                                     </div>
                                 </div>
                             </>
@@ -286,18 +256,13 @@ export default function EducationalResources() {
                     </div>
                 </div>
 
-                {/* Debug Info (Visible only in development) */}
-                <div className="hidden">
-                    Tab: {activeTab}, Blogs: {blogs.length}, Loading: {blogsLoading ? 'YES' : 'NO'}
-                </div>
-
                 {/* Navigation Tabs */}
-                <div className="flex gap-8 md:gap-12 border-b border-neutral-100 mb-8 md:mb-12 overflow-x-auto no-scrollbar scroll-smooth">
+                <div className="flex gap-8 md:gap-12 border-b border-neutral-100 mb-8 overflow-x-auto no-scrollbar scroll-smooth">
                     {tabs.map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`pb-4 md:pb-5 text-3 md:text-4 font-semibold transition-all relative whitespace-nowrap ${activeTab === tab ? 'text-taxable-blue' : 'text-taxable-gray'
+                            className={`pb-4 md:pb-5 text-2 font-semibold relative whitespace-nowrap ${activeTab === tab ? 'text-taxable-blue' : 'text-neutral-500'
                                 }`}
                         >
                             {tab}
@@ -310,7 +275,7 @@ export default function EducationalResources() {
 
                 {/* Content Sections */}
                 {activeTab === 'Video Tutorials' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-14">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
                         {videos.map((video, index) => (
                             <VideoCard key={index} {...video} />
                         ))}
@@ -320,18 +285,18 @@ export default function EducationalResources() {
                 {activeTab === 'Frequently Asked Questions' && (
                     <div className="flex flex-col lg:flex-row gap-8 lg:gap-14 items-start">
                         {/* FAQ Sidebar */}
-                        <div className="w-full lg:w-[303px] bg-white rounded-3xl border border-neutral-100 p-4 shadow-xs shrink-0 lg:sticky lg:top-28">
-                            <h4 className="text-3 font-semibold text-taxable-dark mb-4 px-3">Select</h4>
+                        <div className="w-full lg:w-[303px] bg-white rounded-3xl border border-neutral-100 p-4 shrink-0 lg:sticky lg:top-24">
+                            <h4 className="text-3 font-semibold text-neutral-800 mb-4 px-3">Select</h4>
                             <div className="flex flex-col gap-1.5">
                                 {faqCategories.map((category) => (
                                     <button
                                         key={category}
                                         onClick={() => setActiveFAQCategory(category)}
-                                        className={`w-full h-12 flex items-center justify-between px-3 transition-all rounded-xl ${activeFAQCategory === category ? 'bg-neutral-100 text-taxable-dark' : 'hover:bg-neutral-50 text-taxable-gray'
+                                        className={`w-full h-12 flex items-center justify-between px-3 rounded-xl ${activeFAQCategory === category ? 'bg-neutral-100 text-neutral-800' : 'text-neutral-500'
                                             }`}
                                     >
-                                        <span className={`text-[14.5px] ${activeFAQCategory === category ? 'font-semibold' : 'font-semibold'}`}>{category}</span>
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={`transition-colors ${activeFAQCategory === category ? 'text-taxable-dark' : 'text-neutral-300'}`}>
+                                        <span className="text-2 font-semibold">{category}</span>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={`${activeFAQCategory === category ? 'text-neutral-800' : 'text-neutral-300'}`}>
                                             <polyline points="9 18 15 12 9 6" />
                                         </svg>
                                     </button>
@@ -353,7 +318,7 @@ export default function EducationalResources() {
                 {activeTab === 'Blog/Articles' && (
                     <>
                         {blogsLoading ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-14 animate-pulse">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10 animate-pulse">
                                 {[1, 2, 3].map(i => (
                                     <div key={i}>
                                         <div className="aspect-[16/10] bg-neutral-100 rounded-3xl mb-5" />
@@ -364,20 +329,20 @@ export default function EducationalResources() {
                                 ))}
                             </div>
                         ) : blogs.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-14">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
                                 {blogs.map((blog) => (
                                     <BlogCard key={blog._id} blog={blog} />
                                 ))}
                             </div>
                         ) : (
-                            <div className="py-24 text-center bg-white rounded-4xl border border-neutral-100">
+                            <div className="py-24 text-center bg-white rounded-3xl border border-neutral-100">
                                 <div className="flex items-center justify-center mx-auto mb-6">
                                     <div className="w-20 h-20 bg-neutral-50 rounded-full flex items-center justify-center">
                                         <Image src="/icons/docs.svg" alt="empty" width={40} height={40} className="opacity-40" style={{ width: 'auto', height: 'auto' }} />
                                     </div>
                                 </div>
-                                <h3 className="text-xl font-semibold text-taxable-dark mb-2">No articles yet</h3>
-                                <p className="text-taxable-gray font-medium">We're currently preparing some insightful tax guides for you.</p>
+                                <h3 className="text-3 font-semibold text-neutral-800 mb-2">No articles yet</h3>
+                                <p className="text-2 text-neutral-500 font-medium">We're currently preparing some insightful tax guides for you.</p>
                             </div>
                         )}
                     </>

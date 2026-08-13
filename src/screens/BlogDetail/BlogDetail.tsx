@@ -136,7 +136,7 @@ export default function BlogDetail() {
                 {/* Meta & Title */}
                 <div className="mb-10">
                     <div className="flex items-center gap-3 mb-6">
-                        <span className="px-3 py-1 bg-blue-50 text-taxable-blue text-1 font-semibold rounded-full uppercase tracking-wider">
+                        <span className="px-3 py-1 bg-neutral-100 text-neutral-800 text-1 font-semibold rounded-full uppercase tracking-wider">
                             {blog.category || 'Tax Guide'}
                         </span>
                         <div className="flex items-center gap-2 text-neutral-400 text-2 font-medium border-l border-neutral-200 pl-3">
@@ -144,7 +144,7 @@ export default function BlogDetail() {
                             {formatDate(blog.updatedAt)}
                         </div>
                     </div>
-                    <h1 className="text-10 md:text-12 font-extrabold text-taxable-dark leading-[1.15] mb-8">
+                    <h1 className="text-5 font-medium text-neutral-800 leading-[1.15] mb-8 tracking-[-0.02em] font-[family-name:var(--font-merriweather)]">
                         {blog.title}
                     </h1>
 
@@ -188,16 +188,16 @@ export default function BlogDetail() {
                     initial={{ opacity: 0, scale: 0.95 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
-                    className="mt-20 p-8 md:p-12 bg-neutral-900 rounded-[40px] text-white relative overflow-hidden"
+                    className="mt-20 p-8 md:p-12 bg-neutral-800 rounded-3xl text-white relative overflow-hidden"
                 >
                     <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
                         <div className="max-w-[440px]">
-                            <h3 className="text-2xl md:text-3xl font-semibold mb-3">
+                            <h3 className="text-5 font-medium mb-3 font-[family-name:var(--font-merriweather)]">
                                 {blog.buttonType === 'consultation'
                                     ? "Need professional tax advice?"
                                     : "Take control of your taxes today"}
                             </h3>
-                            <p className="text-neutral-400 text-4 md:text-5 leading-relaxed">
+                            <p className="text-neutral-400 text-2 leading-relaxed">
                                 {blog.buttonType === 'consultation'
                                     ? "Our expert accountants are ready to help you navigate complex Nigerian tax laws."
                                     : "Join thousands of Nigerians using Taxable to simplify their tax compliance."}
@@ -205,12 +205,12 @@ export default function BlogDetail() {
                         </div>
 
                         {blog.buttonType === 'consultation' ? (
-                            <button className="h-[56px] px-8 bg-white text-taxable-dark font-semibold rounded-2xl flex items-center justify-center gap-2 shrink-0">
+                            <button className="h-12 px-8 bg-white text-neutral-800 font-semibold rounded-xl flex items-center justify-center gap-2 shrink-0 text-2">
                                 <MessageSquare size={20} />
                                 Book a consultation
                             </button>
                         ) : (
-                            <Link href="/signup" className="h-[56px] px-8 bg-taxable-blue text-white font-semibold rounded-2xl flex items-center justify-center gap-2 shrink-0">
+                            <Link href="/signup" className="h-12 px-8 bg-taxable-blue text-white font-semibold rounded-xl flex items-center justify-center gap-2 shrink-0 text-2">
                                 Get started
                                 <ArrowRight size={20} />
                             </Link>

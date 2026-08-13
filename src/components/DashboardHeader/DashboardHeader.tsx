@@ -93,7 +93,7 @@ export default function DashboardHeader() {
                             onClick={() => setShowProfileMenu(!showProfileMenu)}
                             className="flex items-center gap-2 bg-white border border-neutral-100 rounded-lg px-3 py-1.5 h-10"
                         >
-                            <Image src="/Avatar.svg" alt="" width={28} height={28} className="rounded-full" />
+                            <Image src={user?.profileImageUrl || '/Avatar.svg'} alt="" width={28} height={28} className="rounded-full" />
                             <span className="text-2 font-semibold text-neutral-800">{user?.firstName} {user?.lastName}</span>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-neutral-400">
                                 <polyline points="6 9 12 15 18 9" />

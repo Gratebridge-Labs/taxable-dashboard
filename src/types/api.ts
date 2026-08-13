@@ -100,6 +100,7 @@ export interface ProfileCompleteRequest {
 
 export interface PersonalInfoRequest {
   nin?: string;
+  tin?: string;
   residencyStatus?: string;
   fullName?: string;
   dob?: string;

@@ -1,13 +1,12 @@
 'use client';
-import React, { useState, useEffect, useMemo, startTransition } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { Home2Fill } from '@mingcute/react';
 import { toast } from 'sonner';
-import { FormFieldRow, FormLabel, PrimaryButton, SecondaryButton, FilingSheet } from '@/screens/TaxFolders/TaxFolderShared';
-import { MONTHS } from '@/screens/TaxFolders/PITShared';
+import { FormFieldRow, FormLabel, PrimaryButton } from '@/screens/TaxFolders/TaxFolderShared';
+import { PayeFilingSheet } from '@/screens/TaxFolders/PayeFilingSheet';
 
 // 2026 Nigeria Tax Act PAYE bands
 const PAYE_BANDS = [
@@ -33,10 +32,16 @@ function calcPAYE(annualTaxable: number): {
         const slice = Math.min(remaining, band.limit - prevLimit);
         const tax = slice * band.rate;
         total += tax;
-        const monthlyLimit = prevLimit === 0
-            ? `First ₦${fmtShort(band.limit / 12)}/month: ${(band.rate * 100).toFixed(0)}%`
-            : `Next portion: ${(band.rate * 100).toFixed(0)}%`;
-        breakdown.push({ label: monthlyLimit, amount: Math.round(tax / 12), rate: band.rate });
+
+        // Show each band as a MONTHLY range (whole panel is monthly).
+        const monthlyWidth = (band.limit - prevLimit) / 12;
+        const label = prevLimit === 0
+            ? `First ₦${fmtShort(monthlyWidth)}: ${(band.rate * 100).toFixed(0)}%`
+            : Number.isFinite(band.limit)
+                ? `Next ₦${fmtShort(monthlyWidth)}: ${(band.rate * 100).toFixed(0)}%`
+                : `Remainder: ${(band.rate * 100).toFixed(0)}%`;
+
+        breakdown.push({ label, amount: Math.round(tax / 12), rate: band.rate });
         remaining -= slice;
         prevLimit = band.limit;
     }
@@ -100,8 +105,6 @@ const DeductionRow = ({
 export default function PAYECalculator() {
     const router = useRouter();
 
-    const [month, setMonth] = useState(MONTHS[0]);
-
     // Salary inputs
     const [grossSalary, setGrossSalary] = useState('');
     const [bonuses, setBonuses] = useState('');
@@ -114,41 +117,7 @@ export default function PAYECalculator() {
     const [annualRentAmt, setAnnualRentAmt] = useState('');
 
     const [showBreakdown, setShowBreakdown] = useState(false);
-    const [showFilingSheet, setShowFilingSheet] = useState(false);
-
-    // Restore draft from localStorage
-    useEffect(() => {
-        try {
-            const raw = localStorage.getItem('taxable_paye_draft');
-            if (!raw) return;
-            const saved = JSON.parse(raw);
-            startTransition(() => {
-                if (saved.month) setMonth(saved.month);
-                if (saved.grossSalary) setGrossSalary(saved.grossSalary);
-                if (saved.bonuses) setBonuses(saved.bonuses);
-                if (typeof saved.pensionOn === 'boolean') setPensionOn(saved.pensionOn);
-                if (typeof saved.nhfOn === 'boolean') setNhfOn(saved.nhfOn);
-                if (typeof saved.hmoOn === 'boolean') setHmoOn(saved.hmoOn);
-                if (typeof saved.annualRentOn === 'boolean') setAnnualRentOn(saved.annualRentOn);
-                if (saved.annualRentAmt) setAnnualRentAmt(saved.annualRentAmt);
-            });
-        } catch { /* ignore */ }
-    }, []);
-
-    const handleSave = () => {
-        try {
-            localStorage.setItem('taxable_paye_draft', JSON.stringify({
-                month, grossSalary, bonuses,
-                pensionOn, nhfOn, hmoOn, annualRentOn, annualRentAmt,
-            }));
-            toast.success('Draft saved');
-        } catch { /* ignore */ }
-    };
-
-    const handleSaveAndFile = () => {
-        handleSave();
-        setShowFilingSheet(true);
-    };
+    const [showPayeFiling, setShowPayeFiling] = useState(false);
 
     // Derived numbers
     const gross = parseFloat(grossSalary.replace(/,/g, '')) || 0;
@@ -196,21 +165,6 @@ export default function PAYECalculator() {
                     <p className="text-1 text-neutral-400 font-medium">
                         Estimate how much income tax your employer should deduct from your salary each month.
                     </p>
-                </div>
-
-                {/* Month selector */}
-                <div className="mb-6">
-                    <FormLabel tip="Select the month you're calculating PAYE for.">Month</FormLabel>
-                    <Select value={month} onValueChange={(v) => v && setMonth(v)}>
-                        <SelectTrigger className="w-fit min-w-[180px] h-10 rounded-xl bg-white border-neutral-100 text-sm">
-                            <span>{month}</span>
-                        </SelectTrigger>
-                        <SelectContent>
-                            {MONTHS.map((m) => (
-                                <SelectItem key={m} value={m}>{m}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
                 </div>
 
                 {/* Salary card */}
@@ -353,18 +307,15 @@ export default function PAYECalculator() {
 
                 {/* Action */}
                 <div className="flex gap-3 mb-4">
-                    <SecondaryButton className="flex-1" onClick={handleSave}>
-                        Save
-                    </SecondaryButton>
-                    <PrimaryButton className="flex-[2]" onClick={handleSaveAndFile}>
-                        Save &amp; File Monthly PAYE
+                    <PrimaryButton className="w-full" onClick={() => setShowPayeFiling(true)} disabled={!hasData}>
+                        File your PAYE
                     </PrimaryButton>
                 </div>
             </main>
 
-            <FilingSheet
-                open={showFilingSheet}
-                onClose={() => setShowFilingSheet(false)}
+            <PayeFilingSheet
+                open={showPayeFiling}
+                onClose={() => setShowPayeFiling(false)}
                 onFile={() => toast.success('Return filed')}
             />
         </div>

@@ -244,14 +244,14 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                             <RadioGroupItem value="returns" className="mt-0.5" />
                                             <p className="text-2 font-medium text-neutral-800">File my tax returns</p>
                                         </label>
-                                        <label className="flex items-start gap-3 cursor-pointer opacity-40">
-                                            <RadioGroupItem value="paye" className="mt-0.5" disabled />
-                                            <p className="text-2 font-medium text-neutral-800">Calculate my monthly PAYE</p>
+                                        <label className="flex items-start gap-3 cursor-pointer">
+                                            <RadioGroupItem value="paye" className="mt-0.5" />
+                                            <p className="text-2 font-medium text-neutral-800">Calculate and File Monthly PAYE</p>
                                         </label>
                                     </RadioGroup>
 
-                                    {/* 2. Who are you filing for? */}
-                                    {subStep >= 1 && (
+                                    {/* 2. Who are you filing for? (not for PAYE — it routes directly to the calculator) */}
+                                    {subStep >= 1 && filingIntent !== 'paye' && (
                                         <>
                                             <p className="text-1 font-medium mt-10 mb-2 text-neutral-500">
                                                 Who are you filing for?
@@ -387,7 +387,9 @@ export default function SetupSidebar({ isOpen, onClose, onComplete, resumeProfil
                                     onClick={step === 0 ? handleGetStarted : handleCreateAndSubmit}
                                     disabled={
                                         step === 0
-                                            ? !filingIntent || !filingType || (filingType === 'Individual' && !ninValid) || (filingType === 'Business' && businessServices.length === 0) || loadingStep === 0
+                                            ? filingIntent === 'paye'
+                                                ? loadingStep === 0
+                                                : !filingIntent || !filingType || (filingType === 'Individual' && !ninValid) || (filingType === 'Business' && businessServices.length === 0) || loadingStep === 0
                                             : !allLifeQuestionsAnswered || loadingStep === 2
                                     }
                                     className="flex-1 h-12 bg-taxable-blue text-white font-semibold rounded-xl text-2 disabled:bg-neutral-100 disabled:text-neutral-400 flex items-center justify-center gap-2"

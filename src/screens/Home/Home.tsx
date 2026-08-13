@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import gsap from 'gsap';
 import { useRouter } from 'next/navigation';
 import SetupSidebar from '@/components/SetupSidebar/SetupSidebar';
@@ -34,6 +34,26 @@ export default function Home() {
             toast.error('Failed to delete tax folder. Please try again.');
         }
     }, [deleteProfile, fetchProfiles]);
+
+    // Suffix duplicates so cards of the same type + year are distinguishable
+    const duplicateSuffixes = useMemo(() => {
+        const counts = new Map<string, number>();
+        const seen = new Map<string, number>();
+        for (const p of profiles) {
+            const key = `${p.profileType || 'Tax'}|${p.year || '2026'}`;
+            counts.set(key, (counts.get(key) ?? 0) + 1);
+        }
+        const result = new Map<string, string>();
+        for (const p of profiles) {
+            const key = `${p.profileType || 'Tax'}|${p.year || '2026'}`;
+            if ((counts.get(key) ?? 0) > 1) {
+                const n = (seen.get(key) ?? 0) + 1;
+                seen.set(key, n);
+                result.set(p.profileId || p.id, ` (${n})`);
+            }
+        }
+        return result;
+    }, [profiles]);
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -78,6 +98,10 @@ export default function Home() {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleFolderClick = (profile: any) => {
+        if (profile.profileType === 'Individual' && profile.intent === 'calculate_paye') {
+            router.push(`/tax-folders/paye?id=${profile.profileId}`);
+            return;
+        }
         if (profile.profileType === 'Individual') {
             // Determine which section to resume from based on profile progress
             let section = 'personal-info';
@@ -162,9 +186,9 @@ export default function Home() {
                                         .map((profile, index) => (
                                             <TaxFolderCard
                                                 key={profile.profileId || profile.id || index}
-                                                title={profile.fullName || `${profile.profileType} — ${profile.year}`}
-                                                description={profile.nin ? `Tax ID: ${profile.nin}` : `Your ${profile.profileType?.toLowerCase() || 'tax'} filing for ${profile.year || '2026'}.`}
-                                                statusText={profile.profileType || 'Tax'}
+                                                title={`${profile.fullName || (profile.profileType === 'Individual' && profile.intent === 'calculate_paye' ? `PAYE — ${profile.year}` : `${profile.profileType} — ${profile.year}`)}${duplicateSuffixes.get(profile.profileId || profile.id) ?? ''}`}
+                                                description={profile.nin ? `Tax ID: ${profile.nin}` : `Your ${profile.profileType === 'Individual' && profile.intent === 'calculate_paye' ? 'paye' : profile.profileType?.toLowerCase() || 'tax'} filing for ${profile.year || '2026'}.`}
+                                                statusText={profile.profileType === 'Individual' && profile.intent === 'calculate_paye' ? 'PAYE' : profile.profileType || 'Tax'}
                                                 year={profile.year}
                                                 statusLabel={getProfileStatusLabel(profile)}
                                                 onClick={() => handleFolderClick(profile)}

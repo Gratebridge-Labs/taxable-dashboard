@@ -1,0 +1,4 @@
+First Name,Last Name,Email,Phone,Job Position,TIN,Monthly Salary,Pension,NHF,HMO,Annual Rent
+Adaeze,Okonkwo,adaeze.okonkwo@example.com,08031234567,Accountant,12345678901,450000,true,true,false,0
+Chinedu,Bello,chinedu.bello@example.com,08029876543,Operations Manager,23456789012,280000,true,false,true,0
+Fatima,Abdullahi,fatima.abdullahi@example.com,08015551234,Software Engineer,34567890123,620000,true,true,true,2400000

@@ -18,6 +18,7 @@ import {
     SectionHeading, DescriptionText, PrimaryButton, SecondaryButton, SecondaryButtonSm,
     FilingSheet, FormFieldRow, FormLabel,
 } from './TaxFolderShared';
+import { CsvImportPanel } from './CsvImportPanel';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
@@ -337,6 +338,7 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
         pendingRemove, setPendingRemove,
         pendingPayee,
         saveItem, removeItem, handleConfirmRemove, fileMonth,
+        importCsvDeductions,
         uploadFile,
     } = useWhtRemittance(profileId, taxYear, activeMonth, setActiveMonth);
 
@@ -346,6 +348,8 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
     const [isEditing, setIsEditing] = useState(false);
     const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
     const [entryMethod, setEntryMethod] = useState<'manual' | 'csv' | 'software'>('manual');
+    const [csvImported, setCsvImported] = useState(false);
+    const [importingCsv, setImportingCsv] = useState(false);
     const [showFilingModal, setShowFilingModal] = useState(false);
     const [form, setForm] = useState(defaultDeduction());
     const [fileAttachments, setFileAttachments] = useState<{ name: string }[]>([]);
@@ -475,6 +479,36 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
     };
 
     const openAdd = () => { setForm(defaultDeduction()); setFileAttachments([]); setEditId(null); setEditSourceMonth(null); setIsEditing(false); setShowRemoveConfirm(false); setShowFormSheet(true); };
+
+    const handleCsvImported = async (data: { wht?: { deductions: Array<{ payee: string; tin: string; whtType: string; gross: number; whtRate: number; date?: string }> } }) => {
+        const rows = data.wht?.deductions ?? [];
+        if (!rows.length) {
+            toast.error('No WHT rows found in that file.');
+            return;
+        }
+        setImportingCsv(true);
+        try {
+            await importCsvDeductions(rows);
+            setCsvImported(true);
+            setWhtStep('table');
+        } catch (err: unknown) {
+            console.error(
+                '[BusinessWHT] Failed to save imported WHT rows:',
+                err instanceof Error ? err.message : 'Unknown error'
+            );
+            toast.error(err instanceof Error ? err.message : 'Imported file parsed, but saving deductions failed.');
+        } finally {
+            setImportingCsv(false);
+        }
+    };
+
+    const handleContinueFromMethod = () => {
+        if (entryMethod === 'csv' && !csvImported) {
+            toast.error('Upload the sample CSV first, or switch to manual entry.');
+            return;
+        }
+        openAdd();
+    };
     const openEdit = (d: WHTDeduction) => {
         setForm({ payee: d.payee, tin: d.tin, whtType: d.whtType, gross: d.gross, whtRate: d.whtRate ? (d.whtRate.includes('%') ? d.whtRate : `${d.whtRate}%`) : '', whtDeducted: d.whtDeducted, netPaid: d.netPaid, date: d.date, receipt: d.receipt ?? '' });
         setFileAttachments(d.receipt ? [{ name: fileNameFromUrl(d.receipt) }] : []);
@@ -673,10 +707,10 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
                         <RadioGroup value={entryMethod} onValueChange={(v) => setEntryMethod(v as 'manual' | 'csv' | 'software')} className="space-y-0 mb-6">
                             {[
                                 { id: 'manual' as const, label: 'Manual entry' },
-                                { id: 'csv' as const, label: 'Upload sales & purchase ledgers (CSV/Excel)' },
+                                { id: 'csv' as const, label: 'Upload WHT deductions (CSV/Excel)' },
                                 { id: 'software' as const, label: 'Connect accounting software (QuickBooks, Xero, Zoho)' },
                             ].map(opt => {
-                                const disabled = opt.id !== 'manual';
+                                const disabled = opt.id === 'software';
                                 return (
                                     <label key={opt.id} className={`flex items-center gap-3 py-3.5 cursor-pointer ${disabled ? 'opacity-40 pointer-events-none' : ''}`}>
                                         <RadioGroupItem value={opt.id} disabled={disabled} />
@@ -685,6 +719,15 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
                                 );
                             })}
                         </RadioGroup>
+                        {entryMethod === 'csv' && (
+                            <CsvImportPanel
+                                profileId={profileId}
+                                importType="wht"
+                                hint="Download the sample, add one row per vendor payment, then upload. Deductions will appear in this month's table."
+                                disabled={importingCsv}
+                                onImported={(data) => handleCsvImported(data)}
+                            />
+                        )}
                         <div className="mb-6">
                             <label className="block text-2 font-medium text-neutral-500 mb-2">Select starting month <InfoTooltip text="The first month you'll file WHT for." /></label>
                             <Select value={MONTHS[activeMonth]} onValueChange={(v) => { if (v) setActiveMonth(MONTHS.indexOf(v)); }}>
@@ -716,8 +759,8 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
                                 </SelectContent>
                             </Select>
                         </div>
-                        <PrimaryButton onClick={() => openAdd()}>
-                            Continue
+                        <PrimaryButton onClick={handleContinueFromMethod} disabled={importingCsv}>
+                            {importingCsv ? <Spinner /> : 'Continue'}
                         </PrimaryButton>
                     </div>
                 ) : deductions.length === 0 ? (
@@ -731,10 +774,10 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
                             <RadioGroup value={entryMethod} onValueChange={(v) => setEntryMethod(v as 'manual' | 'csv' | 'software')} className="space-y-0 mb-6">
                                 {[
                                     { id: 'manual' as const, label: 'Manual entry' },
-                                    { id: 'csv' as const, label: 'Upload sales & purchase ledgers (CSV/Excel)' },
+                                    { id: 'csv' as const, label: 'Upload WHT deductions (CSV/Excel)' },
                                     { id: 'software' as const, label: 'Connect accounting software (QuickBooks, Xero, Zoho)' },
                                 ].map(opt => {
-                                    const disabled = opt.id !== 'manual';
+                                    const disabled = opt.id === 'software';
                                     return (
                                         <label key={opt.id} className={`flex items-center gap-3 py-3.5 cursor-pointer ${disabled ? 'opacity-40 pointer-events-none' : ''}`}>
                                             <RadioGroupItem value={opt.id} disabled={disabled} />
@@ -743,7 +786,18 @@ const WHTRemittance = ({ profileId, taxYear, activeMonth, setActiveMonth, whtSte
                                     );
                                 })}
                             </RadioGroup>
-                            <PrimaryButton onClick={() => openAdd()}>Continue</PrimaryButton>
+                            {entryMethod === 'csv' && (
+                                <CsvImportPanel
+                                    profileId={profileId}
+                                    importType="wht"
+                                    hint="Download the sample, add one row per vendor payment, then upload. Deductions will appear in this month's table."
+                                    disabled={importingCsv}
+                                    onImported={(data) => handleCsvImported(data)}
+                                />
+                            )}
+                            <PrimaryButton onClick={handleContinueFromMethod} disabled={importingCsv}>
+                                {importingCsv ? <Spinner /> : 'Continue'}
+                            </PrimaryButton>
                         </div>
                     </div>
                 ) : (

@@ -69,6 +69,10 @@ import type {
   IncomeDataResponse,
   UpdateIncomeDataRequest,
   UpdateIncomeDataResponse,
+  CsvImportType,
+  CsvImportResponse,
+  CsvPayeEmployeeRow,
+  BulkPayeEmployeesResponse,
 } from '@/types/api';
 
 class TaxableApiService {
@@ -159,6 +163,44 @@ class TaxableApiService {
       }
     );
     return this.handleResponse<PayeEmployeesListResponse>(response);
+  }
+
+  async bulkCreatePayeEmployees(
+    token: string,
+    profileId: string,
+    month: number,
+    employees: CsvPayeEmployeeRow[]
+  ): Promise<BulkPayeEmployeesResponse> {
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.PAYE_EMPLOYEES_BULK(profileId)}`,
+      {
+        method: 'POST',
+        headers: this.getHeaders(token),
+        body: JSON.stringify({ month, employees }),
+      }
+    );
+    return this.handleResponse<BulkPayeEmployeesResponse>(response);
+  }
+
+  async parseCsvImport(
+    token: string,
+    profileId: string,
+    file: File,
+    importType: CsvImportType
+  ): Promise<CsvImportResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('importType', importType);
+
+    const response = await fetch(
+      `${this.baseUrl}${TAXABLE_ENDPOINTS.BUSINESS.IMPORT(profileId)}`,
+      {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData,
+      }
+    );
+    return this.handleResponse<CsvImportResponse>(response);
   }
 
   async createPayeEmployee(

@@ -1393,3 +1393,83 @@ export interface AuthResetPasswordResponse {
     message: string;
   };
 }
+
+export type CsvImportType = 'vat' | 'wht' | 'paye' | 'cit_wht_credits';
+
+export interface CsvImportRowError {
+  row: number;
+  message: string;
+}
+
+export interface VatImportSummary {
+  standardSales: number;
+  exemptSales: number;
+  wvatCredit: number;
+  allowableInputVAT: number;
+  nonAllowableOverheads: number;
+  nonAllowableCapEx: number;
+  salesRowCount: number;
+  purchaseRowCount: number;
+}
+
+export interface CsvWhtDeductionRow {
+  payee: string;
+  tin: string;
+  whtType: WhtDeductionType;
+  gross: number;
+  whtRate: number;
+  date?: string;
+}
+
+export interface CsvPayeEmployeeRow {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  jobPosition: string;
+  jtbTaxId: string;
+  monthlySalary: number;
+  deductions: PayeEmployeeDeductions;
+  annualRentAmount?: number;
+}
+
+export interface CsvCitWhtCreditRow {
+  clientName: string;
+  clientTIN: string;
+  creditRef: string;
+  grossValue: number;
+  withheldAmount: number;
+}
+
+export interface CsvImportData {
+  importType: CsvImportType;
+  fileName: string;
+  rowCount: number;
+  acceptedCount: number;
+  errors: CsvImportRowError[];
+  summary?: VatImportSummary;
+  vat?: { rows: unknown[]; summary: VatImportSummary };
+  wht?: { deductions: CsvWhtDeductionRow[] };
+  paye?: { employees: CsvPayeEmployeeRow[] };
+  cit_wht_credits?: { credits: CsvCitWhtCreditRow[] };
+}
+
+export interface CsvImportResponse {
+  success: boolean;
+  message?: string;
+  data: CsvImportData;
+}
+
+export interface BulkPayeEmployeesResponse {
+  success: boolean;
+  message?: string;
+  data: {
+    month: number;
+    monthName: string;
+    year: number;
+    addedCount: number;
+    failedCount: number;
+    added: PayeEmployee[];
+    failed: { index: number; email: string | null; reason: string }[];
+  };
+}

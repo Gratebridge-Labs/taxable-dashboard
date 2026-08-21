@@ -255,6 +255,24 @@ export function useWhtRemittance(
       throw err;
     }
   }, [fileWhtMonth, profileId, year, activeMonth, loadMonth]);
+
+  const importCsvDeductions = useCallback(async (
+    items: Array<{ payee: string; tin: string; whtType: string; gross: number; whtRate: number; date?: string }>
+  ) => {
+    for (const item of items) {
+      await createWhtDeduction(profileId, {
+        year,
+        month: toApiMonth(activeMonth),
+        payee: item.payee,
+        tin: item.tin,
+        whtType: deductionTypeToApi(item.whtType),
+        gross: item.gross,
+        whtRate: item.whtRate,
+        date: item.date?.trim() || new Date().toISOString().slice(0, 10),
+      });
+    }
+    await loadMonth(activeMonth);
+  }, [createWhtDeduction, profileId, year, activeMonth, loadMonth]);
   return {
     loading,
     dataByMonth,
@@ -271,6 +289,7 @@ export function useWhtRemittance(
     removeItem,
     handleConfirmRemove,
     fileMonth,
+    importCsvDeductions,
     uploadFile,
   };
 }

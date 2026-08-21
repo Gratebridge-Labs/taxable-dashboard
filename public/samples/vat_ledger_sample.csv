@@ -1,0 +1,7 @@
+Ledger,Date,Invoice Number,Counterparty,Description,Category,Amount,VAT Amount,WVAT Credit
+sale,2026-01-15,INV-001,ABC Trading Ltd,Standard-rated product sales,standard,1000000,75000,0
+sale,2026-01-20,INV-002,Export Partners Ltd,Zero-rated export of goods,exempt,250000,0,0
+sale,2026-01-22,INV-003,Federal Ministry of Works,Consulting services with WVAT deducted at source,standard,500000,37500,37500
+purchase,2026-01-10,PINV-001,Lagos Supplies Co,Raw materials for resale,allowable,800000,60000,0
+purchase,2026-01-12,PINV-002,Ikeja Electric,Office electricity,overhead,50000,3750,0
+purchase,2026-01-18,PINV-003,Dell Technologies,Office laptops,capex,400000,30000,0

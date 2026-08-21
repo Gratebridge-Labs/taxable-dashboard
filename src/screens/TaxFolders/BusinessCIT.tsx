@@ -25,10 +25,12 @@ import type {
     CitFiling,
     CitQuarterlyData,
     CitWhtCredit,
+    CsvImportData,
     UpsertCitRequest,
 } from '@/types/api';
 
 import { PrimaryButton, SecondaryButton, SecondaryButtonSm, FormFieldRow, FormLabel, FilingSheet } from './TaxFolderShared';
+import { CsvImportPanel } from './CsvImportPanel';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmt = (n: number) => `₦${Math.round(n).toLocaleString()}`;
@@ -390,6 +392,8 @@ export function BusinessCITContent({
     const [whtCredits, setWhtCredits] = useState<WhtCreditUi[]>([]);
     const [whtCreditStep, setWhtCreditStep] = useState<'method' | 'table'>('method');
     const [creditEntryMethod, setCreditEntryMethod] = useState<'manual' | 'csv' | 'software'>('manual');
+    const [csvImported, setCsvImported] = useState(false);
+    const [importingCsv, setImportingCsv] = useState(false);
     const [showCreditSheet, setShowCreditSheet] = useState(false);
     const [editCreditIdx, setEditCreditIdx] = useState<number | null>(null);
     const [isEditingCredit, setIsEditingCredit] = useState(false);
@@ -785,6 +789,54 @@ export function BusinessCITContent({
         setIsEditingCredit(false);
         setShowRemoveCredit(false);
         setShowCreditSheet(true);
+    };
+
+    const handleCsvCreditImport = async (data: CsvImportData) => {
+        const rows = data.cit_wht_credits?.credits ?? [];
+        if (!rows.length) {
+            toast.error('No WHT credit rows found in that file.');
+            return;
+        }
+        if (!canSync || !profileId) {
+            toast.error('Profile required to import WHT credits');
+            return;
+        }
+        setImportingCsv(true);
+        try {
+            const created: WhtCreditUi[] = [];
+            for (const row of rows) {
+                const res = await createCitWhtCredit(profileId, {
+                    year: yearNum,
+                    clientName: row.clientName,
+                    clientTIN: row.clientTIN,
+                    creditRef: row.creditRef,
+                    grossValue: row.grossValue,
+                    withheldAmount: row.withheldAmount,
+                });
+                if (res?.data?.credit) created.push(creditToUi(res.data.credit));
+            }
+            if (created.length) {
+                setWhtCredits(prev => [...prev, ...created]);
+                setCsvImported(true);
+                setWhtCreditStep('table');
+            }
+        } catch (err: unknown) {
+            console.error(
+                '[BusinessCIT] Failed to save imported WHT credits:',
+                err instanceof Error ? err.message : 'Unknown error'
+            );
+            toast.error(err instanceof Error ? err.message : 'Imported file parsed, but saving credits failed.');
+        } finally {
+            setImportingCsv(false);
+        }
+    };
+
+    const handleContinueCredits = () => {
+        if (creditEntryMethod === 'csv' && !csvImported) {
+            toast.error('Upload the sample CSV first, or switch to manual entry.');
+            return;
+        }
+        openAddCredit();
     };
 
     const openEditCredit = (idx: number) => {
@@ -1393,7 +1445,7 @@ export function BusinessCITContent({
                                     <p className="text-3 font-medium text-neutral-800 mb-4 font-[family-name:var(--font-merriweather)]">Choose how you'd like to enter your WHT credit notes.</p>
                                     <RadioGroup value={creditEntryMethod} onValueChange={(v) => setCreditEntryMethod(v as 'manual' | 'csv' | 'software')} className="space-y-0 mb-4">
                                         {CREDIT_ENTRY_OPTIONS.map(opt => {
-                                            const disabled = opt.id !== 'manual';
+                                            const disabled = opt.id === 'software';
                                             return (
                                                 <label key={opt.id} className={`flex items-center gap-3 py-3.5 cursor-pointer ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}>
                                                     <RadioGroupItem value={opt.id} disabled={disabled} />
@@ -1402,10 +1454,21 @@ export function BusinessCITContent({
                                             );
                                         })}
                                     </RadioGroup>
+                                    {creditEntryMethod === 'csv' && (
+                                        <CsvImportPanel
+                                            profileId={profileId}
+                                            importType="cit_wht_credits"
+                                            hint="Download the sample, add one row per WHT credit note, then upload. Credits will fill this table."
+                                            disabled={importingCsv}
+                                            onImported={(data) => handleCsvCreditImport(data)}
+                                        />
+                                    )}
                                     <div className="flex gap-3 mt-6">
                                         <div className="flex gap-3">
                                             <SecondaryButton onClick={() => goBack('tax-adjustments')}>Back</SecondaryButton>
-                                            <SecondaryButton onClick={() => openAddCredit()}>Continue</SecondaryButton>
+                                            <SecondaryButton onClick={() => { if (!importingCsv) handleContinueCredits(); }}>
+                                                {importingCsv ? <Spinner /> : 'Continue'}
+                                            </SecondaryButton>
                                         </div>
                                         <PrimaryButton onClick={() => goForward('review')} className="ml-auto">Next: Review</PrimaryButton>
                                     </div>
@@ -1415,7 +1478,7 @@ export function BusinessCITContent({
                                     <p className="text-3 font-medium text-neutral-800 mb-4 font-[family-name:var(--font-merriweather)]">Choose how you'd like to enter your WHT credit notes.</p>
                                     <RadioGroup value={creditEntryMethod} onValueChange={(v) => setCreditEntryMethod(v as 'manual' | 'csv' | 'software')} className="space-y-0 mb-4">
                                         {CREDIT_ENTRY_OPTIONS.map(opt => {
-                                            const disabled = opt.id !== 'manual';
+                                            const disabled = opt.id === 'software';
                                             return (
                                                 <label key={opt.id} className={`flex items-center gap-3 py-3.5 cursor-pointer ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}>
                                                     <RadioGroupItem value={opt.id} disabled={disabled} />
@@ -1424,10 +1487,21 @@ export function BusinessCITContent({
                                             );
                                         })}
                                     </RadioGroup>
+                                    {creditEntryMethod === 'csv' && (
+                                        <CsvImportPanel
+                                            profileId={profileId}
+                                            importType="cit_wht_credits"
+                                            hint="Download the sample, add one row per WHT credit note, then upload. Credits will fill this table."
+                                            disabled={importingCsv}
+                                            onImported={(data) => handleCsvCreditImport(data)}
+                                        />
+                                    )}
                                     <div className="flex gap-3 mt-6">
                                         <div className="flex gap-3">
                                             <SecondaryButton onClick={() => goBack('tax-adjustments')}>Back</SecondaryButton>
-                                            <SecondaryButton onClick={() => openAddCredit()}>Continue</SecondaryButton>
+                                            <SecondaryButton onClick={() => { if (!importingCsv) handleContinueCredits(); }}>
+                                                {importingCsv ? <Spinner /> : 'Continue'}
+                                            </SecondaryButton>
                                         </div>
                                         <PrimaryButton onClick={() => goForward('review')} className="ml-auto">Next: Review</PrimaryButton>
                                     </div>

@@ -21,7 +21,7 @@ import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { toast } from 'sonner';
 import { NIGERIA_STATES, getCitiesForState, getLgasForState } from '@/lib/nigeria-locations';
 import { useTaxableApi } from '@/hooks/useTaxableApi';
-import type { BusinessCompanyInfoRequest } from '@/types/api';
+import type { BusinessCompanyInfoRequest, CsvImportData } from '@/types/api';
 import {
     mapApiEmployeeToPayeStaff,
     mapPayeStaffToCreateRequest,
@@ -79,6 +79,7 @@ export default function BusinessTaxDetails() {
         updateBusinessCompanyInfo,
         listPayeEmployees,
         createPayeEmployee,
+        bulkCreatePayeEmployees,
         updatePayeEmployee,
         deletePayeEmployee,
     } = useTaxableApi();
@@ -384,6 +385,45 @@ export default function BusinessTaxDetails() {
             toast.error(err instanceof Error ? err.message : 'Failed to copy employees');
         }
     }, [profileId, activeMonth, activeMonthNumber, payeStaffByMonth, createPayeEmployee]);
+
+    const handlePayeCsvImported = useCallback(async (data: CsvImportData, monthName: string) => {
+        if (!profileId || profileId === 'default') {
+            toast.error('Profile required to import employees');
+            return;
+        }
+        const employees = data.paye?.employees ?? [];
+        if (!employees.length) {
+            toast.error('No employee rows found in that file.');
+            return;
+        }
+        const monthNumber = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December',
+        ].indexOf(monthName) + 1;
+        if (monthNumber < 1) {
+            toast.error('Select a valid month before importing.');
+            return;
+        }
+        try {
+            const res = await bulkCreatePayeEmployees(profileId, monthNumber, employees);
+            const added = (res.data?.added ?? []).map(mapApiEmployeeToPayeStaff);
+            setPayeStaffByMonth((prev) => ({
+                ...prev,
+                [monthName]: [...(prev[monthName] || []), ...added],
+            }));
+            setActiveMonth(monthName);
+            if (res.data?.failedCount) {
+                toast.success(`Added ${res.data.addedCount} employee(s). ${res.data.failedCount} row(s) skipped.`);
+            }
+        } catch (err: unknown) {
+            console.error(
+                '[BusinessTaxDetails] Failed to import PAYE CSV:',
+                err instanceof Error ? err.message : 'Unknown error'
+            );
+            toast.error(err instanceof Error ? err.message : 'Failed to import employees');
+            throw err;
+        }
+    }, [profileId, bulkCreatePayeEmployees]);
 
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -794,6 +834,8 @@ export default function BusinessTaxDetails() {
                                         onSaveStaff={handleSavePayeStaff}
                                         onCopyStaff={handleCopyPayeStaff}
                                         onFile={() => setShowPayeFilingModal(true)}
+                                        profileId={profileId}
+                                        onCsvImported={handlePayeCsvImported}
                                     />
                                 </div>
                             );

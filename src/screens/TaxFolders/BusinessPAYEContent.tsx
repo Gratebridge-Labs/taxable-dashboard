@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { toast } from 'sonner';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AddEmployeeDrawer, PayeStaff } from '@/screens/TaxFolders/AddEmployeeDrawer';
@@ -9,6 +10,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { PrimaryButton, SecondaryButton, SecondaryButtonSm } from '@/screens/TaxFolders/TaxFolderShared';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
+import { Spinner } from '@/components/ui/spinner';
+import { CsvImportPanel } from '@/screens/TaxFolders/CsvImportPanel';
+import type { CsvImportData } from '@/types/api';
 
 // ── PAYE Calculation (2026 Nigeria Tax Act) ─────────────────────────
 // Band limits are WIDTHS (progressive brackets): first ₦800k at 0%,
@@ -67,6 +71,8 @@ interface MonthlyFilingProps {
     onSaveStaff: (oldStaff: PayeStaff, newStaff: PayeStaff) => void | Promise<void>;
     onCopyStaff: (sourceMonth: string) => void | Promise<void>;
     onFile?: () => void;
+    profileId?: string;
+    onCsvImported?: (data: CsvImportData, month: string) => void | Promise<void>;
 }
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -74,7 +80,7 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 export function PayeMonthlyFiling({
     activeMonth, activeStep, isFiled, totalPAYE, staff, sourceMonth,
     filedMonths, payeStaffByMonth, taxYear, onMonthChange,
-    onAddStaff, onRemoveStaff, onSaveStaff, onCopyStaff, onFile,
+    onAddStaff, onRemoveStaff, onSaveStaff,     onCopyStaff, onFile, profileId, onCsvImported,
 }: MonthlyFilingProps) {
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [editingStaff, setEditingStaff] = useState<PayeStaff | null>(null);
@@ -82,6 +88,9 @@ export function PayeMonthlyFiling({
     const [showCopyModal, setShowCopyModal] = useState(false);
     const [pendingCopy, setPendingCopy] = useState<{ sourceMonth: string } | null>(null);
     const [onboardingMonth, setOnboardingMonth] = useState(activeMonth);
+    const [entryMethod, setEntryMethod] = useState<'manual' | 'csv' | 'copy' | 'software'>('manual');
+    const [csvImported, setCsvImported] = useState(false);
+    const [importingCsv, setImportingCsv] = useState(false);
     const fmt = (n: number) => `₦${n.toLocaleString()}`;
 
     const openAddDrawer = () => {
@@ -107,9 +116,24 @@ export function PayeMonthlyFiling({
         onCopyStaff(source);
     };
 
+    const handleCsvImport = async (data: CsvImportData) => {
+        if (!onCsvImported) return;
+        setImportingCsv(true);
+        try {
+            await onCsvImported(data, isFirstTime ? onboardingMonth : activeMonth);
+            setCsvImported(true);
+        } finally {
+            setImportingCsv(false);
+        }
+    };
+
     const handleOnboardingContinue = () => {
+        if (entryMethod === 'csv' && !csvImported) {
+            toast.error('Upload the sample CSV first, or switch to manual entry.');
+            return;
+        }
         onMonthChange(onboardingMonth);
-        openAddDrawer();
+        if (entryMethod !== 'csv') openAddDrawer();
     };
 
     const hasAnyData = Object.values(payeStaffByMonth).some(arr => arr.length > 0);
@@ -155,13 +179,13 @@ export function PayeMonthlyFiling({
 
             {isFirstTime ? (
                 <>
-                    <RadioGroup value="manual" className="space-y-0 mb-8">
+                    <RadioGroup value={entryMethod} onValueChange={(v) => setEntryMethod(v as typeof entryMethod)} className="space-y-0 mb-8">
                         <label className="flex items-center gap-3 py-3.5 cursor-pointer">
                             <RadioGroupItem value="manual" />
                             <span className="text-3 font-medium text-neutral-800">Manual entry (add staff one by one)</span>
                         </label>
-                        <label className="flex items-center gap-3 py-3.5 cursor-not-allowed opacity-40">
-                            <RadioGroupItem value="csv" disabled />
+                        <label className="flex items-center gap-3 py-3.5 cursor-pointer">
+                            <RadioGroupItem value="csv" />
                             <span className="text-3 font-medium text-neutral-800">Upload CSV/Excel (bulk upload)</span>
                         </label>
                         <label className="flex items-center gap-3 py-3.5 cursor-not-allowed opacity-40">
@@ -169,6 +193,16 @@ export function PayeMonthlyFiling({
                             <span className="text-3 font-medium text-neutral-800">Connect payroll software (QuickBooks, Zoho)</span>
                         </label>
                     </RadioGroup>
+
+                    {entryMethod === 'csv' && (
+                        <CsvImportPanel
+                            profileId={profileId}
+                            importType="paye"
+                            hint="Download the sample, add one row per employee, then upload. Payroll will fill for the selected month."
+                            disabled={importingCsv}
+                            onImported={(data) => handleCsvImport(data)}
+                        />
+                    )}
 
                     <div className="mb-8">
                         <div className="block text-2 font-medium text-neutral-500 mb-2">Select starting month <InfoTooltip text="The first month you'll file PAYE for this business on Taxable." /></div>
@@ -182,19 +216,25 @@ export function PayeMonthlyFiling({
                         </Select>
                     </div>
 
-                    <PrimaryButton onClick={handleOnboardingContinue}>Continue</PrimaryButton>
+                    <PrimaryButton onClick={handleOnboardingContinue} disabled={importingCsv}>
+                        {importingCsv ? <Spinner /> : 'Continue'}
+                    </PrimaryButton>
                 </>
             ) : (
                 <>
-                    <RadioGroup value={sourceMonth ? 'copy' : 'manual'} className="space-y-0 mb-8">
+                    <RadioGroup
+                        value={entryMethod === 'manual' && sourceMonth ? 'copy' : entryMethod}
+                        onValueChange={(v) => setEntryMethod(v as typeof entryMethod)}
+                        className="space-y-0 mb-8"
+                    >
                         {sourceMonth && (
-                            <label className="flex items-center gap-3 py-3.5 cursor-pointer" onClick={() => handleCopyClick(sourceMonth)}>
+                            <label className="flex items-center gap-3 py-3.5 cursor-pointer">
                                 <RadioGroupItem value="copy" />
                                 <span className="text-3 font-medium text-neutral-800">Copy from {sourceMonth} {taxYear}</span>
                             </label>
                         )}
-                        <label className="flex items-center gap-3 py-3.5 cursor-not-allowed opacity-40">
-                            <RadioGroupItem value="csv" disabled />
+                        <label className="flex items-center gap-3 py-3.5 cursor-pointer">
+                            <RadioGroupItem value="csv" />
                             <span className="text-3 font-medium text-neutral-800">Upload CSV/Excel (bulk upload)</span>
                         </label>
                         <label className="flex items-center gap-3 py-3.5 cursor-not-allowed opacity-40">
@@ -203,7 +243,26 @@ export function PayeMonthlyFiling({
                         </label>
                     </RadioGroup>
 
-                    {sourceMonth ? (
+                    {entryMethod === 'csv' && (
+                        <CsvImportPanel
+                            profileId={profileId}
+                            importType="paye"
+                            hint="Download the sample, add one row per employee, then upload. Payroll will fill for this month."
+                            disabled={importingCsv}
+                            onImported={(data) => handleCsvImport(data)}
+                        />
+                    )}
+
+                    {entryMethod === 'csv' ? (
+                        <PrimaryButton
+                            onClick={() => {
+                                if (!csvImported) toast.error('Upload the sample CSV first, or switch to another option.');
+                            }}
+                            disabled={importingCsv}
+                        >
+                            {importingCsv ? <Spinner /> : 'Continue'}
+                        </PrimaryButton>
+                    ) : sourceMonth ? (
                         <PrimaryButton onClick={() => handleCopyClick(sourceMonth)}>Continue</PrimaryButton>
                     ) : (
                         <PrimaryButton onClick={() => openAddDrawer()}>Continue</PrimaryButton>

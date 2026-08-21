@@ -19,8 +19,11 @@ export const TAXABLE_ENDPOINTS = {
   BUSINESS: {
     COMPANY_INFO: (profileId: string) => `/taxableprofile/business/${profileId}/company-info`,
     PAYE_EMPLOYEES: (profileId: string) => `/taxableprofile/business/${profileId}/paye/employees`,
+    PAYE_EMPLOYEES_BULK: (profileId: string) => `/taxableprofile/business/${profileId}/paye/employees/bulk`,
     PAYE_EMPLOYEE: (profileId: string, employeeId: string) =>
       `/taxableprofile/business/${profileId}/paye/employees/${employeeId}`,
+    IMPORT: (profileId: string) => `/taxableprofile/business/${profileId}/import`,
+    IMPORT_SAMPLE: (type: string) => `/taxableprofile/business/import/samples/${type}`,
     VAT: (profileId: string) => `/taxableprofile/business/${profileId}/vat`,
     VAT_FILE: (profileId: string) => `/taxableprofile/business/${profileId}/vat/file`,
     WHT_DEDUCTIONS: (profileId: string) => `/taxableprofile/business/${profileId}/wht/deductions`,

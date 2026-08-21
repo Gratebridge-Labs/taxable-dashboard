@@ -1,0 +1,5 @@
+Vendor Name,Tax ID,Payment Category,Gross Invoice Amount,WHT Rate,Date
+Acme Supplies Ltd,12345678901,contracts,500000,5,2026-01-12
+Legal Partners LP,23456789012,consultancy,200000,10,2026-01-18
+Mainland Logistics Ltd,34567890123,transport,150000,5,2026-01-20
+Ikeja Properties Ltd,45678901234,rent,300000,10,2026-01-25

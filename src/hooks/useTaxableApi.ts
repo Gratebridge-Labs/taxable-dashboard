@@ -10,6 +10,8 @@ import type {
   BusinessCompanyInfoRequest,
   CreatePayeEmployeeRequest,
   UpdatePayeEmployeeRequest,
+  CsvImportType,
+  CsvPayeEmployeeRow,
   UpsertVatRequest,
   FileVatRequest,
   CreateWhtDeductionRequest,
@@ -179,6 +181,24 @@ export const useTaxableApi = () => {
   const createPayeEmployee = useCallback(async (profileId: string, data: CreatePayeEmployeeRequest) => {
     if (!token) throw new Error('Authentication required');
     return taxableApi.createPayeEmployee(token, profileId, data);
+  }, [token]);
+
+  const bulkCreatePayeEmployees = useCallback(async (
+    profileId: string,
+    month: number,
+    employees: CsvPayeEmployeeRow[]
+  ) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.bulkCreatePayeEmployees(token, profileId, month, employees);
+  }, [token]);
+
+  const parseCsvImport = useCallback(async (
+    profileId: string,
+    file: File,
+    importType: CsvImportType
+  ) => {
+    if (!token) throw new Error('Authentication required');
+    return taxableApi.parseCsvImport(token, profileId, file, importType);
   }, [token]);
 
   const updatePayeEmployee = useCallback(async (
@@ -409,6 +429,8 @@ export const useTaxableApi = () => {
     updateBusinessCompanyInfo,
     listPayeEmployees,
     createPayeEmployee,
+    bulkCreatePayeEmployees,
+    parseCsvImport,
     updatePayeEmployee,
     deletePayeEmployee,
     getVat,

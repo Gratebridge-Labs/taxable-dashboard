@@ -20,12 +20,13 @@ import {
 } from '@/components/ui/stepper';
 import { Spinner } from '@/components/ui/spinner';
 import { useTaxableApi } from '@/hooks/useTaxableApi';
-import type { UpsertVatRequest, VatFiling, VatFilingResponse, VatListResponse } from '@/types/api';
+import type { CsvImportData, UpsertVatRequest, VatFiling, VatFilingResponse, VatListResponse } from '@/types/api';
 
 import {
     PrimaryButton, SecondaryButton,
     FilingSheet, FormFieldRow, FormLabel,
 } from './TaxFolderShared';
+import { CsvImportPanel } from './CsvImportPanel';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
@@ -138,7 +139,7 @@ export function BusinessVATContent({
     activeMonth: activeMonthProp, setActiveMonth: setActiveMonthProp,
     completedSteps: completedStepsProp, setCompletedSteps: setCompletedStepsProp,
 }: BusinessVATContentProps = {}) {
-    const { getVat, upsertVat, fileVat, uploadFile } = useTaxableApi();
+    const { getVat, upsertVat, fileVat, uploadFile, parseCsvImport } = useTaxableApi();
     const yearNum = Number(taxYear) || new Date().getFullYear();
 
     // Fall back to internal state when used standalone (e.g. /tax-folders/business-vat)
@@ -154,6 +155,7 @@ export function BusinessVATContent({
     const setCompletedSteps = setCompletedStepsProp ?? setInternalCompletedSteps;
 
     const [entryMethod, setEntryMethod] = useState<'manual' | 'csv' | 'software'>('manual');
+    const [csvImported, setCsvImported] = useState(false);
     const [filedMonths, setFiledMonths] = useState<Set<number>>(new Set());
     const [draftMonths, setDraftMonths] = useState<Set<number>>(new Set());
     const [monthData, setMonthData] = useState<Record<number, VATFilingData>>({});
@@ -256,6 +258,39 @@ export function BusinessVATContent({
             setSaving(false);
         }
     }, [profileId, monthData, activeMonth, upsertVat, buildUpsertPayload, applyFilingToState]);
+
+    const applyVatSummary = useCallback((
+        summary: NonNullable<CsvImportData['summary']>,
+        target: 'sales' | 'purchases' | 'both',
+        fileName: string
+    ) => {
+        setMonthData(prev => {
+            const current = prev[activeMonth] ?? defaultFilingData();
+            const next = { ...current };
+            const fillSales = target !== 'purchases' && summary.salesRowCount > 0;
+            const fillPurchases = target !== 'sales' && summary.purchaseRowCount > 0;
+            if (fillSales) {
+                next.standardSales = formatMoneyInput(summary.standardSales);
+                next.exemptSales = formatMoneyInput(summary.exemptSales);
+                next.wvatCredit = formatMoneyInput(summary.wvatCredit);
+                next.salesScheduleUploaded = 'true';
+            }
+            if (fillPurchases) {
+                next.allowableInputVAT = formatMoneyInput(summary.allowableInputVAT);
+                next.nonAllowableOverheads = formatMoneyInput(summary.nonAllowableOverheads);
+                next.nonAllowableCapEx = formatMoneyInput(summary.nonAllowableCapEx);
+                next.purchaseInvoicesUploaded = 'true';
+            }
+            return { ...prev, [activeMonth]: next };
+        });
+        if (target !== 'purchases' && summary.salesRowCount > 0) {
+            setSalesScheduleFiles(prev => prev.some(f => f.name === fileName) ? prev : [...prev, { name: fileName }]);
+        }
+        if (target !== 'sales' && summary.purchaseRowCount > 0) {
+            setPurchaseInvoiceFiles(prev => prev.some(f => f.name === fileName) ? prev : [...prev, { name: fileName }]);
+        }
+        setCsvImported(true);
+    }, [activeMonth]);
 
     const goForward = (target: VatStep) => {
         const currentStepNum = STEP_NUM[vatStep];
@@ -499,6 +534,24 @@ export function BusinessVATContent({
                 setField('purchaseInvoicesUploaded')('true');
             }
             toast.success(target === 'sales' ? 'Sales schedule uploaded' : 'Purchase invoices uploaded');
+
+            if (/\.(csv|xlsx|xls)$/i.test(file.name) && profileId) {
+                try {
+                    const parsed = await parseCsvImport(profileId, prepared, 'vat');
+                    if (parsed.data.summary) {
+                        applyVatSummary(
+                            parsed.data.summary,
+                            target === 'sales' ? 'sales' : 'purchases',
+                            file.name
+                        );
+                    }
+                } catch (parseErr: unknown) {
+                    console.error(
+                        `[BusinessVAT] Uploaded ${target} file but could not pre-fill from it:`,
+                        parseErr instanceof Error ? parseErr.message : 'Unknown error'
+                    );
+                }
+            }
         } catch (err: unknown) {
             console.error(
                 `[BusinessVAT] Failed to upload ${target}:`,
@@ -522,7 +575,7 @@ export function BusinessVATContent({
         input.addEventListener('change', onChange);
         return () => input.removeEventListener('change', onChange);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [profileId, activeMonth, yearNum, uploadFile, salesInputRef.current]);
+    }, [profileId, activeMonth, yearNum, uploadFile, parseCsvImport, applyVatSummary, salesInputRef.current]);
 
     useEffect(() => {
         const input = purchaseInputRef.current;
@@ -535,7 +588,7 @@ export function BusinessVATContent({
         input.addEventListener('change', onChange);
         return () => input.removeEventListener('change', onChange);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [profileId, activeMonth, yearNum, uploadFile, purchaseInputRef.current]);
+    }, [profileId, activeMonth, yearNum, uploadFile, parseCsvImport, applyVatSummary, purchaseInputRef.current]);
 
     const stepIndex = STEP_NUM[vatStep];
 
@@ -624,7 +677,7 @@ export function BusinessVATContent({
 
                             <RadioGroup value={entryMethod} onValueChange={(v) => setEntryMethod(v as 'manual' | 'csv' | 'software')} className="space-y-0 mb-6">
                                 {ENTRY_OPTIONS.map(opt => {
-                                    const disabled = opt.id !== 'manual';
+                                    const disabled = opt.id === 'software';
                                     return (
                                         <label key={opt.id} className={`flex items-center gap-3 py-3.5 cursor-pointer ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}>
                                             <RadioGroupItem value={opt.id} disabled={disabled} />
@@ -634,7 +687,26 @@ export function BusinessVATContent({
                                 })}
                             </RadioGroup>
 
-                            <PrimaryButton onClick={() => goForward('output-vat')}>
+                            {entryMethod === 'csv' && (
+                                <CsvImportPanel
+                                    profileId={profileId}
+                                    importType="vat"
+                                    hint="Download the sample, add your sales and purchase rows, then upload. Totals will fill the VAT form for this month."
+                                    onImported={async (data, file) => {
+                                        if (!data.summary) return;
+                                        applyVatSummary(data.summary, 'both', file.name);
+                                        goForward('output-vat');
+                                    }}
+                                />
+                            )}
+
+                            <PrimaryButton onClick={() => {
+                                if (entryMethod === 'csv' && !csvImported) {
+                                    toast.error('Upload the sample CSV first, or switch to manual entry.');
+                                    return;
+                                }
+                                goForward('output-vat');
+                            }}>
                                 Continue
                             </PrimaryButton>
                         </div>
@@ -675,6 +747,13 @@ export function BusinessVATContent({
 
                             <div className="mb-6">
                                 <p className="text-2 font-semibold text-neutral-700 mb-2">Upload Sales Schedule</p>
+                                    <a
+                                        href="/samples/vat_ledger_sample.csv"
+                                        download="taxable-vat-ledger-sample.csv"
+                                        className="inline-block text-1 font-semibold text-taxable-blue mb-2"
+                                    >
+                                        Download sample CSV
+                                    </a>
                                     <div className="flex items-center justify-between gap-4 p-3 border border-dashed border-neutral-200 rounded-xl">
                                         <div className="flex items-center gap-2.5">
                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-neutral-400"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
